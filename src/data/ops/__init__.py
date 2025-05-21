@@ -1,9 +1,13 @@
 from base_operator import OperatorFactory, Operator
-from .conversation_turn_filter import ConversationTurnFilter, create_conversation_turn_filter
+from .conversation_turn_filter import create_conversation_turn_filter
+from .text_length_filter import create_text_length_filter
+from .group_filter import create_group_filter
 
 # Define all operators
 OPERATORS = {
     'conversation_turn_filter': create_conversation_turn_filter,
+    'rm_text_length_filter': create_text_length_filter,
+    'group_filter': create_group_filter
 }
 
 def register_all_operators():

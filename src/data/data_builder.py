@@ -1,13 +1,12 @@
-from typing import List, Dict, Any, Optional
-from argparse import Namespace
+from typing import Dict, Any
 from loguru import logger
-import yaml
 from pathlib import Path
+import yaml
 import random
 
-from base import BaseData, BaseDataSet
-from data_load_strategy import DataLoadStrategyRegistry
-from data_processor import (
+from .base import BaseData, BaseDataSet
+from .data_load_strategy import DataLoadStrategyRegistry
+from .data_processor import (
     DataPipeline, OperatorFactory,
 )
 
@@ -38,18 +37,7 @@ class DataBuilder:
         """Load and parse the YAML configuration file"""
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
-                
-            # process custom dimension
-            if 'dataset' in config and 'configs' in config['dataset']:
-                dimension = config['dataset']['configs'].get('dimension')
-                if dimension and dimension != '*':
-                    # validate and get dimension
-                    if not Dimension.is_valid_dimension(dimension):
-                        raise ValueError(f"Invalid dimension name: {dimension}")
-                    config['dataset']['configs']['dimension'] = Dimension.get_dimension(dimension)
-                    logger.info(f"Using dimension: {dimension}")
-                    
+                config = yaml.safe_load(f)    
             return config
         except Exception as e:
             raise RuntimeError(f"Failed to load YAML configuration: {str(e)}")
@@ -90,12 +78,12 @@ class DataBuilder:
         data_type = configs.get('type')
         data_source = configs.get('source', '*')
         dimension = configs.get('dimension', '*')
-        
+
         logger.info(f"Building dataset with type: {data_type}, source: {data_source}, dimension: {dimension}")
-        
-        # if dimension is *, set to COMMON
-        if dimension == '*':
-            configs['dimension'] = Dimension.COMMON.value
+
+        if 'dimension' not in configs:
+            logger.warning("Missing 'dimension' in config")
+            configs['dimension'] = 'common'
         
         # Get the appropriate data load strategy
         strategy_class = DataLoadStrategyRegistry.get_strategy_class(

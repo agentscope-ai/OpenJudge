@@ -1,9 +1,8 @@
-from data_builder import load_dataset_from_yaml
-from loguru import logger
 import json
+from loguru import logger
 from pathlib import Path
-from datetime import datetime
-from collections import Counter
+
+from .data_builder import load_dataset_from_yaml
 
 def convert_to_jsonl_format(data):
     """Convert BaseData object to JSONL format"""
@@ -11,7 +10,7 @@ def convert_to_jsonl_format(data):
 
 # 加载数据集
 try:
-    dataset = load_dataset_from_yaml("/Users/xielipeng/RM-Gallery/rm_gallery/data/data_load.yaml")
+    dataset = load_dataset_from_yaml("/Users/xielipeng/RM-Gallery/src/data/data_load.yaml")
     logger.info(f"Dataset loaded successfully. Type: {type(dataset)}")
     logger.info(f"Dataset name: {dataset.name}")
     logger.info(f"Dataset description: {dataset.description}")
@@ -28,7 +27,6 @@ try:
             written_count += 1
     
     logger.info(f"Data has been written to {output_path}")
-    logger.info(f"Total lines written: {written_count}")
     
 except Exception as e:
     logger.error(f"Error loading dataset: {str(e)}")

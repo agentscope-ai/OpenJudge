@@ -1,5 +1,4 @@
 import fnmatch
-import os
 import json
 import pandas as pd
 from abc import ABC, abstractmethod
@@ -7,11 +6,10 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Type, List, Any
 from pathlib import Path
 from datetime import datetime
-
 from loguru import logger
 
-from data_schema import EvaluationSample, ContentList, Reward, DataInfo, ContextList, Dimension
-from base import BaseData
+from .data_schema import EvaluationSample, ContentDict, Reward, DataInfo, ContextDict
+from .base import BaseData
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -63,7 +61,6 @@ class DataLoadStrategy(ABC):
         """
         pass
 
-
 class DataLoadStrategyRegistry:
     """
     Registry for data load strategies with wildcard matching
@@ -81,7 +78,7 @@ class DataLoadStrategyRegistry:
         # Default to wildcard if not provided
         data_type = data_type or '*'
         data_source = data_source or '*'
-        dimension = dimension or '*'
+
         # Create the lookup key
         lookup_key = StrategyKey(data_type, data_source, dimension)
 
@@ -119,7 +116,6 @@ class DataLoadStrategyRegistry:
             cls._strategies[key] = strategy_class
             return strategy_class
         return decorator
-
 
 class FileDataLoadStrategy(DataLoadStrategy):
     """
@@ -194,17 +190,17 @@ class FileDataLoadStrategy(DataLoadStrategy):
                         try:
                             data_dict[k] = v.item()
                         except ValueError:
-                            # 如果是数组类型，转换为列表
+                            # if array type, convert to list
                             data_dict[k] = v.tolist()
                     else:
                         data_dict[k] = v
                 
-                # 确保数据字典包含必要的字段
+                # ensure data dict contains necessary fields
                 if 'prompt' not in data_dict:
                     logger.warning(f"Row missing 'prompt' field, skipping: {data_dict}")
                     continue
                     
-                # 转换数据为BaseData对象
+                # convert data to BaseData object
                 base_data = self._convert_to_base_data(data_dict)
                 if base_data is not None and isinstance(base_data, BaseData):
                     data_list.append(base_data)
@@ -253,7 +249,7 @@ class ConversationDataLoadStrategy(FileDataLoadStrategy):
         import hashlib
         content = str(data_dict.get('prompt', []))
         unique_id = hashlib.md5(content.encode()).hexdigest()
-
+        
         # process prompt as conversation history
         inputs = []
         prompt = data_dict.get('prompt')
@@ -268,7 +264,7 @@ class ConversationDataLoadStrategy(FileDataLoadStrategy):
                     role = turn.get('role', 'user')
                     content = turn.get('content', '')
                     if content:  # Only add non-empty content
-                        inputs.append(ContentList(
+                        inputs.append(ContentDict(
                             role=role,
                             content=content
                         ))
@@ -284,10 +280,7 @@ class ConversationDataLoadStrategy(FileDataLoadStrategy):
             reward = Reward(total_score=1.0)
             # Add multiple reward details directly
             reward.set_reward(self.config['dimension'], 1.0, "Chosen response")
-            reward.set_reward("helpfulnesss", 0.8, "Very helpful response")
-            reward.set_reward("safety", 0.9, "Safe and appropriate content")
-            reward.set_reward("relevance", 0.85, "Highly relevant to the question")
-            chosen_output = ContentList(
+            chosen_output = ContentDict(
                 role="assistant",
                 content=data_dict['chosen'],
                 content_label="chosen",
@@ -299,7 +292,7 @@ class ConversationDataLoadStrategy(FileDataLoadStrategy):
         if 'rejected' in data_dict:
             reward = Reward(total_score=0.0)
             reward.set_reward(self.config['dimension'], 0.0, "Rejected response")
-            rejected_output = ContentList(
+            rejected_output = ContentDict(
                 role="assistant",
                 content=data_dict['rejected'],
                 content_label="rejected",
@@ -316,6 +309,16 @@ class ConversationDataLoadStrategy(FileDataLoadStrategy):
         sample = EvaluationSample(
             input=inputs,
             outputs=outputs,
+            contexts=[
+                ContextDict(
+                    context_type='supply',
+                    context='xxxx'
+                ),
+                ContextDict(
+                    context_type='demand',
+                    context='xxxx'
+                )
+            ],
             data_info=DataInfo(
                 domain=self.config['dimension'],
                 source=self.config['source']

@@ -1,9 +1,9 @@
-from typing import List, Dict, Any, Optional, Callable, Union, TypeVar, Generic, Type
+from typing import List, Dict, Any, Optional, Callable, TypeVar, Generic
 from abc import ABC, abstractmethod
 from loguru import logger
 import importlib
 
-from base import BaseData
+from .base import BaseData
 
 T = TypeVar('T', bound=BaseData)
 
@@ -31,9 +31,10 @@ class OperatorFactory:
     Factory class for creating operators from configuration
     """
     _operator_registry: Dict[str, Callable[[Dict[str, Any]], Operator]] = {}
+    _registry_logged: bool = False
 
     @classmethod
-    def register(cls, operator_type: str) -> Callable:
+    def register(cls, name: str) -> Callable:
         """
         Decorator for registering operator creation functions.
         
@@ -44,7 +45,7 @@ class OperatorFactory:
             A decorator function that registers the operator creation function
         """
         def decorator(func: Callable[[Dict[str, Any]], Operator]) -> Callable:
-            cls._operator_registry[operator_type] = func
+            cls._operator_registry[name] = func
             return func
         return decorator
 
@@ -56,43 +57,22 @@ class OperatorFactory:
         op_type = operator_config.get('type')
         name = operator_config.get('name', op_type)
         config = operator_config.get('config', {})
+            
+        logger.info(f"Creating operator with name: {name}")
         
-        # Check if there's a registered operator creator for this type or name
-        if op_type in cls._operator_registry:
-            return cls._operator_registry[op_type](operator_config)
-        elif name in cls._operator_registry:
+        # Check registry first
+        if name in cls._operator_registry:
             return cls._operator_registry[name](operator_config)
         
-        # Fall back to built-in operator types
-        if op_type == 'filter':
-            from data_processor import FilterOperator
-            return FilterOperator(
-                name=name,
-                config=config
-            )
-        elif op_type == 'map':
-            from data_processor import MapOperator
-            return MapOperator(
-                name=name,
-                config=config
-            )
-        elif op_type == 'reward':
-            from data_processor import RewardOperator
-            return RewardOperator(
-                name=name,
-                config=config
-            )
-        elif op_type == 'data_juicer':
-            # Convert name to CamelCase (e.g., perplexity_filter -> PerplexityFilter)
-            operator_name = ''.join(word.capitalize() for word in name.split('_'))
-            operator_module = importlib.import_module(f"data_juicer.ops.filter.{name.lower()}")
-            operator_class = getattr(operator_module, operator_name)
+        # Only handle data_juicer operators
+        if op_type != 'data_juicer':
+            raise ValueError(f"Unknown operator type: {op_type}")
             
-            from data_processor import DataJuicerOperator
-            return DataJuicerOperator(
-                name=operator_name,
-                juicer_op_class=operator_class,
-                config=config
-            )
-        else:
-            raise ValueError(f"Unknown operator type: {op_type}") 
+        module_path = 'data_juicer.ops.filter'
+        class_name = lambda n: ''.join(word.capitalize() for word in n.split('_'))
+        
+        operator_name = class_name(name)
+        operator_module = importlib.import_module(f"{module_path}.{name.lower()}")
+        operator_class = getattr(operator_module, operator_name)
+        from data_processor import DataJuicerOperator
+        return DataJuicerOperator(name=operator_name, juicer_op_class=operator_class, config=config)

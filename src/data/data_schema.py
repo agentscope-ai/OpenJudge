@@ -1,28 +1,6 @@
 import re
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, List, Self, Set, Any, ClassVar
-
-
-# class Dimension(str, Enum):
-#     HONESTY = "honesty"
-#     SAFETY = "safety"
-#     HELPFULNESS = "helpfulness"
-#     COMMON = "common"
-
-#     @classmethod
-#     def get_dimension(cls, name: str) -> str:
-#         """Get a dimension by name, return the name if it's a custom dimension"""
-#         try:
-#             return cls(name).value
-#         except ValueError:
-#             # If it's not a predefined dimension, return the name as is
-#             return name
-
-#     @classmethod
-#     def is_valid_dimension(cls, name: str) -> bool:
-#         """Check if a dimension name is valid (either predefined or custom)"""
-#         return isinstance(name, str) and len(name) > 0
-
+from typing import Optional, Dict, List, Self, Any
 
 class Reward(BaseModel):
     total_score: float = Field(..., description="total score")
@@ -43,14 +21,6 @@ class Reward(BaseModel):
     
     def set_reward(self, dimension: str, value: Any, reason: str = None) -> None:
         """Set reward for a specific dimension with optional reason"""
-        # Validate dimension
-        # if not Dimension.is_valid_dimension(dimension):
-        #     raise ValueError(f"Invalid dimension name: {dimension}")
-            
-        # # Get normalized dimension name
-        # dimension = Dimension.get_dimension(dimension)
-        
-        # Update or add reward
         reward_dict = {"dimension": dimension, "value": value}
         if reason:
             reward_dict["reason"] = reason
@@ -91,7 +61,7 @@ class EvaluationContext(BaseModel):
         return schema_str
 
 
-class ContentList(BaseModel):
+class ContentDict(BaseModel):
     """Content with its corresponding reward"""
     role: str = Field(..., description="role")
     content: Optional[str] = Field(default=None, description="Output content")
@@ -102,23 +72,23 @@ class ContentList(BaseModel):
     evaluation_contexts: Dict[str, EvaluationContext] = Field(default={})
 
 
-class ContextList(BaseModel):
-    """Context list"""
+class ContextDict(BaseModel):
+    """Context dict"""
     context_type: str = Field(..., description="context type")
     context: Optional[str] = Field(default=None, description="context")
     extra_metadata: Optional[Dict] = Field(default=None, serialization_alias="extraMetadata")
 
 
 class EvaluationSample(BaseModel):
-    input: List[ContentList] = Field(
+    input: List[ContentDict] = Field(
         default_factory=list,
         serialization_alias="input"
     )
-    outputs: List[ContentList] = Field(
+    outputs: List[ContentDict] = Field(
         default_factory=list,
         serialization_alias="outputs"
     )
-    contexts: List[ContextList] = Field(
+    contexts: List[ContextDict] = Field(
         default_factory=list,
         serialization_alias="contexts"
     )
