@@ -8,7 +8,7 @@ def demo():
     """
     init pipeline from gallery directly
     """
-    reward_pipeline = PipelineBase.from_gallery(path="pipeline.writing.writing")
+    reward_pipeline = PipelineBase.from_gallery(path="pipeline.mxc.demo")
     reward_pipeline.run(data)
 
     """

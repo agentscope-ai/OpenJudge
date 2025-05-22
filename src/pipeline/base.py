@@ -5,32 +5,33 @@ from functools import partial
 from typing import Dict, Any, Type, List
 from typing_extensions import TypeVar
 from src.data.base import BaseData
-from src.marshal import Marshaller
 from src.pipeline.node.base import Node, RuntimeNode, RuntimeStatus
 from src.pipeline.queue import ThreadSafeDict
 from src.utils import file, tool_functions
 from threading import Lock
 
+from src.utils.marshal import Marshaller
+from src.utils.marshal.yaml import DEFAULT_MARSHALLER
+
 T = TypeVar("T",bound="PipelineBase")
 
-def default_done_call_back(queue:ThreadSafeDict, node:Node, lock: Lock, data:BaseData,data_copy:BaseData,future:Future):
+def default_done_call_back(queue:ThreadSafeDict, node:RuntimeNode, lock: Lock, data:BaseData,data_copy:BaseData,future:Future):
     try:
         result = future.result(timeout=120)
         #update data
         with lock:
             data.update(data_copy)
         #update queue
-        if isinstance(node, RuntimeNode):
-            node.update_status(RuntimeStatus.DONE)
-            queue.update_status()
+        node.update_status(RuntimeStatus.DONE)
+        queue.update_status()
     except Exception as e:
-        pass
-
+        node.update_status(RuntimeStatus.ERROR)
+        queue.update_status()
 
 class PipelineBase:
 
     def __init__(self,
-                 nodes: list[tuple[str,Node]],
+                 nodes: list[tuple[str,RuntimeNode]],
                  enable_parallel:bool = True,
                  thread_pool_max_workers: int = 10,
                  timeout_seconds:int = 120
@@ -51,7 +52,8 @@ class PipelineBase:
 
 
     def run_batch(self,datas: List[BaseData]):
-        pass
+        for data in datas:
+            self.run(data)
 
     def _run_node(self,node:Node,data:BaseData):
         data_copy = deepcopy(data)
@@ -70,7 +72,7 @@ class PipelineBase:
     def from_gallery(
             cls: Type[T],
             path: str,
-            marshaller:Marshaller,
+            marshaller:Marshaller = DEFAULT_MARSHALLER,
             **kwargs) -> T :
         fp = file.load_from_gallery(path)
         return cls.from_dict(marshaller.unmarshal(fp.read()))

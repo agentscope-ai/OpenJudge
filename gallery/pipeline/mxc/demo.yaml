@@ -15,3 +15,10 @@ nodes:
       check_in:
         func: check_in_by_score_thres
         score_thres_desc: factuality > 0.99 and intent < 0.5
+
+scorer:
+  name: weight_sum_scorer
+  class: weight_sum_scorer
+  params:
+    weights: {default: 1,factuality: 5}
+    is_norm: true

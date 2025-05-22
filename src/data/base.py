@@ -18,7 +18,7 @@ class BaseData(BaseModel):
     )
 
     # 更新数据的接口
-    def update(self, **kwargs):
+    def update(self, other, **kwargs):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)

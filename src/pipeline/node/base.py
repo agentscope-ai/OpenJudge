@@ -75,13 +75,20 @@ class RuntimeNode(Node):
     bound: Node
     runtime_name: str
     dependencies: List[str]
-    check_in_func: Callable
+    check_in_func: Callable[[Any],bool]
     retry_max_cnt: int = 1
     runtime_status: RuntimeStatus
     timeout_seconds: int
 
     def run(self, **kwargs):
-        self.bound.run(**kwargs)
+        self._run_with_runtime_info(**kwargs)
+
+    def _run_with_runtime_info(self,**kwargs):
+        if self.check_in_func:
+            for _ in range(self.retry_max_cnt):
+                self.bound.run()
+
+
 
     def update_status(self, new_status: RuntimeStatus):
         self.runtime_status = new_status
