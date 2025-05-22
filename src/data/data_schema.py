@@ -48,8 +48,8 @@ class DataInfo(BaseModel):
 class EvaluationContext(BaseModel):
     @classmethod
     def parse(cls, text: str) -> Self:
-        pattern = r'<([^>]+)>(.*?)</\1>'
-        matches = re.findall(pattern, text)
+        pattern = r'<([^>]+)>(.*)</\1>'
+        matches = re.findall(pattern, text, re.DOTALL)
         contents = {match[0]: match[1] for match in matches}
         return cls(**contents)
 
@@ -69,7 +69,7 @@ class ContentDict(BaseModel):
     rewards: Optional[Reward] = Field(default=None, description="Reward for this output")
     # TODO: add extra schema
     extra_metadata: Optional[Dict] = Field(default=None, serialization_alias="extraMetadata")
-    evaluation_contexts: Dict[str, EvaluationContext] = Field(default={})
+    evaluation_contexts: Dict[str, EvaluationContext | dict] = Field(default={})
 
 
 class ContextDict(BaseModel):
@@ -98,5 +98,5 @@ class EvaluationSample(BaseModel):
     extra_metadata: Optional[Dict] = Field(
         default=None, serialization_alias="extraMetadata"
     )
-    evaluation_contexts: Dict[str, EvaluationContext] = Field(default={})
+    evaluation_contexts: Dict[str, EvaluationContext | dict] = Field(default={})
     # TODO: support custom schema

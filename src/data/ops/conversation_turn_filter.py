@@ -1,8 +1,8 @@
 from typing import List, Dict, Any, Optional
 from loguru import logger
 
-from base import BaseData
-from base_operator import Operator, OperatorFactory
+from ..base import BaseData
+from ..base_operator import Operator, OperatorFactory
 
 class ConversationTurnFilter(Operator[BaseData]):
     """

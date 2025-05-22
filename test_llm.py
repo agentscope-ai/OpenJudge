@@ -1,25 +1,28 @@
 
 
 from src.model.base import LLMClient
-from src.rm.llm import LLMEvaluation, LLMParser
-from src.rm.schema import Claims, ViolatedPrinciples
+from src.rm.base import LLMParser
+from src.rm.parser import LLMEvaluation
+from src.rm.schema import BestOfN, Claims, ViolatedPrinciples
 from src.rm.scorer import Rule, RuleScorer
 from src.rm.template import EvaluationTemplate, ParserTemplate
 
 llm = LLMClient(model="qwen-max")
 
-# rm = LLMParser(
-#     client=llm,
-#     desc="你的任务是从<context>中抽取事实描述",
-#     output_schema=Claims,
-#     template=ParserTemplate,
-# )
 
-# rm._run(context="今天是520，周二")
 
-rm = LLMEvaluation(
+extract_parser = LLMParser(
     client=llm,
-    name="严谨性",
+    name="extract",
+    desc="你的任务是从<context>中抽取事实描述",
+    output_schema=Claims,
+    template=ParserTemplate,
+)
+
+
+fact_parser = LLMEvaluation(
+    client=llm,
+    name="pointwise",
     desc="你是严谨性评估专家，请评估理财师回答的严谨性，确保理财师回答没有出现明显错误。",
     output_schema=ViolatedPrinciples,
     template=EvaluationTemplate,
@@ -34,17 +37,37 @@ rm = LLMEvaluation(
 """,
 )
 
-response = rm._run(
-    actual_output="今天是周三",
-    context="今天是2025年5月20号，周二"
-)
-
-print(response)
-
-
 # rs = RuleScorer(
 #     rules=[
 #         Rule(desc="满足4条原则，且必须包含原则1、2、3、4", score=1),
 #         Rule(desc="满足原则条数少于4条，或未满足原则1、2、3、4", score=0)
 #     ]
 # )
+
+
+list_parser = LLMEvaluation(
+    client=llm,
+    name="list_parser",
+    desc="您是一位资深的理财内容评估专家，负责根据评分细则对多个回答进行评分和比较。",
+    output_schema=BestOfN,
+    template=EvaluationTemplate,
+    principles="""评估回答的表达清晰度和易懂程度。优质回答应以通俗易懂的语言解释专业概念，结构清晰，便于用户理解。""",
+)
+
+if __name__ == "__main__":
+
+    result = extract_parser._run(context="今天是520，周二")
+    print(result)
+
+    result = fact_parser._run(
+        actual_output="今天是周三",
+        context="今天是2025年5月20号，周二"
+    )
+    print(result)
+
+    result = list_parser._run(
+        actual_output="""Answer 1: 今天是周三
+Answer 2: 今天是2025年5月21日，周三
+""",
+    )
+    print(result)

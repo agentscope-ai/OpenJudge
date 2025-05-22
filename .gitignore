@@ -1,6 +1,6 @@
-.idea
+/.idea
 .pyc
 .DS_Store
-.vscode
+/.vscode
 /data
 __pycache__

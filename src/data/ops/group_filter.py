@@ -2,8 +2,8 @@ from typing import List, Dict, Any, Optional, Tuple
 from loguru import logger
 import random
 
-from base import BaseData
-from base_operator import Operator, OperatorFactory
+from ..base import BaseData
+from ..base_operator import Operator, OperatorFactory
 
 class GroupFilter(Operator[BaseData]):
     """

@@ -1,14 +1,8 @@
 from typing import List, Type
 
 from pydantic import BaseModel
-from src.rm.base import Rule
+from src.rm.base import BaseTemplate, Rule
 from src.rm.schema import EvaluationContext
-
-
-class BaseTemplate(BaseModel):
-    @classmethod
-    def format(cls, **kwargs) -> str:
-        ...
 
 
 class ParserTemplate(BaseTemplate):

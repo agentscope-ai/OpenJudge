@@ -4,9 +4,9 @@ from typing import Any, Dict, TypeVar, Type, List, Callable
 
 from pydantic import BaseModel
 
-from src.marshal import Marshaller
-from src.marshal.yaml import DEFAULT_MARSHALLER
 from src.utils import file
+from src.utils.marshal.protocol import Marshaller
+from src.utils.marshal.yaml import DEFAULT_MARSHALLER
 from src.utils.tool_functions import init_instance_by_config
 
 T = TypeVar("T", bound="Node")

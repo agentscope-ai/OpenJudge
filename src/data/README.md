@@ -21,7 +21,7 @@ RM-Gallery 数据处理系统设计用于处理强化学习模型的评估数据
 
 2. **Data Schema (`data_schema.py`)**
    - Defines the core data structures using Pydantic models
-   - Includes `ContentList`, `ContextList`, `Reward`, `DataInfo`, and `EvaluationSample`
+   - Includes `ContentDict`, `ContextDict`, `Reward`, `DataInfo`, and `EvaluationSample`
    - Ensures data validation and type safety
 
 3. **Base Operator (`base_operator.py`)**

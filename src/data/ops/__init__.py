@@ -1,4 +1,4 @@
-from base_operator import OperatorFactory, Operator
+from ..base_operator import OperatorFactory, Operator
 from .conversation_turn_filter import create_conversation_turn_filter
 from .text_length_filter import create_text_length_filter
 from .group_filter import create_group_filter

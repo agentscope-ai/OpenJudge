@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime
 from loguru import logger
 
-from .data_schema import EvaluationSample, ContentList, Reward, DataInfo, ContextList
+from .data_schema import EvaluationSample, ContentDict, Reward, DataInfo, ContextDict
 from .base import BaseData
 
 

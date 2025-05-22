@@ -5,11 +5,11 @@ from src.data.data_schema import EvaluationContext
 
 
 class LLMEvaluationContext(EvaluationContext):
-    reason: str = Field(default=..., description="anlysis/reasons", alias="think")
+    reason: str = Field(default=..., description="analysis process", alias="think")
 
 
 class Claims(LLMEvaluationContext):
-    claims: str = Field(default=..., description="a list of claims")
+    claims: str = Field(default=..., description="claims in the context")
 
 
 class ViolatedPrinciples(LLMEvaluationContext):
@@ -26,3 +26,7 @@ class ViolatedPrinciples(LLMEvaluationContext):
 
 class Score(LLMEvaluationContext):
     score: int | float = Field(default=..., description="score by rule")
+
+
+class BestOfN(LLMEvaluationContext):
+    best: int = Field(default=..., description="the index of best answer")
