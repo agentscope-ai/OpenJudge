@@ -74,5 +74,5 @@ class OperatorFactory:
         operator_name = class_name(name)
         operator_module = importlib.import_module(f"{module_path}.{name.lower()}")
         operator_class = getattr(operator_module, operator_name)
-        from data_processor import DataJuicerOperator
+        from .data_processor import DataJuicerOperator
         return DataJuicerOperator(name=operator_name, juicer_op_class=operator_class, config=config)
