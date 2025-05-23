@@ -1,7 +1,7 @@
 from src.data.data_schema import ContentDict, ContextDict, DataSample
 from src.model.base import LLMllm
 from src.rm.base import Var, VarType
-from gallery.node.rm import DataRM, LLMRM
+from gallery.rm.code.rm import DataRM, LLMRM
 from src.rm.schema import BestOfN, ViolatedPrinciples
 from src.rm.template import EvaluationTemplate
 

@@ -15,7 +15,7 @@ class DataBuilder:
     """
     DataBuilder is responsible for building evaluation datasets from various sources.
     It supports loading data from local files and remote sources (like Huggingface),
-    and processing data through a pipeline of operators.
+    and processing data through a executor of operators.
     """
     
     def __init__(self, config_path: str):
@@ -63,7 +63,7 @@ class DataBuilder:
     
     def build_dataset(self) -> BaseDataSet:
         """
-        Build a BaseDataSet from the configuration and process it through the pipeline
+        Build a BaseDataSet from the configuration and process it through the executor
         
         Returns:
             BaseDataSet: The constructed and processed dataset
@@ -115,13 +115,13 @@ class DataBuilder:
             valid_data_items = random.sample(valid_data_items, configs['limit'])
             logger.info(f"Applied limit of {configs['limit']}, now have {len(valid_data_items)} items")
             
-        # Process all items through pipeline
+        # Process all items through executor
         try:
-            logger.info("Processing items through pipeline")
+            logger.info("Processing items through executor")
             processed_items = self.pipeline.run(valid_data_items)
             logger.info(f"Pipeline processing complete. Input: {len(valid_data_items)} items, Output: {len(processed_items)} items")
         except Exception as e:
-            logger.error(f"Error processing data through pipeline: {str(e)}")
+            logger.error(f"Error processing data through executor: {str(e)}")
             processed_items = []
         
         # Create and return the dataset

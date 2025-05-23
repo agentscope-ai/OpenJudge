@@ -1,28 +1,26 @@
 from threading import Lock
 
-from src.pipeline.node.base import Node, RuntimeNode, RuntimeStatus
+from src.executor.base import BaseModule, RuntimeModule, RuntimeStatus
 
 
-class ThreadSafeDict:
-    def __init__(self,nodes:list[tuple[str,RuntimeNode]],lock:Lock):
+class ThreadSafeQueue:
+    def __init__(self, nodes:list[BaseModule], lock:Lock):
         self.nodes = {}
         self.lock = lock
         with self.lock:
             for name,node in nodes:
                 self.nodes[name] = node
 
-    def push(self,node_tuple: tuple[(str,RuntimeNode)]):
-        name,node = node_tuple[0],node_tuple[1]
+    def push(self, module:RuntimeModule):
+        name,node = module.runtime_name,module
         if name in self.nodes.keys():
             raise Exception
         with self.lock:
             self.nodes[name] = node
 
-    def pop(self):
-        next_node = self.get_next_ready()
-        if not next_node:
-            raise Exception
-        return next_node
+    def pop(self,module_runtime_name:str,default_val = None):
+        if module_runtime_name  in self.nodes.keys():
+            self.nodes.pop(module_runtime_name,default_val)
 
     def get_next_ready(self):
         for name,node  in self.nodes.items():

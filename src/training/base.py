@@ -1,4 +1,4 @@
-from src.pipeline.node import PaletteBlock
+from src.executor.node import PaletteBlock
 
 
 class PaletteTrainer(PaletteBlock):

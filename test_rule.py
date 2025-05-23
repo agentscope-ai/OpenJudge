@@ -1,4 +1,4 @@
-from gallery.node.rm import FormatRM, LengtRM
+from gallery.rm.code.rm import FormatRM, LengtRM
 
 length_parser = LengtRM(
     name="length"

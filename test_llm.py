@@ -2,9 +2,8 @@
 
 from src.model.base import LLMllm
 from src.rm.base import LLMRewardModule
-from gallery.node.rm import LLMRM
+from gallery.rm.code.rm import LLMRM
 from src.rm.schema import BestOfN, Claims, ViolatedPrinciples
-from src.rm.scorer import Rule, RuleScorer
 from src.rm.template import EvaluationTemplate, TaskTemplate
 
 llm = LLMllm(model="qwen-max")
