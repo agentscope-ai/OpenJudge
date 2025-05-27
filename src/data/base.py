@@ -2,7 +2,7 @@ from typing import Sequence, Dict, Any, Optional, List, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from src.base import BaseModule
+from src.base_module import BaseModule
 from src.data.data_schema import DataSample
 
 

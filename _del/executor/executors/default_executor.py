@@ -1,14 +1,12 @@
 
 from concurrent.futures import ThreadPoolExecutor
-from copy import deepcopy
 from functools import partial
 from typing import List
 from threading import Lock
-from concurrent.futures import Future
 from src.data.base import BaseData
-from src.executor.base import BaseExecutor, ExecutorCallBackHandler, RuntimeModule, BaseModule, RuntimeStatus
-from src.executor.callbacks.default_handler import DefaultExecutorCallbackHandler
-from src.executor.queue import ThreadSafeQueue
+from _del.executor.base import BaseExecutor, ExecutorCallBackHandler, RuntimeModule, BaseModule, RuntimeStatus
+from _del.executor.callbacks.default_handler import DefaultExecutorCallbackHandler
+from _del.executor.queue import ThreadSafeQueue
 
 class DefaultExecutor(BaseExecutor):
     """

@@ -1,6 +1,6 @@
 from src.data.base import BaseData
 from src.evaluation.prompt import BasePrompt
-from src.executor.base import MultiStrateragyExecutor
+from _del.executor import MultiStrateragyExecutor
 
 
 def demo():

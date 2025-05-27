@@ -1,6 +1,6 @@
 from threading import Lock
 
-from src.executor.base import BaseModule, RuntimeModule, RuntimeStatus
+from _del.executor.base import BaseModule, RuntimeModule, RuntimeStatus
 
 
 class ThreadSafeQueue:

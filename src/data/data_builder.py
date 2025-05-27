@@ -4,7 +4,7 @@ from pathlib import Path
 import yaml
 import random
 
-from src.base import BaseModule
+from src.base_module import BaseModule
 from .base import BaseData, BaseDataSet
 from .data_load_strategy import DataLoadStrategyRegistry
 from .data_processor import (

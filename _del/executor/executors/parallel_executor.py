@@ -1,5 +1,5 @@
-from src.base import RuntimeModule, BaseModule
-from src.executor.executors.default_executor import DefaultExecutor
+from src.base_module import BaseModule
+from _del.executor.executors.default_executor import DefaultExecutor
 
 
 class ParallelExecutor(DefaultExecutor):

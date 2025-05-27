@@ -1,4 +1,4 @@
-from src.executor.node import PaletteBlock
+from _del.executor import PaletteBlock
 
 
 class PaletteTrainer(PaletteBlock):
