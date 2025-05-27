@@ -18,7 +18,7 @@ from src.rm.template import BaseTemplate
 
 class BaseRewardModule(BaseModule):
     # input: List[InputVar] = Field(default=[], description="input vars mapping")
-    output: Type[LLMModuleOutput] | Type[dict] = Field(default=dict, description="output schema")
+    # output: Type[LLMModuleOutput] | Type[dict] = Field(default=dict, description="output schema")
     name: str = Field(default=...)
 
     # @classmethod
@@ -82,6 +82,7 @@ class BaseRewardModule(BaseModule):
 
 
 class StepRewardModule(BaseRewardModule):
+    @abstractmethod
     def _run(self, input: List[ChatMessage], output: Step, step: Step) -> dict:
         ...
 
@@ -93,6 +94,10 @@ class StepRewardModule(BaseRewardModule):
 
 
 class PointRewardModule(BaseRewardModule):
+    @abstractmethod
+    def _run(self, input: List[ChatMessage], output: Step) -> dict:
+        ...
+
     def run(self, sample: DataSample, thread_pool: ThreadPoolExecutor):
         for output in sample.output:
             thread_pool.submit(self._run, input=sample.input, output=output)
@@ -100,6 +105,9 @@ class PointRewardModule(BaseRewardModule):
 
 class ListRewardModule(BaseRewardModule):
     @abstractmethod
+    def _run(self, sample: DataSample):
+        ...
+    
     def run(self, sample: DataSample, thread_pool: ThreadPoolExecutor):
         self._run(sample=sample)
 
