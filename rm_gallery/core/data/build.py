@@ -7,11 +7,11 @@ from pathlib import Path
 import yaml
 from pydantic import Field
 
-from src.data.base import BaseDataModule, DataModuleType
-from src.data.schema import DataSample, BaseDataSet
-from src.data.load import DataLoadModule, create_load_module
-from src.data.process import OperatorFactory, DataProcessModule, create_process_module
-from src.data.ops import register_all_operators
+from rm_gallery.core.data.base import BaseDataModule, DataModuleType
+from rm_gallery.core.data.schema import DataSample, BaseDataSet
+from rm_gallery.core.data.load import DataLoadModule, create_load_module
+from rm_gallery.core.data.process import OperatorFactory, DataProcessModule, create_process_module
+from rm_gallery.core.data.ops import register_all_operators
 # Ensure operators are registered when module is imported
 register_all_operators()
 

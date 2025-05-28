@@ -5,7 +5,7 @@ import importlib
 
 from .base import BaseData
 from .data_processor import DataJuicerOperator
-from src.base_module import BaseModule
+from rm_gallery.core.base_module import BaseModule
 
 T = TypeVar('T', bound=BaseData)
 

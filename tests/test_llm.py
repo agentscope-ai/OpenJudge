@@ -1,10 +1,10 @@
 
 
-from src.model.base import LLMllm
-from src.rm.base import LLMRewardModule
+from rm_gallery.core.model.base import LLMllm
+from rm_gallery.core.rm.base import LLMRewardModule
 from gallery.rm.code.rm import LLMRM
-from src.rm.schema import BestOfN, Claims, ViolatedPrinciples
-from src.rm.template import EvaluationTemplate, TaskTemplate
+from rm_gallery.core.rm.schema import BestOfN, Claims, ViolatedPrinciples
+from rm_gallery.core.rm.template import EvaluationTemplate, TaskTemplate
 
 llm = LLMllm(model="qwen-max")
 

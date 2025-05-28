@@ -1,4 +1,4 @@
-from src.base_module import BaseModule
+from rm_gallery.core.base_module import BaseModule
 from _del.executor.executors.default_executor import DefaultExecutor
 
 

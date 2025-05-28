@@ -2,9 +2,9 @@ import re
 from typing import Dict, List, Self, Type
 from pydantic import Field
 from _del._context import RMContext
-from src.rm.module import LLMRewardModule, RuleRewardModule
-from src.rm.schema import LLMLLMModuleOutput, Rule
-from src.rm.template import BaseTemplate
+from rm_gallery.core.rm.module import LLMRewardModule, RuleRewardModule
+from rm_gallery.core.rm.schema import LLMLLMModuleOutput, Rule
+from rm_gallery.core.rm.template import BaseTemplate
 
 
 class TaskTemplate(BaseTemplate):

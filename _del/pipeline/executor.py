@@ -4,11 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from functools import partial
 from typing import Dict, Any, Type, List
-from src.data.base import BaseData
-from src.base_module import BaseModule, RuntimeModule, ModuleLike
+from rm_gallery.core.data.base import BaseData
+from rm_gallery.core.base_module import BaseModule, RuntimeModule, ModuleLike
 from _del.executor.queue import ThreadSafeQueue
 from _del import file
-from src.utils import Marshaller
+from rm_gallery.core.utils import Marshaller
 from _del.marshal.yaml import DEFAULT_MARSHALLER
 
 

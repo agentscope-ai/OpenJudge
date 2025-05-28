@@ -3,8 +3,8 @@ from typing import Dict, Any, List, Union, Optional
 from pydantic import Field
 from abc import abstractmethod
 
-from src.base_module import BaseModule
-from src.data.schema import BaseDataSet, DataSample
+from rm_gallery.core.base_module import BaseModule
+from rm_gallery.core.data.schema import BaseDataSet, DataSample
 
 class BaseData(BaseModel):
     """Base data class, parent class for all specific data types"""

@@ -1,9 +1,9 @@
-from src.data.data_schema import ContentDict, ContextDict, DataSample
-from src.model.base import LLMllm
-from src.rm.base import Var, VarType
+from rm_gallery.core.data.data_schema import ContentDict, ContextDict, DataSample
+from rm_gallery.core.model.base import LLMllm
+from rm_gallery.core.rm.base import Var, VarType
 from gallery.rm.code.rm import DataRM, LLMRM
-from src.rm.schema import BestOfN, ViolatedPrinciples
-from src.rm.template import EvaluationTemplate
+from rm_gallery.core.rm.schema import BestOfN, ViolatedPrinciples
+from rm_gallery.core.rm.template import EvaluationTemplate
 
 llm = LLMllm(model="qwen-max")
 

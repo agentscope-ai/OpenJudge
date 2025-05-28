@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from abc import abstractmethod
 
-from src.base_module import BaseModule
+from rm_gallery.core.base_module import BaseModule
 
 
 class MessageRole(str, Enum):

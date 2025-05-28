@@ -2,8 +2,8 @@
 from typing import Dict, Iterable, List, Self
 from pydantic import BaseModel, Field
 
-from src.data.data_schema import DataSample, InputSample, OutputSample, Step
-from src.rm.schema import LLMModuleOutput
+from rm_gallery.core.data.data_schema import DataSample, InputSample, OutputSample, Step
+from rm_gallery.core.rm.schema import LLMModuleOutput
 
 
 class StepContext(Step):

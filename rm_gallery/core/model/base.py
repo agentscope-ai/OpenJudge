@@ -10,7 +10,7 @@ import time
 
 from openai import OpenAI
 from pydantic import Field, BaseModel, model_validator
-from src.model.message import ChatMessage, ChatResponse, GeneratorChatResponse, MessageRole
+from rm_gallery.core.model.message import ChatMessage, ChatResponse, GeneratorChatResponse, MessageRole
 
 
 def get_from_dict_or_env(

@@ -1,12 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Type
 from pydantic import Field
-from src.data.schema import DataSample, Step
-from src.model.base import LLMClient
-from src.model.message import ChatMessage
-from src.rm.module import BaseRewardModule, LLMModule, ListModule, PointModule
-from src.rm.template import BaseTemplate, ReasoningTemplate
-from src.utils.registry import RewardRegistry
+from rm_gallery.core.data.schema import DataSample, Step
+from rm_gallery.core.model.base import LLMClient
+from rm_gallery.core.model.message import ChatMessage
+from rm_gallery.core.rm.module import BaseRewardModule, LLMModule, ListModule, PointModule
+from rm_gallery.core.rm.template import BaseTemplate, ReasoningTemplate
+from rm_gallery.core.utils.registry import RewardRegistry
 
 
 class ExtractClaimsTemplate(ReasoningTemplate):

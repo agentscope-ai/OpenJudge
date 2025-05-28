@@ -1,5 +1,5 @@
-from src.data.base import BaseData
-from src.evaluation.prompt import BasePrompt
+from rm_gallery.core.data.base import BaseData
+from rm_gallery.core.evaluation.prompt import BasePrompt
 from _del.executor import MultiStrateragyExecutor
 
 

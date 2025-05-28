@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Generator, Literal, Optional, Any, List
+from typing import Generator, Literal, Optional, Any, List, Tuple
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -58,6 +58,35 @@ class ChatMessage(BaseModel):
                 f"{self.__class__.__name__}"
                 f'" and "{other.__class__.__name__}"'
             )
+
+    @staticmethod
+    def convert_from_strings(messages: List[str], system_message: str) -> str:
+        """
+        turn vanilla strings to structure messages for fast debugging
+        """
+        result_messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_message), ]
+
+        toggle_roles = [MessageRole.USER, MessageRole.ASSISTANT]
+        for index, msg in enumerate(messages):
+            result_messages.append(ChatMessage(role=toggle_roles[index%2], content=msg))
+            
+        return result_messages
+
+    @staticmethod
+    def convert_to_strings(messages: List["ChatMessage"]) -> Tuple[List[str], str]:
+        """
+        turn structure messages to vanilla strings for fast debugging
+        """
+        vanilla_messages = []
+        system_message = ""
+
+        for index, msg in enumerate(messages):
+            if msg.role == MessageRole.SYSTEM:
+                system_message += msg.content
+            else:
+                vanilla_messages.append(msg.content)
+
+        return vanilla_messages, system_message
 
 
 class ChatResponse(BaseModel):

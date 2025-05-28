@@ -1,6 +1,6 @@
 from gallery.rm.helpfulness import HelpfulnessReward
-from src.data.schema import ChatMessage, DataOutput, DataSample, MessageRole, Step
-from src.model.base import LLMClient
+from rm_gallery.core.data.schema import ChatMessage, DataOutput, DataSample, MessageRole, Step
+from rm_gallery.core.model.base import LLMClient
 
 
 def test_helpfulness() -> None:

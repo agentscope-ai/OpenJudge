@@ -3,12 +3,8 @@ from typing import Optional, Dict, List, Any, Union, Tuple
 from datetime import datetime
 from enum import Enum
 
-class MessageRole(str, Enum):
-    """Message role"""
-    SYSTEM = "system"
-    USER = "user"
-    ASSISTANT = "assistant"
-    FUNCTION = "function"
+from rm_gallery.core.model.message import ChatMessage
+
     
 class Reward(BaseModel):
     """Reward for the data sample"""
@@ -43,58 +39,18 @@ class Reward(BaseModel):
         if len(self.rewards_detail) == 1:
             self.total_score = value
 
-class ChatMessage(BaseModel):
-    """Chat message."""
-
-    role: MessageRole = MessageRole.USER
-    name: Optional[str] = None
-    content: Optional[Any] = ""  # support str for llm or list of dict for multi-modal model
-    additional_kwargs: dict = Field(default_factory=dict)
-    time_created: datetime = Field(default_factory=lambda: datetime.now(),
-                                   description="Timestamp marking the message creation time")
-
-    def __str__(self) -> str:
-        return f"{self.time_created.strftime('%Y-%m-%d %H:%M:%S')} {self.role.value}: {self.content}"
-
-    @staticmethod
-    def convert_from_strings(self, messages: List[str], system_message: str) -> str:
-        """
-        turn vanilla strings to structure messages for fast debugging
-        """
-        result_messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_message), ]
-
-        toggle_roles = [MessageRole.USER, MessageRole.ASSISTANT]
-        for index, msg in enumerate(messages):
-            result_messages.append(ChatMessage(role=toggle_roles[index%2], content=msg))
-            
-        return result_messages
-
-    @staticmethod
-    def convert_to_strings(self, messages: List["ChatMessage"]) -> Tuple[List[str], str]:
-        """
-        turn structure messages to vanilla strings for fast debugging
-        """
-        vanilla_messages = []
-        system_message = ""
-
-        for index, msg in enumerate(messages):
-            if msg.role == MessageRole.SYSTEM:
-                system_message += msg.content
-            else:
-                vanilla_messages.append(msg.content)
-
-        return vanilla_messages, system_message
-    
 
 class Step(ChatMessage):
     """Step in the process"""
     label: Optional[Dict[str, Any]] = Field(default=None,description="label")
     reward: Optional[Reward] = Field(default=None,description="reward")
 
+
 class DataOutput(BaseModel):
     """Data output"""
     answer: Step = Field(default=...)
     steps: Optional[List[Step]] = Field(default=None,description="steps")
+
 
 class DataSample(BaseModel):
     """Data sample"""
@@ -121,6 +77,7 @@ class DataSample(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
 
 class BaseDataSet(BaseModel):
     """Base dataset class for managing collections of data"""

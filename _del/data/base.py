@@ -2,8 +2,8 @@ from typing import Sequence, Dict, Any, Optional, List, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from src.base_module import BaseModule
-from src.data.data_schema import DataSample
+from rm_gallery.core.base_module import BaseModule
+from rm_gallery.core.data.data_schema import DataSample
 
 
 class BaseData(BaseModel):

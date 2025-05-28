@@ -14,8 +14,8 @@ from loguru import logger
 from pydantic import Field
 from datasets import load_dataset
 
-from src.data.base import BaseDataModule, DataModuleType
-from src.data.schema import BaseDataSet, DataSample, ChatMessage, DataOutput, Step
+from rm_gallery.core.data.base import BaseDataModule, DataModuleType
+from rm_gallery.core.data.schema import BaseDataSet, DataSample, ChatMessage, DataOutput, Step
 
 
 @dataclass(frozen=True)

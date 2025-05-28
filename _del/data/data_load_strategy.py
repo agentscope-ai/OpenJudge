@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime
 from loguru import logger
 
-from src.base_module import BaseModule
+from rm_gallery.core.base_module import BaseModule
 from .data_schema import DataSample, ContentDict, Reward, DataInfo, ContextDict
 from .base import BaseData
 

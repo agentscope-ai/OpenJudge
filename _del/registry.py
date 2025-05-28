@@ -1,6 +1,6 @@
 from typing import Dict, Type, Optional, List
 
-from src.rm.module import BaseRewardModule
+from rm_gallery.core.rm.module import BaseRewardModule
 
 
 class GalleryRegistry:

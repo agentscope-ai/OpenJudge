@@ -1,5 +1,5 @@
 from abc import ABC
-from src.data.base import BaseData
+from rm_gallery.core.data.base import BaseData
 
 
 from abc import abstractmethod

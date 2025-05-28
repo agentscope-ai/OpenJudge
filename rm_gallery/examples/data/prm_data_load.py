@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime 
 
 # 使用最新的数据加载接口
-from src.data.build import create_build_module_from_yaml
+from rm_gallery.core.data.build import create_build_module_from_yaml
 
 def convert_to_jsonl_format(data):
     """Convert BaseData object to JSONL format"""

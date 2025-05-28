@@ -8,9 +8,9 @@ from loguru import logger
 import importlib
 from pydantic import Field
 
-from src.data.schema import DataSample, BaseDataSet
-from src.data.base import BaseDataModule, DataModuleType
-from src.base_module import BaseModule
+from rm_gallery.core.data.schema import DataSample, BaseDataSet
+from rm_gallery.core.data.base import BaseDataModule, DataModuleType
+from rm_gallery.core.base_module import BaseModule
 
 T = TypeVar('T', bound=DataSample)
 

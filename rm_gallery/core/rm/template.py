@@ -2,7 +2,7 @@ import re
 from typing import Self
 from pydantic import BaseModel, Field
 
-from src.model.base import BaseLLM
+from rm_gallery.core.model.base import BaseLLM
 
 
 class BaseTemplate(BaseModel):

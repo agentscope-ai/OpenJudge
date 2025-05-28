@@ -6,11 +6,11 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Generic, List, Type, TypeVar
 
 from pydantic import Field
-from src.base_module import BaseModule
-from src.data.base import BaseDataSet
-from src.data.schema import DataSample, ChatMessage, Step
-from src.model.base import LLMClient
-from src.rm.template import BaseTemplate
+from rm_gallery.core.base_module import BaseModule
+from rm_gallery.core.data.base import BaseDataSet
+from rm_gallery.core.data.schema import DataSample, ChatMessage, Step
+from rm_gallery.core.model.base import LLMClient
+from rm_gallery.core.rm.template import BaseTemplate
 
 
 class BaseRewardModule(BaseModule):

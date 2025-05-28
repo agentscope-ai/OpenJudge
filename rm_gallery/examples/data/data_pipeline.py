@@ -1,6 +1,6 @@
-from src.data.load import create_load_module
-from src.data.process import OperatorFactory, create_process_module
-from src.data.build import create_build_module
+from rm_gallery.core.data.load import create_load_module
+from rm_gallery.core.data.process import OperatorFactory, create_process_module
+from rm_gallery.core.data.build import create_build_module
 
 def example_data_pipeline():
     
