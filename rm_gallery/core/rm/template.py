@@ -1,5 +1,6 @@
 import re
 from typing import Self
+
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -10,22 +11,22 @@ class BaseTemplate(BaseModel):
     """
     BaseTemplate serves as the base class for all template classes, providing methods to parse, format, and generate schema based on template structures.
     """
-    
+
     @classmethod
     def parse(cls, text: str) -> Self:
         """
         Parses a string according to a specified template format and returns an instance of this class.
-        
+
         The template format is: <key>value</key>, where the key is the property name and the value is the property content.
-        
+
         Parameters:
         - text (str): The string to parse, which should follow the template format.
-        
+
         Returns:
         - Self: An instance of the class, initialized with the parsed key-value pairs.
         """
         # Define a regular expression pattern to match the template format
-        pattern = r'<([^>]+)>(.*)</\1>'
+        pattern = r"<([^>]+)>(.*)</\1>"
         # Use the findall method of the re module to get all matches
         matches = re.findall(pattern, text, re.DOTALL)
         # Convert the matches into a dictionary
@@ -37,7 +38,7 @@ class BaseTemplate(BaseModel):
     def schema(cls) -> str:
         """
         Generates a schema string based on the class's JSON schema, describing the structure and purpose of the template.
-        
+
         Returns:
         - str: A string describing the schema, containing the description of each property.
         """
@@ -49,15 +50,15 @@ class BaseTemplate(BaseModel):
             schema_str += f"<{key}>{property['description']}</{key}>"
         # Return the schema string
         return schema_str
-    
+
     @classmethod
     def format(cls, **kwargs) -> str:
         """
         Formats the input parameters according to the template format into a string.
-        
+
         Parameters:
         - **kwargs: Arbitrary keyword arguments, representing the properties to be formatted.
-        
+
         Returns:
         - str: A string formatted according to the template, containing the given properties.
         """
@@ -67,10 +68,10 @@ class BaseTemplate(BaseModel):
     def call(cls, llm: BaseLLM, **kwargs) -> Self:
         """
         Calls the format method to generate a string based on the input parameters.
-        
+
         Parameters:
         - **kwargs: Arbitrary keyword arguments, representing the properties to be formatted.
-        
+
         Returns:
         - str: A string formatted according to the template, containing the given properties.
         """
@@ -87,10 +88,11 @@ class ReasoningTemplate(BaseTemplate):
     """
     The ReasoningTemplate class inherits from BaseTemplate and is used to define the template for reasoning analysis.
     It mainly includes a field for reasoning analysis process, which is used to record the analysis and reasoning process during the reasoning.
-    
+
     Attributes:
         reason (str): Represents the analysis process, defaults to an empty string. It is identified by the alias "think".
     """
+
     reason: str = Field(default=..., description="analysis process", alias="think")
 
 
@@ -98,11 +100,19 @@ class PrincipleTemplate(ReasoningTemplate):
     """
     The PrincipleTemplate class inherits from ReasoningTemplate and is used to define the template for principles reasoning.
     """
+
     violation: str = Field(default=..., description="indices of voilated principles")
 
     @classmethod
-    def format(cls, desc: str, principles: str, examples: str, query: str, context: str, answer: str) -> str:
-
+    def format(
+        cls,
+        desc: str,
+        principles: str,
+        examples: str,
+        query: str,
+        context: str,
+        answer: str,
+    ) -> str:
         return f"""# Task Description
 {desc}
 # Principles

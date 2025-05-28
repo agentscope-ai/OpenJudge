@@ -1,8 +1,20 @@
 from typing import Any, Dict, List, Optional
+
 from openai import OpenAI
 from pydantic import Field, model_validator
-from rm_gallery.core.model.message import ChatMessage, ChatResponse, GeneratorChatResponse
-from rm_gallery.core.model.base import BaseLLM, _convert_chat_message_to_openai_message, _convert_openai_response_to_response, _convert_stream_chunk_to_response, get_from_dict_or_env
+
+from rm_gallery.core.model.base import (
+    BaseLLM,
+    _convert_chat_message_to_openai_message,
+    _convert_openai_response_to_response,
+    _convert_stream_chunk_to_response,
+    get_from_dict_or_env,
+)
+from rm_gallery.core.model.message import (
+    ChatMessage,
+    ChatResponse,
+    GeneratorChatResponse,
+)
 
 
 class OpenaiLLM(BaseLLM):
@@ -12,15 +24,19 @@ class OpenaiLLM(BaseLLM):
     openai_api_key: str | None = Field(default=None)
     max_retries: int = Field(default=10)
     stream: bool = Field(default=False)
-    
+
     @model_validator(mode="before")
     @classmethod
     def validate_client(cls, data: Dict):
         """Create an OpenAI client for Blt."""
         # Check for OPENAI_API_KEY
-        openai_api_key = get_from_dict_or_env(data=data, key="OPENAI_API_KEY", default=None)
+        openai_api_key = get_from_dict_or_env(
+            data=data, key="OPENAI_API_KEY", default=None
+        )
         if not openai_api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set. Please set it before using the client.")
+            raise ValueError(
+                "OPENAI_API_KEY environment variable is not set. Please set it before using the client."
+            )
         data["openai_api_key"] = openai_api_key
         data["base_url"] = get_from_dict_or_env(data, key="BASE_URL", default=None)
 
@@ -29,7 +45,7 @@ class OpenaiLLM(BaseLLM):
                 api_key=data["openai_api_key"],
                 base_url=data["base_url"],
                 max_retries=data.get("max_retries", 10),
-                timeout=60.0
+                timeout=60.0,
             )
             return data
         except Exception as e:
@@ -46,18 +62,20 @@ class OpenaiLLM(BaseLLM):
         }
 
         # Remove None values
-        call_params = {k: v for k, v in call_params.items()
-                       if v is not None and (isinstance(v, bool) or v != 0)}
+        call_params = {
+            k: v
+            for k, v in call_params.items()
+            if v is not None and (isinstance(v, bool) or v != 0)
+        }
 
         if self.tools:
-            call_params.update({
-                "tools": self.tools,
-                "tool_choice": self.tool_choice
-            })
+            call_params.update({"tools": self.tools, "tool_choice": self.tool_choice})
 
         return call_params
 
-    def chat(self, messages: List[ChatMessage] | str, **kwargs) -> ChatResponse | GeneratorChatResponse:
+    def chat(
+        self, messages: List[ChatMessage] | str, **kwargs
+    ) -> ChatResponse | GeneratorChatResponse:
         messages = self._convert_messages(messages)
 
         call_params = self.chat_kwargs.copy()
@@ -66,7 +84,7 @@ class OpenaiLLM(BaseLLM):
         try:
             response = self.client.chat.completions.create(
                 messages=_convert_chat_message_to_openai_message(messages),
-                **call_params
+                **call_params,
             )
 
             if self.stream:
@@ -91,12 +109,20 @@ class OpenaiLLM(BaseLLM):
 
             yield _response
 
-    def simple_chat(self, query: str, history: Optional[List[str]] = None, sys_prompt: str = "You are a helpful assistant.", debug: bool = False) -> Any:
+    def simple_chat(
+        self,
+        query: str,
+        history: Optional[List[str]] = None,
+        sys_prompt: str = "You are a helpful assistant.",
+        debug: bool = False,
+    ) -> Any:
         """Simple interface for chat with history support."""
 
         if self.reasoning:
-            return self.simple_chat_reasoning(query=query, history=history, sys_prompt=sys_prompt, debug=debug)
-                
+            return self.simple_chat_reasoning(
+                query=query, history=history, sys_prompt=sys_prompt, debug=debug
+            )
+
         messages = [{"role": "system", "content": sys_prompt}]
 
         if history is None:
@@ -110,13 +136,16 @@ class OpenaiLLM(BaseLLM):
             messages += [{"role": role, "content": h}]
 
         call_params = self.chat_kwargs.copy()
-        response = self.client.chat.completions.create(
-            messages=messages,
-            **call_params
-        )
+        response = self.client.chat.completions.create(messages=messages, **call_params)
         return _convert_openai_response_to_response(response).message.content
 
-    def simple_chat_reasoning(self, query: str, history: Optional[List[str]] = None, sys_prompt: str = "", debug: bool = False) -> Any:
+    def simple_chat_reasoning(
+        self,
+        query: str,
+        history: Optional[List[str]] = None,
+        sys_prompt: str = "",
+        debug: bool = False,
+    ) -> Any:
         """Simple interface for chat with history support."""
         messages = [{"role": "system", "content": sys_prompt}]
 
@@ -134,8 +163,7 @@ class OpenaiLLM(BaseLLM):
         call_params["stream"] = True
 
         completion = self.client.chat.completions.create(
-            messages=messages,
-            **call_params
+            messages=messages, **call_params
         )
 
         ans = ""
@@ -144,7 +172,10 @@ class OpenaiLLM(BaseLLM):
         for chunk in completion:
             if chunk.choices:
                 delta = chunk.choices[0].delta
-                if hasattr(delta, "reasoning_content") and delta.reasoning_content is not None:
+                if (
+                    hasattr(delta, "reasoning_content")
+                    and delta.reasoning_content is not None
+                ):
                     if not enter_think:
                         enter_think = True
                         ans += "<think>"

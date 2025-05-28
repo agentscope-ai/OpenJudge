@@ -1,10 +1,12 @@
-from enum import Enum
-from typing import Dict, Any, List, Union, Optional
-from pydantic import Field
 from abc import abstractmethod
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import Field
 
 from rm_gallery.core.base_module import BaseModule
 from rm_gallery.core.data.schema import BaseDataSet, DataSample
+
 
 class BaseData(BaseModel):
     """Base data class, parent class for all specific data types"""
@@ -64,5 +66,5 @@ class BaseDataSet(BaseModel):
         return {
             "type": self.module_type.value,
             "name": self.name,
-            "config": config_dict
+            "config": config_dict,
         }

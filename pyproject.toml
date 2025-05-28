@@ -1,3 +1,7 @@
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.rm_gallery.core.masonry.api"
+
 [project]
 name = "rm-gallery"
 version = "0.1.0"
@@ -6,13 +10,8 @@ authors = []
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
 dependencies = [
-    "pandas (>=2.2.3,<3.0.0)",
-    "pytest (>=8.3.5,<9.0.0)",
-    "pyyaml (>=6.0.2,<7.0.0)",
-    "loguru (>=0.7.3,<0.8.0)"
+  "pandas (>=2.2.3,<3.0.0)",
+  "pytest (>=8.3.5,<9.0.0)",
+  "pyyaml (>=6.0.2,<7.0.0)",
+  "loguru (>=0.7.3,<0.8.0)"
 ]
-
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.rm_gallery.core.masonry.api"

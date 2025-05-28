@@ -15,4 +15,4 @@ dataset:
     metadata:
         source: "prm_benchmark"
         task_type: "confidence"
-        data_format: "step_wise_process" 
+        data_format: "step_wise_process"

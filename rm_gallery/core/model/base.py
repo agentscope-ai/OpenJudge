@@ -1,13 +1,15 @@
 import asyncio
 import os
 from typing import Any, Dict, List, Optional, Union
-import pickle
-import datetime
-from loguru import logger
 
-from openai import OpenAI
-from pydantic import Field, BaseModel, model_validator
-from rm_gallery.core.model.message import ChatMessage, ChatResponse, GeneratorChatResponse, MessageRole
+from pydantic import BaseModel, Field
+
+from rm_gallery.core.model.message import (
+    ChatMessage,
+    ChatResponse,
+    GeneratorChatResponse,
+    MessageRole,
+)
 from rm_gallery.core.utils.retry import Retry
 
 
@@ -39,13 +41,16 @@ def get_from_dict_or_env(
         )
 
 
-def _convert_chat_message_to_openai_message(messages: List[ChatMessage]) -> List[Dict[str, str]]:
+def _convert_chat_message_to_openai_message(
+    messages: List[ChatMessage],
+) -> List[Dict[str, str]]:
     try:
         return [
             {
                 "role": message.role.name.lower(),
                 "content": message.content or "",
-            } for message in messages
+            }
+            for message in messages
         ]
     except:
         try:
@@ -53,14 +58,16 @@ def _convert_chat_message_to_openai_message(messages: List[ChatMessage]) -> List
                 {
                     "role": str(message.role).lower(),
                     "content": message.content or "",
-                } for message in messages
+                }
+                for message in messages
             ]
         except:
             return [
                 {
                     "role": str(message["role"]).lower(),
                     "content": str(message["content"]) or "",
-                } for message in messages
+                }
+                for message in messages
             ]
 
 
@@ -73,13 +80,15 @@ def _convert_openai_response_to_response(response: Any) -> ChatResponse:
         content=getattr(message, "content", ""),
         name=getattr(message, "name", None),
         tool_calls=getattr(message, "tool_calls", None),
-        additional_kwargs=additional_kwargs
+        additional_kwargs=additional_kwargs,
     )
 
     return ChatResponse(
         message=message,
-        raw=response.model_dump() if hasattr(response, "model_dump") else vars(response),
-        additional_kwargs=additional_kwargs
+        raw=response.model_dump()
+        if hasattr(response, "model_dump")
+        else vars(response),
+        additional_kwargs=additional_kwargs,
     )
 
 
@@ -96,14 +105,14 @@ def _convert_stream_chunk_to_response(chunk: Any) -> Optional[ChatResponse]:
         content=delta.content or "",
         name=getattr(delta, "name", None),
         tool_calls=getattr(delta, "tool_calls", None),
-        additional_kwargs={}
+        additional_kwargs={},
     )
 
     return ChatResponse(
         message=message,
         raw=chunk.model_dump() if hasattr(chunk, "model_dump") else vars(chunk),
         delta=message,
-        additional_kwargs={"token_usage": getattr(chunk, "usage", {})}
+        additional_kwargs={"token_usage": getattr(chunk, "usage", {})},
     )
 
 
@@ -114,8 +123,12 @@ class BaseLLM(BaseModel):
     top_k: Optional[int] = None
     max_tokens: int = Field(default=2048, description="Max tokens to generate for llm.")
     stop: List[str] = Field(default_factory=list, description="List of stop words")
-    tools: Optional[List[Dict[str, Any]]] = Field(default=None, description="List of tools to use")
-    tool_choice: Union[str, Dict] = Field(default="auto", description="tool choice when user passed the tool list")
+    tools: Optional[List[Dict[str, Any]]] = Field(
+        default=None, description="List of tools to use"
+    )
+    tool_choice: Union[str, Dict] = Field(
+        default="auto", description="tool choice when user passed the tool list"
+    )
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     max_retries: int = Field(default=3, description="Maximum number of retry attempts")
@@ -123,7 +136,9 @@ class BaseLLM(BaseModel):
     reasoning: bool = Field(default=False)
 
     @staticmethod
-    def _convert_messages(messages: List[ChatMessage] | ChatMessage | str) -> List[ChatMessage]:
+    def _convert_messages(
+        messages: List[ChatMessage] | ChatMessage | str,
+    ) -> List[ChatMessage]:
         if isinstance(messages, list):
             return messages
         elif isinstance(messages, str):
@@ -132,11 +147,11 @@ class BaseLLM(BaseModel):
             assert messages.role == MessageRole.USER, "Only support user message."
             return [messages]
         else:
-            raise ValueError(
-                f"Invalid message type {messages}. "
-            )
+            raise ValueError(f"Invalid message type {messages}. ")
 
-    def chat(self, messages: List[ChatMessage] | str, **kwargs) -> ChatResponse | GeneratorChatResponse:
+    def chat(
+        self, messages: List[ChatMessage] | str, **kwargs
+    ) -> ChatResponse | GeneratorChatResponse:
         """
 
         Args:
@@ -149,11 +164,15 @@ class BaseLLM(BaseModel):
 
         raise NotImplementedError
 
-    def register_tools(self, tools: List[Dict[str, Any]], tool_choice: Union[str, Dict]):
+    def register_tools(
+        self, tools: List[Dict[str, Any]], tool_choice: Union[str, Dict]
+    ):
         self.tools = tools
         self.tool_choice = tool_choice
 
-    def chat_batched(self, messages_batched: List[List[ChatMessage]] | str, **kwargs) -> List[ChatResponse]:
+    def chat_batched(
+        self, messages_batched: List[List[ChatMessage]] | str, **kwargs
+    ) -> List[ChatResponse]:
         """
 
         Args:
@@ -164,24 +183,30 @@ class BaseLLM(BaseModel):
 
         """
         try:
-            return asyncio.get_event_loop().run_until_complete(self._chat_batched(messages_batched, **kwargs))
+            return asyncio.get_event_loop().run_until_complete(
+                self._chat_batched(messages_batched, **kwargs)
+            )
         except RuntimeError as e:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            return asyncio.get_event_loop().run_until_complete(self._chat_batched(messages_batched, **kwargs))
+            return asyncio.get_event_loop().run_until_complete(
+                self._chat_batched(messages_batched, **kwargs)
+            )
 
-    async def _chat_batched(self, messages_batched: List[List[ChatMessage]] | str, **kwargs) -> List[ChatResponse]:
+    async def _chat_batched(
+        self, messages_batched: List[List[ChatMessage]] | str, **kwargs
+    ) -> List[ChatResponse]:
         """
         Used by `chat_batched`, do not call this method directly.
         """
         responses = await asyncio.gather(
-            *[
-                self.achat(msg, **kwargs) for msg in messages_batched
-            ]
+            *[self.achat(msg, **kwargs) for msg in messages_batched]
         )
         return responses
 
-    async def achat(self, messages: List[ChatMessage] | str, **kwargs) -> ChatResponse | GeneratorChatResponse:
+    async def achat(
+        self, messages: List[ChatMessage] | str, **kwargs
+    ) -> ChatResponse | GeneratorChatResponse:
         """
 
         Args:
@@ -194,10 +219,18 @@ class BaseLLM(BaseModel):
         result = await asyncio.to_thread(self.chat, messages, **kwargs)
         return result
 
-    def simple_chat(self, query: str, history: Optional[List[str]] = None, sys_prompt: str = "", debug: bool = False) -> Any:
+    def simple_chat(
+        self,
+        query: str,
+        history: Optional[List[str]] = None,
+        sys_prompt: str = "",
+        debug: bool = False,
+    ) -> Any:
         if self.reasoning:
-            return self.simple_chat_reasoning(query=query, history=history, sys_prompt=sys_prompt, debug=debug)
-        
+            return self.simple_chat_reasoning(
+                query=query, history=history, sys_prompt=sys_prompt, debug=debug
+            )
+
         messages = [ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt)]
 
         if history is None:
@@ -218,7 +251,13 @@ class BaseLLM(BaseModel):
         with Retry(self.max_retries) as retry:
             return retry(chat)
 
-    def simple_chat_reasoning(self, query: str, history: Optional[List[str]] = None, sys_prompt: str = "", debug: bool = False) -> Any:
+    def simple_chat_reasoning(
+        self,
+        query: str,
+        history: Optional[List[str]] = None,
+        sys_prompt: str = "",
+        debug: bool = False,
+    ) -> Any:
         messages = [ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt)]
 
         if history is None:
@@ -240,7 +279,10 @@ class BaseLLM(BaseModel):
             for chunk in response:
                 if chunk.delta:
                     delta = chunk.delta
-                    if hasattr(delta, "reasoning_content") and delta.reasoning_content is not None:
+                    if (
+                        hasattr(delta, "reasoning_content")
+                        and delta.reasoning_content is not None
+                    ):
                         if not enter_think:
                             enter_think = True
                             ans += "<think>"

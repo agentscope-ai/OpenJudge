@@ -1,7 +1,8 @@
-from enum import Enum
-from typing import Generator, Literal, Optional, Any, List, Tuple
-from pydantic import BaseModel, Field
 from datetime import datetime
+from enum import Enum
+from typing import Any, Generator, List, Literal, Optional, Tuple
+
+from pydantic import BaseModel, Field
 
 
 class MessageRole(str, Enum):
@@ -33,8 +34,10 @@ class ChatMessage(BaseModel):
     reasoning_content: Optional[Any] = Field(default="")
     tool_calls: Optional[List[ChatTool]] = Field(default=None)
     additional_kwargs: dict = Field(default_factory=dict)
-    time_created: datetime = Field(default_factory=datetime.now,
-                                   description="Timestamp marking the message creation time")
+    time_created: datetime = Field(
+        default_factory=datetime.now,
+        description="Timestamp marking the message creation time",
+    )
 
     def __str__(self) -> str:
         return f"{self.time_created.strftime('%Y-%m-%d %H:%M:%S')} {self.role.value}: {self.content}"
@@ -51,7 +54,7 @@ class ChatMessage(BaseModel):
                 name=self.name,
                 content=self.content + (other.content if other.content else ""),
                 tool_calls=other.tool_calls,
-                additional_kwargs=other.additional_kwargs
+                additional_kwargs=other.additional_kwargs,
             )
         else:
             raise TypeError(
@@ -65,12 +68,16 @@ class ChatMessage(BaseModel):
         """
         turn vanilla strings to structure messages for fast debugging
         """
-        result_messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_message), ]
+        result_messages = [
+            ChatMessage(role=MessageRole.SYSTEM, content=system_message),
+        ]
 
         toggle_roles = [MessageRole.USER, MessageRole.ASSISTANT]
         for index, msg in enumerate(messages):
-            result_messages.append(ChatMessage(role=toggle_roles[index%2], content=msg))
-            
+            result_messages.append(
+                ChatMessage(role=toggle_roles[index % 2], content=msg)
+            )
+
         return result_messages
 
     @staticmethod
@@ -95,7 +102,9 @@ class ChatResponse(BaseModel):
     raw: Optional[dict] = None
     delta: Optional[ChatMessage] = None
     error_message: Optional[str] = None
-    additional_kwargs: dict = Field(default_factory=dict)  # other information like token usage or log probs.
+    additional_kwargs: dict = Field(
+        default_factory=dict
+    )  # other information like token usage or log probs.
 
     def __str__(self):
         if self.error_message:
@@ -115,7 +124,7 @@ class ChatResponse(BaseModel):
                 raw=other.raw,
                 delta=other.message,
                 error_message=other.error_message,
-                additional_kwargs=other.additional_kwargs
+                additional_kwargs=other.additional_kwargs,
             )
         else:
             raise TypeError(
