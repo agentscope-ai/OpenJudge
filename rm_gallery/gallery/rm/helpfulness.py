@@ -4,10 +4,10 @@ from pydantic import Field
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.base import BaseLLM
-from rm_gallery.core.rm.module import LLMModule, PointModule
-from rm_gallery.core.rm.schema import DimensionScore, ModuleResult
-from rm_gallery.core.rm.template import BaseTemplate, ReasoningTemplate
-from rm_gallery.core.utils.registry import ModuleRegistry
+from rm_gallery.core.rm.module import LLMReward, PointWiseReward
+from rm_gallery.core.rm.registry import RewardRegistry
+from rm_gallery.core.rm.schema import RewardDimensionWithScore, RewardResult
+from rm_gallery.core.rm.template import BasePromptTemplate, ReasoningTemplate
 
 
 class HelpfulnessTemplate(ReasoningTemplate):
@@ -28,8 +28,8 @@ class HelpfulnessTemplate(ReasoningTemplate):
         """
 
 
-@ModuleRegistry.register("helpfulness")
-class HelpfulnessReward(LLMModule, PointModule):
+@RewardRegistry.register("helpfulness")
+class HelpfulnessReward(LLMReward, PointWiseReward):
     """
     A reward module class for evaluating the helpfulness of an answer using an LLM (Large Language Model).
     """
@@ -40,7 +40,7 @@ class HelpfulnessReward(LLMModule, PointModule):
     )
     weight: float = Field(default=1.0, description="weight")
     llm: BaseLLM = Field(default=..., description="llm client")
-    template: Type[BaseTemplate] | str | dict = Field(default=HelpfulnessTemplate)
+    template: Type[BasePromptTemplate] | str | dict = Field(default=HelpfulnessTemplate)
 
     def _before_call(self, sample: DataSample, **kwargs) -> dict:
         return {
@@ -51,11 +51,11 @@ class HelpfulnessReward(LLMModule, PointModule):
 
     def _after_call(
         self, response: HelpfulnessTemplate, **kwargs
-    ) -> ModuleResult[DimensionScore]:
-        return ModuleResult(
-            module_name=self.name,
-            reward_details=[
-                DimensionScore(
+    ) -> RewardResult[RewardDimensionWithScore]:
+        return RewardResult(
+            name=self.name,
+            details=[
+                RewardDimensionWithScore(
                     name="helpfulness",
                     score=1 if response.helpfulness == "Yes" else 0,
                     reason=response.reason,

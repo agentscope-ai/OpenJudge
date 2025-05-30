@@ -27,7 +27,7 @@ def test_helpfulness() -> None:
 
     helpfulness = HelpfulnessReward(llm=llm, name="helpfulness")
 
-    helpfulness.run(sample)
+    helpfulness.evaluate(sample)
     print(sample)
 
 

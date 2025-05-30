@@ -1,12 +1,12 @@
 from rm_gallery.core.data.schema import ChatMessage, DataOutput, DataSample, Step
 from rm_gallery.core.model.message import MessageRole
 from rm_gallery.core.model.openai_llm import OpenaiLLM
-from rm_gallery.gallery.rm.honesty import FaithfulnessReward
+from rm_gallery.gallery.rm.honesty import HonestyReward
 
 
-def test_faithfulness() -> None:
+def test_honesty() -> None:
     sample = DataSample(
-        unique_id="test_faithfulness",
+        unique_id="test_honesty",
         input=[
             ChatMessage(
                 role=MessageRole.USER,
@@ -24,9 +24,6 @@ def test_faithfulness() -> None:
     )
 
     llm = OpenaiLLM(model="qwen-max")
-    faithfullness = FaithfulnessReward(llm=llm, name="faithfulness")
-    faithfullness.run(sample)
+    faithfullness = HonestyReward(llm=llm, name="honesty")
+    faithfullness.evaluate(sample)
     print(sample)
-
-
-test_faithfulness()

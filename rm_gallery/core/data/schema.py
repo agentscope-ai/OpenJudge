@@ -1,16 +1,18 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Self, Union
 
 from pydantic import BaseModel, Field
 
 from rm_gallery.core.model.message import ChatMessage
-from rm_gallery.core.rm.schema import DimensionScore
+from rm_gallery.core.rm.schema import RewardDimensionWithScore
 
 
 class Reward(BaseModel):
     """Reward for the data sample"""
 
-    details: List[DimensionScore] = Field(default_factory=list, description="details")
+    details: List[RewardDimensionWithScore] = Field(
+        default_factory=list, description="details"
+    )
 
     @property
     def total_score(self) -> float:
@@ -45,13 +47,21 @@ class DataSample(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now, description="createdAt")
     metadata: Optional[Dict] = Field(default=None, description="metadata")
 
-    # update data
-    def update(self, **kwargs):
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-            else:
-                raise ValueError(f"Invalid field: {key}")
+    def update(self, sample: "DataSample") -> Self:
+        self.input[-1].additional_kwargs.update(sample.input[-1].additional_kwargs)
+        for i, output in enumerate(self.output):
+            output.answer.additional_kwargs.update(
+                sample.output[i].answer.additional_kwargs
+            )
+            output.answer.reward.details.extend(sample.output[i].answer.reward.details)
+
+            if output.steps:
+                for j, step in output.steps:
+                    step.additional_kwargs.update(
+                        sample.output[i].steps[j].additional_kwargs
+                    )
+                    step.reward.details.extend(sample.output[i].steps[j].reward.details)
+        return self
 
     class Config:
         arbitrary_types_allowed = True

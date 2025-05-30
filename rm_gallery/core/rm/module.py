@@ -2,21 +2,24 @@
 
 
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Type
+from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
+from typing import List, Type
 
+from loguru import logger
 from pydantic import Field
 
 from rm_gallery.core.base_module import BaseModule
-from rm_gallery.core.data.base import BaseDataSet
 from rm_gallery.core.data.schema import DataOutput, DataSample
 from rm_gallery.core.model.base import BaseLLM
-from rm_gallery.core.rm.schema import DimensionRank, DimensionScore, ModuleResult
-from rm_gallery.core.rm.template import BaseTemplate
-from rm_gallery.core.utils.registry import ModuleRegistry
+from rm_gallery.core.rm.schema import (
+    RewardDimensionWithRank,
+    RewardDimensionWithScore,
+    RewardResult,
+)
+from rm_gallery.core.rm.template import BasePromptTemplate
 
 
-class BaseRewardModule(BaseModule):
+class BaseReward(BaseModule):
     """
     This class is used to define a basic reward module, inheriting from BaseModule.
     """
@@ -24,7 +27,7 @@ class BaseRewardModule(BaseModule):
     name: str = Field(default=..., description="The name of the reward module")
 
     @abstractmethod
-    def _run(self, sample: DataSample, **kwargs) -> ModuleResult:
+    def _evaluate(self, sample: DataSample, **kwargs) -> RewardResult:
         """
         Main processing function, intended to be implemented by subclasses.
         This method accepts arbitrary keyword arguments and its specific behavior is determined by the subclass implementation.
@@ -32,7 +35,7 @@ class BaseRewardModule(BaseModule):
         ...
 
     @abstractmethod
-    def run(
+    def evaluate(
         self,
         sample: DataSample,
         thread_pool: ThreadPoolExecutor | None = None,
@@ -48,35 +51,44 @@ class BaseRewardModule(BaseModule):
         """
         ...
 
-    def run_batch(
+    def evaluate_batch(
         self,
-        dataset: BaseDataSet,
+        samples: List[DataSample],
         thread_pool: ThreadPoolExecutor | None = None,
         **kwargs,
-    ) -> BaseDataSet:
+    ) -> List[DataSample]:
         """
         Execute a batch of samples.
         """
-        samples = []
-        for sample in dataset.get_data_samples():
-            samples.append(self.run(sample=sample, thread_pool=thread_pool))
+        if thread_pool:
+            futures = [
+                thread_pool.submit(self.evaluate, sample, **kwargs)
+                for sample in samples
+            ]
+            wait(futures, return_when=ALL_COMPLETED)
+            samples = [future.result() for future in futures]
+        else:
+            for i, sample in enumerate(samples):
+                samples[i] = self.evaluate(sample=sample, thread_pool=thread_pool)
 
-        return BaseDataSet(datas=samples)
+        return samples
 
 
-class StepModule(BaseRewardModule):
+class StepWiseReward(BaseReward):
     """
-    The StepModule class, derived from BaseModule, is designed to calculate rewards for each step.
+    The StepWiseReward class, derived from BaseModule, is designed to calculate rewards for each step.
     """
 
     @abstractmethod
-    def _run(self, sample: DataSample, **kwargs) -> ModuleResult[DimensionScore]:
+    def _evaluate(
+        self, sample: DataSample, **kwargs
+    ) -> RewardResult[RewardDimensionWithScore]:
         """
-        Abstract method _run, intended to be implemented by subclasses for processing each step's reward calculation.
+        Abstract method _evaluate, intended to be implemented by subclasses for processing each step's reward calculation.
         """
         ...
 
-    def run(
+    def evaluate(
         self,
         sample: DataSample,
         thread_pool: ThreadPoolExecutor | None = None,
@@ -86,31 +98,50 @@ class StepModule(BaseRewardModule):
         Method run processes the reward calculation for each step of the sample's output.
         """
         # TODO parallel
-        for output in sample.output:
+        sample = sample.model_copy(deep=True)
+        futures = []
+        for i, output in enumerate(sample.output):
             assert isinstance(output.steps, list)
-            for step in output.steps:
-                result = self._run(
-                    sample=DataSample(
-                        unique_id=sample.unique_id,
-                        input=sample.input,
-                        output=[DataOutput(answer=output.answer, steps=[step])],
-                    )
+            for j, step in enumerate(output.steps):
+                subsample = DataSample(
+                    unique_id=sample.unique_id,
+                    input=sample.input,
+                    output=[DataOutput(answer=output.answer, steps=[step])],
                 )
-                step.reward.details.extend(result.reward_details)
+
+                if thread_pool:
+                    futures.append(
+                        (i, j, thread_pool.submit(self._evaluate, subsample))
+                    )
+                else:
+                    result = self._evaluate(
+                        sample=subsample,
+                        thread_pool=thread_pool,
+                    )
+                    step.reward.details.extend(result.details)
+                    step.additional_kwargs[self.name] = result.extra_data
+        if thread_pool:
+            wait([future[-1] for future in futures], return_when=ALL_COMPLETED)
+            for i, j, future in futures:
+                result = future.result()
+                step = sample.output[i].steps[j]
+                step.reward.details.extend(result.details)
                 step.additional_kwargs[self.name] = result.extra_data
         return sample
 
 
-class PointModule(BaseRewardModule):
+class PointWiseReward(BaseReward):
     @abstractmethod
-    def _run(self, sample: DataSample, **kwargs) -> ModuleResult[DimensionScore]:
+    def _evaluate(
+        self, sample: DataSample, **kwargs
+    ) -> RewardResult[RewardDimensionWithScore]:
         """
         This method is responsible for processing a list of chat messages and updating the step output based on the processing results.
         It is an internal method, indicated by the leading underscore, suggesting it should not be called directly from outside the class.
         """
         ...
 
-    def run(
+    def evaluate(
         self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None
     ) -> DataSample:
         """
@@ -124,45 +155,67 @@ class PointModule(BaseRewardModule):
         - thread_pool: ThreadPoolExecutor - The thread pool executor used to execute the tasks.
         """
         # TODO parallel
-        for output in sample.output:
-            result = self._run(
-                sample=DataSample(
-                    unique_id=sample.unique_id, input=sample.input, output=[output]
-                )
+        sample = sample.model_copy(deep=True)
+        futures = []
+        for i, output in enumerate(sample.output):
+            subsample = DataSample(
+                unique_id=sample.unique_id, input=sample.input, output=[output]
             )
-            output.answer.reward.details += result.reward_details
-            output.answer.additional_kwargs[self.name] = result.extra_data
+
+            if thread_pool:
+                futures.append(
+                    (i, thread_pool.submit(self._evaluate, sample=subsample))
+                )
+            else:
+                result = self._evaluate(
+                    sample=subsample,
+                    thread_pool=thread_pool,
+                )
+                output.answer.reward.details += result.details
+                output.answer.additional_kwargs[self.name] = result.extra_data
+
+        if thread_pool:
+            wait([future[-1] for future in futures], return_when=ALL_COMPLETED)
+            for i, future in futures:
+                result = future.result()
+                output = sample.output[i]
+                output.answer.reward.details += result.details
+                output.answer.additional_kwargs[self.name] = result.extra_data
+
         return sample
 
 
-class ListModule(BaseRewardModule):
+class ListWiseReward(BaseReward):
     """
     This class is a subclass of BaseModule, designed to process data samples and compute rewards.
-    It is an abstract class that requires subclasses to implement the _run method to specify the specific reward calculation logic.
+    It is an abstract class that requires subclasses to implement the _evaluate method to specify the specific reward calculation logic.
     """
 
     @abstractmethod
-    def _run(self, sample: DataSample, **kwargs) -> ModuleResult[DimensionRank]:
+    def _evaluate(
+        self, sample: DataSample, **kwargs
+    ) -> RewardResult[RewardDimensionWithRank]:
         """
-        Abstract method _run, intended to be overridden by subclasses.
+        Abstract method _evaluate, intended to be overridden by subclasses.
         This method's purpose is to process a given data sample to compute a reward.
 
         """
         ...
 
-    def run(
+    def evaluate(
         self,
         sample: DataSample,
         thread_pool: ThreadPoolExecutor | None = None,
         **kwargs,
     ) -> DataSample:
         """
-        Executes the _run method in a multi-threaded environment.
+        Executes the _evaluate method in a multi-threaded environment.
         This method is intended to be called by external code, which provides a data sample and a thread pool executor.
 
         """
-        result = self._run(sample=sample, thread_pool=thread_pool, **kwargs)
-        for reward in result.reward_details:
+        sample = sample.model_copy(deep=True)
+        result = self._evaluate(sample=sample, thread_pool=thread_pool, **kwargs)
+        for reward in result.details:
             for i, output in enumerate(sample.output):
                 output.answer.reward.details.append(reward[i])
 
@@ -170,14 +223,32 @@ class ListModule(BaseRewardModule):
         return sample
 
 
-class LLMModule(BaseRewardModule):
+class PairWiseReward(ListWiseReward):
+    def evaluate(
+        self,
+        sample: DataSample,
+        thread_pool: ThreadPoolExecutor | None = None,
+        **kwargs,
+    ) -> DataSample:
+        sample = sample.model_copy(deep=True)
+        for i, output_i in enumerate(sample.output):
+            for j, output_j in enumerate(sample.output, start=i + 1):
+                subsample = DataSample(
+                    unique_id=sample.unique_id,
+                    input=sample.input,
+                    output=[output_i, output_j],
+                )
+                result = self._evaluate(subsample, **kwargs)
+
+
+class LLMReward(BaseReward):
     """
     A generic class for LLM-based reward modules, providing a framework for interaction with LLMs and handli
     """
 
     llm: BaseLLM = Field(default=..., description="llm client")
-    template: Type[BaseTemplate] = Field(
-        default=BaseTemplate, description="prompt template"
+    template: Type[BasePromptTemplate] = Field(
+        default=BasePromptTemplate, description="prompt template"
     )
 
     def _before_call(self, **kwargs) -> dict:
@@ -186,21 +257,28 @@ class LLMModule(BaseRewardModule):
         """
         return {}
 
-    def _call(self, **kwargs) -> BaseTemplate:
+    def _call(self, **kwargs) -> BasePromptTemplate:
         """
         Abstract method to be implemented by subclasses for making a call to the LLM using the provided parameters.
         """
-        return self.template.call(llm=self.llm, **kwargs)
 
-    def _after_call(self, response: BaseTemplate, **kwargs) -> ModuleResult:
+        query = self.template.format(**kwargs)
+        logger.info(f"query: {query}")
+        response = self.llm.simple_chat(query=query)
+        logger.info(f"response: {response}")
+        output = self.template.parse(response)
+        logger.info(f"output: {output}")
+        return output
+
+    def _after_call(self, response: BasePromptTemplate, **kwargs) -> RewardResult:
         """
         Abstract method to be implemented by subclasses for processing the response from the LLM and setting the reward.
         """
-        return ModuleResult(
-            module_name=self.name, reward_details=[], extra_data=response.model_dump()
+        return RewardResult(
+            name=self.name, details=[], extra_data=response.model_dump()
         )
 
-    def _run(self, **kwargs) -> ModuleResult:
+    def _evaluate(self, **kwargs) -> RewardResult:
         """
         Method to execute the full cycle of preparing the call, making the call to the LLM, and processing the response.
         """
@@ -213,32 +291,3 @@ class LLMModule(BaseRewardModule):
         # Process the response from the LLM and set the reward.
         result = self._after_call(response=response, **kwargs)
         return result
-
-
-class SequenceModule(LLMModule, BaseRewardModule):
-    dimensions: List[Dict[str, Any] | BaseRewardModule] = Field(
-        default_factory=list, description="dimension"
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for i in range(len(self.dimensions)):
-            if isinstance(self.dimensions[i], dict):
-                if isinstance(self.dimensions[i]["cls"], str):
-                    self.dimensions[i] = ModuleRegistry.get(self.dimensions[i]["cls"])(
-                        llm=self.llm, **self.dimensions[i]["params"]
-                    )
-                elif issubclass(self.dimensions[i]["cls"], BaseRewardModule):
-                    self.dimensions[i] = self.dimensions[i]["cls"](
-                        llm=self.llm, **self.dimensions[i]["params"]
-                    )
-                else:
-                    raise ValueError(f"Invalid dimension: {self.dimensions[i]}")
-
-    def run(
-        self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None
-    ) -> DataSample:
-        for dimension in self.dimensions:
-            dimension.run(sample, thread_pool)
-
-        return sample

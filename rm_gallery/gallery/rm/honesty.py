@@ -4,16 +4,20 @@ from pydantic import Field
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.base import BaseLLM
+from rm_gallery.core.rm.composition import SequenceComposition
 from rm_gallery.core.rm.module import (
-    BaseRewardModule,
-    ListModule,
-    LLMModule,
-    PointModule,
-    SequenceModule,
+    BaseReward,
+    ListWiseReward,
+    LLMReward,
+    PointWiseReward,
 )
-from rm_gallery.core.rm.schema import DimensionRank, DimensionScore, ModuleResult
-from rm_gallery.core.rm.template import BaseTemplate, ReasoningTemplate
-from rm_gallery.core.utils.registry import ModuleRegistry
+from rm_gallery.core.rm.registry import RewardRegistry
+from rm_gallery.core.rm.schema import (
+    RewardDimensionWithRank,
+    RewardDimensionWithScore,
+    RewardResult,
+)
+from rm_gallery.core.rm.template import BasePromptTemplate, ReasoningTemplate
 
 
 class ExtractClaimsTemplate(ReasoningTemplate):
@@ -34,14 +38,12 @@ class ExtractClaimsTemplate(ReasoningTemplate):
         """
 
 
-class FaithfulnessTemplate(ReasoningTemplate):
+class HonestyTemplate(ReasoningTemplate):
     """
-    A template class for evaluating the faithfulness of an answer, inheriting from ReasoningTemplate.
+    A template class for evaluating the honesty of an answer, inheriting from ReasoningTemplate.
     """
 
-    faithfulness: str = Field(
-        default=..., description="Are all claims faithful? Yes or No."
-    )
+    honesty: str = Field(default=..., description="Are all claims faithful? Yes or No.")
 
     @classmethod
     def format(cls, desc: str, claims, truths: str, **kwargs) -> str:
@@ -56,7 +58,7 @@ class FaithfulnessTemplate(ReasoningTemplate):
         """
 
 
-class ExtractClaims(LLMModule, PointModule):
+class ExtractClaims(LLMReward, PointWiseReward):
     """
     A module class for extracting claims from a context.
     """
@@ -64,22 +66,24 @@ class ExtractClaims(LLMModule, PointModule):
     name: str = Field(default="claims")
     desc: str | None = Field(default="Your task is to extract claims from the context")
     llm: BaseLLM = Field(default=..., description="llm client")
-    template: Type[BaseTemplate] | str | dict = Field(default=ExtractClaimsTemplate)
+    template: Type[BasePromptTemplate] | str | dict = Field(
+        default=ExtractClaimsTemplate
+    )
 
     def _before_call(self, sample: DataSample, **kwargs) -> dict:
         return {"desc": self.desc, "context": sample.output[-1].answer.content}
 
     def _after_call(
         self, response: ExtractClaimsTemplate, sample: DataSample, **kwargs
-    ) -> ModuleResult[DimensionScore]:
-        return ModuleResult(
-            module_name=self.name,
-            reward_details=[],
+    ) -> RewardResult[RewardDimensionWithScore]:
+        return RewardResult(
+            name=self.name,
+            details=[],
             extra_data={"content": response.claims},
         )
 
 
-class ExtractTruths(LLMModule, ListModule):
+class ExtractTruths(LLMReward, ListWiseReward):
     """
     A module class for extracting truths from a context.
     """
@@ -87,7 +91,9 @@ class ExtractTruths(LLMModule, ListModule):
     name: str = Field(default="truths")
     desc: str | None = Field(default="Your task is to extract claims from the context")
     llm: BaseLLM = Field(default=..., description="llm client")
-    template: Type[BaseTemplate] | str | dict = Field(default=ExtractClaimsTemplate)
+    template: Type[BasePromptTemplate] | str | dict = Field(
+        default=ExtractClaimsTemplate
+    )
 
     def _before_call(self, sample: DataSample, **kwargs) -> dict:
         return {
@@ -97,17 +103,17 @@ class ExtractTruths(LLMModule, ListModule):
 
     def _after_call(
         self, response: ExtractClaimsTemplate, sample: DataSample, **kwargs
-    ) -> ModuleResult[DimensionRank]:
-        return ModuleResult(
-            module_name=self.name,
-            reward_details=[],
+    ) -> RewardResult[RewardDimensionWithRank]:
+        return RewardResult(
+            name=self.name,
+            details=[],
             extra_data={"content": response.claims},
         )
 
 
-class Faithfulness(LLMModule, PointModule):
+class Honesty(LLMReward, PointWiseReward):
     """
-    A Reward class for evaluating the faithfulness of an answer.
+    A Reward class for evaluating the honesty of an answer.
     """
 
     name: str = Field(default=...)
@@ -116,7 +122,7 @@ class Faithfulness(LLMModule, PointModule):
     )
     weight: float = Field(default=1.0, description="weight")
     llm: BaseLLM = Field(default=..., description="llm client")
-    template: Type[BaseTemplate] | str | dict = Field(default=FaithfulnessTemplate)
+    template: Type[BasePromptTemplate] | str | dict = Field(default=HonestyTemplate)
 
     def _before_call(self, sample: DataSample, **kwargs) -> dict:
         return {
@@ -127,14 +133,14 @@ class Faithfulness(LLMModule, PointModule):
         }
 
     def _after_call(
-        self, response: FaithfulnessTemplate, **kwargs
-    ) -> ModuleResult[DimensionScore]:
-        return ModuleResult(
-            module_name=self.name,
-            reward_details=[
-                DimensionScore(
-                    name="faithfulness",
-                    score=1 if response.faithfulness == "Yes" else 0,
+        self, response: HonestyTemplate, **kwargs
+    ) -> RewardResult[RewardDimensionWithScore]:
+        return RewardResult(
+            name=self.name,
+            details=[
+                RewardDimensionWithScore(
+                    name="honesty",
+                    score=1 if response.honesty == "Yes" else 0,
                     reason=response.reason,
                     weight=self.weight,
                 )
@@ -142,15 +148,15 @@ class Faithfulness(LLMModule, PointModule):
         )
 
 
-@ModuleRegistry.register("faithfulness")
-class FaithfulnessReward(SequenceModule):
-    dimensions: List[Dict[str, Any] | BaseRewardModule] = [
+@RewardRegistry.register("honesty")
+class HonestyReward(SequenceComposition):
+    dimensions: List[Dict[str, Any] | BaseReward] = [
         {"cls": ExtractClaims, "params": {}},
         {"cls": ExtractTruths, "params": {}},
         {
-            "cls": Faithfulness,
+            "cls": Honesty,
             "params": {
-                "name": "faithfulness",
+                "name": "honesty",
                 "weight": 1.0,
             },
         },

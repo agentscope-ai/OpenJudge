@@ -1,15 +1,12 @@
 import re
-from typing import Self
+from typing import List, Self
 
-from loguru import logger
 from pydantic import BaseModel, Field
 
-from rm_gallery.core.model.base import BaseLLM
 
-
-class BaseTemplate(BaseModel):
+class BasePromptTemplate(BaseModel):
     """
-    BaseTemplate serves as the base class for all template classes, providing methods to parse, format, and generate schema based on template structures.
+    BasePromptTemplate serves as the base class for all template classes, providing methods to parse, format, and generate schema based on template structures.
     """
 
     @classmethod
@@ -64,29 +61,10 @@ class BaseTemplate(BaseModel):
         """
         ...
 
-    @classmethod
-    def call(cls, llm: BaseLLM, **kwargs) -> Self:
-        """
-        Calls the format method to generate a string based on the input parameters.
 
-        Parameters:
-        - **kwargs: Arbitrary keyword arguments, representing the properties to be formatted.
-
-        Returns:
-        - str: A string formatted according to the template, containing the given properties.
-        """
-        query = cls.format(**kwargs)
-        logger.info(f"query: {query}")
-        response = llm.simple_chat(query=query)
-        logger.info(f"response: {response}")
-        output = cls.parse(response)
-        logger.info(f"output: {output}")
-        return output
-
-
-class ReasoningTemplate(BaseTemplate):
+class ReasoningTemplate(BasePromptTemplate):
     """
-    The ReasoningTemplate class inherits from BaseTemplate and is used to define the template for reasoning analysis.
+    The ReasoningTemplate class inherits from BasePromptTemplate and is used to define the template for reasoning analysis.
     It mainly includes a field for reasoning analysis process, which is used to record the analysis and reasoning process during the reasoning.
 
     Attributes:
@@ -107,16 +85,19 @@ class PrincipleTemplate(ReasoningTemplate):
     def format(
         cls,
         desc: str,
-        principles: str,
+        principles: List[str],
         examples: str,
         query: str,
         context: str,
         answer: str,
     ) -> str:
+        principles_str = ""
+        for i, principle in enumerate(principles):
+            principles_str += f"{i + 1}. {principle}\n"
         return f"""# Task Description
 {desc}
 # Principles
-{principles}
+{principles_str}
 # Examples
 {examples}
 # Query
