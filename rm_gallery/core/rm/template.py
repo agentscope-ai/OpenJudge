@@ -109,3 +109,35 @@ class PrincipleTemplate(ReasoningTemplate):
 # Output Format
 {cls.schema()}
 """
+
+
+class PrinciplePairwiseTemplate(ReasoningTemplate):
+    better_answer: str = Field(
+        default=..., description="which answer is better: A or B"
+    )
+
+    @classmethod
+    def format(
+        cls,
+        desc: str,
+        principles: str,
+        examples: str,
+        query: str,
+        answer_a: str,
+        answer_b: str,
+    ) -> str:
+        return f"""# Task Description
+{desc}
+# Principles
+{principles}
+# Examples
+{examples}
+# Query
+{query}
+# AnswerA
+{answer_a}
+# AnswerB
+{answer_b}
+# Output Format
+{cls.schema()}
+"""

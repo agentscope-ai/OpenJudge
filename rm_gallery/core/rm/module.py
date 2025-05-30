@@ -16,7 +16,7 @@ from rm_gallery.core.rm.schema import (
     RewardDimensionWithScore,
     RewardResult,
 )
-from rm_gallery.core.rm.template import BasePromptTemplate
+from rm_gallery.core.rm.template import BasePromptTemplate, PrinciplePairwiseTemplate
 
 
 class BaseReward(BaseModule):
@@ -265,7 +265,6 @@ class LLMReward(BaseReward):
         """
         Abstract method to be implemented by subclasses for making a call to the LLM using the provided parameters.
         """
-
         query = self.template.format(**kwargs)
         logger.info(f"query: {query}")
         response = self.llm.simple_chat(query=query)
@@ -295,3 +294,49 @@ class LLMReward(BaseReward):
         # Process the response from the LLM and set the reward.
         result = self._after_call(response=response, **kwargs)
         return result
+
+
+class PrinciplePairwiseReward(LLMReward, ListWiseReward):
+    principles: List[str] = Field(default=[], description="principles")
+    examples: List[str] = Field(default=[], description="examples")
+    template: Type[PrinciplePairwiseTemplate] = Field(
+        default=PrinciplePairwiseTemplate, description="harmfulnessTemplate"
+    )
+    task_desc: str = Field(default="", description="task desc")
+
+    @abstractmethod
+    def _get_principle_and_desc(self):
+        """
+        generate principles and task desc
+        """
+        ...
+
+    def _before_call(self, sample: DataSample, **kwargs) -> dict:
+        self._get_principle_and_desc()
+        return {
+            "desc": self.task_desc,
+            "principles": "\n".join(self.principles),
+            "examples": "\n".join(self.examples),
+            "query": sample.input[-1].content,
+            "answer_a": sample.output[0].answer.content,
+            "answer_b": sample.output[1].answer.content,
+        }
+
+    def _after_call(
+        self, response: PrinciplePairwiseTemplate, **kwargs
+    ) -> RewardResult:
+        # calc score for every output,the length of scores must equal to num of output
+        if response.better_answer == "A":
+            scores = [1, 0]
+        elif response.better_answer:
+            scores = [0, 1]
+        else:
+            scores = [0, 0]
+        return RewardResult(
+            name=self.name,
+            details=[
+                RewardDimensionWithRank(
+                    name=self.name, weight=1, reason=response.reason, rank=scores
+                )
+            ],
+        )
