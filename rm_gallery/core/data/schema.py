@@ -10,6 +10,7 @@ from rm_gallery.core.rm.schema import RewardDimensionWithScore
 class Reward(BaseModel):
     """Reward for the data sample"""
 
+    score: float = Field(default=0.0, description="score")
     details: List[RewardDimensionWithScore] = Field(
         default_factory=list, description="details"
     )
@@ -25,7 +26,7 @@ class Reward(BaseModel):
 class Step(ChatMessage):
     """Step in the process"""
 
-    label: Optional[Dict[str, Any]] = Field(default=None, description="label")
+    label: Optional[Dict[str, Any]] = Field(default={}, description="label")
     reward: Reward = Field(default=Reward(), description="reward")
 
 

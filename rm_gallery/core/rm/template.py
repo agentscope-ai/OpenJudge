@@ -1,5 +1,5 @@
 import re
-from typing import List, Self
+from typing import Dict, List, Self
 
 from pydantic import BaseModel, Field
 
@@ -8,6 +8,16 @@ class BasePromptTemplate(BaseModel):
     """
     BasePromptTemplate serves as the base class for all template classes, providing methods to parse, format, and generate schema based on template structures.
     """
+
+    @classmethod
+    def _parse(cls, text: str) -> Dict[str, str]:
+        # Define a regular expression pattern to match the template format
+        pattern = r"<([^>]+)>(.*)</\1>"
+        # Use the findall method of the re module to get all matches
+        matches = re.findall(pattern, text, re.DOTALL)
+        # Convert the matches into a dictionary
+        contents = {match[0]: match[1] for match in matches}
+        return contents
 
     @classmethod
     def parse(cls, text: str) -> Self:
@@ -22,12 +32,7 @@ class BasePromptTemplate(BaseModel):
         Returns:
         - Self: An instance of the class, initialized with the parsed key-value pairs.
         """
-        # Define a regular expression pattern to match the template format
-        pattern = r"<([^>]+)>(.*)</\1>"
-        # Use the findall method of the re module to get all matches
-        matches = re.findall(pattern, text, re.DOTALL)
-        # Convert the matches into a dictionary
-        contents = {match[0]: match[1] for match in matches}
+        contents = cls._parse(text)
         # Use the dictionary to initialize an instance of the class
         return cls(**contents)
 
@@ -44,7 +49,7 @@ class BasePromptTemplate(BaseModel):
         # Iterate through the properties in the JSON schema
         for key, property in cls.model_json_schema(by_alias=True)["properties"].items():
             # Add the property description to the schema string in the specified format
-            schema_str += f"<{key}>{property['description']}</{key}>"
+            schema_str += f"<{key}>{property['description']}</{key}>\n"
         # Return the schema string
         return schema_str
 

@@ -74,7 +74,7 @@ class BaseReward(BaseModule):
         return samples
 
 
-class StepWiseReward(BaseReward):
+class BaseStepWiseReward(BaseReward):
     """
     The StepWiseReward class, derived from BaseModule, is designed to calculate rewards for each step.
     """
@@ -97,7 +97,6 @@ class StepWiseReward(BaseReward):
         """
         Method evaluate processes the reward calculation for each step of the sample's output.
         """
-        # TODO parallel
         sample = sample.model_copy(deep=True)
         futures = []
         for i, output in enumerate(sample.output):
@@ -111,7 +110,15 @@ class StepWiseReward(BaseReward):
 
                 if thread_pool:
                     futures.append(
-                        (i, j, thread_pool.submit(self._evaluate, subsample))
+                        (
+                            i,
+                            j,
+                            thread_pool.submit(
+                                self._evaluate,
+                                sample=subsample,
+                                thread_pool=thread_pool,
+                            ),
+                        )
                     )
                 else:
                     result = self._evaluate(
@@ -130,7 +137,7 @@ class StepWiseReward(BaseReward):
         return sample
 
 
-class PointWiseReward(BaseReward):
+class BasePointWiseReward(BaseReward):
     @abstractmethod
     def _evaluate(
         self, sample: DataSample, **kwargs
@@ -154,7 +161,6 @@ class PointWiseReward(BaseReward):
         - sample: DataSample - The data sample to be processed, containing input and a list of outputs.
         - thread_pool: ThreadPoolExecutor - The thread pool executor used to execute the tasks.
         """
-        # TODO parallel
         sample = sample.model_copy(deep=True)
         futures = []
         for i, output in enumerate(sample.output):
@@ -164,7 +170,12 @@ class PointWiseReward(BaseReward):
 
             if thread_pool:
                 futures.append(
-                    (i, thread_pool.submit(self._evaluate, sample=subsample))
+                    (
+                        i,
+                        thread_pool.submit(
+                            self._evaluate, sample=subsample, thread_pool=thread_pool
+                        ),
+                    )
                 )
             else:
                 result = self._evaluate(
@@ -185,7 +196,7 @@ class PointWiseReward(BaseReward):
         return sample
 
 
-class ListWiseReward(BaseReward):
+class BaseListWiseReward(BaseReward):
     """
     This class is a subclass of BaseModule, designed to process data samples and compute rewards.
     It is an abstract class that requires subclasses to implement the _evaluate method to specify the specific reward calculation logic.
@@ -223,7 +234,7 @@ class ListWiseReward(BaseReward):
         return sample
 
 
-class PairWiseReward(ListWiseReward):
+class BasePairWiseReward(BaseListWiseReward):
     def evaluate(
         self,
         sample: DataSample,
@@ -238,14 +249,16 @@ class PairWiseReward(ListWiseReward):
                     input=sample.input,
                     output=[output_i, output_j],
                 )
-                result = self._evaluate(subsample, **kwargs)
+                result = self._evaluate(
+                    sample=subsample, thread_pool=thread_pool, **kwargs
+                )
                 for reward in result.details:
                     output_i.answer.reward.details.append(reward[0])
                     output_j.answer.reward.details.append(reward[1])
         return sample
 
 
-class LLMReward(BaseReward):
+class BaseLLMReward(BaseReward):
     """
     A generic class for LLM-based reward modules, providing a framework for interaction with LLMs and handli
     """
@@ -285,18 +298,25 @@ class LLMReward(BaseReward):
         """
         Method to execute the full cycle of preparing the call, making the call to the LLM, and processing the response.
         """
-        # Prepare parameters before making the call to the LLM.
-        params = self._before_call(**kwargs)
 
-        # Make the call to the LLM using the prepared parameters.
-        response = self._call(**params)
+        try:
+            # Prepare parameters before making the call to the LLM.
+            params = self._before_call(**kwargs)
 
-        # Process the response from the LLM and set the reward.
-        result = self._after_call(response=response, **kwargs)
+            # Make the call to the LLM using the prepared parameters.
+            response = self._call(**params)
+
+            # Process the response from the LLM and set the reward.
+            result = self._after_call(response=response, **kwargs)
+        except Exception as e:
+            logger.error(f"API call failed: {str(e)}")
+            result = RewardResult(
+                name=self.name, details=[], extra_data={"error": str(e)}
+            )
         return result
 
 
-class PrinciplePairwiseReward(LLMReward, ListWiseReward):
+class PrinciplePairwiseReward(BaseLLMReward, BaseListWiseReward):
     principles: List[str] = Field(default=[], description="principles")
     examples: List[str] = Field(default=[], description="examples")
     template: Type[PrinciplePairwiseTemplate] = Field(

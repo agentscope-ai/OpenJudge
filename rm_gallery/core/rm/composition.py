@@ -4,21 +4,23 @@ from typing import Any, Dict, List
 
 from pydantic import Field
 
-from rm_gallery.core.data.schema import DataSample
+from rm_gallery.core.data.schema import DataSample, Reward
 from rm_gallery.core.rm.module import BaseReward
 from rm_gallery.core.rm.registry import RewardRegistry
 
 
-class BaseComposition(BaseReward):
+class BaseCompositionReward(BaseReward):
     params: Dict[str, Any] = Field(
         default={}, description="general parameters like llm"
     )
 
 
-class SequenceComposition(BaseComposition):
+class SimpleCompositionReward(BaseCompositionReward):
+    weights: Dict[str, float] = Field(default={}, description="weight for each reward")
     reward_modules: List[Dict[str, Any] | BaseReward] = Field(
         default_factory=list, description="reward modules"
     )
+    is_parallel: bool = Field(default=False, description="parallel or not")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,24 +43,40 @@ class SequenceComposition(BaseComposition):
     def evaluate(
         self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None
     ) -> DataSample:
-        for dimension in self.reward_modules:
-            sample = dimension.evaluate(sample, thread_pool)
+        # parallel evaluation
+        if self.is_parallel:
+            sample = deepcopy(sample)
+            futures = []
+            for dimension in self.reward_modules:
+                futures.append(
+                    thread_pool.submit(dimension.evaluate, sample, thread_pool)
+                )
 
-        return sample
+            wait(futures, return_when=ALL_COMPLETED)
+            samples = [future.result() for future in futures]
 
+            for s in samples:
+                sample.update(s)
+            return sample
+        else:
+            for dimension in self.reward_modules:
+                sample = dimension.evaluate(sample, thread_pool)
 
-class ParallelComposition(SequenceComposition):
-    def evaluate(
-        self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None
-    ) -> DataSample:
-        sample = deepcopy(sample)
-        futures = []
-        for dimension in self.reward_modules:
-            futures.append(thread_pool.submit(dimension.evaluate, sample, thread_pool))
+        # weight reward
+        def weight(reward: Reward):
+            w_sum = 0
+            d_sum = 0
+            for d in reward.details:
+                w = self.weights.get(d.name, 1.0)
+                w_sum += w
+                d_sum += w * d.score
+            if w_sum != 0:
+                reward.score = d_sum / w_sum
 
-        wait(futures, return_when=ALL_COMPLETED)
-        samples = [future.result() for future in futures]
+        for output in sample.output:
+            weight(output.answer.reward)
+            if output.steps:
+                for step in output.steps:
+                    weight(step.reward)
 
-        for s in samples:
-            sample.update(s)
         return sample
