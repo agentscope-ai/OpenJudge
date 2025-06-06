@@ -1,9 +1,9 @@
 dataset:
-    name: "helpsteer2"
+    name: "rewardbench-2"
     configs:
         type: local # required, support remote, local
-        source: helpsteer2 # required, local support rewardbench, chatmessage, prmbench
-        path: ./data/HelpSteer2/train.jsonl # required, must be local path or url
+        source: rewardbench-2 # required, local support rewardbench, chatmessage, prmbench
+        path: /Users/xielipeng/RM-Gallery/data/reward-bench-2/data/test-00000-of-00001.parquet # required, must be local path or url
         #limit: 2000 # optional, random sample dataset size
     # processors:
     #     - type: filter
@@ -27,6 +27,6 @@ dataset:
     #         train_ratio: 0.7
     #         test_ratio: 0.3
     metadata:
-        source: "rewardbench"
+        source: "rewardbench-2"
 
 
