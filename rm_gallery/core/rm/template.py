@@ -9,6 +9,8 @@ class BasePromptTemplate(BaseModel):
     BasePromptTemplate serves as the base class for all template classes, providing methods to parse, format, and generate schema based on template structures.
     """
 
+    reason: str = Field(default=..., description="your reasoning trace", alias="think")
+
     @classmethod
     def _parse(cls, text: str) -> Dict[str, str]:
         # Define a regular expression pattern to match the template format
@@ -16,7 +18,7 @@ class BasePromptTemplate(BaseModel):
         # Use the findall method of the re module to get all matches
         matches = re.findall(pattern, text, re.DOTALL)
         # Convert the matches into a dictionary
-        contents = {match[0]: match[1] for match in matches}
+        contents = {match[0]: match[1].strip() for match in matches}
         return contents
 
     @classmethod
@@ -37,7 +39,7 @@ class BasePromptTemplate(BaseModel):
         return cls(**contents)
 
     @classmethod
-    def schema(cls) -> str:
+    def schema(cls, enable_thinking: bool = False, **kwargs) -> str:
         """
         Generates a schema string based on the class's JSON schema, describing the structure and purpose of the template.
 
@@ -45,16 +47,17 @@ class BasePromptTemplate(BaseModel):
         - str: A string describing the schema, containing the description of each property.
         """
         # Initialize an empty string to store the schema
-        schema_str = ""
+        schema_str = "Note: Ensure all outputs are placed within the tags like <tag> </tag> as required!!!\n"
         # Iterate through the properties in the JSON schema
         for key, property in cls.model_json_schema(by_alias=True)["properties"].items():
             # Add the property description to the schema string in the specified format
-            schema_str += f"<{key}>{property['description']}</{key}>\n"
+            if key != "think" or not enable_thinking:
+                schema_str += f"<{key}>\n{property['description']}\n</{key}>\n"
         # Return the schema string
         return schema_str
 
     @classmethod
-    def format(cls, **kwargs) -> str:
+    def format(cls, enable_thinking: bool = False, **kwargs) -> str:
         """
         Formats the input parameters according to the template format into a string.
 
@@ -67,24 +70,20 @@ class BasePromptTemplate(BaseModel):
         ...
 
 
-class ReasoningTemplate(BasePromptTemplate):
+class PrinciplePointWiseTemplate(BasePromptTemplate):
     """
-    The ReasoningTemplate class inherits from BasePromptTemplate and is used to define the template for reasoning analysis.
-    It mainly includes a field for reasoning analysis process, which is used to record the analysis and reasoning process during the reasoning.
-
-    Attributes:
-        reason (str): Represents the analysis process, defaults to an empty string. It is identified by the alias "think".
+    The PrincipleTemplate class inherits from BasePromptTemplate and is used to define the template for principles reasoning.
     """
 
-    reason: str = Field(default=..., description="analysis process", alias="think")
+    violation: List[str] = Field(
+        default=..., description="a list of voilated principles"
+    )
 
-
-class PrincipleTemplate(ReasoningTemplate):
-    """
-    The PrincipleTemplate class inherits from ReasoningTemplate and is used to define the template for principles reasoning.
-    """
-
-    violation: str = Field(default=..., description="indices of voilated principles")
+    @classmethod
+    def parse(cls, text: str):
+        contents = cls._parse(text)
+        contents["violation"] = eval(contents["violation"])
+        return cls(**contents)
 
     @classmethod
     def format(
@@ -95,6 +94,7 @@ class PrincipleTemplate(ReasoningTemplate):
         query: str,
         context: str,
         answer: str,
+        **kwargs,
     ) -> str:
         principles_str = ""
         for i, principle in enumerate(principles):
@@ -111,15 +111,22 @@ class PrincipleTemplate(ReasoningTemplate):
 {context}
 # Answer
 {answer}
-# Output Format
-{cls.schema()}
+# Output Requirement
+{cls.schema(**kwargs)}
 """
 
 
-class PrinciplePairwiseTemplate(ReasoningTemplate):
-    better_answer: str = Field(
-        default=..., description="which answer is better: A or B"
+class PrincipleListWiseTemplate(BasePromptTemplate):
+    best: int = Field(
+        default=...,
+        description="which answer is the best? just give the number here!!!",
     )
+
+    @classmethod
+    def parse(cls, text: str):
+        contents = cls._parse(text)
+        contents["best"] = int(contents["best"])
+        return cls(**contents)
 
     @classmethod
     def format(
@@ -128,9 +135,13 @@ class PrinciplePairwiseTemplate(ReasoningTemplate):
         principles: str,
         examples: str,
         query: str,
-        answer_a: str,
-        answer_b: str,
+        answers: List[str],
+        **kwargs,
     ) -> str:
+        answer_str = ""
+        for i, answer in enumerate(answers):
+            answer_str += f"# Answer {i + 1}\n{answer}\n"
+
         return f"""# Task Description
 {desc}
 # Principles
@@ -139,10 +150,8 @@ class PrinciplePairwiseTemplate(ReasoningTemplate):
 {examples}
 # Query
 {query}
-# AnswerA
-{answer_a}
-# AnswerB
-{answer_b}
-# Output Format
-{cls.schema()}
+
+{answer_str}
+# Output Requirement
+{cls.schema(**kwargs)}
 """

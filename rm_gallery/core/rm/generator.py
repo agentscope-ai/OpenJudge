@@ -10,20 +10,18 @@ from pydantic import BaseModel, Field
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.base import BaseLLM
-from rm_gallery.core.rm.template import ReasoningTemplate
+from rm_gallery.core.rm.template import BasePromptTemplate
 
 
-class BaseGeneratorTemplate(ReasoningTemplate):
-    reason: str = Field(default=..., description="your reasoning trace", alias="think")
+class BaseGeneratorTemplate(BasePromptTemplate):
     principles: Dict[str, str] = Field(
         default=...,
         description="""```json
-    {
-        "{phrase}": "{description}"
-    }
-```
-NOTE: Each phrase and description should not exceed 5 and 10 words respectively. Ensure the output should be in pure JSON format.
-""",
+{
+    "{phrase}": "{description}",
+    ...
+}
+```""",
     )
 
     @classmethod
@@ -50,41 +48,47 @@ NOTE: Each phrase and description should not exceed 5 and 10 words respectively.
 class PrincipleGenerateTempalte(BaseGeneratorTemplate):
     @classmethod
     def format(
-        cls, instruction: str, completion_a: str, completion_b: str, preference: str
+        cls,
+        desc: str,
+        instruction: str,
+        completions: List[str],
+        preference: str | int,
+        **kwargs,
     ) -> str:
-        return f"""## Task Overview
-As a professional assistant specializing in extracting key insights and summarizing information, you will receive a dataset containing the following elements: instruction, completion_a, completion_b, preference. Your objective is to distill the fundamental principles an ideal completion should follow for the given instruction, by analyzing why one completion is superior to the other.
+        completion_str = ""
+        for i, completion in enumerate(completions):
+            completion_str += f"### Completion {i + 1}\n{completion}\n\n\n"
+
+        return f"""## Overview
+As a professional assistant specializing in extracting key insights and summarizing information, you will receive a dataset containing the following elements: scenario, instruction, completions, preference. Your objective is to distill the fundamental principles tackle the scenario, by analyzing why one completion is superior to the others.
 
 ## Process
 1. **Understand the Instruction's Context**: Thoroughly analyze the scenario and requirements outlined in the instruction.
-2. **Compare Completions**: Carefully examine completion_a and completion_b, noting their differences.
+2. **Compare Completions**: Carefully examine completions, noting their differences.
 3. **Assess Completions**: Utilize the given preference to reason why one completion is favored over the other, combining this with your previous analysis in steps 1 and 2.
-4. **Formulate Principles**: Extract insights into a series of concise principles. Each principle should consist of a brief phrase accompanied by a single sentence description.
+4. **Formulate Principles**: Extract insights into a series of concise principles. Each principle should consist of a brief phrase accompanied by a single sentence description. All principles should generalize across scenarios.
 5. **Check for Consistency**: Ensure the preference aligns with the formulated principles. If a discrepancy exists, return to step 1 and attempt another version of the principles.
 
 ## Input
+### Scenario
+{desc}
 ### Instruction:
 {instruction}
 
-### Completion A:
-{completion_a}
-
-### Completion B:
-{completion_b}
-
+{completion_str}
 ### Preference:
-{preference}
+Completion {preference}
 
 ## Output Format Requirements
-{cls.schema()}
+{cls.schema(**kwargs)}
 """
 
 
 class PrincipleClusterTemplate(BaseGeneratorTemplate):
     @classmethod
-    def format(cls, principles: str) -> str:
-        return f"""## Task Overview
-You are a skilled professional assistant focusing on induction and summarization. You will receive a series of principles in natural language format, each structured as: "phrase": "description, your task is to output a set of summerized principles.
+    def format(cls, principles: str, desc: str, **kwargs) -> str:
+        return f"""## Overview
+You are a skilled professional assistant focusing on induction and summarization. You will receive a series of principles in natural language format, each structured as: "phrase": "description, your objective is to output a set of summerized principles that tackle the given scenario.
 
 ## Process
 1. Begin by focusing on the phrase of each principle, which serves as a subtitle. Use these phrases to perform a coarse-grained classification of the principles.
@@ -97,40 +101,42 @@ You are a skilled professional assistant focusing on induction and summarization
 Note: Ensure that the finalized summaries do not include specific words that refer to particular instances, as these principles serve as metrics or rubrics to aid in evaluation.
 
 ## Input
+### Scenario
+{desc}
+
 {principles}
 
 ## Output Format Requirements
-{cls.schema()}
+{cls.schema(**kwargs)}
 """
 
 
 class PrincipleGenerator(BaseModel):
     llm: BaseLLM = Field(default=..., description="llm client")
+    desc: str = Field(default=..., description="description")
 
     def generate(self, sample: DataSample):
         sample = copy.deepcopy(sample)
         instructioin: str = sample.input[-1].content
-        for output in sample.output:
-            if output.answer.label["preference"] == "chosen":
-                chosen: str = output.answer.content
-            if output.answer.label["preference"] == "rejected":
-                rejected: str = output.answer.content
+        completions = [
+            (output.answer.label["preference"], output.answer.content)
+            for output in sample.output
+        ]
+        random.shuffle(completions)
+        for i, (label, completion) in enumerate(completions):
+            if label == "chosen":
+                best = i + 1
+        completions = [completion for _, completion in completions]
 
-        if random.random() < 0.5:
-            prompt = PrincipleGenerateTempalte.format(
-                instruction=instructioin,
-                completion_a=chosen,
-                completion_b=rejected,
-                preference="A",
-            )
-        else:
-            prompt = PrincipleGenerateTempalte.format(
-                instruction=instructioin,
-                completion_a=rejected,
-                completion_b=chosen,
-                preference="B",
-            )
+        prompt = PrincipleGenerateTempalte.format(
+            instruction=instructioin,
+            completions=completions,
+            preference=best,
+            enable_thinking=self.llm.enable_thinking,
+            desc=self.desc,
+        )
 
+        logger.info(f"prompt: {prompt}")
         response = self.llm.simple_chat(
             prompt,
             sys_prompt="You are a professional assistant skilled in extracting key insights and summarizing information.",
@@ -151,7 +157,11 @@ class PrincipleGenerator(BaseModel):
         logger.info("===RAW PRINCIPLES===\n" + principles)
 
         response = self.llm.simple_chat(
-            PrincipleClusterTemplate.format(principles=principles),
+            PrincipleClusterTemplate.format(
+                desc=self.desc,
+                principles=principles,
+                enable_thinking=self.llm.enable_thinking,
+            ),
             sys_prompt="You are a skilled professional assistant focusing on induction and summarization.",
         )
         result = PrincipleClusterTemplate.parse(response)

@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+from loguru import logger
 from openai import OpenAI
 from pydantic import Field, model_validator
 
@@ -114,13 +115,13 @@ class OpenaiLLM(BaseLLM):
         query: str,
         history: Optional[List[str]] = None,
         sys_prompt: str = "You are a helpful assistant.",
-        debug: bool = False,
+        **kwargs,
     ) -> Any:
         """Simple interface for chat with history support."""
 
-        if self.reasoning:
+        if self.enable_thinking:
             return self.simple_chat_reasoning(
-                query=query, history=history, sys_prompt=sys_prompt, debug=debug
+                query=query, history=history, sys_prompt=sys_prompt, **kwargs
             )
 
         messages = [{"role": "system", "content": sys_prompt}]
@@ -136,6 +137,7 @@ class OpenaiLLM(BaseLLM):
             messages += [{"role": role, "content": h}]
 
         call_params = self.chat_kwargs.copy()
+        call_params.update(kwargs)
         response = self.client.chat.completions.create(messages=messages, **call_params)
         return _convert_openai_response_to_response(response).message.content
 
@@ -144,7 +146,7 @@ class OpenaiLLM(BaseLLM):
         query: str,
         history: Optional[List[str]] = None,
         sys_prompt: str = "",
-        debug: bool = False,
+        **kwargs,
     ) -> Any:
         """Simple interface for chat with history support."""
         messages = [{"role": "system", "content": sys_prompt}]
@@ -161,10 +163,17 @@ class OpenaiLLM(BaseLLM):
 
         call_params = self.chat_kwargs.copy()
         call_params["stream"] = True
+        call_params.update(kwargs)
 
-        completion = self.client.chat.completions.create(
-            messages=messages, **call_params
-        )
+        try:
+            completion = self.client.chat.completions.create(
+                messages=messages, **call_params
+            )
+        except Exception as e:
+            logger.error(f"Error in chat completion: {e}")
+            completion = self.client.chat.completions.create(
+                messages=messages, **call_params
+            )
 
         ans = ""
         enter_think = False
@@ -185,5 +194,8 @@ class OpenaiLLM(BaseLLM):
                         leave_think = True
                         ans += "</think>"
                     ans += delta.content
+
+            if len(ans) > 32768:
+                return ans
 
         return ans

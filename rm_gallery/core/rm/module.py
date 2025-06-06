@@ -3,7 +3,7 @@
 
 from abc import abstractmethod
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
-from typing import List, Type
+from typing import Dict, List, Type
 
 from loguru import logger
 from pydantic import Field
@@ -16,7 +16,11 @@ from rm_gallery.core.rm.schema import (
     RewardDimensionWithScore,
     RewardResult,
 )
-from rm_gallery.core.rm.template import BasePromptTemplate, PrinciplePairwiseTemplate
+from rm_gallery.core.rm.template import (
+    BasePromptTemplate,
+    PrincipleListWiseTemplate,
+    PrinciplePointWiseTemplate,
+)
 
 
 class BaseReward(BaseModule):
@@ -267,26 +271,15 @@ class BaseLLMReward(BaseReward):
     template: Type[BasePromptTemplate] = Field(
         default=BasePromptTemplate, description="prompt template"
     )
+    to_format: bool = Field(default=False, description="evaluate or format")
 
-    def _before_call(self, **kwargs) -> dict:
+    def _before_evaluate(self, **kwargs) -> dict:
         """
         Abstract method to be implemented by subclasses for preparing parameters before making a call to the LLM.
         """
         return {}
 
-    def _call(self, **kwargs) -> BasePromptTemplate:
-        """
-        Abstract method to be implemented by subclasses for making a call to the LLM using the provided parameters.
-        """
-        query = self.template.format(**kwargs)
-        logger.info(f"query: {query}")
-        response = self.llm.simple_chat(query=query)
-        logger.info(f"response: {response}")
-        output = self.template.parse(response)
-        logger.info(f"output: {output}")
-        return output
-
-    def _after_call(self, response: BasePromptTemplate, **kwargs) -> RewardResult:
+    def _after_evaluate(self, response: BasePromptTemplate, **kwargs) -> RewardResult:
         """
         Abstract method to be implemented by subclasses for processing the response from the LLM and setting the reward.
         """
@@ -294,20 +287,40 @@ class BaseLLMReward(BaseReward):
             name=self.name, details=[], extra_data=response.model_dump()
         )
 
+    def _format(self, **kwargs):
+        # Prepare parameters before making the call to the LLM.
+        params = self._before_evaluate(**kwargs)
+
+        # Make the call to the LLM using the prepared parameters.
+        prompt = self.template.format(**params)
+        logger.info(f"prompt: {prompt}")
+
+        return RewardResult(name=self.name, details=[], extra_data={"prompt": prompt})
+
     def _evaluate(self, **kwargs) -> RewardResult:
         """
         Method to execute the full cycle of preparing the call, making the call to the LLM, and processing the response.
         """
+        if self.to_format:
+            return self._format(**kwargs)
 
         try:
             # Prepare parameters before making the call to the LLM.
-            params = self._before_call(**kwargs)
+            params = self._before_evaluate(**kwargs)
 
             # Make the call to the LLM using the prepared parameters.
-            response = self._call(**params)
+            prompt = self.template.format(
+                enable_thinking=self.llm.enable_thinking, **params
+            )
+            logger.info(f"prompt: {prompt}")
+
+            response = self.llm.simple_chat(query=prompt)
+            response = self.template.parse(response)
+            logger.info(f"response: {response}")
 
             # Process the response from the LLM and set the reward.
-            result = self._after_call(response=response, **kwargs)
+            result = self._after_evaluate(response=response, **kwargs)
+            result.extra_data["prompt"] = prompt
         except Exception as e:
             logger.error(f"API call failed: {str(e)}")
             result = RewardResult(
@@ -316,47 +329,62 @@ class BaseLLMReward(BaseReward):
         return result
 
 
-class PrinciplePairwiseReward(BaseLLMReward, BaseListWiseReward):
-    principles: List[str] = Field(default=[], description="principles")
+class BasePrincipleReward(BaseLLMReward):
+    principles: List[str] = Field(default=..., description="principles")
     examples: List[str] = Field(default=[], description="examples")
-    template: Type[PrinciplePairwiseTemplate] = Field(
-        default=PrinciplePairwiseTemplate, description="harmfulnessTemplate"
+    template: Type[BasePromptTemplate] = Field(
+        default=PrinciplePointWiseTemplate, description="harmfulnessTemplate"
     )
-    task_desc: str = Field(default="", description="task desc")
+    desc: str = Field(default=..., description="task desc")
 
-    @abstractmethod
-    def _get_principle_and_desc(self):
-        """
-        generate principles and task desc
-        """
-        ...
-
-    def _before_call(self, sample: DataSample, **kwargs) -> dict:
-        self._get_principle_and_desc()
+    def _before_evaluate(self, sample: DataSample, **kwargs) -> dict:
         return {
-            "desc": self.task_desc,
+            "desc": self.desc,
             "principles": "\n".join(self.principles),
             "examples": "\n".join(self.examples),
             "query": sample.input[-1].content,
-            "answer_a": sample.output[0].answer.content,
-            "answer_b": sample.output[1].answer.content,
         }
 
-    def _after_call(
-        self, response: PrinciplePairwiseTemplate, **kwargs
+
+class BasePointWisePrincipleReward(BasePrincipleReward, BasePointWiseReward):
+    def _before_evaluate(self, sample: DataSample, **kwargs) -> Dict:
+        params = super()._before_evaluate(sample=sample, **kwargs)
+        params["answer"] = sample.output[0].answer.content
+        return params
+
+    def _after_evaluate(
+        self, response: PrinciplePointWiseTemplate, sample: DataSample, **kwargs
     ) -> RewardResult:
-        # calc score for every output,the length of scores must equal to num of output
-        if response.better_answer == "A":
-            scores = [1, 0]
-        elif response.better_answer:
-            scores = [0, 1]
-        else:
-            scores = [0, 0]
         return RewardResult(
             name=self.name,
             details=[
                 RewardDimensionWithRank(
-                    name=self.name, weight=1, reason=response.reason, rank=scores
+                    name=self.name, reason=response.reason, rank=response.violation
+                )
+            ],
+        )
+
+
+class BaseListWisePrincipleReward(BasePrincipleReward, BaseListWiseReward):
+    template: Type[PrincipleListWiseTemplate] = PrincipleListWiseTemplate
+
+    def _before_evaluate(self, sample: DataSample, **kwargs) -> Dict:
+        params = super()._before_evaluate(sample=sample, **kwargs)
+        answers = [output.answer.content for output in sample.output]
+        params["answers"] = answers
+        return params
+
+    def _after_evaluate(
+        self, response: PrincipleListWiseTemplate, sample: DataSample, **kwargs
+    ) -> RewardResult:
+        # calc score for every output, the length of scores must equal to num of output
+        scores = [0 for i in range(len(sample.output))]
+        scores[response.best - 1] = 1
+        return RewardResult(
+            name=self.name,
+            details=[
+                RewardDimensionWithRank(
+                    name=self.name, reason=response.reason, rank=scores
                 )
             ],
         )

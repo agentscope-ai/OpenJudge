@@ -133,7 +133,7 @@ class BaseLLM(BaseModel):
     base_url: Optional[str] = None
     max_retries: int = Field(default=3, description="Maximum number of retry attempts")
     retry_delay: int = Field(default=60, description="Delay in seconds between retries")
-    reasoning: bool = Field(default=False)
+    enable_thinking: bool = Field(default=False)
 
     @staticmethod
     def _convert_messages(
@@ -226,7 +226,7 @@ class BaseLLM(BaseModel):
         sys_prompt: str = "",
         debug: bool = False,
     ) -> Any:
-        if self.reasoning:
+        if self.enable_thinking:
             return self.simple_chat_reasoning(
                 query=query, history=history, sys_prompt=sys_prompt, debug=debug
             )

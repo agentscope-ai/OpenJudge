@@ -1,14 +1,9 @@
-import os
-
 from loguru import logger
 
 from rm_gallery.core.data.schema import ChatMessage, DataOutput, DataSample, Step
 from rm_gallery.core.model.message import MessageRole
 from rm_gallery.core.model.openai_llm import OpenaiLLM
-from rm_gallery.gallery.rm.helpfulness_pairwise import HelpfulnessPairwise
-
-os.environ["OPENAI_API_KEY"] = "REDACTED_API_KEY"
-os.environ["BASE_URL"] = "http://8.130.177.212:3000/v1"
+from rm_gallery.gallery.rm.alignment.helpfulness import HelpfulnessListWiseReward
 
 
 def test_single() -> None:
@@ -44,7 +39,7 @@ def test_single() -> None:
     logger.info(f"input={sample.model_dump_json()}")
     llm = OpenaiLLM(model="qwen-max")
 
-    helpfulness = HelpfulnessPairwise(llm=llm, name="helpfulness_pairwise")
+    helpfulness = HelpfulnessListWiseReward(llm=llm, name="helpfulness_pairwise")
     # helpfulness = RewardRegistry.get("helpfulness_pairwise")(llm = llm,name="helpfulness_pairwise")
 
     sample = helpfulness.evaluate(sample=sample)
