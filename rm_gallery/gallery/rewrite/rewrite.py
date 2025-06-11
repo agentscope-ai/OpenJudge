@@ -13,7 +13,7 @@ REWRITE_PRINCIPLES = [
     "Professional Content Generation: Involves the generation of professional content.",
 ]
 
-SCENARIO = """Rewriting: Creating new textual content, from articles to stories, with an emphasis on originality and creativity."""
+SCENARIO = """the assitant aims to create new textual content, from articles to stories, with an emphasis on originality and creativity."""
 
 
 @RewardRegistry.register("rewrite_pointwise")

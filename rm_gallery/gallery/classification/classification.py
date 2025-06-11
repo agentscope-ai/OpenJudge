@@ -13,7 +13,7 @@ CLASSIFICATION_PRINCIPLES = [
     "Quality and Compliance Assessment: Evaluates whether the text adheres to established standards and regulations, identifying specific areas of non-compliance.",
 ]
 
-SCENARIO = """Classification: Entails assigning predefined categories or labels to text based on its content."""
+SCENARIO = """the assitant aims to entail assigning predefined categories or labels to text based on its content."""
 
 
 @RewardRegistry.register("classification_pointwise")
