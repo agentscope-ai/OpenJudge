@@ -13,12 +13,16 @@ REWRITE_PRINCIPLES = [
     "Professional Content Generation: Involves the generation of professional content.",
 ]
 
+SCENARIO = """Rewriting: Creating new textual content, from articles to stories, with an emphasis on originality and creativity."""
+
 
 @RewardRegistry.register("rewrite_pointwise")
 class RewritePointWiseReward(BasePointWisePrincipleReward):
+    scenario: str = Field(default=SCENARIO)
     principles: List[str] = Field(default=REWRITE_PRINCIPLES)
 
 
 @RewardRegistry.register("rewrite_listwise")
 class RewriteListWiseReward(BaseListWisePrincipleReward):
+    scenario: str = Field(default=SCENARIO)
     principles: List[str] = Field(default=REWRITE_PRINCIPLES)

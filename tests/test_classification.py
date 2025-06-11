@@ -5,7 +5,7 @@ from loguru import logger
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.openai_llm import OpenaiLLM
-from rm_gallery.core.utils.file import read_jsonl
+from rm_gallery.core.utils.file import read_jsonl, write_json
 from rm_gallery.gallery.classification.classification import (
     ClassificationListWiseReward,
 )
@@ -46,11 +46,12 @@ def test_evaluate(
     logger.info(f"{file}: {acc}")
 
 
-# principles = test_generate(
-#     "/mnt3/huangsen.huang/codes/RM-Gallery/data/rmb/pair/train/rmbbenchmark_pairwise_classification_quality_and_compliance_assessment_output.jsonl"
-# )
-# write_json(principles, "data/principle.json")
+principles = test_generate(
+    "/mnt3/huangsen.huang/codes/RM-Gallery/data/rmb/pair/train/rmbbenchmark_pairwise_classification_quality_and_compliance_assessment_output.jsonl"
+)
+
+write_json(principles, "data/principle.json")
 test_evaluate(
     "/mnt3/huangsen.huang/codes/RM-Gallery/data/rmb/pair/test/rmbbenchmark_pairwise_classification_quality_and_compliance_assessment_output.jsonl",
-    # principles=principles,
+    principles=principles,
 )

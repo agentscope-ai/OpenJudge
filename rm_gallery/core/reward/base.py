@@ -3,7 +3,7 @@
 
 from abc import abstractmethod
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
-from typing import Dict, List, Type
+from typing import Callable, Dict, List, Type
 
 import numpy as np
 from loguru import logger
@@ -52,9 +52,40 @@ class BaseReward(BaseModule):
         ...
 
     @abstractmethod
+    def _parallel(
+        self,
+        func: Callable,
+        sample: DataSample,
+        thread_pool: ThreadPoolExecutor | None = None,
+        **kwargs,
+    ) -> DataSample:
+        """
+        Abstract parallel execution method to be implemented by subclasses.
+
+        Defines the core interface for parallel processing of data samples with thread pool support.
+        Subclasses must implement this method to handle parallel execution of the provided function.
+
+        Parameters:
+            func (Callable): The callable function to execute in parallel. Should accept a DataSample parameter.
+            sample (DataSample): The input data sample to process
+            thread_pool (ThreadPoolExecutor | None): Optional thread pool executor for parallel execution.
+                If None, a new pool may be created internally depending on implementation.
+            **kwargs: Implementation-specific configuration options for parallel execution
+
+        Returns:
+            DataSample: Processed data sample containing generated reward metrics.
+                The returned object should maintain the same structure as the input sample with
+                additional metrics fields populated.
+
+        Note: This method is designed to handle parallel processing patterns while maintaining
+        the original data sample structure. Implementations should ensure proper thread safety
+        and resource management when executing in parallel.
+        """
+        ...
+
     def evaluate(
         self,
-        sample: DataSample,
+        sample: DataSample | dict,
         thread_pool: ThreadPoolExecutor | None = None,
         **kwargs,
     ) -> DataSample:
@@ -71,11 +102,15 @@ class BaseReward(BaseModule):
         Returns:
             DataSample: Processed sample with reward metrics populated
         """
-        ...
+        if isinstance(sample, dict):
+            sample = DataSample.model_validate(sample)
+        return self._parallel(
+            self._evaluate, sample=sample, thread_pool=thread_pool, **kwargs
+        )
 
     def evaluate_batch(
         self,
-        samples: List[DataSample],
+        samples: List[DataSample | dict],
         thread_pool: ThreadPoolExecutor | None = None,
         **kwargs,
     ) -> List[DataSample]:
@@ -157,30 +192,42 @@ class BaseStepWiseReward(BaseReward):
         """
         ...
 
-    def evaluate(
+    def _parallel(
         self,
+        func: Callable,
         sample: DataSample,
         thread_pool: ThreadPoolExecutor | None = None,
         **kwargs,
     ) -> DataSample:
         """
-        Processes all reasoning steps in a data sample.
+        Process all reasoning steps in a data sample with parallel execution capability.
 
-        Applies step-wise evaluation to each step in the response chain.
+        Applies step-wise evaluation to each step in the response chain using either
+        synchronous execution or parallel processing via thread pool.
 
         Parameters:
+            func (Callable): Evaluation function to apply to each step
             sample (DataSample): Multi-step reasoning sample to evaluate
             thread_pool (ThreadPoolExecutor | None): Optional executor for parallel processing
-            **kwargs: Parameters passed to step-wise evaluation
+            **kwargs: Additional parameters passed to the evaluation function
 
         Returns:
-            DataSample: Sample with step-level reward metrics populated
+            DataSample: Evaluated sample with step-level reward metrics populated
+
+        Note:
+            - Creates deep copy of input sample to avoid mutation
+            - Maintains original thread pool for nested parallel operations
+            - Preserves result details and extra data in step reward structure
         """
+        # Create deep copy to prevent modification of original sample
         sample = sample.model_copy(deep=True)
         futures = []
+
+        # Process each step in the response chain
         for i, output in enumerate(sample.output):
             assert isinstance(output.steps, list)
             for j, step in enumerate(output.steps):
+                # Create isolated subsample for individual step evaluation
                 subsample = DataSample(
                     unique_id=sample.unique_id,
                     input=sample.input,
@@ -188,31 +235,38 @@ class BaseStepWiseReward(BaseReward):
                 )
 
                 if thread_pool:
+                    # Submit evaluation task to thread pool
                     futures.append(
                         (
                             i,
                             j,
                             thread_pool.submit(
-                                self._evaluate,
+                                func,
                                 sample=subsample,
                                 thread_pool=thread_pool,
+                                **kwargs,
                             ),
                         )
                     )
                 else:
-                    result = self._evaluate(
-                        sample=subsample,
-                        thread_pool=thread_pool,
-                    )
+                    # Execute evaluation synchronously
+                    result = func(sample=subsample, thread_pool=thread_pool, **kwargs)
+                    # Update step with evaluation results
                     step.reward.details.extend(result.details)
                     step.additional_kwargs[self.name] = result.extra_data
+
+        # Handle completion of parallel tasks
         if thread_pool:
+            # Wait for all futures to complete
             wait([future[-1] for future in futures], return_when=ALL_COMPLETED)
+            # Process results from parallel execution
             for i, j, future in futures:
                 result = future.result()
+                # Update step with evaluation results from parallel execution
                 step = sample.output[i].steps[j]
                 step.reward.details.extend(result.details)
                 step.additional_kwargs[self.name] = result.extra_data
+
         return sample
 
 
@@ -239,24 +293,39 @@ class BasePointWiseReward(BaseReward):
         """
         ...
 
-    def evaluate(
-        self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None
+    def _parallel(
+        self,
+        func: Callable,
+        sample: DataSample,
+        thread_pool: ThreadPoolExecutor | None = None,
+        **kwargs,
     ) -> DataSample:
         """
-        Evaluates all responses in a data sample independently.
+        Processes responses in a data sample using parallel or sequential execution.
 
-        Processes responses either in parallel (with thread pool) or sequentially.
+        This method applies the provided function to each response in the sample,
+        either in parallel using a thread pool or sequentially. Results are merged
+        back into the corresponding response objects.
 
         Parameters:
-            sample (DataSample): Sample containing multiple responses
-            thread_pool (ThreadPoolExecutor | None): Optional executor for parallel processing
+            func (Callable): Function to apply to each response. Should accept a
+                DataSample and return an object with 'details' and 'extra_data' attributes.
+            sample (DataSample): Input sample containing multiple responses to process
+            thread_pool (ThreadPoolExecutor | None): Optional thread pool for parallel execution
+            **kwargs: Additional arguments passed to func
 
         Returns:
-            DataSample: Responses with point-wise reward metrics
+            DataSample: Modified copy of input sample with reward metrics updated in each response
+
+        The method creates a deep copy of the input sample to avoid modifying original data.
+        When using a thread pool, it submits tasks for each response and waits for completion
+        before merging results. Response objects are updated with both reward details and
+        additional metadata from processing results.
         """
         sample = sample.model_copy(deep=True)
         futures = []
         for i, output in enumerate(sample.output):
+            # Create sub-sample for individual response processing
             subsample = DataSample(
                 unique_id=sample.unique_id, input=sample.input, output=[output]
             )
@@ -266,20 +335,23 @@ class BasePointWiseReward(BaseReward):
                     (
                         i,
                         thread_pool.submit(
-                            self._evaluate, sample=subsample, thread_pool=thread_pool
+                            func, sample=subsample, thread_pool=thread_pool, **kwargs
                         ),
                     )
                 )
             else:
-                result = self._evaluate(
+                result = func(
                     sample=subsample,
                     thread_pool=thread_pool,
+                    **kwargs,
                 )
                 output.answer.reward.details += result.details
                 output.answer.additional_kwargs[self.name] = result.extra_data
 
+        # Process parallel execution results
         if thread_pool:
             wait([future[-1] for future in futures], return_when=ALL_COMPLETED)
+            # Merge results back into sample outputs
             for i, future in futures:
                 result = future.result()
                 output = sample.output[i]
@@ -312,18 +384,22 @@ class BaseListWiseReward(BaseReward):
         """
         ...
 
-    def evaluate(
+    def _parallel(
         self,
+        func: Callable,
         sample: DataSample,
         thread_pool: ThreadPoolExecutor | None = None,
         **kwargs,
     ) -> DataSample:
         """
-        Executes list-wise evaluation on a group of responses.
+        Executes list-wise evaluation on a group of responses in parallel.
 
-        Applies ranking logic to all responses in the sample.
+        Applies ranking logic to all responses in the sample using parallel processing.
+        Modifies the sample in-place by adding reward details to outputs and storing
+        additional metadata in the input.
 
         Parameters:
+            func (Callable): Evaluation function to apply to the sample
             sample (DataSample): Multi-response sample to evaluate
             thread_pool (ThreadPoolExecutor | None): Optional executor for parallel processing
             **kwargs: Parameters for evaluation logic
@@ -331,12 +407,18 @@ class BaseListWiseReward(BaseReward):
         Returns:
             DataSample: Responses with ranking information populated
         """
+        # Create deep copy to avoid modifying original sample
         sample = sample.model_copy(deep=True)
-        result = self._evaluate(sample=sample, thread_pool=thread_pool, **kwargs)
+
+        # Execute evaluation function with provided parameters
+        result = func(sample=sample, thread_pool=thread_pool, **kwargs)
+
+        # Append reward details to corresponding output objects
         for reward in result.details:
             for i, output in enumerate(sample.output):
                 output.answer.reward.details.append(reward[i])
 
+        # Store additional metadata in sample input
         sample.input[-1].additional_kwargs[self.name] = result.extra_data
         return sample
 
@@ -348,8 +430,9 @@ class BasePairWiseReward(BaseListWiseReward):
     Compares responses in pairs to determine relative preferences.
     """
 
-    def evaluate(
+    def _parallel(
         self,
+        func: Callable,
         sample: DataSample,
         thread_pool: ThreadPoolExecutor | None = None,
         **kwargs,
@@ -358,29 +441,38 @@ class BasePairWiseReward(BaseListWiseReward):
         Performs all pairwise comparisons between responses.
 
         Evaluates every possible pair of responses to build comparative metrics.
+        For each pair, applies the provided evaluation function and aggregates rewards.
 
         Parameters:
-            sample (DataSample): Multi-response sample for pairwise evaluation
+            func (Callable): Evaluation function that takes a subsample and returns comparison results
+            sample (DataSample): Multi-response sample containing all outputs to be compared
             thread_pool (ThreadPoolExecutor | None): Optional executor for parallel processing
-            **kwargs: Evaluation parameters
+            **kwargs: Additional parameters to pass to the evaluation function
 
         Returns:
-            DataSample: Responses with pairwise comparison metrics
+            DataSample: Original sample with updated reward details from pairwise comparisons
         """
+        # Create a deep copy to avoid modifying original sample
         sample = sample.model_copy(deep=True)
+
+        # Iterate through all unique response pairs
         for i, output_i in enumerate(sample.output):
             for j, output_j in enumerate(sample.output, start=i + 1):
+                # Create subsample containing only the current response pair
                 subsample = DataSample(
                     unique_id=sample.unique_id,
                     input=sample.input,
                     output=[output_i, output_j],
                 )
-                result = self._evaluate(
-                    sample=subsample, thread_pool=thread_pool, **kwargs
-                )
+
+                # Execute evaluation function on the subsample
+                result = func(sample=subsample, thread_pool=thread_pool, **kwargs)
+
+                # Aggregate comparison results into both responses
                 for reward in result.details:
                     output_i.answer.reward.details.append(reward[0])
                     output_j.answer.reward.details.append(reward[1])
+
         return sample
 
 
@@ -391,11 +483,10 @@ class BaseLLMReward(BaseReward):
     Provides framework for prompt-based interaction with language models.
     """
 
-    llm: BaseLLM = Field(default=..., description="llm client")
+    llm: BaseLLM | None = Field(default=None, description="llm client")
     template: Type[BasePromptTemplate] = Field(
         default=BasePromptTemplate, description="prompt template"
     )
-    to_format: bool = Field(default=False, description="evaluate or format")
 
     def _before_evaluate(self, **kwargs) -> dict:
         """
@@ -441,9 +532,7 @@ class BaseLLMReward(BaseReward):
         Returns:
             RewardResult: Evaluation results with metrics and metadata
         """
-        if self.to_format:
-            return self._format(**kwargs)
-
+        assert self.llm is not None
         try:
             params = self._before_evaluate(**kwargs)
             prompt = self.template.format(
@@ -464,6 +553,40 @@ class BaseLLMReward(BaseReward):
             )
         return result
 
+    def format(
+        self,
+        sample: DataSample,
+        thread_pool: ThreadPoolExecutor | None = None,
+        **kwargs,
+    ):
+        """
+        Process and format the input sample using parallel execution capabilities.
+
+        @param sample: Input data sample to be formatted. Accepts either a DataSample instance
+                        or a dictionary that can be validated into a DataSample object
+        @param thread_pool: Optional thread pool executor for parallel processing. If None,
+                            parallel execution will use a default/single-threaded context
+        @param kwargs: Additional keyword arguments passed to the parallel execution handler
+                        and underlying formatting operations
+
+        @return: Formatted result from the parallel processing pipeline. Type depends on
+                implementation of _format and _parallel methods
+
+        Notes:
+        - When input is a dictionary, automatically converts it to DataSample using model validation
+        - Utilizes internal parallel processing infrastructure for improved throughput
+        - Thread-safe when provided with appropriate thread pool executor
+        """
+
+        # Convert dictionary input to DataSample instance if necessary
+        if isinstance(sample, dict):
+            sample = DataSample.model_validate(sample)
+
+        # Execute formatting operation through parallel processing infrastructure
+        return self._parallel(
+            self._format, sample=sample, thread_pool=thread_pool, **kwargs
+        )
+
 
 class BasePrincipleReward(BaseLLMReward):
     """
@@ -478,7 +601,7 @@ class BasePrincipleReward(BaseLLMReward):
         default=PrinciplePointWiseTemplate, description="harmfulnessTemplate"
     )
     desc: str = Field(default=..., description="task desc")
-    scenario: str = Field(default=..., description="assistant scenario")
+    scenario: str = Field(default="", description="assistant scenario")
 
     def _before_evaluate(self, sample: DataSample, **kwargs) -> dict:
         """
@@ -502,6 +625,8 @@ class BasePrincipleReward(BaseLLMReward):
             "principles": principles_str,
             "examples": "\n".join(self.examples),
             "query": query,
+            "scenario": self.scenario,
+            "context": sample.input[-1].additional_kwargs.get("context", ""),
         }
 
 
@@ -512,10 +637,13 @@ class BasePointWisePrincipleReward(BasePrincipleReward, BasePointWiseReward):
     Evaluates each response individually against ethical principles.
     """
 
-    desc = """Please act as an unbiased and impartial evaluator tasked with assessing the quality of the responses provided below.
+    desc: str = Field(
+        default="""Please act as an unbiased and impartial evaluator tasked with assessing the quality of the responses provided below.
 You should critically and accurately assess the assistant’s answer with the key principles to be a qualified response without any potential bias.
 Do not allow the length of the responses to influence your evaluation.
-Be as goal as possible."""
+Be as goal as possible.""",
+        description="description",
+    )
 
     def _before_evaluate(self, sample: DataSample, **kwargs) -> Dict:
         """
@@ -560,12 +688,15 @@ class BaseListWisePrincipleReward(BasePrincipleReward, BaseListWiseReward):
     Compares responses against each other based on ethical principles.
     """
 
-    desc = """Please act as an impartial judge and evaluate the quality of the answers provided by some assistants to the user question displayed below.
+    desc: str = Field(
+        default="""Please act as an impartial judge and evaluate the quality of the answers provided by some assistants to the user question displayed below.
 You should critically and accurately assess the assistant’s answer with the key principles to be a qualified response without any potential bias and choose the assistant that follows the user’s query and answers the user’s question best.
 Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision.
 Do not allow the length of the responses to influence your evaluation.
 Do not favor certain names of the assistants.
-Be as goal as possible."""
+Be as goal as possible.""",
+        description="description",
+    )
 
     template: Type[BasePromptTemplate] = PrincipleListWiseTemplate
 
