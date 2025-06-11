@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar
 from loguru import logger
 from pydantic import Field
 
-from rm_gallery.core.base_module import BaseModule
+from rm_gallery.core.base import BaseModule
 from rm_gallery.core.data.schema import DataSample
 
 T = TypeVar("T", bound=DataSample)
