@@ -3,6 +3,7 @@ import os
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
+from retry import retry
 
 from rm_gallery.core.model.message import (
     ChatMessage,
@@ -10,7 +11,6 @@ from rm_gallery.core.model.message import (
     GeneratorChatResponse,
     MessageRole,
 )
-from rm_gallery.core.utils.retry import Retry
 
 
 def get_from_dict_or_env(
@@ -132,7 +132,9 @@ class BaseLLM(BaseModel):
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     max_retries: int = Field(default=3, description="Maximum number of retry attempts")
-    retry_delay: int = Field(default=60, description="Delay in seconds between retries")
+    retry_delay: float = Field(
+        default=1.0, description="Delay in seconds between retries"
+    )
     enable_thinking: bool = Field(default=False)
 
     @staticmethod
@@ -244,12 +246,12 @@ class BaseLLM(BaseModel):
             messages += [ChatMessage(role=role, content=h)]
 
         # Implement retry logic with max_retries
+        @retry(tries=self.max_retries, delay=self.retry_delay)
         def chat():
             response: ChatResponse = self.chat(messages)
             return response.message.content
 
-        with Retry(self.max_retries) as retry:
-            return retry(chat)
+        return chat()
 
     def simple_chat_reasoning(
         self,
@@ -271,6 +273,7 @@ class BaseLLM(BaseModel):
             messages += [ChatMessage(role=role, content=h)]
 
         # Implement retry logic with max_retries
+        @retry(tries=self.max_retries, delay=self.retry_delay)
         def chat():
             response: GeneratorChatResponse = self.chat(messages, stream=True)
             ans = ""
@@ -295,5 +298,4 @@ class BaseLLM(BaseModel):
 
             return ans
 
-        with Retry(self.max_retries) as retry:
-            return retry(chat)
+        return chat()

@@ -6,81 +6,123 @@ from pydantic import BaseModel, Field
 
 class BasePromptTemplate(BaseModel):
     """
-    BasePromptTemplate serves as the base class for all template classes, providing methods to parse, format, and generate schema based on template structures.
+    BasePromptTemplate serves as the abstract base class for all prompt template implementations.
+
+    This class provides core functionality for parsing structured templates, formatting output schemas,
+    and validating content against defined field requirements. It implements the fundamental patterns
+    for bidirectional conversion between string representations and structured data models.
+
+    Attributes:
+        reason (str): A field capturing the reasoning trace for decision-making processes
     """
 
     reason: str = Field(default=..., description="your reasoning trace", alias="think")
 
     @classmethod
     def _parse(cls, text: str) -> Dict[str, str]:
-        # Define a regular expression pattern to match the template format
+        """
+        Extracts key-value pairs from XML-style tagged text using regex pattern matching.
+
+        This internal method identifies structured patterns in the format <key>value</key>
+        and converts them into a dictionary mapping for further processing.
+
+        Args:
+            text (str): Input string containing XML-style tagged content
+
+        Returns:
+            Dict[str, str]: Dictionary mapping of tag names to corresponding values
+        """
         pattern = r"<([^>]+)>(.*)</\1>"
-        # Use the findall method of the re module to get all matches
         matches = re.findall(pattern, text, re.DOTALL)
-        # Convert the matches into a dictionary
         contents = {match[0]: match[1].strip() for match in matches}
         return contents
 
     @classmethod
     def parse(cls, text: str) -> "BasePromptTemplate":
         """
-        Parses a string according to a specified template format and returns an instance of this class.
+        Converts a structured text string into a validated template instance.
 
-        The template format is: <key>value</key>, where the key is the property name and the value is the property content.
+        Processes input text through internal parsing mechanism and constructs
+        a model instance with validated field values.
 
-        Parameters:
-        - text (str): The string to parse, which should follow the template format.
+        Args:
+            text (str): XML-style formatted string containing template data
 
         Returns:
-        - BasePromptTemplate: An instance of the class, initialized with the parsed key-value pairs.
+            BasePromptTemplate: Constructed instance with parsed field values
         """
         contents = cls._parse(text)
-        # Use the dictionary to initialize an instance of the class
         return cls(**contents)
 
     @classmethod
     def schema(cls, enable_thinking: bool = False, **kwargs) -> str:
         """
-        Generates a schema string based on the class's JSON schema, describing the structure and purpose of the template.
+        Generates a descriptive schema documentation string for the template structure.
+
+        Creates a human-readable documentation showing required fields, their descriptions,
+        and proper output formatting requirements.
+
+        Args:
+            enable_thinking (bool): Flag to include/exclude thinking field in schema
+            **kwargs: Additional parameters passed to schema generation
 
         Returns:
-        - str: A string describing the schema, containing the description of each property.
+            str: Formatted schema documentation string with field descriptions
         """
-        # Initialize an empty string to store the schema
         schema_str = "Note: Ensure all outputs are placed within the tags like <tag> </tag> as required!!!\n"
-        # Iterate through the properties in the JSON schema
         for key, property in cls.model_json_schema(by_alias=True)["properties"].items():
-            # Add the property description to the schema string in the specified format
             if key != "think" or not enable_thinking:
                 schema_str += f"<{key}>\n{property['description']}\n</{key}>\n"
-        # Return the schema string
         return schema_str
 
     @classmethod
     def format(cls, enable_thinking: bool = False, **kwargs) -> str:
         """
-        Formats the input parameters according to the template format into a string.
+        Formats provided content into the template's required output structure.
 
-        Parameters:
-        - **kwargs: Arbitrary keyword arguments, representing the properties to be formatted.
+        Takes arbitrary keyword arguments and formats them into the appropriate
+        template structure for response generation.
+
+        Args:
+            enable_thinking (bool): Flag to control inclusion of reasoning field
+            **kwargs: Content to be formatted into template structure
 
         Returns:
-        - str: A string formatted according to the template, containing the given properties.
+            str: Formatted string ready for model processing
         """
         ...
 
 
 class PrinciplePointWiseTemplate(BasePromptTemplate):
     """
-    The PrincipleTemplate class inherits from BasePromptTemplate and is used to define the template for principles reasoning.
+    Template implementation for principle-based point-wise evaluation tasks.
+
+    This template structure is designed for scenarios requiring analysis of principle
+    violations in specific contexts, with support for detailed scenario descriptions
+    and example-based guidance.
+
+    Attributes:
+        violation (List[str]): List of identified principle violations
     """
 
     violation: List[str] = Field(
-        default=..., description="a list of voilated principles"
+        default=..., description="a list of violated principles"
     )
 
     @classmethod
     def parse(cls, text: str):
+        """
+        Parses text input containing principle violation information.
+
+        Processes standard template format and converts violation field
+        from string representation to Python list.
+
+        Args:
+            text (str): Input string containing XML-style tagged content
+
+        Returns:
+            PrinciplePointWiseTemplate: Constructed instance with parsed values
+        """
         contents = cls._parse(text)
         contents["violation"] = eval(contents["violation"])
         return cls(**contents)
@@ -97,6 +139,25 @@ class PrinciplePointWiseTemplate(BasePromptTemplate):
         answer: str,
         **kwargs,
     ) -> str:
+        """
+        Formats evaluation components into structured prompt template.
+
+        Combines task description, scenario context, principles, and response
+        requirements into standardized prompt format.
+
+        Args:
+            desc (str): Task description text
+            scenario (str): Scenario context description
+            principles (str): List of relevant principles
+            examples (str): Example-based guidance
+            query (str): Evaluation query text
+            context (str): Additional contextual information
+            answer (str): Reference answer text
+            **kwargs: Additional formatting parameters
+
+        Returns:
+            str: Formatted prompt string following template requirements
+        """
         if examples:
             examples = f"\n# Examples\n{examples}\n"
 
@@ -127,6 +188,16 @@ class PrinciplePointWiseTemplate(BasePromptTemplate):
 
 
 class PrincipleListWiseTemplate(BasePromptTemplate):
+    """
+    Template implementation for principle-based list-wise evaluation tasks.
+
+    Designed for comparative evaluation scenarios where multiple answers need
+    to be assessed against defined principles to determine the optimal choice.
+
+    Attributes:
+        best (int): Index of the best-performing answer according to principles
+    """
+
     best: int = Field(
         default=...,
         description="which answer is the best? just give the number here!!!",
@@ -134,6 +205,18 @@ class PrincipleListWiseTemplate(BasePromptTemplate):
 
     @classmethod
     def parse(cls, text: str):
+        """
+        Parses text input containing list-wise evaluation results.
+
+        Converts best answer index from string to integer format
+        during template instantiation.
+
+        Args:
+            text (str): Input string containing XML-style tagged content
+
+        Returns:
+            PrincipleListWiseTemplate: Constructed instance with parsed values
+        """
         contents = cls._parse(text)
         contents["best"] = int(contents["best"])
         return cls(**contents)
@@ -150,6 +233,25 @@ class PrincipleListWiseTemplate(BasePromptTemplate):
         answers: List[str],
         **kwargs,
     ) -> str:
+        """
+        Formats comparative evaluation components into structured prompt template.
+
+        Combines task description, scenario context, principles, and multiple
+        candidate answers into standardized prompt format for list-wise evaluation.
+
+        Args:
+            desc (str): Task description text
+            scenario (str): Scenario context description
+            principles (str): List of relevant principles
+            examples (str): Example-based guidance
+            query (str): Evaluation query text
+            context (str): Additional contextual information
+            answers (List[str]): List of candidate answers for comparison
+            **kwargs: Additional formatting parameters
+
+        Returns:
+            str: Formatted prompt string following template requirements
+        """
         answer_str = ""
         for i, answer in enumerate(answers):
             answer_str += f"## Answer {i + 1}\n{answer}\n\n"

@@ -59,7 +59,7 @@ def test_generate(
     file: str = "data/RMBbench/pairwise/Helpfulness/Role Playing/Specific Character.jsonl",
     scenario: str = "",
     generate_number: int = 10,
-    cluster_number: int = 5,
+    cluster_number: int = 3,
 ):
     reward = get_reward(scenario)
     samples = read_jsonl(file)
@@ -96,14 +96,6 @@ def parse(path: str):
     path.replace("RMBbench", "RMBbench_Train")
 
 
-def retry(func, *args, **kwargs):
-    while True:
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logger.error(e)
-
-
 def test_single(task: str):
     scenario = TASKS[task]
     logger.info(f"------------{task}--------------")
@@ -116,10 +108,10 @@ def test_single(task: str):
 
     principles = DEFAULT_HELPFULNESS_PRINCIPLES
 
-    # principles = test_generate(
-    #     train,
-    #     scenario=scenario,
-    # )
+    principles = test_generate(
+        train,
+        scenario=scenario,
+    )
 
     acc = test_evaluate(
         test,
@@ -136,7 +128,7 @@ def test_all(tasks):
         results[task] = test_single(task)
 
         logger.info(f"Results: {results}")
-        write_json(results, "data/RMBbench/results_rmb_base_0.json")
+        write_json(results, "data/RMBbench/results_rmb_iter_10_3_0.json")
 
 
 test_all(tasks=TASKS)

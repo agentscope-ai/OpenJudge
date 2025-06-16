@@ -32,14 +32,14 @@ class OpenaiLLM(BaseLLM):
         """Create an OpenAI client for Blt."""
         # Check for OPENAI_API_KEY
         openai_api_key = get_from_dict_or_env(
-            data=data, key="OPENAI_API_KEY", default=None
+            data=data, key="openai_api_key", default=None
         )
         if not openai_api_key:
             raise ValueError(
                 "OPENAI_API_KEY environment variable is not set. Please set it before using the client."
             )
         data["openai_api_key"] = openai_api_key
-        data["base_url"] = get_from_dict_or_env(data, key="BASE_URL", default=None)
+        data["base_url"] = get_from_dict_or_env(data, key="base_url", default=None)
 
         try:
             data["client"] = OpenAI(

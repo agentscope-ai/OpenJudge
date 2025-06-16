@@ -1,3 +1,8 @@
+"""
+Module for composing multiple reward evaluation modules with weighting and routing strategies.
+Implements base classes and concrete compositions for handling complex reward calculations.
+"""
+
 from abc import abstractmethod
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 from copy import deepcopy
@@ -11,12 +16,29 @@ from rm_gallery.core.reward.registry import RewardRegistry
 
 
 class BaseComposition(BaseReward):
+    """
+    Base class for reward compositions that provides shared configuration parameters.
+
+    Attributes:
+        params: General parameters dictionary containing shared configurations like LLM settings
+    """
+
     params: Dict[str, Any] = Field(
         default={}, description="general parameters like llm"
     )
 
 
 class SimpleComposition(BaseComposition):
+    """
+    Composite reward module that combines multiple reward modules with weighted averaging.
+    Supports both sequential and parallel execution modes for reward evaluation.
+
+    Attributes:
+        weights: Dictionary mapping reward dimension names to their respective weights
+        reward_modules: List of reward module configurations or instances
+        is_parallel: Flag indicating whether to evaluate modules in parallel
+    """
+
     weights: Dict[str, float] = Field(default={}, description="weight for each reward")
     reward_modules: List[Dict[str, Any] | BaseReward] = Field(
         default_factory=list, description="reward modules"
@@ -24,6 +46,10 @@ class SimpleComposition(BaseComposition):
     is_parallel: bool = Field(default=False, description="parallel or not")
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize reward modules from configurations.
+        Converts dictionary configurations to actual reward module instances using the registry.
+        """
         super().__init__(*args, **kwargs)
         for i in range(len(self.reward_modules)):
             if isinstance(self.reward_modules[i], dict):
@@ -44,7 +70,17 @@ class SimpleComposition(BaseComposition):
     def evaluate(
         self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None
     ) -> DataSample:
-        # parallel evaluation
+        """
+        Evaluate rewards using configured modules with optional parallel execution.
+
+        Args:
+            sample: Input data sample to evaluate
+            thread_pool: Optional thread pool executor for parallel execution
+
+        Returns:
+            DataSample with updated reward information
+        """
+        # Parallel evaluation using thread pool
         if self.is_parallel:
             sample = deepcopy(sample)
             futures = []
@@ -56,15 +92,19 @@ class SimpleComposition(BaseComposition):
             wait(futures, return_when=ALL_COMPLETED)
             samples = [future.result() for future in futures]
 
+            # Merge results from parallel evaluations
             for s in samples:
                 sample.update(s)
             return sample
+
+        # Sequential evaluation mode
         else:
             for dimension in self.reward_modules:
                 sample = dimension.evaluate(sample, thread_pool)
 
-        # weight reward
+        # Weighted reward calculation function
         def weight(reward: Reward):
+            """Calculate weighted average based on configured weights"""
             w_sum = 0
             d_sum = 0
             for d in reward.details:
@@ -74,6 +114,7 @@ class SimpleComposition(BaseComposition):
             if w_sum != 0:
                 reward.score = d_sum / w_sum
 
+        # Apply weighting to all output rewards
         for output in sample.output:
             weight(output.answer.reward)
             if output.steps:
@@ -84,17 +125,45 @@ class SimpleComposition(BaseComposition):
 
 
 class RouterComposition(BaseComposition):
+    """
+    Base class for conditional reward routing that selects different reward compositions
+    based on input sample characteristics.
+
+    Attributes:
+        router: Dictionary mapping condition keys to reward composition instances
+    """
+
     router: Dict[str, BaseComposition] = Field(
         default_factory=dict, description="router for different reward modules"
     )
 
     @abstractmethod
     def _condition(self, sample: DataSample) -> str:
+        """
+        Determine routing condition based on input sample.
+        Must be implemented by subclasses to return a router key.
+
+        Args:
+            sample: Input data sample to evaluate
+
+        Returns:
+            str: Key identifying which reward composition to use
+        """
         ...
 
     def evaluate(
         self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None
     ) -> DataSample:
+        """
+        Route sample to appropriate reward composition based on condition.
+
+        Args:
+            sample: Input data sample to evaluate
+            thread_pool: Optional thread pool executor for parallel execution
+
+        Returns:
+            DataSample with updated reward information
+        """
         condition = self._condition(sample)
         self.router[condition].evaluate(sample, thread_pool)
         return sample

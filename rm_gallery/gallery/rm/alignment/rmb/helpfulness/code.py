@@ -1,6 +1,11 @@
-SCENARIO = (
-    "Code: Involves generating, understanding, or modifying programming language code within text.",
-)
+from typing import List
+
+from pydantic import Field
+
+from rm_gallery.core.reward.registry import RewardRegistry
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+
+SCENARIO = "Code: Involves generating, understanding, or modifying programming language code within text."
 PRINCIPLES = [
     "Technical Accuracy in Implementation: Ensure strict adherence to language-specific syntax, APIs, and platform conventions to avoid logical or runtime errors.",
     "Precise Problem Diagnosis: Identify and resolve root causes rather than applying superficial fixes, prioritizing accurate error localization.",
@@ -8,3 +13,9 @@ PRINCIPLES = [
     "Clarity in Communication and Structure: Provide step-by-step explanations, well-documented code, and structured outputs to enhance readability and maintainability.",
     "Robustness with Validation and Error Handling: Implement rigorous input validation, edge-case handling, and error recovery mechanisms to ensure reliability under unexpected conditions.",
 ]
+
+
+@RewardRegistry.register("code_listwise_reward")
+class CodeListWiseReward(BaseHelpfulnessListwiseReward):
+    scenario: str = Field(default=SCENARIO, description="assistant scenario")
+    principles: List[str] = Field(default=PRINCIPLES)

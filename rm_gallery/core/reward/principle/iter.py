@@ -7,6 +7,7 @@ from typing import Dict, List
 import numpy as np
 from loguru import logger
 from pydantic import Field
+from retry import retry
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.message import format_messages
@@ -18,6 +19,13 @@ from rm_gallery.core.reward.principle.base import (
 
 
 class PrincipleGenerateTempalte(BaseGeneratorTemplate):
+    """
+    Template class for generating principle-based evaluation prompts.
+
+    Methods:
+        format: Formats a prompt for principle generation based on input parameters.
+    """
+
     @classmethod
     def format(
         cls,
@@ -30,6 +38,22 @@ class PrincipleGenerateTempalte(BaseGeneratorTemplate):
         principles: str,
         **kwargs,
     ) -> str:
+        """
+        Generates a structured prompt for principle extraction.
+
+        Args:
+            scenario: Contextual description of the evaluation scenario
+            instruction: Original instruction given to the model
+            completions: List of candidate responses to evaluate
+            prediction: Index/ID of the predicted best completion
+            groudtruth: Index/ID of the ground truth best completion
+            number: Maximum number of principles to generate
+            principles: Existing principles to be refined/extended
+            **kwargs: Additional formatting parameters
+
+        Returns:
+            Formatted prompt string for principle generation
+        """
         completion_str = ""
         for i, completion in enumerate(completions):
             completion_str += (
@@ -75,10 +99,30 @@ Completion {groudtruth} is better than others
 
 
 class PrincipleClusterTemplate(BaseGeneratorTemplate):
+    """
+    Template class for clustering and organizing evaluation principles.
+
+    Methods:
+        format: Formats a prompt for principle clustering and optimization.
+    """
+
     @classmethod
     def format(
         cls, examples: str, scenario: str, number: int, principles, **kwargs
     ) -> str:
+        """
+        Generates a structured prompt for principle clustering analysis.
+
+        Args:
+            examples: Pre-generated example principles for reference
+            scenario: Contextual description of the evaluation scenario
+            number: Maximum number of clustered principles to generate
+            principles: Raw principles to be clustered and optimized
+            **kwargs: Additional formatting parameters
+
+        Returns:
+            Formatted prompt string for principle clustering
+        """
         return f"""## Overview
 As an principle aggregation and analysis expert, your task is to conduct cluster analysis on a large collection of pre-generated principles based on examples and provide the optimization principles for each category in the scenario.
 **Specific Steps:**
@@ -112,6 +156,14 @@ When consolidating the principles, be sure to maintain the integrity, clarity, a
 
 
 class IterPrincipleGenerator(PrincipleGenerator):
+    """
+    Iterative principle generator that combines evaluation, generation, and clustering.
+
+    Attributes:
+        reward: Reward module for principle-based evaluation
+        max_epochs: Maximum number of iteration cycles
+    """
+
     reward: BaseListWisePrincipleReward = Field(
         default=..., description="reward module"
     )
@@ -124,6 +176,18 @@ class IterPrincipleGenerator(PrincipleGenerator):
         thread_pool: ThreadPoolExecutor,
         **kwargs,
     ):
+        """
+        Evaluates samples using current principles through thread pool execution.
+
+        Args:
+            samples: List of data samples to evaluate
+            principles: Dictionary of {key: value} principles
+            thread_pool: Executor for parallel processing
+            **kwargs: Additional evaluation parameters
+
+        Returns:
+            Evaluation results from reward module
+        """
         self.reward.principles = [
             f"{key}: {value}" for key, value in principles.items()
         ]
@@ -134,6 +198,16 @@ class IterPrincipleGenerator(PrincipleGenerator):
         )
 
     def generate(self, sample: DataSample, principles: Dict[str, str]):
+        """
+        Generates new principles based on sample analysis.
+
+        Args:
+            sample: Single data sample for principle generation
+            principles: Existing principles dictionary
+
+        Returns:
+            Modified sample with generated principles in metadata
+        """
         sample = copy.deepcopy(sample)
         instructioin: str = format_messages(sample.input)
         completions = [
@@ -167,16 +241,34 @@ class IterPrincipleGenerator(PrincipleGenerator):
             ),
         )
 
-        logger.info(f"prompt: {prompt}")
-        response = self.llm.simple_chat(
-            prompt,
-            sys_prompt="You are a professional assistant skilled in extracting key insights and summarizing information.",
-        )
-        result = PrincipleGenerateTempalte.parse(response)
-        sample.input[-1].additional_kwargs["generate"] = result.model_dump()
+        @retry(tries=self.max_retries, delay=1.0)
+        def call():
+            logger.info(f"prompt: {prompt}")
+            response = self.llm.simple_chat(
+                prompt,
+                sys_prompt="You are a professional assistant skilled in extracting key insights and summarizing information.",
+            )
+            result = PrincipleGenerateTempalte.parse(response)
+            sample.input[-1].additional_kwargs["generate"] = result.model_dump()
+            return sample
+
+        try:
+            sample = call()
+        except Exception as e:
+            logger.error(f"API call failed: {str(e)}")
+
         return sample
 
     def _split_samples(self, samples: List[DataSample]):
+        """
+        Identifies samples with conflicting predictions vs ground truth.
+
+        Args:
+            samples: List of data samples to analyze
+
+        Returns:
+            List of samples where prediction doesn't match chosen label
+        """
         bad_samples = []
         for sample in samples:
             idx = np.argsort(
@@ -193,6 +285,16 @@ class IterPrincipleGenerator(PrincipleGenerator):
         return bad_samples
 
     def cluster(self, samples: List[DataSample], principles: Dict[str, str]):
+        """
+        Clusters and optimizes principles from multiple samples.
+
+        Args:
+            samples: List of samples containing generated principles
+            principles: Existing principles dictionary
+
+        Returns:
+            Optimized principles dictionary after clustering
+        """
         examples = []
         for i, sample in enumerate(samples):
             sample_principles = []
@@ -212,26 +314,43 @@ class IterPrincipleGenerator(PrincipleGenerator):
         str_examples = "\n".join(examples)
         logger.info("===RAW EXAMPLES===\n" + str_examples)
 
-        response = self.llm.simple_chat(
-            PrincipleClusterTemplate.format(
-                scenario=self.scenario,
-                examples=str_examples,
-                enable_thinking=self.llm.enable_thinking,
-                number=self.cluster_number,
-                principles="\n".join(
-                    [f"{key}: {value}" for key, value in principles.items()]
+        @retry(tries=self.max_retries, delay=1.0)
+        def call():
+            response = self.llm.simple_chat(
+                PrincipleClusterTemplate.format(
+                    scenario=self.scenario,
+                    examples=str_examples,
+                    enable_thinking=self.llm.enable_thinking,
+                    number=self.cluster_number,
+                    principles="\n".join(
+                        [f"{key}: {value}" for key, value in principles.items()]
+                    ),
                 ),
-            ),
-            sys_prompt="You are a skilled professional assistant focusing on induction and summarization.",
-        )
-        result = PrincipleClusterTemplate.parse(response)
+                sys_prompt="You are a skilled professional assistant focusing on induction and summarization.",
+            )
+            result = PrincipleClusterTemplate.parse(response)
+            logger.info("===CLUSTER RESULT===\n" + result.model_dump_json())
+            return result.principles
 
-        logger.info("===CLUSTER RESULT===\n" + result.model_dump_json())
-        return result.principles
+        try:
+            principles = call()
+        except Exception as e:
+            logger.error(f"API call failed: {str(e)}")
+        return principles
 
     def run_batch(
         self, samples: List[DataSample], thread_pool: ThreadPoolExecutor
     ) -> Dict[str, str]:
+        """
+        Executes the iterative principle generation pipeline.
+
+        Args:
+            samples: List of initial data samples
+            thread_pool: Executor for parallel processing
+
+        Returns:
+            Final optimized principles dictionary after iterations
+        """
         principles = {
             "Intent Understanding": "Understand user intentions and response.."
         }

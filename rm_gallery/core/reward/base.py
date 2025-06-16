@@ -487,6 +487,7 @@ class BaseLLMReward(BaseReward):
     template: Type[BasePromptTemplate] = Field(
         default=BasePromptTemplate, description="prompt template"
     )
+    max_retries: int = Field(default=3, description="max retries")
 
     def _before_evaluate(self, **kwargs) -> dict:
         """
@@ -533,24 +534,26 @@ class BaseLLMReward(BaseReward):
             RewardResult: Evaluation results with metrics and metadata
         """
         assert self.llm is not None
-        try:
-            params = self._before_evaluate(**kwargs)
-            prompt = self.template.format(
-                enable_thinking=self.llm.enable_thinking, **params
-            )
-            logger.info(f"prompt: {prompt}")
+        for i in range(self.max_retries):
+            try:
+                params = self._before_evaluate(**kwargs)
+                prompt = self.template.format(
+                    enable_thinking=self.llm.enable_thinking, **params
+                )
+                logger.info(f"prompt: {prompt}")
 
-            response = self.llm.simple_chat(query=prompt)
-            response = self.template.parse(response)
-            logger.info(f"response: {response}")
+                response = self.llm.simple_chat(query=prompt)
+                response = self.template.parse(response)
+                logger.info(f"response: {response}")
 
-            result = self._after_evaluate(response=response, **kwargs)
-            result.extra_data["prompt"] = prompt
-        except Exception as e:
-            logger.error(f"API call failed: {str(e)}")
-            result = RewardResult(
-                name=self.name, details=[], extra_data={"error": str(e)}
-            )
+                result = self._after_evaluate(response=response, **kwargs)
+                result.extra_data["prompt"] = prompt
+                break
+            except Exception as e:
+                logger.error(f"API call failed: {str(e)}")
+                result = RewardResult(
+                    name=self.name, details=[], extra_data={"error": str(e)}
+                )
         return result
 
     def format(

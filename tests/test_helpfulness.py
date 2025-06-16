@@ -3,7 +3,7 @@ from loguru import logger
 from rm_gallery.core.data.schema import ChatMessage, DataOutput, DataSample, Step
 from rm_gallery.core.model.message import MessageRole
 from rm_gallery.core.model.openai_llm import OpenaiLLM
-from rm_gallery.gallery.alignment.helpfulness import HelpfulnessListWiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
 
 
 def test_single() -> None:
@@ -39,7 +39,7 @@ def test_single() -> None:
     logger.info(f"input={sample.model_dump_json()}")
     llm = OpenaiLLM(model="qwen-max")
 
-    helpfulness = HelpfulnessListWiseReward(llm=llm, name="helpfulness_pairwise")
+    helpfulness = BaseHelpfulnessListwiseReward(llm=llm, name="helpfulness_pairwise")
     # helpfulness = RewardRegistry.get("helpfulness_pairwise")(llm = llm,name="helpfulness_pairwise")
 
     sample = helpfulness.evaluate(sample=sample)
