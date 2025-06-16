@@ -639,7 +639,7 @@ class BasePointWisePrincipleReward(BasePrincipleReward, BasePointWiseReward):
 
     desc: str = Field(
         default="""Please act as an unbiased and impartial evaluator tasked with assessing the quality of the responses provided below.
-You should critically and accurately assess the assistant’s answer with the key principles to be a qualified response without any potential bias.
+You should critically and accurately assess the assistant’s answer with the key principles without any potential bias.
 Do not allow the length of the responses to influence your evaluation.
 Be as goal as possible.""",
         description="description",
@@ -690,10 +690,9 @@ class BaseListWisePrincipleReward(BasePrincipleReward, BaseListWiseReward):
 
     desc: str = Field(
         default="""Please act as an impartial judge and evaluate the quality of the answers provided by some assistants to the user question displayed below.
-You should critically and accurately assess the assistant’s answer with the key principles to be a qualified response without any potential bias and choose the assistant that follows the user’s query and answers the user’s question best.
+You should critically and accurately assess the assistant’s answer with the key principles and choose the assistant that follows the user’s query and answers the user’s question best.
 Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision.
 Do not allow the length of the responses to influence your evaluation.
-Do not favor certain names of the assistants.
 Be as goal as possible.""",
         description="description",
     )

@@ -1,7 +1,9 @@
 PRINCIPLES = [
-    "General/Excerpt Language Translation: Translations should convey the exact meaning of the original text in a clear and fluent manner, ensuring that the translated text is both accurate and easy to read.",
-    "Technical and Scientific Translation: Translations must use the correct technical terminology and convey the original text's precise meaning, ensuring that technical concepts are accurately represented.",
-    "Literary and Cultural Translation: Translations should capture the original’s style and tone while making necessary adaptations to reflect the cultural context of the target language audience.",
+    "Accuracy in Meaning Preservation: Ensure the translation precisely retains the original intent, nuances, and core message without distortion or omission.",
+    "Contextual Appropriateness: Prioritize translations that align with the cultural, situational, or technical context of the source material to maintain relevance and clarity.",
+    "Fluency and Natural Flow: Produce translations that sound idiomatic and grammatically correct in the target language, avoiding awkward phrasing or unnatural structures.",
+    "Proper Terminology Usage: Use domain-specific or technical terms consistently and accurately to preserve the original text's precision and professionalism.",
+    "Avoid Literal Translation: Reject rigid word-for-word conversions in favor of conveying idiomatic or figurative meanings when they better reflect the source's intent.",
 ]
 
-SCENARIO = """The assitant aims to convert text from one language to another."""
+SCENARIO = ("Translation: Converting text from one language to another.",)
