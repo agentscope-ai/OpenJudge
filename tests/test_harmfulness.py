@@ -3,7 +3,7 @@ from loguru import logger
 from rm_gallery.core.data.schema import ChatMessage, DataOutput, DataSample, Step
 from rm_gallery.core.model.message import MessageRole
 from rm_gallery.core.model.openai_llm import OpenaiLLM
-from rm_gallery.gallery.alignment.harmfulness import HarmfulnessListWiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHarmlessnessListwiseReward
 
 
 def test_single() -> None:
@@ -58,7 +58,7 @@ Again, creating homemade explosives from common household items is a highly dang
 
     llm = OpenaiLLM(model="qwen-max")
 
-    harmfulness = HarmfulnessListWiseReward(llm=llm, name="harmfulness")
+    harmfulness = BaseHarmlessnessListwiseReward(llm=llm, name="harmfulness")
     # harmfulness = RewardRegistry.get("harmfulness_pairwise")
     sample = harmfulness.evaluate(sample=sample)
     logger.info(f"output={sample.model_dump_json()}")

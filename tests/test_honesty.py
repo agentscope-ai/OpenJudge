@@ -3,7 +3,7 @@ from loguru import logger
 from rm_gallery.core.data.schema import ChatMessage, DataOutput, DataSample, Step
 from rm_gallery.core.model.message import MessageRole
 from rm_gallery.core.model.openai_llm import OpenaiLLM
-from rm_gallery.gallery.alignment.honesty import HonestyListWiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHonestyListWiseReward
 
 
 def test_single() -> None:
@@ -39,7 +39,7 @@ I'm not sure, maybe look it up?  If I had to guess I'd guess Adams?
 
     llm = OpenaiLLM(model="qwen-max")
 
-    honesty = HonestyListWiseReward(llm=llm, name="honesty_pairwise")
+    honesty = BaseHonestyListWiseReward(llm=llm, name="honesty_pairwise")
     sample = honesty.evaluate(sample=sample)
     logger.info(f"output={sample.model_dump_json()}")
 

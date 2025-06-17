@@ -140,5 +140,5 @@ def test_all(tasks, i):
         write_json(results, f"data/RMBbench/results_rmb_opt_{i}.json")
 
 
-for i in range(2, 5):
+for i in range(1, 2):
     test_all(TASKS, i)

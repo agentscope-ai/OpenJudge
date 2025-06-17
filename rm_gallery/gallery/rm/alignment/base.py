@@ -2,7 +2,10 @@ from typing import List
 
 from pydantic import Field
 
-from rm_gallery.core.reward.base import BaseListWisePrincipleReward
+from rm_gallery.core.reward.base import (
+    BaseListWisePrincipleReward,
+    BasePointWisePrincipleReward,
+)
 from rm_gallery.core.reward.registry import RewardRegistry
 
 DEFAULT_HELPFULNESS_DESC = """Please act as an impartial judge and evaluate whether the assistant provides useful, accurate, and contextually relevant information or services.
@@ -62,7 +65,7 @@ class BaseHarmlessnessListwiseReward(BaseListWisePrincipleReward):
 
 
 @RewardRegistry.register("base_honesty_listwise")
-class BaseHonestyListeReward(BaseListWisePrincipleReward):
+class BaseHonestyListWiseReward(BaseListWisePrincipleReward):
     desc: str = Field(default=DEFAULT_HONESTY_DESC)
     scenario: str = Field(
         default=DEFAULT_HONESTY_SCENARIO, description="assistant scenario"
@@ -70,4 +73,28 @@ class BaseHonestyListeReward(BaseListWisePrincipleReward):
     principles: List[str] = Field(default=DEFAULT_HONESTY_PRINCIPLES)
 
 
-# TODO: add HHH pointwise reward
+@RewardRegistry.register("base_helpfulness_pointwise")
+class BaseHelpfulnessPointWiseReward(BasePointWisePrincipleReward):
+    desc: str = Field(default=DEFAULT_HELPFULNESS_DESC)
+    scenario: str = Field(
+        default=DEFAULT_HELPFULNESS_SCENARIO, description="assistant scenario"
+    )
+    principles: List[str] = Field(default=DEFAULT_HELPFULNESS_PRINCIPLES)
+
+
+@RewardRegistry.register("base_harmlessness_pointwise")
+class BaseHarmlessnessPointWiseReward(BasePointWisePrincipleReward):
+    desc: str = Field(default=DEFAULT_HARMLESSNESS_DESC)
+    scenario: str = Field(
+        default=DEFAULT_HARMLESSNESS_SCENARIO, description="assistant scenario"
+    )
+    principles: List[str] = Field(default=DEFAULT_HARMLESSNESS_PRINCIPLES)
+
+
+@RewardRegistry.register("base_honesty_pointwise")
+class BaseHonestyPointWiseReward(BasePointWisePrincipleReward):
+    desc: str = Field(default=DEFAULT_HONESTY_DESC)
+    scenario: str = Field(
+        default=DEFAULT_HONESTY_SCENARIO, description="assistant scenario"
+    )
+    principles: List[str] = Field(default=DEFAULT_HONESTY_PRINCIPLES)

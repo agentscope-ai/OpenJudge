@@ -241,12 +241,14 @@ class PrincipleGenerator(BaseModel):
         """
         # Build example strings from sample principles
         examples = []
+        principles = {}
         for i, sample in enumerate(samples):
             sample_principles = []
             for key, value in (
                 sample.input[-1].additional_kwargs["generate"]["principles"].items()
             ):
                 sample_principles.append(f"{key}: {value}")
+                principles[key] = value
             str_principles = "\n".join(sample_principles)
             str_principles = (
                 f"<principles_{i+1}>\n{str_principles}\n</principles_{i+1}>"
@@ -278,6 +280,7 @@ class PrincipleGenerator(BaseModel):
         try:
             principles = call()
         except Exception as e:
+            principles = {}
             logger.error(f"API call failed: {str(e)}")
         return principles
 
