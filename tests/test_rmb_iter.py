@@ -5,10 +5,10 @@ from loguru import logger
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.openai_llm import OpenaiLLM
-from rm_gallery.core.reward.principle.base import PrincipleGenerator
+from rm_gallery.core.reward.principle.generator import PrincipleGenerator
 from rm_gallery.core.reward.registry import RewardRegistry
 from rm_gallery.core.utils.file import read_jsonl, write_json
-from rm_gallery.gallery.rm.alignment2.rmb.helpfulness import TASKS
+from rm_gallery.gallery.rm.alignment.helpfulness import TASKS
 
 
 def calc_acc(samples: List[DataSample]):

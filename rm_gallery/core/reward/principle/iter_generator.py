@@ -12,7 +12,7 @@ from retry import retry
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.message import format_messages
 from rm_gallery.core.reward.base import BaseListWisePrincipleReward
-from rm_gallery.core.reward.principle.base import (
+from rm_gallery.core.reward.principle.generator import (
     BaseGeneratorTemplate,
     PrincipleGenerator,
 )
