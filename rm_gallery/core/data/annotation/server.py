@@ -22,9 +22,9 @@ class LabelStudioManager:
     def __init__(
         self,
         port: int = 8080,
-        username: str = "admin@example.com",
-        password: str = "admin123",
-        data_dir: str = "./log",
+        username: str = "admin@rmgallery.com",
+        password: str = "RM-Gallery",
+        data_dir: str = "./log/label_studio_logs",
         use_docker: bool = True,
         container_name: str = "rm-gallery-label-studio",
         image: str = "heartexlabs/label-studio:latest",
@@ -39,7 +39,7 @@ class LabelStudioManager:
         self.server_url = f"http://localhost:{port}"
         self.process = None
         self.api_token = None
-        self.config_file = Path("label_studio_config.json")
+        self.config_file = Path(self.data_dir) / "label_studio_config.json"
 
         # Setup logging
         self._setup_logging()
@@ -47,7 +47,7 @@ class LabelStudioManager:
     def _setup_logging(self):
         """Setup logging system"""
         # Create logs directory
-        logs_dir = os.path.join(os.path.abspath(self.data_dir), "label_studio_logs")
+        logs_dir = os.path.join(os.path.abspath(self.data_dir))
         os.makedirs(logs_dir, exist_ok=True)
 
         # Setup loguru logger
@@ -78,7 +78,7 @@ class LabelStudioManager:
                 loguru_logger.info(
                     f"Label Studio service is already running at {self.server_url}"
                 )
-                return self._get_api_token()
+                return True
 
             loguru_logger.info(f"Starting Label Studio service on port {self.port}...")
 
@@ -90,19 +90,18 @@ class LabelStudioManager:
                     loguru_logger.warning(
                         "Docker not available, falling back to pip installation"
                     )
+                    self.use_docker = (
+                        False  # Update the flag to reflect actual deployment method
+                    )
                 success = self._start_with_pip()
 
             if success:
                 loguru_logger.info("✅ Label Studio service started successfully!")
                 loguru_logger.info(f"🌐 Web interface: {self.server_url}")
 
-                # Get API token and save configuration
-                if self._get_api_token():
-                    self._save_config()
-                    return True
-                else:
-                    loguru_logger.error("Failed to get API token")
-                    return False
+                # Save configuration
+                self._save_config()
+                return True
             else:
                 loguru_logger.error("❌ Failed to start Label Studio service")
                 return False
@@ -176,22 +175,46 @@ class LabelStudioManager:
         """Start Label Studio with pip"""
         loguru_logger.info("Starting Label Studio with pip...")
 
-        # Check and install label-studio
+        # Check if label-studio is installed using importlib (more elegant way)
+        loguru_logger.info("Checking if Label Studio is installed...")
         try:
-            subprocess.run(
-                ["label-studio", "--version"],
-                capture_output=True,
-                text=True,
-                check=True,
+            import importlib.metadata
+
+            version = importlib.metadata.version("label-studio")
+            loguru_logger.info(f"Label Studio already installed: {version}")
+        except importlib.metadata.PackageNotFoundError:
+            loguru_logger.info("Label Studio not found, installing...")
+            loguru_logger.info(
+                "Installing Label Studio... This may take a few minutes."
             )
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            loguru_logger.info("Installing Label Studio...")
-            result = subprocess.run(
-                [sys.executable, "-m", "pip", "install", "label-studio"], check=False
-            )
-            if result.returncode != 0:
-                loguru_logger.error("Failed to install Label Studio")
+
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "label-studio"],
+                    check=False,
+                    timeout=300,  # 5 minutes timeout for installation
+                    capture_output=True,
+                    text=True,
+                )
+
+                if result.returncode != 0:
+                    loguru_logger.error(
+                        f"Failed to install Label Studio: {result.stderr}"
+                    )
+                    return False
+                else:
+                    loguru_logger.info("Label Studio installed successfully!")
+            except subprocess.TimeoutExpired:
+                loguru_logger.error(
+                    "Timeout while installing Label Studio (>5 minutes)"
+                )
                 return False
+            except Exception as e:
+                loguru_logger.error(f"Error during Label Studio installation: {e}")
+                return False
+        except Exception as e:
+            loguru_logger.error(f"Error checking Label Studio installation: {e}")
+            return False
 
         # Create data directory
         Path(self.data_dir).mkdir(parents=True, exist_ok=True)
@@ -208,7 +231,6 @@ class LabelStudioManager:
             self.username,
             "--password",
             self.password,
-            "--user-token",  # Generate user token
         ]
 
         loguru_logger.info(f"Running command: {' '.join(cmd)}")
@@ -229,7 +251,7 @@ class LabelStudioManager:
         except:
             return False
 
-    def _wait_for_service(self, max_wait: int = 300) -> bool:
+    def _wait_for_service(self, max_wait: int = 30) -> bool:
         """Wait for service to be ready"""
         start_time = time.time()
 
@@ -256,58 +278,10 @@ class LabelStudioManager:
         loguru_logger.error("Label Studio failed to start within timeout")
         return False
 
-    def _get_api_token(self) -> bool:
-        """Get API token"""
-        max_retries = 10
-        retry_delay = 3
-
-        loguru_logger.info("Getting API token...")
-
-        for attempt in range(max_retries):
-            try:
-                # 尝试登录获取token
-                login_data = {"email": self.username, "password": self.password}
-
-                response = requests.post(
-                    f"{self.server_url}/api/users/login", json=login_data, timeout=10
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    self.api_token = data.get("token")
-                    if self.api_token:
-                        loguru_logger.info("✅ Successfully obtained API token!")
-                        return True
-                    else:
-                        loguru_logger.warning(
-                            "Login successful but no token in response"
-                        )
-
-                elif response.status_code == 401:
-                    loguru_logger.warning(
-                        f"Login failed (attempt {attempt + 1}/{max_retries})"
-                    )
-                    time.sleep(retry_delay)
-                else:
-                    loguru_logger.warning(
-                        f"Unexpected response: {response.status_code} - {response.text}"
-                    )
-                    time.sleep(retry_delay)
-
-            except Exception as e:
-                loguru_logger.warning(
-                    f"Error getting API token (attempt {attempt + 1}/{max_retries}): {e}"
-                )
-                time.sleep(retry_delay)
-
-        loguru_logger.error(f"❌ Failed to get API token after {max_retries} attempts")
-        return False
-
     def _save_config(self):
         """Save configuration to file"""
         config = {
             "server_url": self.server_url,
-            "api_token": self.api_token,
             "username": self.username,
             "data_dir": self.data_dir,
             "use_docker": self.use_docker,
@@ -319,7 +293,6 @@ class LabelStudioManager:
             json.dump(config, f, indent=2)
 
         loguru_logger.info(f"💾 Configuration saved to {self.config_file}")
-        loguru_logger.info(f"🔑 API Token: {self.api_token}")
 
     def _container_exists(self) -> bool:
         """Check if container exists"""
@@ -518,9 +491,14 @@ class LabelStudioManager:
 
     def stop_service(self):
         """Stop service"""
-        if self.use_docker:
+        # Determine actual deployment method from config file or dynamic detection
+        actual_use_docker = self._get_actual_deployment_method()
+
+        if actual_use_docker:
+            loguru_logger.info("Stopping Docker-based Label Studio service...")
             self._stop_container()
         else:
+            loguru_logger.info("Stopping pip-based Label Studio service...")
             self._stop_pip_service()
 
         # Clear configuration file
@@ -533,15 +511,52 @@ class LabelStudioManager:
         except Exception as e:
             loguru_logger.error(f"Error removing configuration file: {e}")
 
+    def _get_actual_deployment_method(self) -> bool:
+        """Get actual deployment method from config file or dynamic detection"""
+        # Try to read from config file first
+        config = self.load_config()
+        if config and "use_docker" in config:
+            loguru_logger.debug(
+                f"Found deployment method in config: {'Docker' if config['use_docker'] else 'Pip'}"
+            )
+            return config["use_docker"]
+
+        # Fallback to dynamic detection
+        loguru_logger.debug("Config not found, using dynamic detection")
+
+        # Check if Docker container exists
+        if self._container_exists():
+            loguru_logger.debug("Found Docker container, assuming Docker deployment")
+            return True
+
+        # Check if pip service is running
+        try:
+            result = subprocess.run(
+                ["lsof", "-ti", f":{self.port}"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                loguru_logger.debug("Found process using port, assuming pip deployment")
+                return False
+        except:
+            pass
+
+        # Default fallback
+        loguru_logger.debug("Could not determine deployment method, using default")
+        return self.use_docker
+
     def get_status(self) -> dict:
         """Get service status"""
         config = self.load_config()
         is_running = self._is_service_running()
+        actual_use_docker = self._get_actual_deployment_method()
 
         # Additional status info for pip mode
         pip_processes = []
         port_processes = []
-        if not self.use_docker:
+        if not actual_use_docker:
             try:
                 # Check by port
                 result = subprocess.run(
@@ -557,6 +572,7 @@ class LabelStudioManager:
                 patterns = [
                     "annotation.server start",
                     "rm_gallery.core.data.annotation.server",
+                    "label-studio start",  # Match actual label-studio process
                 ]
                 for pattern in patterns:
                     result = subprocess.run(
@@ -573,12 +589,12 @@ class LabelStudioManager:
         status = {
             "running": is_running,
             "config": config,
-            "deployment_method": "docker" if self.use_docker else "pip",
+            "deployment_method": "docker" if actual_use_docker else "pip",
             "port": self.port,
             "server_url": self.server_url,
         }
 
-        if not self.use_docker:
+        if not actual_use_docker:
             if pip_processes:
                 status["pip_processes"] = pip_processes
             if port_processes:
@@ -611,15 +627,13 @@ def main():
         "action", choices=["start", "stop", "status"], help="Action to perform"
     )
     parser.add_argument(
-        "--port", type=int, default=8080, help="Port for Label Studio service"
+        "--port", type=int, default=None, help="Port for Label Studio service"
     )
-    parser.add_argument(
-        "--username", default="admin@example.com", help="Admin username"
-    )
-    parser.add_argument("--password", default="admin123", help="Admin password")
+    parser.add_argument("--username", default=None, help="Admin username")
+    parser.add_argument("--password", default=None, help="Admin password")
     parser.add_argument(
         "--data-dir",
-        default="./log",
+        default=None,
         help="Data directory for Label Studio",
     )
     parser.add_argument(
@@ -627,24 +641,32 @@ def main():
     )
     parser.add_argument(
         "--container-name",
-        default="rm-gallery-label-studio",
+        default=None,
         help="Docker container name",
     )
-    parser.add_argument(
-        "--image", default="heartexlabs/label-studio:latest", help="Docker image to use"
-    )
+    parser.add_argument("--image", default=None, help="Docker image to use")
 
     args = parser.parse_args()
 
-    manager = LabelStudioManager(
-        port=args.port,
-        username=args.username,
-        password=args.password,
-        data_dir=args.data_dir,
-        use_docker=not args.use_pip,
-        container_name=args.container_name,
-        image=args.image,
-    )
+    # Build kwargs dict, only including non-None values to use class defaults
+    kwargs = {}
+    if args.port is not None:
+        kwargs["port"] = args.port
+    if args.username is not None:
+        kwargs["username"] = args.username
+    if args.password is not None:
+        kwargs["password"] = args.password
+    if args.data_dir is not None:
+        kwargs["data_dir"] = args.data_dir
+    if args.container_name is not None:
+        kwargs["container_name"] = args.container_name
+    if args.image is not None:
+        kwargs["image"] = args.image
+
+    # Handle use_docker flag (always set based on --use-pip)
+    kwargs["use_docker"] = not args.use_pip
+
+    manager = LabelStudioManager(**kwargs)
 
     if args.action == "start":
         if manager.start_service():
@@ -655,11 +677,8 @@ def main():
             print(f"🌐 Web Interface: {manager.server_url}")
             print(f"📧 Username: {manager.username}")
             print(f"🔐 Password: {manager.password}")
-            print(f"🔑 API Token: {manager.api_token}")
             print(f"📁 Data Directory: {manager.data_dir}")
             print(f"🐳 Deployment: {'Docker' if manager.use_docker else 'Pip'}")
-            print("=" * 60)
-            print("💡 Use this API token in your annotation modules")
             print("=" * 60)
         else:
             loguru_logger.error("❌ Failed to start Label Studio")
@@ -680,7 +699,6 @@ def main():
         print(f"{'✅ Running' if status['running'] else '❌ Stopped'}")
 
         if status["config"]:
-            print(f"🔑 API Token: {status['config']['api_token']}")
             print(f"📁 Data Dir: {status['config']['data_dir']}")
             print(f"👤 Username: {status['config']['username']}")
         else:

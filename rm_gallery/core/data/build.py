@@ -104,30 +104,11 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
     # Create load module
     load_config = dataset_config.get("configs", {})
     if load_config:
-        # define supported fields
-        SUPPORTED_CONFIG_FIELDS = {
-            "path",
-            "limit",
-            "split",
-            "dataset_config",
-            "streaming",
-            "trust_remote_code",
-        }
-        # build config
-        config = {
-            "name": dataset_name,
-            **{
-                k: v
-                for k, v in load_config.items()
-                if k in SUPPORTED_CONFIG_FIELDS and v is not None
-            },
-        }
-
         modules["load_module"] = create_load_module(
-            name=f"{dataset_name}-loader",
+            name=dataset_name,
             load_strategy_type=load_config.get("type", "local"),
             data_source=load_config.get("source", "*"),
-            config=config,
+            config=load_config,
             metadata=metadata,
         )
 
@@ -142,14 +123,14 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
                 logger.error(f"Failed to create operator {proc_config}: {str(e)}")
 
         modules["process_module"] = create_process_module(
-            name=f"{dataset_name}-processor", operators=operators, metadata=metadata
+            name=dataset_name, operators=operators, metadata=metadata
         )
 
     # Create annotation module
     annotation_config = dataset_config.get("annotation", {})
     if annotation_config:
         modules["annotation_module"] = create_annotation_module(
-            name=f"{dataset_name}-annotator",
+            name=dataset_name,
             label_config=annotation_config.get("label_config"),
             template_name=annotation_config.get("template_name"),
             project_title=annotation_config.get("project_title"),
@@ -164,7 +145,7 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
     export_config = dataset_config.get("export", {})
     if export_config:
         modules["export_module"] = create_export_module(
-            name=f"{dataset_name}-exporter",
+            name=dataset_name,
             config=export_config,
             metadata=metadata,
         )

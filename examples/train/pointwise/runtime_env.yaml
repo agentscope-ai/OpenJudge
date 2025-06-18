@@ -1,7 +1,6 @@
 # working_dir: ./
 excludes: ["/.git/"]
 env_vars:
-  PYTHONPATH: "/Users/xielipeng/RM-Gallery"
   TORCH_NCCL_AVOID_RECORD_STREAMS: "1"
   PYTORCH_CUDA_ALLOC_CONF: "expandable_segments: False"
   WANDB_API_KEY: "local-e93291bd40698a593a1fcc5b99da6a71a753a383"

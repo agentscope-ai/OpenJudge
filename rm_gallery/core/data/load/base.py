@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
+from datasets import load_dataset
 from loguru import logger
 from pydantic import Field
 
@@ -128,7 +129,7 @@ class DataLoad(BaseDataModule):
         # Choose strategy based on load_strategy_type
         if self.load_strategy_type == "local":
             strategy = FileDataLoadStrategy(
-                name=f"{self.name}_strategy",
+                name=self.name,
                 load_strategy_type=self.load_strategy_type,
                 data_source=self.data_source,
                 config=self.config.copy(),
@@ -136,7 +137,7 @@ class DataLoad(BaseDataModule):
             )
         elif self.load_strategy_type == "huggingface":
             strategy = HuggingFaceDataLoadStrategy(
-                name=f"{self.name}_strategy",
+                name=self.name,
                 load_strategy_type=self.load_strategy_type,
                 data_source=self.data_source,
                 config=self.config.copy(),
@@ -181,12 +182,8 @@ class DataLoad(BaseDataModule):
                 )
 
             # Create output dataset
-            dataset_name = self.name
-            if dataset_name.endswith("-loader"):
-                dataset_name = dataset_name[:-7]
-
             output_dataset = BaseDataSet(
-                name=dataset_name,
+                name=self.name,
                 metadata={
                     "source": self.data_source,
                     "strategy_type": self.load_strategy_type,
@@ -433,22 +430,13 @@ class HuggingFaceDataLoadStrategy(DataLoad):
 
     def validate_config(self, config: Dict[str, Any]) -> None:
         """Validate HuggingFace config"""
-        print(f"config: {config}")
-        if "name" not in config:
-            raise ValueError("HuggingFace data strategy requires 'name' in config")
-        if not isinstance(config["name"], str):
-            raise ValueError("'name' must be a string")
+        pass
 
     def _load_data_impl(self, **kwargs) -> List[DataSample]:
         """Load data from HuggingFace dataset"""
-        try:
-            from datasets import load_dataset
-        except ImportError:
-            raise ImportError("Please install datasets package: pip install datasets")
-
-        dataset_name = self.config["name"]
+        dataset_name = self.name
         dataset_config = self.config.get("dataset_config", None)
-        split = self.config.get("split", "train")
+        split = self.config.get("huggingface_split", "train")
         streaming = self.config.get("streaming", False)
         trust_remote_code = self.config.get("trust_remote_code", False)
 
@@ -506,7 +494,7 @@ class HuggingFaceDataLoadStrategy(DataLoad):
                 "dataset_name": self.config.get("name"),
                 "load_type": "huggingface",
                 "dataset_config": self.config.get("dataset_config"),
-                "split": self.config.get("split", "train"),
+                "split": self.config.get("huggingface_split", "train"),
             }
             return self.data_converter.convert_to_data_sample(data_dict, source_info)
         else:

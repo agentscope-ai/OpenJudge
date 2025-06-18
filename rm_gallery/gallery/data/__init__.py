@@ -1,5 +1,6 @@
-from rm_gallery.gallery.data.annotation.rewardbench_template import (
-    RewardBenchAnnotationTemplate,
+from rm_gallery.gallery.data.annotation.rewardbench import RewardBenchAnnotationTemplate
+from rm_gallery.gallery.data.annotation.rewardbench2 import (
+    RewardBench2AnnotationTemplate,
 )
 from rm_gallery.gallery.data.load.helpsteer2 import HelpSteer2Converter
 from rm_gallery.gallery.data.load.prmbench import PRMBenchConverter
@@ -23,4 +24,5 @@ LOAD_STRATEGIES = {
 
 ANNOTATION_TEMPLATES = {
     "rewardbench": RewardBenchAnnotationTemplate,
+    "rewardbench2": RewardBench2AnnotationTemplate,
 }

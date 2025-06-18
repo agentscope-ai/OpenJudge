@@ -1,40 +1,39 @@
 dataset:
-    name: rewardbench2
+    name: rewardbench2                    # 数据集名称（local：renwardbench2，huggingface：allenai/reward-bench-2）
     configs:
-        type: local # required, support remote, local
-        source: rewardbench2 # required, local support rewardbench, chatmessage, prmbench, helpsteer2
-        path: /Users/xielipeng/RM-Gallery/data/reward-bench-2/data/test-00000-of-00001.parquet # required, must be local path or url
-        #split: train
-        #limit: 2000 # optional, random sample dataset size
-    # processors:
-    #     - type: filter
-    #       name: conversation_turn_filter
-    #       config:
-    #         min_turns: 1
-    #         max_turns: 6
-    #     - type: filter
-    #       name: text_length_filter
-    #       config:
-    #         min_length: 10
-    #         max_length: 1000
-    #     - type: data_juicer
-    #       name: character_repetition_filter
-    #       config:
-    #         rep_len: 10
-    #         min_ratio: 0.0
-    #         max_ratio: 0.5
-    # annotation:
-    #     template_name: "rewardbench"
-    #     project_title: "Reward Bench Evaluation"
-    #     project_description: "Reward model evaluation using reward bench template"
-    #     server_url: "http://localhost:8080"
-    #     api_token: "8c2f03e74b5700bf5e3cadd6fe073dbbb88caebe"
-
-    export:
-        output_dir: ./examples/data/exports
-        formats: ["jsonl"]
-        preserve_structure: true
-        #split_ratio: {"train": 1, "test": 0}
+        type: local                       # 数据源类型: local/huggingface
+        source: rewardbench2              # 数据源标识符（需保证转换器已注册）
+        path: /Users/xielipeng/RM-Gallery/data/reward-bench-2/data/test-00000-of-00001.parquet       # 数据文件路径（仅在local时生效）
+        huggingface_split: train                    # 可选: 数据分割(仅在huggingface时生效)
+        limit: 2000                     # 可选: 限制样本数量（随机）
+    processors:                         # 可选: 数据处理器配置
+        - type: filter
+          name: conversation_turn_filter
+          config:
+            min_turns: 1
+            max_turns: 6
+        - type: filter
+          name: text_length_filter
+          config:
+            min_length: 10
+            max_length: 1000
+        - type: data_juicer
+          name: character_repetition_filter
+          config:
+            rep_len: 10
+            min_ratio: 0.0
+            max_ratio: 0.5
+    annotation:                         # 可选: 标注配置
+        template_name: "rewardbench2"
+        project_title: "Reward Bench Evaluation"
+        project_description: "Reward model evaluation using reward bench template from yaml"
+        server_url: "http://localhost:8080"
+        api_token: "1937f46f7b61906fac852236fe59de109abc0ed8"
+    export:                               # 导出配置
+        output_dir: ./examples/data/exports # 导出路径
+        formats: ["jsonl"]                # 支持格式: jsonl, parquet, json
+        preserve_structure: true          # 控制数据导出时是否保持原始数据的目录结构
+        split_ratio: {"train": 0.8, "test": 0.2} # 划分训练、测试集
     metadata:
         source: "rewardbench2"
 

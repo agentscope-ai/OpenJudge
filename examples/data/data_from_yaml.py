@@ -1,7 +1,7 @@
 """
-ORM Data Loading and Processing Script
+Data Loading and Processing Script
 
-Load and process ORM dataset using YAML configuration with integrated export functionality.
+Load and process dataset using YAML configuration with integrated export functionality.
 
 Usage:
     python data_from_yaml.py
@@ -15,7 +15,7 @@ from rm_gallery.core.data.build import create_build_module_from_yaml
 
 
 def load_and_process_dataset():
-    """Load and process ORM dataset using YAML configuration"""
+    """Load and process dataset using YAML configuration"""
     config_path = "./examples/data/data_config.yaml"
 
     try:
@@ -51,7 +51,7 @@ def main():
     dataset = load_and_process_dataset()
 
     if dataset:
-        logger.success("\n🎉 data processing completed successfully!")
+        logger.success("🎉 data processing completed successfully!")
         logger.info(
             "💡 Export files should be available in the configured export directory"
         )

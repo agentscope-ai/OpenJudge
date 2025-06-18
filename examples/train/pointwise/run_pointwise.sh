@@ -3,15 +3,15 @@
 
 TIMESTAMP=$(date "+%m%dT%H%M")
 
-TRAIN_FILE=./examples/data/exports/train.jsonl
-VAL_FILE=./examples/data/exports/test.jsonl
-MODEL_PATH=./models/Qwen3-14B
+TRAIN_FILE=./examples/data/train.parquet
+VAL_FILE=./examples/data/test.parquet
+MODEL_PATH=./models/Qwen3-8B
 
-PROJECT_NAME=helpsteer2_pointwise
-EXPERIMENT_NAME=rm-gallery-qwen3-${TIMESTAMP}
+PROJECT_NAME=helpsteer2_pointwise_qwen3_8b
+EXPERIMENT_NAME=rm-gallery-qwen3-8b-${TIMESTAMP}
 
-CUSTOM_REWARD_FUNCTION_PATH=./rm_gallery/gallery/train/pointwise/reward_fn.py
-CUSTOM_CHAT_RL_DATASET_PATH=./rm_gallery/gallery/train/pointwise/helpfulness_dataset.py
+CUSTOM_REWARD_FUNCTION_PATH=./examples/train/pointwise/reward_fn.py
+CUSTOM_CHAT_RL_DATASET_PATH=./examples/train/pointwise/dataset.py
 CUSTOM_CHAT_RL_DATASET_NAME=HelpfulnessTrainDataset
 REWARD_MANAGER=naive
 REWARD_FUNCTION_NAME=compute_score
@@ -20,7 +20,7 @@ REWARD_FUNCTION_NAME=compute_score
 DEFAULT_LOCAL_DIR=./checkpoints/${TIMESTAMP}
 
 N_GPUS_PER_NODE=8
-N_NODES=3
+N_NODES=1
 
 set -x
 

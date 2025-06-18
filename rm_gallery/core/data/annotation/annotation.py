@@ -102,32 +102,14 @@ class DataAnnotator(BaseDataModule):
 
         if template_name:
             # Try to get label config from registered template
-            template_config = AnnotationTemplateRegistry.get_label_config(template_name)
-            if template_config:
-                logger.info(f"Using label configuration from template: {template_name}")
+            try:
+                template_config = AnnotationTemplateRegistry.get_label_config(
+                    template_name
+                )
                 return template_config
-            else:
-                # Try to import and load template dynamically
-                try:
-                    # Import template module to trigger registration
-                    import importlib
-
-                    template_module = (
-                        f"rm_gallery.examples.data.annotation.{template_name}_template"
-                    )
-                    importlib.import_module(template_module)
-
-                    # Try again to get the template
-                    template_config = AnnotationTemplateRegistry.get_label_config(
-                        template_name
-                    )
-                    if template_config:
-                        logger.info(f"Loaded and using template: {template_name}")
-                        return template_config
-                except ImportError:
-                    logger.warning(
-                        f"Could not import template module: {template_name}_template"
-                    )
+            except Exception as e:
+                logger.warning(f"Could not get label configuration from template: {e}")
+                return None
 
         raise ValueError(
             "Either label_config or template_name must be provided. "

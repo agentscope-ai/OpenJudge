@@ -64,7 +64,7 @@ class RewardBench2Converter(DataConverter):
                 unique_id=unique_id,
                 input=data_input,
                 output=data_output,
-                source="rewardbench",
+                source="rewardbench2",
                 task_category="conversation",
                 metadata=metadata,
             )
