@@ -82,7 +82,7 @@ For quick start, please refer to [Quick Start](docs/quick_start.ipynb).
         - [High-Performance Model Serving](docs/tutorial/deploying_rm/model_serving.ipynb)
 
     - deploying rm
-        - [RL training](docs/tutorial/deploying_rm/rl_training_with_rm.ipynb)
+        - [RL training](docs/tutorial/deploying_rm/post_training_with_rm.ipynb)
         - [Inference Time Scaling](docs/tutorial/deploying_rm/inference_time_scaling.ipynb)
 
 
