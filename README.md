@@ -67,14 +67,25 @@ For quick start, please refer to [Quick Start.md](docs/quick_start.ipynb).
 
 ## 📚 Documentation
 - Tutorial:
-    - [ready-to-use RMs](docs/tutorial/ready_to_use_rms.ipynb)
-    - [build custom RMs](docs/tutorial/build_custom_rms.ipynb)
-    - [auto princile generation](docs/tutorial/auto_principle_generation.ipynb)
-    - [data annotation](docs/tutorial/data_annotation.ipynb)
-    - [RM related data processors](docs/tutorial/rm_related_data_processors.ipynb)
-    - [training RM](docs/tutorial/training_rm.ipynb)
-    - [high performance RM Serving](docs/tutorial/high_performance_rm_serving.ipynb)
-    - [adapte huggingface RMs](docs/tutorial/adapte_huggingface_rms.ipynb)
+    - data
+        - [data pipeline](docs/tutorial/data/pipeline_zh.ipynb)
+        - [data annotator](docs/tutorial/data/annotation_zh.ipynb)
+        - [data loader](docs/tutorial/data/load_zh.ipynb)
+        - [data processor](docs/tutorial/data/process_zh.ipynb)
+    - training rm
+        - [training a reasoning reward model](docs/tutorial/training_rm/pointwise_zh.ipynb)
+    - building rm
+        - [ready-to-use RMs](docs/tutorial/building_rm/ready2use.ipynb)
+        - [building a custom RM](docs/tutorial/building_rm/customization.ipynb)
+        - [auto principle](docs/tutorial/building_rm/customization.ipynb)
+    - rm serving
+        - [High-Performance Model Serving](docs/tutorial/deploying_rm/model_serving.ipynb)
+
+    - deploying rm
+        - [RL training](docs/tutorial/deploying_rm/rl_training_with_rm.ipynb)
+        - [Inference Time Scaling](docs/tutorial/deploying_rm/inference_time_scaling.ipynb)
+
+
 
 
 ## 🤝 Contribute
