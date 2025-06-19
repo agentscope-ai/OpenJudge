@@ -6,9 +6,11 @@ from pydantic import Field
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.reward.base import BasePointWiseReward
+from rm_gallery.core.reward.registry import RewardRegistry
 from rm_gallery.core.reward.schema import RewardDimensionWithScore, RewardResult
 
 
+@RewardRegistry.register("code_syntax_check")
 class SyntaxCheckReward(BasePointWiseReward):
     """
     Check code syntax using Abstract Syntax Tree
@@ -85,6 +87,7 @@ class SyntaxCheckReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("code_style")
 class CodeStyleReward(BasePointWiseReward):
     """
     Basic code style checking
@@ -218,6 +221,7 @@ class CodeStyleReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("code_patch_similarity")
 class PatchSimilarityReward(BasePointWiseReward):
     """
     Calculate similarity between generated patch and oracle patch using difflib.SequenceMatcher.

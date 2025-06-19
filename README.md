@@ -62,8 +62,14 @@ pip install rm-gallery
 ```
 
 ## 🚀 Quick Start
+<strong> 🚀 🚀 Build RM with one-line code </strong>
 
-For quick start, please refer to [Quick Start](docs/quick_start.ipynb).
+```python
+#Initialize using the registry pattern
+rm = RewardRegistry.get("Your RM's Registry Name")(name="demo_rm")
+```
+For complete basic usage of RM-Gallery, please refer to [Quick Start](docs/quick_start.ipynb).
+
 
 ## 📚 Documentation
 - Tutorial:

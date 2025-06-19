@@ -5,10 +5,12 @@ from pydantic import Field
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.reward.base import BasePointWiseReward
+from rm_gallery.core.reward.registry import RewardRegistry
 from rm_gallery.core.reward.schema import RewardDimensionWithScore, RewardResult
 from rm_gallery.core.utils.tokenizer import get_tokenizer
 
 
+@RewardRegistry.register("accuracy")
 class AccuracyReward(BasePointWiseReward):
     """
     Calculate accuracy (exact match rate) between generated content and reference answer.
@@ -54,6 +56,7 @@ class AccuracyReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("f1_score")
 class F1ScoreReward(BasePointWiseReward):
     """
     Calculate F1 score between generated content and reference answer at word level.
@@ -148,6 +151,7 @@ class F1ScoreReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("rouge")
 class RougeReward(BasePointWiseReward):
     """
     ROUGE-L similarity evaluation
@@ -228,6 +232,7 @@ class RougeReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("number_accuracy")
 class NumberAccuracyReward(BasePointWiseReward):
     """
     Check numerical calculation accuracy.

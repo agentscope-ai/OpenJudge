@@ -7,10 +7,12 @@ from pydantic import Field
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.reward.base import BasePointWiseReward
+from rm_gallery.core.reward.registry import RewardRegistry
 from rm_gallery.core.reward.schema import RewardDimensionWithScore, RewardResult
 from rm_gallery.core.utils.tokenizer import get_tokenizer
 
 
+@RewardRegistry.register("reasoning_format")
 class ReasoningFormatReward(BasePointWiseReward):
     """
     Check format reward: thinking format and answer format.
@@ -75,6 +77,7 @@ class ReasoningFormatReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("reasoning_tool_call_format")
 class ReasoningToolCallFormatReward(BasePointWiseReward):
     """
     Check tool call format: think format, answer format and tool_call format.
@@ -238,6 +241,7 @@ class ReasoningToolCallFormatReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("length_penalty")
 class LengthPenaltyReward(BasePointWiseReward):
     """
     Text length based penalty
@@ -293,6 +297,7 @@ class LengthPenaltyReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("ngram_repetition_penalty")
 class NgramRepetitionPenaltyReward(BasePointWiseReward):
     """
     Calculate N-gram repetition penalty, supporting Chinese processing and multiple penalty strategies
@@ -512,6 +517,7 @@ class NgramRepetitionPenaltyReward(BasePointWiseReward):
         )
 
 
+@RewardRegistry.register("privacy_leakage")
 class PrivacyLeakageReward(BasePointWiseReward):
     """
     Privacy information leakage detection.
