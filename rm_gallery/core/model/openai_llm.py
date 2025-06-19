@@ -19,6 +19,19 @@ from rm_gallery.core.model.message import (
 
 
 class OpenaiLLM(BaseLLM):
+    """
+    OpenAI Language Model interface for chat completions with streaming and history support.
+
+    Attributes:
+        client (Any): OpenAI API client instance
+        model (str): Model name/version to use
+        base_url (str | None): Custom API endpoint URL
+        openai_api_key (str | None): Authentication token
+        max_retries (int): Maximum retry attempts for failed requests
+        stream (bool): Whether to stream responses incrementally
+        max_tokens (int): Maximum output tokens per response
+    """
+
     client: Any
     model: str = Field(default="gpt-4o")
     base_url: str | None = Field(default=None)
@@ -30,7 +43,21 @@ class OpenaiLLM(BaseLLM):
     @model_validator(mode="before")
     @classmethod
     def validate_client(cls, data: Dict):
-        """Create an OpenAI client for Blt."""
+        """
+        Initialize and validate OpenAI client configuration.
+
+        Ensures API key is available, then creates a configured OpenAI client instance.
+        Handles environment variable fallback for configuration parameters.
+
+        Args:
+            data (Dict): Configuration dictionary containing potential client parameters
+
+        Returns:
+            Dict: Updated configuration with initialized client and validated parameters
+
+        Raises:
+            ValueError: If API key is missing or client initialization fails
+        """
         # Check for OPENAI_API_KEY
         openai_api_key = get_from_dict_or_env(
             data=data, key="openai_api_key", default=None
@@ -55,6 +82,15 @@ class OpenaiLLM(BaseLLM):
 
     @property
     def chat_kwargs(self) -> Dict[str, Any]:
+        """
+        Generate filtered keyword arguments for chat completion API calls.
+
+        Includes model parameters with special handling for tool calls.
+        Filters out None values and zero/false values except for boolean flags.
+
+        Returns:
+            Dict[str, Any]: Cleaned dictionary of chat completion parameters
+        """
         call_params = {
             "model": self.model,
             # "top_p": self.top_p,
@@ -78,6 +114,22 @@ class OpenaiLLM(BaseLLM):
     def chat(
         self, messages: List[ChatMessage] | str, **kwargs
     ) -> ChatResponse | GeneratorChatResponse:
+        """
+        Process chat messages and generate responses from OpenAI API.
+
+        Handles both single message and streaming response modes based on configuration.
+        Converts messages to OpenAI format before making API call.
+
+        Args:
+            messages (List[ChatMessage] | str): Input messages in application format
+            **kwargs: Additional parameters to override default chat settings
+
+        Returns:
+            ChatResponse | GeneratorChatResponse: Either complete response or streaming generator
+
+        Raises:
+            Exception: Wraps and re-raises API call failures
+        """
         messages = self._convert_messages(messages)
 
         call_params = self.chat_kwargs.copy()
@@ -97,6 +149,18 @@ class OpenaiLLM(BaseLLM):
             raise Exception(f"API call failed: {str(e)}")
 
     def _handle_stream_response(self, response: Any) -> GeneratorChatResponse:
+        """
+        Process streaming response chunks into application format.
+
+        Combines incremental response chunks while maintaining complete message context.
+        Yields updated responses as new content becomes available.
+
+        Args:
+            response (Any): Raw streaming response from OpenAI API
+
+        Yields:
+            GeneratorChatResponse: Incremental updates to the complete response
+        """
         _response = None
         for chunk in response:
             chunk_response = _convert_stream_chunk_to_response(chunk)
@@ -118,8 +182,21 @@ class OpenaiLLM(BaseLLM):
         sys_prompt: str = "You are a helpful assistant.",
         **kwargs,
     ) -> Any:
-        """Simple interface for chat with history support."""
+        """
+        Simplified chat interface with built-in history management.
 
+        Handles conversation history formatting and system prompt integration.
+        Switches between reasoning and standard modes based on configuration.
+
+        Args:
+            query (str): Current user input text
+            history (Optional[List[str]]): Previous conversation history
+            sys_prompt (str): System-level instructions for the model
+            **kwargs: Additional parameters for chat configuration
+
+        Returns:
+            Any: Model response content, typically a string
+        """
         if self.enable_thinking:
             return self.simple_chat_reasoning(
                 query=query, history=history, sys_prompt=sys_prompt, **kwargs
@@ -149,7 +226,21 @@ class OpenaiLLM(BaseLLM):
         sys_prompt: str = "",
         **kwargs,
     ) -> Any:
-        """Simple interface for chat with history support."""
+        """
+        Enhanced chat interface with reasoning content processing.
+
+        Handles special reasoning content markers and separates thinking from output.
+        Implements token limit safety with early return for long responses.
+
+        Args:
+            query (str): User input text
+            history (Optional[List[str]]): Conversation history
+            sys_prompt (str): System instructions
+            **kwargs: Chat configuration parameters
+
+        Returns:
+            Any: Combined response content with reasoning markers
+        """
         messages = [{"role": "system", "content": sys_prompt}]
 
         if history is None:

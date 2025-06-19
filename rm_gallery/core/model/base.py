@@ -44,6 +44,10 @@ def get_from_dict_or_env(
 def _convert_chat_message_to_openai_message(
     messages: List[ChatMessage],
 ) -> List[Dict[str, str]]:
+    """Convert ChatMessage objects to OpenAI API message format dictionaries.
+
+    Handles multiple serialization attempts to accommodate different message formats.
+    """
     try:
         return [
             {
@@ -72,6 +76,10 @@ def _convert_chat_message_to_openai_message(
 
 
 def _convert_openai_response_to_response(response: Any) -> ChatResponse:
+    """Convert OpenAI API response to ChatResponse object.
+
+    Extracts message content and additional metadata from API response.
+    """
     message = response.choices[0].message
     additional_kwargs = {"token_usage": getattr(response, "usage", {})}
 
@@ -93,6 +101,10 @@ def _convert_openai_response_to_response(response: Any) -> ChatResponse:
 
 
 def _convert_stream_chunk_to_response(chunk: Any) -> Optional[ChatResponse]:
+    """Convert a streaming response chunk to ChatResponse object.
+
+    Returns None if chunk contains no meaningful content.
+    """
     if not chunk.choices:
         return None
 
@@ -117,6 +129,11 @@ def _convert_stream_chunk_to_response(chunk: Any) -> Optional[ChatResponse]:
 
 
 class BaseLLM(BaseModel):
+    """Base class for Large Language Model implementations.
+
+    Provides common configuration parameters and interface methods for LLMs.
+    """
+
     model: str
     temperature: float = 0.85
     top_p: float = 1.0
@@ -141,6 +158,10 @@ class BaseLLM(BaseModel):
     def _convert_messages(
         messages: List[ChatMessage] | ChatMessage | str,
     ) -> List[ChatMessage]:
+        """Convert various input types to a list of ChatMessage objects.
+
+        Handles string inputs, single messages, and message lists.
+        """
         if isinstance(messages, list):
             return messages
         elif isinstance(messages, str):
@@ -154,35 +175,40 @@ class BaseLLM(BaseModel):
     def chat(
         self, messages: List[ChatMessage] | str, **kwargs
     ) -> ChatResponse | GeneratorChatResponse:
-        """
+        """Process chat messages and generate a response.
 
         Args:
-            messages:
-            **kwargs:
+            messages: Input messages in various formats (list of ChatMessage, single ChatMessage, or string)
+            **kwargs: Additional implementation-specific parameters
 
         Returns:
-
+            ChatResponse for non-streaming responses or GeneratorChatResponse for streaming
         """
-
         raise NotImplementedError
 
     def register_tools(
         self, tools: List[Dict[str, Any]], tool_choice: Union[str, Dict]
     ):
+        """Register tools for the LLM to use during response generation.
+
+        Args:
+            tools: List of tool definitions in OpenAI tool format
+            tool_choice: Tool selection strategy ('auto' or specific tool definition)
+        """
         self.tools = tools
         self.tool_choice = tool_choice
 
     def chat_batched(
         self, messages_batched: List[List[ChatMessage]] | str, **kwargs
     ) -> List[ChatResponse]:
-        """
+        """Process multiple message batches concurrently.
 
         Args:
-            messages_batched: List of List of ChatMessage
-            **kwargs: same with `chat`
+            messages_batched: List of message lists or single string input
+            **kwargs: Same parameters as chat()
 
         Returns:
-
+            List of ChatResponses in the same order as input batches
         """
         try:
             return asyncio.get_event_loop().run_until_complete(
@@ -198,8 +224,9 @@ class BaseLLM(BaseModel):
     async def _chat_batched(
         self, messages_batched: List[List[ChatMessage]] | str, **kwargs
     ) -> List[ChatResponse]:
-        """
-        Used by `chat_batched`, do not call this method directly.
+        """Internal async implementation for batched chat processing.
+
+        Should not be called directly by users.
         """
         responses = await asyncio.gather(
             *[self.achat(msg, **kwargs) for msg in messages_batched]
@@ -209,14 +236,14 @@ class BaseLLM(BaseModel):
     async def achat(
         self, messages: List[ChatMessage] | str, **kwargs
     ) -> ChatResponse | GeneratorChatResponse:
-        """
+        """Async version of chat method using thread pooling.
 
         Args:
-            messages:
-            **kwargs:
+            messages: Input messages in various formats
+            **kwargs: Same parameters as chat()
 
         Returns:
-
+            ChatResponse or GeneratorChatResponse depending on streaming configuration
         """
         result = await asyncio.to_thread(self.chat, messages, **kwargs)
         return result
@@ -228,6 +255,10 @@ class BaseLLM(BaseModel):
         sys_prompt: str = "",
         debug: bool = False,
     ) -> Any:
+        """Simplified chat interface for basic query/response scenarios.
+
+        Handles conversation history and system prompts automatically.
+        """
         if self.enable_thinking:
             return self.simple_chat_reasoning(
                 query=query, history=history, sys_prompt=sys_prompt, debug=debug
@@ -260,6 +291,10 @@ class BaseLLM(BaseModel):
         sys_prompt: str = "",
         debug: bool = False,
     ) -> Any:
+        """Simplified chat interface with reasoning stream handling.
+
+        Processes streaming responses with separate reasoning content handling.
+        """
         messages = [ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt)]
 
         if history is None:
@@ -288,7 +323,7 @@ class BaseLLM(BaseModel):
                     ):
                         if not enter_think:
                             enter_think = True
-                            ans += "<think>"
+                            ans += "</think>"
                         ans += delta.reasoning_content
                     elif delta.content:
                         if enter_think and not leave_think:

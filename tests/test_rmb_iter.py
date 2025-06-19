@@ -12,7 +12,8 @@ from rm_gallery.core.utils.file import read_jsonl, write_json
 TASKS = [
     "Chat",
     "Brainstorming",
-    "Classification" "Closed QA",
+    "Classification",
+    "Closed QA",
     "Open QA",
     "Generation",
     "Summarization",
@@ -61,7 +62,7 @@ def generate(
 
 def get_reward(task: str, principles=None):
     kwargs = {}
-    kwargs["llm"] = OpenaiLLM(model="qwen3-8b", enable_thinking=True)
+    kwargs["llm"] = OpenaiLLM(model="qwen3-32b", enable_thinking=True)
     if principles is not None:
         kwargs["principles"] = principles
 
@@ -121,12 +122,12 @@ def test_single(task: str, thread_pool=ThreadPoolExecutor(max_workers=256)):
 
     # principles = DEFAULT_HELPFULNESS_PRINCIPLES
     # principles = []
-    principles = None
+    # principles = None
 
-    # principles = test_generate(
-    #     task,
-    #     train,
-    # )
+    principles = test_generate(
+        task,
+        train,
+    )
 
     acc, success, total = test_evaluate(
         task, test, principles=principles, thread_pool=thread_pool
@@ -141,7 +142,7 @@ def test_all(tasks, i):
     futures = [(task, thread_pool.submit(test_single, task)) for task in tasks]
     wait([future[-1] for future in futures], return_when=ALL_COMPLETED)
     results = {task: future.result() for task, future in futures}
-    write_json(results, f"data/RMBbench/results_rmb_new_base_2_{i}.json")
+    write_json(results, f"data/RMBbench/results_rmb_generate_{i}.json")
 
 
 for i in range(5):

@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
-from datasets import load_dataset
 from loguru import logger
 from pydantic import Field
 
 from rm_gallery.core.data.base import BaseDataModule, DataModuleType
 from rm_gallery.core.data.schema import BaseDataSet, DataSample
+from rm_gallery.core.utils.file import read_dataset
 
 
 class DataConverter:
@@ -461,7 +461,7 @@ class HuggingFaceDataLoadStrategy(DataLoad):
             )
 
             # Load dataset from HuggingFace
-            dataset = load_dataset(
+            dataset = read_dataset(
                 dataset_name,
                 dataset_config,
                 split=split,

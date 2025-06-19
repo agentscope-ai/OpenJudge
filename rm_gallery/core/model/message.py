@@ -15,18 +15,33 @@ class MessageRole(str, Enum):
 
 
 class Tool(BaseModel):
+    """Represents a function tool with name and arguments."""
+
     arguments: str
     name: str
 
 
 class ChatTool(BaseModel):
+    """Represents a chat tool call with function metadata."""
+
     id: str
     function: Tool
     type: Literal["function"]
 
 
 class ChatMessage(BaseModel):
-    """Chat message."""
+    """
+    Represents a chat message with role, content, and metadata.
+
+    Attributes:
+        role: Message role (system/user/assistant/function)
+        name: Optional name associated with the message
+        content: Main content of the message
+        reasoning_content: Internal reasoning information
+        tool_calls: List of tools called in this message
+        additional_kwargs: Extra metadata dictionary
+        time_created: Timestamp of message creation
+    """
 
     role: MessageRole = Field(default=MessageRole.USER)
     name: Optional[str] = Field(default=None)
@@ -40,11 +55,21 @@ class ChatMessage(BaseModel):
     )
 
     def __str__(self) -> str:
+        """Returns formatted string representation with timestamp and role."""
         return f"{self.time_created.strftime('%Y-%m-%d %H:%M:%S')} {self.role.value}: {self.content}"
 
     def __add__(self, other: Any) -> "ChatMessage":
         """
-        concat message with other message delta.
+        Concatenates message content with another message delta.
+
+        Args:
+            other: Message to merge with current one
+
+        Returns:
+            New ChatMessage instance with merged content
+
+        Raises:
+            TypeError: If other is not None or ChatMessage
         """
         if other is None:
             return self
@@ -66,7 +91,14 @@ class ChatMessage(BaseModel):
     @staticmethod
     def convert_from_strings(messages: List[str], system_message: str) -> str:
         """
-        turn vanilla strings to structure messages for fast debugging
+        Converts string list to structured ChatMessage list for debugging.
+
+        Args:
+            messages: List of alternating user/assistant messages
+            system_message: Initial system message content
+
+        Returns:
+            List of structured ChatMessage objects
         """
         result_messages = [
             ChatMessage(role=MessageRole.SYSTEM, content=system_message),
@@ -83,7 +115,15 @@ class ChatMessage(BaseModel):
     @staticmethod
     def convert_to_strings(messages: List["ChatMessage"]) -> Tuple[List[str], str]:
         """
-        turn structure messages to vanilla strings for fast debugging
+        Converts structured ChatMessages to plain strings for debugging.
+
+        Args:
+            messages: List of ChatMessage objects
+
+        Returns:
+            Tuple containing:
+            - List of non-system messages
+            - Extracted system message content
         """
         vanilla_messages = []
         system_message = ""
@@ -98,6 +138,17 @@ class ChatMessage(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    """
+    Represents a chat response with message and metadata.
+
+    Attributes:
+        message: Main chat message content
+        raw: Raw response dictionary from API
+        delta: Incremental update message
+        error_message: Error description if any
+        additional_kwargs: Extra metadata dictionary
+    """
+
     message: ChatMessage
     raw: Optional[dict] = None
     delta: Optional[ChatMessage] = None
@@ -107,6 +158,7 @@ class ChatResponse(BaseModel):
     )  # other information like token usage or log probs.
 
     def __str__(self):
+        """Returns error message if present, otherwise string representation of main message."""
         if self.error_message:
             return f"Errors: {self.error_message}"
         else:
@@ -114,7 +166,16 @@ class ChatResponse(BaseModel):
 
     def __add__(self, other: Any) -> "ChatResponse":
         """
-        concat response with other response delta.
+        Combines response with another response delta.
+
+        Args:
+            other: Response to merge with current one
+
+        Returns:
+            New ChatResponse instance with merged content
+
+        Raises:
+            TypeError: If other is not None or ChatResponse
         """
         if other is None:
             return self
@@ -139,7 +200,13 @@ GeneratorChatResponse = Generator[ChatResponse, None, None]
 
 def format_messages(messages: List[ChatMessage]) -> str:
     """
-    Format messages into a string.
+    Formats chat messages into XML-style string representation.
+
+    Args:
+        messages: List of ChatMessage objects to format
+
+    Returns:
+        String with messages wrapped in role-specific tags
     """
     return "\n".join(
         [f"<{message.role}>{message.content}</{message.role}>" for message in messages]
