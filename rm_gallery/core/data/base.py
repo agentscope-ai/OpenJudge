@@ -1,3 +1,8 @@
+"""
+Base data module framework providing abstract interfaces for data pipeline components.
+Defines common structure and behavior for all data processing modules in the system.
+"""
+
 from abc import abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
@@ -48,20 +53,19 @@ class BaseDataSet(BaseModel):
     version: str = Field("1.0.0", description="Dataset version")
     extra_metadata: Dict[str, Any] = Field(default_factory=dict, description="Dataset metadata")
 
-    def __len__(self) -> int:
-        """Return the size of the dataset"""
-        return len(self.datas)
-
-    def __getitem__(self, index: Union[int, slice]) -> Union[BaseData, List[BaseData]]:
-        """Support index-based access to data"""
-        return self.datas[index]
-
-    def evaluate(self, dimension: str) -> Dict[str, float]:
-        """Evaluate the dataset on a specific dimension"""
+    @abstractmethod
+    def run(self, input_data: Union[BaseDataSet, List[DataSample]], **kwargs):
+        """run data module"""
         pass
 
     def get_module_info(self) -> Dict[str, Any]:
-        """get module info"""
+        """
+        Retrieve comprehensive module information for debugging and monitoring.
+
+        Returns:
+            Dict containing module type, name, configuration, and metadata
+            Used for pipeline introspection and debugging
+        """
         config_dict = self.config.model_dump() if self.config else None
         return {
             "type": self.module_type.value,

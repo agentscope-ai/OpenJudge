@@ -68,10 +68,10 @@ For quick start, please refer to [Quick Start](docs/quick_start.ipynb).
 ## 📚 Documentation
 - Tutorial:
     - data
-        - [data pipeline](docs/tutorial/data/pipeline_zh.ipynb)
-        - [data annotator](docs/tutorial/data/annotation_zh.ipynb)
-        - [data loader](docs/tutorial/data/load_zh.ipynb)
-        - [data processor](docs/tutorial/data/process_zh.ipynb)
+        - [data pipeline](docs/tutorial/data/pipeline.ipynb)
+        - [data annotator](docs/tutorial/data/annotation.ipynb)
+        - [data loader](docs/tutorial/data/load.ipynb)
+        - [data processor](docs/tutorial/data/process.ipynb)
     - training rm
         - [training a reasoning reward model](docs/tutorial/training_rm/pointwise_zh.ipynb)
     - building rm

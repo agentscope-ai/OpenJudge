@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Unified Label Studio Manager
-manage label studio service with docker or pip
+Unified Label Studio Manager - automated deployment and management of Label Studio annotation service.
+
+Provides Docker and pip-based deployment options with automatic service management,
+health checking, and configuration persistence for annotation workflows.
 """
 import argparse
 import json
@@ -17,7 +19,25 @@ from loguru import logger as loguru_logger
 
 
 class LabelStudioManager:
-    """Label Studio Manager"""
+    """
+    Comprehensive Label Studio service manager supporting Docker and pip deployment modes.
+
+    Handles automated installation, configuration, startup, health monitoring, and shutdown
+    of Label Studio annotation service with persistent configuration and logging.
+
+    Attributes:
+        port: Port number for Label Studio web interface
+        username: Default admin username for Label Studio
+        password: Default admin password for Label Studio
+        data_dir: Directory for persistent data and configuration storage
+        use_docker: Flag to prefer Docker deployment over pip installation
+        container_name: Docker container name for service management
+        image: Docker image name and tag for Label Studio
+        server_url: Constructed server URL for API access
+        process: Process handle for pip-based deployment
+        api_token: Authentication token for API access
+        config_file: Path to persistent configuration file
+    """
 
     def __init__(
         self,

@@ -1,3 +1,8 @@
+"""
+Chat Message Data Converter - specialized converter for chat message format data.
+Handles conversation data with multiple messages and roles for chat-based training.
+"""
+
 import hashlib
 from typing import Any, Dict
 
@@ -10,13 +15,39 @@ from rm_gallery.core.data.schema import ChatMessage, DataSample
 @DataConverterRegistry.register("chat_message")
 class ChatMessageConverter(DataConverter):
     """
-    Unified converter for chat message data format
+    Specialized converter for chat message data format with conversation structure.
+
+    Processes data containing message arrays with role/content pairs for
+    chat-based reward modeling and conversation training.
+
+    Input Data Format Expected:
+        {
+            "messages": [
+                {"role": "user", "content": "Hello"},
+                {"role": "assistant", "content": "Hi there!"}
+            ]
+        }
+
+    Output: DataSample with structured input messages and empty output for inference
     """
 
     def convert_to_data_sample(
         self, data_dict: Dict[str, Any], source_info: Dict[str, Any]
     ) -> DataSample:
-        """Convert chat message data to DataSample format"""
+        """
+        Convert chat message data dictionary to standardized DataSample format.
+
+        Extracts conversation messages from input data and creates a DataSample
+        with structured input for chat-based processing pipelines.
+
+        Args:
+            data_dict: Raw data containing messages array with role/content pairs
+            source_info: Metadata about data source (file path, dataset name, etc.)
+
+        Returns:
+            DataSample with structured conversation input and metadata
+            Returns None if conversion fails
+        """
         # generate unique id
         content = str(data_dict)
         unique_id = hashlib.md5(content.encode()).hexdigest()

@@ -1,5 +1,6 @@
 """
-Data Export Module - export data to various formats with train/test split support
+Data Export Module - export processed datasets to various formats with flexible configuration.
+Supports multiple output formats, train/test splitting, and preserves original directory structure.
 """
 import json
 import random
@@ -15,7 +16,18 @@ from rm_gallery.core.data.schema import BaseDataSet, DataSample
 
 
 class DataExport(BaseDataModule):
-    """Data export module - export data to various formats"""
+    """
+    Data export module for outputting processed datasets to various target formats.
+
+    Supports multiple export formats (JSON, JSONL, Parquet), optional train/test splitting,
+    and preservation of original directory structure for organized output management.
+
+    Configuration options:
+        - output_dir: Target directory for exported files
+        - formats: List of export formats (json, jsonl, parquet)
+        - split_ratio: Optional train/test split ratios
+        - preserve_structure: Whether to maintain original directory structure
+    """
 
     def __init__(
         self,
@@ -24,6 +36,15 @@ class DataExport(BaseDataModule):
         metadata: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
+        """
+        Initialize the data export module with configuration.
+
+        Args:
+            name: Unique identifier for the export module
+            config: Export configuration including formats, output directory, and split settings
+            metadata: Additional metadata for tracking and debugging
+            **kwargs: Additional initialization parameters
+        """
         super().__init__(
             module_type=DataModuleType.EXPORT,
             name=name,
@@ -35,7 +56,22 @@ class DataExport(BaseDataModule):
     def run(
         self, input_data: Union[BaseDataSet, List[DataSample], None] = None, **kwargs
     ) -> BaseDataSet:
-        """Run data export pipeline"""
+        """
+        Execute the data export pipeline with configured formats and settings.
+
+        Processes input data through optional train/test splitting, then exports
+        to specified formats while optionally preserving directory structure.
+
+        Args:
+            input_data: Dataset or list of samples to export, or None for empty export
+            **kwargs: Additional runtime parameters
+
+        Returns:
+            Original input dataset unchanged (passthrough for pipeline chaining)
+
+        Raises:
+            Exception: If export process fails at any stage
+        """
         try:
             if input_data is None:
                 logger.warning("No input data provided for export")
@@ -114,7 +150,19 @@ class DataExport(BaseDataModule):
         filename_prefix: str,
         split_name: str,
     ):
-        """Export data preserving original directory structure"""
+        """
+        Export data while preserving original directory structure from source files.
+
+        Groups samples by their source file paths and recreates the directory
+        structure in the output location for organized data management.
+
+        Args:
+            dataset: Dataset to export with preserved structure
+            output_dir: Base output directory for structured export
+            formats: List of export formats to generate
+            filename_prefix: Prefix for generated filenames
+            split_name: Split identifier (train/test/full)
+        """
         # Group samples by source file path
         file_groups = defaultdict(list)
         base_path = None
@@ -204,7 +252,15 @@ class DataExport(BaseDataModule):
         format_type: str,
         relative_path: Path,
     ):
-        """Export dataset in specified format with structured path"""
+        """
+        Export dataset in specified format with structured directory path.
+
+        Args:
+            dataset: Dataset to export
+            output_dir: Base output directory
+            format_type: Target export format (json/jsonl/parquet)
+            relative_path: Relative path structure to preserve
+        """
         # Create the full file path with extension
         filename = f"{relative_path.name}.{format_type}"
         full_output_dir = output_dir / relative_path.parent
@@ -225,7 +281,19 @@ class DataExport(BaseDataModule):
     def _split_dataset(
         self, data_samples: List[DataSample], split_ratio: Dict[str, float]
     ) -> Tuple[List[DataSample], List[DataSample]]:
-        """Split dataset into train/test sets"""
+        """
+        Split dataset into training and testing sets with specified ratios.
+
+        Args:
+            data_samples: List of data samples to split
+            split_ratio: Dictionary with train/test ratios (must include 'train' key)
+
+        Returns:
+            Tuple of (training_samples, testing_samples)
+
+        Raises:
+            ValueError: If split ratio is invalid or missing required keys
+        """
         if not split_ratio or "train" not in split_ratio:
             raise ValueError("Split ratio must contain 'train' key")
 
@@ -257,7 +325,16 @@ class DataExport(BaseDataModule):
         filename_prefix: str,
         split_name: str,
     ):
-        """Export dataset in specified format"""
+        """
+        Export dataset in specified format with standard file naming.
+
+        Args:
+            dataset: Dataset to export
+            output_dir: Target output directory
+            format_type: Export format (json/jsonl/parquet)
+            filename_prefix: Prefix for the output filename
+            split_name: Split identifier for filename generation
+        """
         if split_name == "full":
             filename = f"{filename_prefix}.{format_type}"
         else:
@@ -275,7 +352,16 @@ class DataExport(BaseDataModule):
             logger.warning(f"Unsupported format: {format_type}")
 
     def _export_json(self, dataset: BaseDataSet, filepath: Path):
-        """Export dataset to JSON format"""
+        """
+        Export dataset to JSON format with pretty printing.
+
+        Args:
+            dataset: Dataset to export
+            filepath: Target file path for JSON output
+
+        Raises:
+            Exception: If JSON export fails
+        """
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(
@@ -287,7 +373,16 @@ class DataExport(BaseDataModule):
             raise
 
     def _export_jsonl(self, dataset: BaseDataSet, filepath: Path):
-        """Export dataset to JSONL format (one JSON object per line)"""
+        """
+        Export dataset to JSONL format (one JSON object per line).
+
+        Args:
+            dataset: Dataset to export
+            filepath: Target file path for JSONL output
+
+        Raises:
+            Exception: If JSONL export fails
+        """
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 for sample in dataset.datas:
@@ -299,7 +394,19 @@ class DataExport(BaseDataModule):
             raise
 
     def _export_parquet(self, dataset: BaseDataSet, filepath: Path):
-        """Export dataset to Parquet format"""
+        """
+        Export dataset to Parquet format for efficient storage and analytics.
+
+        Flattens complex data structures to tabular format suitable for
+        data analysis and machine learning pipelines.
+
+        Args:
+            dataset: Dataset to export
+            filepath: Target file path for Parquet output
+
+        Raises:
+            Exception: If Parquet export fails
+        """
         try:
             # Convert data samples to flat dictionary format
             records = []
@@ -335,5 +442,15 @@ def create_export_module(
     config: Optional[Dict[str, Any]] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> DataExport:
-    """Factory function to create a data export module"""
+    """
+    Factory function to create a data export module with specified configuration.
+
+    Args:
+        name: Unique identifier for the export module
+        config: Export configuration including formats, output settings, and split ratios
+        metadata: Additional metadata for tracking and debugging
+
+    Returns:
+        Configured DataExport instance ready for pipeline integration
+    """
     return DataExport(name=name, config=config, metadata=metadata)

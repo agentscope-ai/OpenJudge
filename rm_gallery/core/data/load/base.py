@@ -1,5 +1,6 @@
 """
-Data Load Module - load data from various data sources
+Data Load Module - comprehensive data loading framework with multiple strategies and converters.
+Supports loading from local files and remote sources with automatic format detection and conversion.
 """
 import json
 import random
@@ -18,11 +19,22 @@ from rm_gallery.core.utils.file import read_dataset
 
 class DataConverter:
     """
-    Base class for data format converters
-    Separates data format conversion logic from data loading logic
+    Base class for data format converters that transform raw data into DataSample format.
+
+    Separates data format conversion logic from data loading logic for modular design.
+    All converters must implement the convert_to_data_sample method for their specific format.
+
+    Attributes:
+        config: Configuration parameters specific to the converter
     """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """
+        Initialize converter with optional configuration.
+
+        Args:
+            config: Converter-specific configuration parameters
+        """
         self.config = config or {}
 
     @abstractmethod
@@ -30,23 +42,42 @@ class DataConverter:
         self, data_dict: Dict[str, Any], source_info: Dict[str, Any]
     ) -> Union[DataSample, List[DataSample]]:
         """
-        Convert raw data dictionary to DataSample format
+        Convert raw data dictionary to DataSample format.
 
         Args:
-            data_dict: Raw data dictionary
-            source_info: Information about data source (file_path, dataset_name, etc.)
+            data_dict: Raw data dictionary from the source
+            source_info: Metadata about data source (file_path, dataset_name, etc.)
+
+        Returns:
+            Single DataSample or list of DataSamples
+
+        Raises:
+            NotImplementedError: If not implemented by concrete converter
         """
         pass
 
 
 class DataConverterRegistry:
-    """Registry for data format converters"""
+    """
+    Registry for managing data format converters with automatic discovery.
+
+    Provides decorator-based registration and factory methods for converter instantiation.
+    Enables extensible converter ecosystem for different data formats.
+    """
 
     _converters: Dict[str, Type[DataConverter]] = {}
 
     @classmethod
     def register(cls, data_source: str):
-        """Decorator for registering data converters"""
+        """
+        Decorator for registering data converters with specific source identifiers.
+
+        Args:
+            data_source: String identifier for the data source format
+
+        Returns:
+            Decorator function that registers the converter class
+        """
 
         def decorator(converter_class: Type[DataConverter]):
             cls._converters[data_source] = converter_class
@@ -58,7 +89,16 @@ class DataConverterRegistry:
     def get_converter(
         cls, data_source: str, config: Optional[Dict[str, Any]] = None
     ) -> Optional[DataConverter]:
-        """Get converter instance for specified data source"""
+        """
+        Get converter instance for specified data source with fallback to generic.
+
+        Args:
+            data_source: Data source identifier to find converter for
+            config: Configuration parameters for the converter
+
+        Returns:
+            Configured converter instance or None if not found
+        """
         converter_class = cls._converters.get(data_source)
         if converter_class:
             return converter_class(config)
@@ -66,13 +106,31 @@ class DataConverterRegistry:
 
     @classmethod
     def list_sources(cls) -> List[str]:
-        """List all registered data sources"""
+        """
+        List all registered data source identifiers.
+
+        Returns:
+            List of registered source identifiers
+        """
         return list(cls._converters.keys())
 
 
 class DataLoad(BaseDataModule):
     """
-    Unified Data Load Module - serves as both the main data loading module and base class for loading strategies
+    Unified data loading module supporting multiple strategies and sources.
+
+    Serves as both the main loading interface and base class for loading strategies.
+    Supports local file loading and remote dataset loading with automatic format detection.
+
+    Attributes:
+        load_strategy_type: Strategy identifier (local/huggingface)
+        data_source: Source identifier for converter selection
+
+    Input Sources:
+        - Local: JSON, JSONL, Parquet files or directories
+        - Remote: HuggingFace datasets with various configurations
+
+    Output: BaseDataSet containing converted DataSample objects
     """
 
     load_strategy_type: str = Field(
@@ -90,14 +148,15 @@ class DataLoad(BaseDataModule):
         **kwargs,
     ):
         """
-        Initialize data load module
+        Initialize data load module with strategy and source configuration.
 
         Args:
-            name: module name
-            load_strategy_type: load strategy type
-            data_source: data source
-            config: load config
-            metadata: metadata for the module
+            name: Unique identifier for the loading module
+            load_strategy_type: Loading strategy type (local/huggingface)
+            data_source: Data source identifier for converter selection
+            config: Strategy-specific configuration parameters
+            metadata: Additional metadata for tracking and debugging
+            **kwargs: Additional initialization parameters
         """
         super().__init__(
             module_type=DataModuleType.LOAD,
@@ -112,15 +171,35 @@ class DataLoad(BaseDataModule):
 
     def validate_config(self, config: Dict[str, Any]) -> None:
         """
-        Validate the configuration dictionary
+        Validate the configuration dictionary for strategy-specific requirements.
+
         Override this method in subclasses to add specific validation rules
+        for different loading strategies.
+
+        Args:
+            config: Configuration dictionary to validate
+
+        Raises:
+            ValueError: If configuration is invalid
         """
         pass
 
     def load_data(self, **kwargs) -> List[DataSample]:
         """
-        Load data from the source and return a list of DataSample objects
-        Uses built-in strategies based on load_strategy_type
+        Load data from the configured source using the appropriate strategy.
+
+        Automatically selects and instantiates the correct loading strategy
+        based on load_strategy_type configuration.
+
+        Args:
+            **kwargs: Additional parameters passed to the loading strategy
+
+        Returns:
+            List of DataSample objects loaded from the source
+
+        Raises:
+            ValueError: If unsupported strategy type is specified
+            RuntimeError: If loading fails at any stage
         """
         # If this is a strategy instance (subclass), call the abstract method
         if self.__class__ != DataLoad:
@@ -152,14 +231,41 @@ class DataLoad(BaseDataModule):
 
     def _load_data_impl(self, **kwargs) -> List[DataSample]:
         """
-        Abstract method for strategy implementations to override
+        Abstract method for strategy implementations to override.
+
+        Each loading strategy must implement this method to handle
+        the actual data loading and conversion process.
+
+        Args:
+            **kwargs: Strategy-specific loading parameters
+
+        Returns:
+            List of DataSample objects from the source
+
+        Raises:
+            NotImplementedError: If not implemented by strategy subclass
         """
         raise NotImplementedError("Subclasses must implement _load_data_impl method")
 
     def run(
         self, input_data: Union[BaseDataSet, List[DataSample], None] = None, **kwargs
     ) -> BaseDataSet:
-        """Load data and return as BaseDataSet"""
+        """
+        Execute the data loading pipeline and return structured dataset.
+
+        Loads data using the configured strategy, applies optional limits,
+        and packages the result as a BaseDataSet for pipeline integration.
+
+        Args:
+            input_data: Unused for loading modules (loads from external sources)
+            **kwargs: Additional parameters passed to loading strategy
+
+        Returns:
+            BaseDataSet containing loaded and converted data samples
+
+        Raises:
+            RuntimeError: If data loading process fails
+        """
         try:
             # Load data using strategy
             loaded_items = self.load_data(**kwargs)
@@ -204,10 +310,27 @@ class DataLoad(BaseDataModule):
 
 class FileDataLoadStrategy(DataLoad):
     """
-    File-based data loading strategy for JSON, JSONL, and Parquet files
+    File-based data loading strategy for local JSON, JSONL, and Parquet files.
+
+    Supports loading from single files or entire directories with recursive file discovery.
+    Automatically detects file formats and applies appropriate parsers with error handling.
+
+    Configuration Requirements:
+        - path: File or directory path to load from
+
+    Supported Formats:
+        - JSON: Single object or array of objects
+        - JSONL: One JSON object per line
+        - Parquet: Columnar data format with pandas integration
     """
 
     def __init__(self, **kwargs):
+        """
+        Initialize file loading strategy with converter registration.
+
+        Args:
+            **kwargs: Initialization parameters passed to parent class
+        """
         super().__init__(**kwargs)
         # Initialize data_converter after parent initialization as a normal attribute
         converter = DataConverterRegistry.get_converter(self.data_source, self.config)
@@ -215,6 +338,16 @@ class FileDataLoadStrategy(DataLoad):
         object.__setattr__(self, "data_converter", converter)
 
     def validate_config(self, config: Dict[str, Any]) -> None:
+        """
+        Validate file loading configuration requirements.
+
+        Args:
+            config: Configuration dictionary to validate
+
+        Raises:
+            ValueError: If required configuration is missing or invalid
+            FileNotFoundError: If specified path does not exist
+        """
         if "path" not in config:
             raise ValueError("File data strategy requires 'path' in config")
         if not isinstance(config["path"], str):
@@ -242,7 +375,15 @@ class FileDataLoadStrategy(DataLoad):
             raise ValueError(f"Path '{path}' is neither a file nor a directory")
 
     def _find_supported_files(self, directory: Path) -> List[Path]:
-        """Find all supported files (json, jsonl, parquet) in the directory and subdirectories"""
+        """
+        Recursively find all supported files in directory and subdirectories.
+
+        Args:
+            directory: Directory path to search
+
+        Returns:
+            Sorted list of supported file paths
+        """
         supported_extensions = {".json", ".jsonl", ".parquet"}
         supported_files = []
 
@@ -433,10 +574,26 @@ class FileDataLoadStrategy(DataLoad):
 
 class HuggingFaceDataLoadStrategy(DataLoad):
     """
-    HuggingFace-based data loading strategy for datasets from Hugging Face Hub
+    HuggingFace dataset loading strategy for remote datasets from Hugging Face Hub.
+
+    Supports streaming and non-streaming modes with configurable splits and trust settings.
+    Automatically handles dataset download, caching, and conversion to internal format.
+
+    Configuration Options:
+        - dataset_config: Optional dataset configuration name
+        - huggingface_split: Dataset split to load (train/test/validation)
+        - streaming: Enable streaming mode for large datasets
+        - trust_remote_code: Allow execution of remote code in datasets
+        - limit: Maximum number of samples to load (streaming mode)
     """
 
     def __init__(self, **kwargs):
+        """
+        Initialize HuggingFace loading strategy with converter registration.
+
+        Args:
+            **kwargs: Initialization parameters passed to parent class
+        """
         super().__init__(**kwargs)
         # Initialize data_converter after parent initialization as a normal attribute
         converter = DataConverterRegistry.get_converter(self.data_source, self.config)
@@ -444,11 +601,33 @@ class HuggingFaceDataLoadStrategy(DataLoad):
         object.__setattr__(self, "data_converter", converter)
 
     def validate_config(self, config: Dict[str, Any]) -> None:
-        """Validate HuggingFace config"""
+        """
+        Validate HuggingFace dataset configuration parameters.
+
+        Args:
+            config: Configuration dictionary to validate
+
+        Note:
+            Currently minimal validation - can be extended for specific requirements
+        """
         pass
 
     def _load_data_impl(self, **kwargs) -> List[DataSample]:
-        """Load data from HuggingFace dataset"""
+        """
+        Load data from HuggingFace dataset with automatic conversion.
+
+        Downloads dataset from HuggingFace Hub, applies configured settings,
+        and converts each item to DataSample format using registered converters.
+
+        Args:
+            **kwargs: Additional loading parameters
+
+        Returns:
+            List of converted DataSample objects
+
+        Raises:
+            RuntimeError: If dataset loading or conversion fails
+        """
         dataset_name = self.name
         dataset_config = self.config.get("dataset_config", None)
         split = self.config.get("huggingface_split", "train")
@@ -508,7 +687,15 @@ class HuggingFaceDataLoadStrategy(DataLoad):
     def _convert_to_data_sample(
         self, data_dict: Dict[str, Any]
     ) -> Union[DataSample, List[DataSample]]:
-        """Convert raw data dictionary to DataSample format"""
+        """
+        Convert raw HuggingFace data dictionary to DataSample format using registered converter.
+
+        Args:
+            data_dict: Raw data item from HuggingFace dataset
+
+        Returns:
+            Converted DataSample object(s) or None if conversion fails
+        """
         if hasattr(self, "data_converter") and self.data_converter:
             source_info = {
                 "dataset_name": self.config.get("name"),
@@ -522,7 +709,18 @@ class HuggingFaceDataLoadStrategy(DataLoad):
             return self._convert_to_data_sample_impl(data_dict)
 
     def _convert_to_data_sample_impl(self, data_dict: Dict[str, Any]) -> DataSample:
-        """Abstract method for backward compatibility - override in subclasses if not using converters"""
+        """
+        Abstract fallback method for backward compatibility.
+
+        Args:
+            data_dict: Raw data dictionary to convert
+
+        Returns:
+            DataSample object
+
+        Raises:
+            NotImplementedError: If no converter is available and method not implemented
+        """
         raise NotImplementedError(
             "Either use a data converter or implement _convert_to_data_sample_impl method"
         )
@@ -535,7 +733,19 @@ def create_load_module(
     config: Optional[Dict[str, Any]] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> DataLoad:
-    """Create data load module factory function"""
+    """
+    Factory function to create data loading module with specified strategy.
+
+    Args:
+        name: Unique identifier for the loading module
+        load_strategy_type: Loading strategy type (local/huggingface)
+        data_source: Data source identifier for converter selection
+        config: Strategy-specific configuration parameters
+        metadata: Additional metadata for tracking and debugging
+
+    Returns:
+        Configured DataLoad instance ready for pipeline integration
+    """
     return DataLoad(
         name=name,
         load_strategy_type=load_strategy_type,

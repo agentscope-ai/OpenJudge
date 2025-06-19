@@ -1,5 +1,8 @@
 """
-Data Processor Module - Unified data processing functionality
+Data Processing Module - unified data processing framework with operator pipeline architecture.
+
+Provides flexible data transformation capabilities through sequential operator application,
+supporting filtering, mapping, and custom processing operations on datasets.
 """
 
 from typing import Any, Dict, List, Optional, Union
@@ -13,7 +16,18 @@ from rm_gallery.core.data.schema import BaseDataSet, DataSample
 
 
 class DataProcess(BaseDataModule):
-    """Data process module - process data"""
+    """
+    Main data processing module that applies operator pipelines to datasets.
+
+    Orchestrates sequential application of processing operators to transform
+    and filter data samples while preserving metadata and providing detailed logging.
+
+    Attributes:
+        operators: List of processing operators to apply in sequence
+
+    Input: BaseDataSet or List[DataSample] containing raw data
+    Output: BaseDataSet with processed data and combined metadata
+    """
 
     operators: List[BaseOperator] = Field(
         default_factory=list, description="operators list"
@@ -27,6 +41,16 @@ class DataProcess(BaseDataModule):
         metadata: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
+        """
+        Initialize data processing module with operator pipeline.
+
+        Args:
+            name: Unique identifier for the processing module
+            config: Processing configuration parameters
+            operators: List of operators to apply in sequence
+            metadata: Additional metadata for tracking and debugging
+            **kwargs: Additional initialization parameters
+        """
         super().__init__(
             module_type=DataModuleType.PROCESS,
             name=name,
@@ -39,7 +63,23 @@ class DataProcess(BaseDataModule):
     def run(
         self, input_data: Union[BaseDataSet, List[DataSample]], **kwargs
     ) -> BaseDataSet:
-        """Process data through the operator pipeline"""
+        """
+        Execute the data processing pipeline with sequential operator application.
+
+        Applies each operator in sequence to the dataset, maintaining data integrity
+        and providing comprehensive logging of transformations and filtering results.
+
+        Args:
+            input_data: Dataset or list of samples to process
+            **kwargs: Additional runtime parameters
+
+        Returns:
+            BaseDataSet with processed data and combined metadata including
+            processing statistics and operator information
+
+        Raises:
+            Exception: If processing pipeline fails at any stage
+        """
         try:
             data_samples = self._prepare_data(input_data)
             processed_data = data_samples
@@ -96,13 +136,27 @@ class DataProcess(BaseDataModule):
     def _prepare_data(
         self, input_data: Union[BaseDataSet, List[DataSample]]
     ) -> List[DataSample]:
-        """Prepare data for processing"""
+        """
+        Prepare input data for processing by extracting samples from dataset wrapper.
+
+        Args:
+            input_data: Input dataset or sample list
+
+        Returns:
+            List of DataSample objects ready for operator processing
+        """
         if isinstance(input_data, BaseDataSet):
             return list(input_data.datas)
         return input_data
 
     def get_operators_info(self) -> List[Dict[str, Any]]:
-        """Get information about all operators"""
+        """
+        Retrieve information about all configured operators for debugging and monitoring.
+
+        Returns:
+            List of dictionaries containing operator metadata including
+            name, type, and configuration details
+        """
         return [
             {"name": op.name, "type": op.__class__.__name__, "config": op.config}
             for op in self.operators
@@ -115,5 +169,16 @@ def create_process_module(
     operators: Optional[List[BaseOperator]] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> DataProcess:
-    """Create data process module factory function"""
+    """
+    Factory function to create data processing module with specified configuration.
+
+    Args:
+        name: Unique identifier for the processing module
+        config: Processing configuration parameters
+        operators: List of operators to include in the pipeline
+        metadata: Additional metadata for tracking and debugging
+
+    Returns:
+        Configured DataProcess instance ready for pipeline integration
+    """
     return DataProcess(name=name, config=config, operators=operators, metadata=metadata)

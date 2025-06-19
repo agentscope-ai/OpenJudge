@@ -1,5 +1,8 @@
 """
-Data Annotation Module - Label Studio integration for data annotation
+Data Annotation Module - comprehensive Label Studio integration for manual data annotation workflows.
+
+Provides end-to-end annotation capabilities including project creation, task import,
+annotation collection, and export processing for reward model training pipelines.
 """
 import json
 from datetime import datetime
@@ -22,10 +25,30 @@ from rm_gallery.core.data.schema import (
 
 
 class DataAnnotator(BaseDataModule):
-    """Data annotation module using Label Studio
+    """
+    Main annotation module providing Label Studio integration for manual data labeling.
 
-    Note: Before using this module, please start Label Studio service:
-    python examples/data/data_pipeline.py start
+    Manages the complete annotation workflow from project creation to annotation export,
+    supporting template-based configuration and automated task conversion for reward
+    model training and evaluation data preparation.
+
+    Attributes:
+        client: Label Studio HTTP client for API interactions
+        project_id: Current annotation project identifier
+        label_config: Label Studio XML configuration for annotation interface
+        template_name: Registered template name for configuration resolution
+        project_description: Human-readable project description
+        project_title: Display title for the annotation project
+        server_url: Label Studio server endpoint URL
+        api_token: Authentication token for Label Studio API
+        export_processor: Template-specific processor for annotation export
+
+    Input: BaseDataSet or List[DataSample] containing data to annotate
+    Output: BaseDataSet with annotation project metadata and original data
+
+    Note:
+        Before using this module, ensure Label Studio service is running:
+        python examples/data/data_pipeline.py start
     """
 
     client: Optional[LabelStudioClient] = Field(
@@ -64,6 +87,24 @@ class DataAnnotator(BaseDataModule):
         metadata: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
+        """
+        Initialize data annotation module with Label Studio configuration.
+
+        Args:
+            name: Unique identifier for the annotation module
+            label_config: Direct Label Studio XML configuration (overrides template)
+            template_name: Registered template name for configuration resolution
+            project_title: Display title for annotation project
+            project_description: Human-readable project description
+            server_url: Label Studio server endpoint URL
+            api_token: Authentication token for Label Studio API access
+            export_processor: Template-specific processor for annotation export
+            metadata: Additional metadata for tracking and debugging
+            **kwargs: Additional initialization parameters
+
+        Raises:
+            ValueError: If neither label_config nor template_name is provided
+        """
         # Resolve label_config from template if needed
         resolved_label_config = self._resolve_label_config(label_config, template_name)
         resolved_export_processor = export_processor or template_name
@@ -96,7 +137,19 @@ class DataAnnotator(BaseDataModule):
     def _resolve_label_config(
         self, label_config: Optional[str], template_name: Optional[str]
     ) -> str:
-        """Resolve label configuration from template or direct config"""
+        """
+        Resolve Label Studio configuration from direct config or registered template.
+
+        Args:
+            label_config: Direct XML configuration string
+            template_name: Registered template identifier
+
+        Returns:
+            Resolved Label Studio XML configuration
+
+        Raises:
+            ValueError: If no configuration source is available
+        """
         if label_config:
             return label_config
 
@@ -117,7 +170,12 @@ class DataAnnotator(BaseDataModule):
         )
 
     def create_annotation_project(self) -> bool:
-        """Create annotation project in Label Studio"""
+        """
+        Create new annotation project in Label Studio with configured settings.
+
+        Returns:
+            True if project creation successful, False otherwise
+        """
         if not self.client:
             logger.error(
                 "Label Studio client not initialized. Please provide API token or start service."
@@ -135,7 +193,27 @@ class DataAnnotator(BaseDataModule):
     def run(
         self, input_data: Union[BaseDataSet, List[DataSample]], **kwargs
     ) -> BaseDataSet:
-        """Run annotation process"""
+        """
+        Execute the annotation workflow with project setup and task import.
+
+        Creates Label Studio project, converts data samples to annotation tasks,
+        and imports them for manual annotation. Returns dataset with annotation
+        project metadata for tracking and subsequent export operations.
+
+        Args:
+            input_data: Dataset or samples to prepare for annotation
+            **kwargs: Additional parameters including:
+                - create_new_project: Whether to create new project (default True)
+                - project_title: Override project title
+
+        Returns:
+            BaseDataSet with original data and annotation project metadata
+            including project ID, server URL, and task count
+
+        Raises:
+            RuntimeError: If Label Studio client unavailable or project creation fails
+            Exception: If any annotation workflow step fails
+        """
         try:
             # Check if client is available
             if not self.client:

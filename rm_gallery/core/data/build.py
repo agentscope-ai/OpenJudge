@@ -1,5 +1,6 @@
 """
-Data Build Module - core data build module, driving the entire data pipeline
+Data Build Module - core data pipeline orchestrator for end-to-end data processing.
+Coordinates loading, processing, annotation, and export stages with flexible configuration.
 """
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -21,7 +22,18 @@ from rm_gallery.core.utils.file import read_yaml
 
 
 class DataBuild(BaseDataModule):
-    """Data build module - driving the entire data pipeline"""
+    """
+    Main pipeline orchestrator that coordinates all data processing stages.
+
+    Manages the complete data workflow from raw input to final export format,
+    executing each stage in sequence while maintaining data integrity and logging.
+
+    Attributes:
+        load_module: Optional data loading component for ingesting external data
+        process_module: Optional processing component for filtering and transforming data
+        annotation_module: Optional annotation component for adding labels and metadata
+        export_module: Optional export component for outputting data in target formats
+    """
 
     load_module: Optional[DataLoad] = Field(default=None)
     process_module: Optional[DataProcess] = Field(default=None)
@@ -35,6 +47,15 @@ class DataBuild(BaseDataModule):
         metadata: Optional[Dict[str, Any]] = None,
         **modules,
     ):
+        """
+        Initialize the data build pipeline with specified modules.
+
+        Args:
+            name: Unique identifier for the pipeline instance
+            config: Pipeline-level configuration parameters
+            metadata: Additional metadata for tracking and debugging
+            **modules: Keyword arguments for individual pipeline modules
+        """
         super().__init__(
             module_type=DataModuleType.BUILD,
             name=name,
@@ -46,12 +67,27 @@ class DataBuild(BaseDataModule):
     def run(
         self, input_data: Union[BaseDataSet, List[DataSample], None] = None, **kwargs
     ) -> BaseDataSet:
-        """Run data build pipeline"""
+        """
+        Execute the complete data processing pipeline with all configured stages.
+
+        Processes data through sequential stages: loading → processing → annotation → export.
+        Each stage is optional and only executed if the corresponding module is configured.
+
+        Args:
+            input_data: Initial dataset, list of samples, or None for load-only pipelines
+            **kwargs: Additional runtime parameters passed to individual modules
+
+        Returns:
+            Final processed dataset after all stages complete
+
+        Raises:
+            Exception: If any pipeline stage fails, with detailed error logging
+        """
         try:
             current_data = input_data
             logger.info(f"Starting data build pipeline: {self.name}")
 
-            # Define pipeline stages
+            # Define pipeline stages with human-readable names
             stages = [
                 ("Loading", self.load_module),
                 ("Processing", self.process_module),
@@ -76,12 +112,37 @@ class DataBuild(BaseDataModule):
 def create_build_module(
     name: str, config: Optional[Dict[str, Any]] = None, **modules
 ) -> DataBuild:
-    """Factory function to create data build module"""
+    """
+    Factory function to create a data build module with specified configuration.
+
+    Args:
+        name: Unique identifier for the pipeline
+        config: Pipeline configuration parameters
+        **modules: Individual module instances to include in the pipeline
+
+    Returns:
+        Configured DataBuild instance ready for execution
+    """
     return DataBuild(name=name, config=config, **modules)
 
 
 def create_build_module_from_yaml(config_path: str) -> DataBuild:
-    """Create data build module from YAML configuration"""
+    """
+    Create a data build module from YAML configuration file.
+
+    Supports comprehensive pipeline configuration including data sources,
+    processing operators, annotation settings, and export formats.
+
+    Args:
+        config_path: Path to YAML configuration file
+
+    Returns:
+        Fully configured DataBuild instance based on YAML specification
+
+    Raises:
+        FileNotFoundError: If configuration file does not exist
+        ValueError: If configuration format is invalid
+    """
     config_path = Path(config_path)
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
@@ -96,12 +157,26 @@ def create_build_module_from_yaml(config_path: str) -> DataBuild:
 
 
 def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
-    """Create build module from dataset configuration"""
+    """
+    Create build module from dataset configuration with automatic module instantiation.
+
+    Parses dataset configuration to create appropriate modules for each pipeline stage.
+    Handles load strategies, processing operators, annotation settings, and export formats.
+
+    Args:
+        dataset_config: Dictionary containing complete dataset configuration
+
+    Returns:
+        Configured DataBuild instance with all specified modules
+
+    Raises:
+        Exception: If module creation fails for any configured component
+    """
     dataset_name = dataset_config.get("name", "dataset")
     metadata = dataset_config.get("metadata", {})
     modules = {}
 
-    # Create load module
+    # Create load module from data source configuration
     load_config = dataset_config.get("configs", {})
     if load_config:
         modules["load_module"] = create_load_module(
@@ -112,7 +187,7 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
             metadata=metadata,
         )
 
-    # Create process module
+    # Create process module from operators configuration
     processors = dataset_config.get("processors", [])
     if processors:
         operators = []
@@ -126,7 +201,7 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
             name=dataset_name, operators=operators, metadata=metadata
         )
 
-    # Create annotation module
+    # Create annotation module from annotation configuration
     annotation_config = dataset_config.get("annotation", {})
     if annotation_config:
         modules["annotation_module"] = create_annotation_module(
@@ -141,7 +216,7 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
             metadata=metadata,
         )
 
-    # Create export module
+    # Create export module from export configuration
     export_config = dataset_config.get("export", {})
     if export_config:
         modules["export_module"] = create_export_module(

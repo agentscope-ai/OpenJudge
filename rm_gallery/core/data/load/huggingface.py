@@ -1,3 +1,8 @@
+"""
+HuggingFace Generic Data Converter - flexible converter for various HuggingFace dataset formats.
+Automatically detects and processes common data patterns from HuggingFace datasets.
+"""
+
 import hashlib
 from typing import Any, Dict
 
@@ -10,14 +15,36 @@ from rm_gallery.core.data.schema import ChatMessage, DataOutput, DataSample, Ste
 @DataConverterRegistry.register("*")
 class GenericConverter(DataConverter):
     """
-    Generic converter that attempts to handle common data formats
-    Acts as a fallback when no specific converter is found
+    Generic converter that automatically handles diverse HuggingFace dataset formats.
+
+    Acts as a fallback converter when no specific format converter is available.
+    Intelligently extracts input/output pairs from common field names and structures.
+
+    Supported Input Patterns:
+        - Fields: prompt, question, input, text, instruction (for input)
+        - Fields: response, answer, output, completion (for output)
+        - Messages: array of role/content objects for conversations
+
+    Output: DataSample with auto-detected task category and structured data
     """
 
     def convert_to_data_sample(
         self, data_dict: Dict[str, Any], source_info: Dict[str, Any]
     ) -> DataSample:
-        """Convert generic HuggingFace data to DataSample format"""
+        """
+        Convert generic HuggingFace data dictionary to standardized DataSample format.
+
+        Automatically detects input/output patterns from common field names,
+        determines task category, and creates appropriate data structure.
+
+        Args:
+            data_dict: Raw data dictionary from HuggingFace dataset
+            source_info: Source metadata including dataset name, config, split info
+
+        Returns:
+            DataSample with auto-detected structure and task category
+            Returns None if input/output extraction fails
+        """
         # Generate unique id
         content = str(data_dict)
         unique_id = hashlib.md5(content.encode()).hexdigest()
@@ -79,7 +106,18 @@ class GenericConverter(DataConverter):
             return None
 
     def _extract_input(self, data_dict: Dict[str, Any]) -> list[ChatMessage]:
-        """Extract input from common field names"""
+        """
+        Extract input messages from data using common field name patterns.
+
+        Searches for standard input field names and converts to ChatMessage format.
+        Handles both single-field inputs and conversation message arrays.
+
+        Args:
+            data_dict: Raw data dictionary to extract input from
+
+        Returns:
+            List of ChatMessage objects representing the input context
+        """
         input_data = []
 
         # Common input field names
@@ -104,7 +142,18 @@ class GenericConverter(DataConverter):
         return input_data
 
     def _extract_output(self, data_dict: Dict[str, Any]) -> list[DataOutput]:
-        """Extract output from common field names"""
+        """
+        Extract output responses from data using common field name patterns.
+
+        Searches for standard output field names and creates DataOutput objects
+        with Step components for response evaluation.
+
+        Args:
+            data_dict: Raw data dictionary to extract output from
+
+        Returns:
+            List of DataOutput objects representing expected responses
+        """
         outputs = []
 
         # Common output field names
@@ -135,7 +184,18 @@ class GenericConverter(DataConverter):
         return outputs
 
     def _determine_task_category(self, data_dict: Dict[str, Any]) -> str:
-        """Determine task category from data"""
+        """
+        Automatically determine task category from data field patterns.
+
+        Analyzes field names and structure to classify the type of task
+        for appropriate processing and evaluation strategies.
+
+        Args:
+            data_dict: Raw data dictionary to analyze
+
+        Returns:
+            String identifier for the detected task category
+        """
         # Check for explicit task category
         if "task_category" in data_dict:
             return str(data_dict["task_category"])
