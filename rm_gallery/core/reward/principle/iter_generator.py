@@ -197,7 +197,7 @@ class IterPrincipleGenerator(PrincipleGenerator):
             **kwargs,
         )
 
-    def generate(self, sample: DataSample, principles: Dict[str, str]):
+    def generate_with_feedback(self, sample: DataSample, principles: Dict[str, str]):
         """
         Generates new principles based on sample analysis.
 
@@ -284,7 +284,9 @@ class IterPrincipleGenerator(PrincipleGenerator):
                 bad_samples.append(sample)
         return bad_samples
 
-    def cluster(self, samples: List[DataSample], principles: Dict[str, str]):
+    def cluster_with_feedback(
+        self, samples: List[DataSample], principles: Dict[str, str]
+    ):
         """
         Clusters and optimizes principles from multiple samples.
 
@@ -340,7 +342,10 @@ class IterPrincipleGenerator(PrincipleGenerator):
         return principles
 
     def run_batch(
-        self, samples: List[DataSample], thread_pool: ThreadPoolExecutor
+        self,
+        samples: List[DataSample],
+        thread_pool: ThreadPoolExecutor,
+        principles: Dict[str, str] | None = None,
     ) -> Dict[str, str]:
         """
         Executes the iterative principle generation pipeline.
@@ -352,20 +357,20 @@ class IterPrincipleGenerator(PrincipleGenerator):
         Returns:
             Final optimized principles dictionary after iterations
         """
-        principles = {
-            "Intent Understanding": "Understand user intentions and response.."
-        }
+        if not principles:
+            principles = super().run_batch(samples, thread_pool)
+
         bad_samples = samples
 
         for i in range(self.max_epochs):
             _samples = self.evaluate(deepcopy(samples), principles, thread_pool)
             bad_samples = self._split_samples(_samples)
             futures = [
-                thread_pool.submit(self.generate, sample, principles)
+                thread_pool.submit(self.generate_with_feedback, sample, principles)
                 for sample in bad_samples
             ]
             wait(futures, return_when=ALL_COMPLETED)
             bad_samples = [future.result() for future in futures]
-            principles = self.cluster(bad_samples, principles)
+            principles = self.cluster_with_feedback(bad_samples, principles)
 
         return principles

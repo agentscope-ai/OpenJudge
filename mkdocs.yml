@@ -1,0 +1,14 @@
+site_name: RM-Gallery
+theme:
+  name: cinder
+nav:
+  - Home: index.md
+  - API: autoapi/
+  # - Server: tutorial/rm_serving/rm_server.md
+  # - API: api.md
+plugins:
+  - search
+  - mkdocs-autoapi:
+      autoapi_dir: rm_gallery
+      autoapi_add_nav_entry: False
+  - mkdocstrings
