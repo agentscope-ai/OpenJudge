@@ -79,10 +79,9 @@ For quick start, please refer to [Quick Start](docs/quick_start.ipynb).
         - [building a custom RM](docs/tutorial/building_rm/customization.ipynb)
         - [auto principle](docs/tutorial/building_rm/customization.ipynb)
     - rm serving
-        - [High-Performance Model Serving](docs/tutorial/deploying_rm/model_serving.ipynb)
-
+        - [High-Performance Model Serving](docs/tutorial/deploy_rm_server/tutorial.md)
     - deploying rm
-        - [RL training](docs/tutorial/deploying_rm/post_training_with_rm.ipynb)
+        - [RL training](docs/tutorial/rm_serving/rm_server.md)
         - [Inference Time Scaling](docs/tutorial/deploying_rm/inference_time_scaling.ipynb)
 
 

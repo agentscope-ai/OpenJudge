@@ -1,0 +1,10 @@
+# working_dir: ./
+excludes: ["/.git/"]
+env_vars:
+  TORCH_NCCL_AVOID_RECORD_STREAMS: "1"
+  PYTORCH_CUDA_ALLOC_CONF: "expandable_segments: False"
+  WANDB_API_KEY: "local-e93291bd40698a593a1fcc5b99da6a71a753a383"
+  WANDB_BASE_URL: "http://22.6.186.25:8080"
+  HYDRA_FULL_ERROR: "1"
+  # If you are using vllm<=0.6.3, you might need to set the following environment variable to avoid bugs:
+  # VLLM_ATTENTION_BACKEND: "XFORMERS"
