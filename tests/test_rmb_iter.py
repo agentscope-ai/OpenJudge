@@ -45,7 +45,7 @@ def calc_acc(samples: List[DataSample]):
 def generate(
     samples: List[DataSample], scenario, generator_number, cluster_number, reward
 ):
-    llm = OpenaiLLM(model="qwen3-235b-a22b", enable_thinking=True)
+    llm = OpenaiLLM(model="qwen3-235b-a22b", enable_thinking=False)
 
     generator = PrincipleGenerator(
         llm=llm,
@@ -62,7 +62,7 @@ def generate(
 
 def get_reward(task: str, principles=None):
     kwargs = {}
-    kwargs["llm"] = OpenaiLLM(model="qwen3-32b", enable_thinking=True)
+    kwargs["llm"] = OpenaiLLM(model="qwen3-32b", enable_thinking=False)
     if principles is not None:
         kwargs["principles"] = principles
 
@@ -122,12 +122,12 @@ def test_single(task: str, thread_pool=ThreadPoolExecutor(max_workers=256)):
 
     # principles = DEFAULT_HELPFULNESS_PRINCIPLES
     # principles = []
-    # principles = None
+    principles = None
 
-    principles = test_generate(
-        task,
-        train,
-    )
+    # principles = test_generate(
+    #     task,
+    #     train,
+    # )
 
     acc, success, total = test_evaluate(
         task, test, principles=principles, thread_pool=thread_pool

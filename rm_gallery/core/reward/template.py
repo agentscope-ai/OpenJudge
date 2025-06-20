@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BasePromptTemplate(BaseModel):
@@ -16,6 +16,7 @@ class BasePromptTemplate(BaseModel):
         reason (str): A field capturing the reasoning trace for decision-making processes
     """
 
+    model_config = ConfigDict(validate_by_alias=True, validate_by_name=True)
     reason: str = Field(default=..., description="your reasoning trace", alias="think")
 
     @classmethod
@@ -71,8 +72,14 @@ class BasePromptTemplate(BaseModel):
         """
         schema_str = "Note: Ensure all outputs are placed within the tags like <tag> </tag> as required!!!\n"
         for key, property in cls.model_json_schema(by_alias=True)["properties"].items():
-            if key != "think" or not enable_thinking:
+            if key == "model_config":
+                continue
+
+            if key != "think" or enable_thinking:
                 schema_str += f"<{key}>\n{property['description']}\n</{key}>\n"
+            else:
+                schema_str += f"<reason>\n{property['description']}\n</reason>\n"
+
         return schema_str
 
     @classmethod
