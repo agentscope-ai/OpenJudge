@@ -106,6 +106,9 @@ class OpenaiLLM(BaseLLM):
             if v is not None and (isinstance(v, bool) or v != 0)
         }
 
+        if "qwen3" in self.model:
+            call_params["extra_body"] = {"enable_thinking": self.enable_thinking}
+
         if self.tools:
             call_params.update({"tools": self.tools, "tool_choice": self.tool_choice})
 

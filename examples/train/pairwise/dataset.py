@@ -1,6 +1,9 @@
 from typing import Any, Dict, List
 
-from examples.train.pairwise.template import PointwiseEvaluationTemplate, PairwiseComparisonTemplate
+from examples.train.pairwise.template import (
+    PairwiseComparisonTemplate,
+    PointwiseEvaluationTemplate,
+)
 from rm_gallery.core.train.dataset import BaseTrainDataset
 from rm_gallery.gallery.alignment.helpfulness import HelpfulnessPointWiseReward
 
@@ -109,8 +112,10 @@ class PairwiseComparisonDataset(BaseTrainDataset):
         # Initialize with pairwise template
         self.pairwise_template = PairwiseComparisonTemplate
         # Add pairwise specific config
-        self.pairwise_response_index = getattr(kwargs.get('config', {}), 'pairwise_response_index', 0)
-        
+        self.pairwise_response_index = getattr(
+            kwargs.get("config", {}), "pairwise_response_index", 0
+        )
+
         super().__init__(*args, **kwargs)
 
     def _get_pairwise_examples(self) -> List[str]:
@@ -143,15 +148,15 @@ preference: B""",
                 if msg.get("role") == "user" and msg.get("content"):
                     query = msg["content"]
                     break
-        
+
         # Extract two responses for comparison
         response_a = ""
         response_b = ""
-        
+
         if "output" in example and len(example["output"]) >= 2:
             response_a = example["output"][0].get("answer", {}).get("content", "")
             response_b = example["output"][1].get("answer", {}).get("content", "")
-        
+
         # Build pairwise comparison prompt
         task_desc = """You are a professional expert in response comparison.
 You will be provided with a query and two different responses (A and B) to that query.
@@ -170,16 +175,16 @@ Please consider the following principles in your evaluation and then indicate yo
 10. Engagement: How engaging and interactive the response is"""
 
         examples = "\n".join(self._get_pairwise_examples())
-        
+
         prompt = self.pairwise_template.format(
             desc=task_desc,
             principles=principles,
             examples=examples,
             query=query,
             response_a=response_a,
-            response_b=response_b
+            response_b=response_b,
         )
-        
+
         return [{"role": "user", "content": prompt}]
 
     def _extract_ground_truth(self, row_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -190,35 +195,53 @@ Please consider the following principles in your evaluation and then indicate yo
                 # Get labels for both responses
                 label_a = output_data[0].get("answer", {}).get("label", {})
                 label_b = output_data[1].get("answer", {}).get("label", {})
-                
+
                 # Extract preference information
                 if isinstance(label_a, dict) and isinstance(label_b, dict):
                     # Compare scores to determine preference
-                    score_a = label_a.get("helpfulness", 0) or label_a.get("overall_quality", 0) or label_a.get("score", 0)
-                    score_b = label_b.get("helpfulness", 0) or label_b.get("overall_quality", 0) or label_b.get("score", 0)
-                    
+                    score_a = (
+                        label_a.get("helpfulness", 0)
+                        or label_a.get("overall_quality", 0)
+                        or label_a.get("score", 0)
+                    )
+                    score_b = (
+                        label_b.get("helpfulness", 0)
+                        or label_b.get("overall_quality", 0)
+                        or label_b.get("score", 0)
+                    )
+
                     if score_a > score_b:
                         preference = "A"
                         preference_strength = score_a - score_b
                     elif score_b > score_a:
-                        preference = "B" 
+                        preference = "B"
                         preference_strength = score_b - score_a
                     else:
                         preference = "tie"
                         preference_strength = 0
-                    
+
                     return {
                         "preference": preference,
                         "preference_strength": preference_strength,
-                        "response_id": "A" if self.pairwise_response_index == 0 else "B",
+                        "response_id": "A"
+                        if self.pairwise_response_index == 0
+                        else "B",
                         "task_type": "pairwise",
                         "score_a": score_a,
-                        "score_b": score_b
+                        "score_b": score_b,
                     }
-            
-            return {"preference": "tie", "preference_strength": 0, "task_type": "pairwise"}
+
+            return {
+                "preference": "tie",
+                "preference_strength": 0,
+                "task_type": "pairwise",
+            }
         except Exception as e:
-            return {"preference": "tie", "preference_strength": 0, "task_type": "pairwise"}
+            return {
+                "preference": "tie",
+                "preference_strength": 0,
+                "task_type": "pairwise",
+            }
 
     def _get_data_source(self, row_dict: Dict[str, Any]) -> str:
         """Get data source for pairwise evaluation"""

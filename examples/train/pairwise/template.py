@@ -73,12 +73,12 @@ class PairwiseComparisonTemplate(BasePromptTemplate):
             if "preference" in contents:
                 preference = contents["preference"].strip().upper()
                 # Normalize preference values
-                if preference in ['A', 'RESPONSE A', 'ANSWER A']:
-                    contents["preference"] = 'A'
-                elif preference in ['B', 'RESPONSE B', 'ANSWER B']:
-                    contents["preference"] = 'B'
-                elif preference in ['TIE', 'EQUAL', 'SAME']:
-                    contents["preference"] = 'tie'
+                if preference in ["A", "RESPONSE A", "ANSWER A"]:
+                    contents["preference"] = "A"
+                elif preference in ["B", "RESPONSE B", "ANSWER B"]:
+                    contents["preference"] = "B"
+                elif preference in ["TIE", "EQUAL", "SAME"]:
+                    contents["preference"] = "tie"
                 else:
                     contents["preference"] = preference
             return cls(**contents)

@@ -28,7 +28,9 @@ def _temp_run(sample, generation, debug, result, metadata_list, timeout):
         sys.stdout = devnull
         sys.stderr = devnull
         try:
-            res, metadata = run_test(in_outs=sample, test=generation, debug=debug, timeout=timeout)
+            res, metadata = run_test(
+                in_outs=sample, test=generation, debug=debug, timeout=timeout
+            )
             result.append(res)
             metadata_list.append(metadata)
         except Exception:
@@ -46,7 +48,10 @@ def check_correctness(in_outs: Optional[dict], generation, timeout=10, debug=Tru
     manager = multiprocessing.Manager()
     result = manager.list()
     metadata_list = manager.list()
-    p = multiprocessing.Process(target=_temp_run, args=(in_outs, generation, debug, result, metadata_list, timeout))
+    p = multiprocessing.Process(
+        target=_temp_run,
+        args=(in_outs, generation, debug, result, metadata_list, timeout),
+    )
     p.start()
     p.join(timeout=timeout + 1)
     if p.is_alive():
