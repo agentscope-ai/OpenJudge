@@ -5,7 +5,6 @@ from pydantic import Field
 from rm_gallery.core.reward.base import (
     BaseListWisePrincipleReward,
     BasePointWisePrincipleReward,
-    BasePairWiseReward,
 )
 from rm_gallery.core.reward.registry import RewardRegistry
 
@@ -104,14 +103,17 @@ class BaseHonestyPointWiseReward(BasePointWisePrincipleReward):
 # Create alias for HelpfulnessPointWiseReward
 HelpfulnessPointWiseReward = BaseHelpfulnessPointWiseReward
 
+
 # Create a simple pairwise reward class for helpfulness
 @RewardRegistry.register("base_helpfulness_pairwise")
 class BaseHelpfulnessPairWiseReward(BaseListWisePrincipleReward):
-    desc: str = Field(default="""Please act as an impartial judge and compare two responses provided by assistants to the user question displayed below.
+    desc: str = Field(
+        default="""Please act as an impartial judge and compare two responses provided by assistants to the user question displayed below.
 You should critically and accurately assess both responses with the key principles and choose which response better follows the user's query and answers the user's question.
 Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision.
 Do not allow the length of the responses to influence your evaluation.
-Be as objective as possible.""")
+Be as objective as possible."""
+    )
     scenario: str = Field(
         default=DEFAULT_HELPFULNESS_SCENARIO, description="assistant scenario"
     )
@@ -128,15 +130,13 @@ Be as objective as possible.""")
         params = super()._before_evaluate(sample=sample, **kwargs)
         # BaseListWisePrincipleReward._before_evaluate already adds answers list.
         prompt = self.template.format(enable_thinking=False, **params)
-        from rm_gallery.core.reward.schema import RewardResult, RewardDimensionWithRank
+        from rm_gallery.core.reward.schema import RewardDimensionWithRank, RewardResult
 
         # Return a dummy reward with equal ranking (tie) just to fulfill structure
         rank = [0 for _ in range(len(sample.output))]
         return RewardResult(
             name=self.name,
-            details=[
-                RewardDimensionWithRank(name=self.name, reason="", rank=rank)
-            ],
+            details=[RewardDimensionWithRank(name=self.name, reason="", rank=rank)],
             extra_data={"prompt": prompt},
         )
 

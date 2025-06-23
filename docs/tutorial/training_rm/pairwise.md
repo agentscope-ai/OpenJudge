@@ -169,16 +169,16 @@ After training, look for **LoRA** or full weights in `checkpoints/<TIMESTAMP>/ac
 
 ## 8. FAQ
 
-1. **`num_samples=0` error**  
+1. **`num_samples=0` error**
    The dataset is empty after filtering. Check whether `_build_messages` parses rows correctly:
    ```python
    from examples.train.pairwise.dataset import HelpfulnessPairwiseTrainDataset
    ds = HelpfulnessPairwiseTrainDataset(...)
    print(len(ds))
    ```
-2. **Ray can't connect to `127.0.0.1:8265`**  
+2. **Ray can't connect to `127.0.0.1:8265`**
    Make sure you have run `ray start --head` and that port 8265 is reachable, or update `--address` in the script.
-3. **Out-of-memory**  
+3. **Out-of-memory**
    Lower `actor_rollout_ref.rollout.gpu_memory_utilization` or reduce `data.train_batch_size / ppo_micro_batch_size_per_gpu`.
 
 ---

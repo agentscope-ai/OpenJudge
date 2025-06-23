@@ -72,4 +72,4 @@ ray job submit --address="http://127.0.0.1:8265" \
     trainer.test_freq=2 \
     trainer.total_epochs=10 \
     trainer.val_before_train=False \
-    trainer.default_local_dir=${DEFAULT_LOCAL_DIR} 
+    trainer.default_local_dir=${DEFAULT_LOCAL_DIR}

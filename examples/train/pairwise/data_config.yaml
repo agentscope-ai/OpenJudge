@@ -8,4 +8,4 @@ dataset:
         output_dir: ./examples/data/exports # 导出路径
         formats: ["parquet"]                # 支持格式: jsonl, parquet, json
         preserve_structure: true          # 控制数据导出时是否保持原始数据的目录结构
-        split_ratio: {"train": 0.8, "test": 0.2} # 划分训练、测试集 
+        split_ratio: {"train": 0.8, "test": 0.2} # 划分训练、测试集

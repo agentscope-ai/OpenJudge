@@ -1,5 +1,5 @@
-from typing import Any, Dict, List
 import json
+from typing import Any, Dict, List
 
 from examples.train.pairwise.template import PairwiseComparisonTemplate
 from rm_gallery.core.train.dataset import BaseTrainDataset
@@ -111,4 +111,4 @@ Response B is significantly better than Response A. Response A is very basic and
     def _get_data_source(self, row_dict: Dict[str, Any]) -> str:
         """Get data source for pairwise comparison evaluation"""
         row_dict = self._normalize_row(row_dict)
-        return row_dict.get("source", "helpsteer2_pairwise") 
+        return row_dict.get("source", "helpsteer2_pairwise")

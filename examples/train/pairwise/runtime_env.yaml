@@ -12,4 +12,4 @@ env_vars:
   WANDB_BASE_URL: "http://22.6.186.25:8080"
   HYDRA_FULL_ERROR: "1"
   # If you are using vllm<=0.6.3, you might need to set the following environment variable to avoid bugs:
-  # VLLM_ATTENTION_BACKEND: "XFORMERS" 
+  # VLLM_ATTENTION_BACKEND: "XFORMERS"

@@ -1,5 +1,6 @@
-from pydantic import Field
 from typing import Optional
+
+from pydantic import Field
 
 from rm_gallery.core.reward.template import BasePromptTemplate
 
@@ -69,4 +70,4 @@ class PairwiseComparisonTemplate(BasePromptTemplate):
 
 # Output Requirement
 {cls.schema(**kwargs)}
-""" 
+"""
