@@ -1,14 +1,40 @@
 site_name: RM-Gallery
 theme:
-  name: cinder
+  name: material
 nav:
-  - Home: index.md
-  - API: autoapi/
-  # - Server: tutorial/rm_serving/rm_server.md
-  # - API: api.md
+  - Overview: index.md
+  - Quick Start: quick_start.ipynb
+  - Benchmark: benchmark.md
+  - Contribution: contribution.md
+  - Tutorials:
+    - Data:
+      - Annotation: tutorial/data/annotation.ipynb
+      - Load: tutorial/data/load.ipynb
+      - Pipeline: tutorial/data/pipeline.ipynb
+      - Process: tutorial/data/process.ipynb
+    - Build RM:
+      - Ready to Use: tutorial/building_rm/ready2use.ipynb
+      - Customization: tutorial/building_rm/customization.ipynb
+      - Auto Principle: tutorial/building_rm/autoprinciple.ipynb
+    - Deploy RM:
+      - Best of N: tutorial/deploying_rm/best_of_n.ipynb
+      - Inference Time Scaling: tutorial/deploying_rm/inference_time_scaling.ipynb
+      - Post Traning with RM: tutorial/deploying_rm/post_traning_with_rm.ipynb
+      - Refinement: tutorial/deploying_rm/refinement.ipynb
+    - RM Server: tutorial/rm_servering/rm_server.md
+    - Train RM:
+      - Pointwise: tutorial/training_rm/pointwise.ipynb
+      - Pairwise: tutorial/training_rm/pairwise_zh.ipynb
 plugins:
   - search
   - mkdocs-autoapi:
       autoapi_dir: rm_gallery
-      autoapi_add_nav_entry: False
-  - mkdocstrings
+      # autoapi_add_nav_entry: true
+  - mkdocs-jupyter:
+      ignore_h1_titles: True
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [rm_gallery]
+          rendering:
+            show_root_toc_entry: true
