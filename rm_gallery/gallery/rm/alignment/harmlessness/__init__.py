@@ -1,2 +1,2 @@
-from .detoxify import *
+from .detoxification import *
 from .safety import *

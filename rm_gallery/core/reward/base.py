@@ -32,7 +32,6 @@ class BaseReward(BaseModule):
 
     name: str = Field(default=..., description="The name of the reward module")
 
-    @abstractmethod
     def _evaluate(self, sample: DataSample, **kwargs) -> RewardResult:
         """
         Core evaluation logic to be implemented by subclasses.
@@ -48,7 +47,6 @@ class BaseReward(BaseModule):
         """
         ...
 
-    @abstractmethod
     def _parallel(
         self,
         func: Callable,

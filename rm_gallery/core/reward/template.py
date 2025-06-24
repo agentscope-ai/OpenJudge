@@ -136,7 +136,10 @@ class PrinciplePointWiseTemplate(BasePromptTemplate):
             PrinciplePointWiseTemplate: Constructed instance with parsed values
         """
         contents = cls._parse(text)
-        contents["violation"] = eval(contents["violation"])
+        try:
+            contents["violation"] = eval(contents["violation"])
+        except Exception:
+            contents["violation"] = []
         return cls(**contents)
 
     @classmethod

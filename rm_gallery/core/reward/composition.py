@@ -55,13 +55,15 @@ class SimpleComposition(BaseComposition):
             **kwargs: Arbitrary keyword arguments passed to parent constructor
         """
         super().__init__(*args, **kwargs)
-        for name, reward in range(self.rewards.items()):
+        for name, reward in self.rewards.items():
             if isinstance(reward, dict):
-                params = deepcopy(self.params)
-                params.update(reward["params"])
+                params = {k: v for k, v in self.params.items()}
+                params.update(reward.get("params", {}))
+                params["name"] = name
 
                 if isinstance(reward["cls"], str):
                     self.rewards[name] = RewardRegistry.get(reward["cls"])(**params)
+
                 elif issubclass(reward["cls"], BaseReward):
                     self.rewards[name] = reward["cls"](
                         **params,
@@ -161,5 +163,5 @@ class RouterComposition(SimpleComposition):
             DataSample with updated reward information
         """
         condition = self._condition(sample)
-        self.rewards[condition].evaluate(sample, thread_pool)
+        sample = self.rewards[condition].evaluate(sample, thread_pool)
         return sample

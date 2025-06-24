@@ -13,7 +13,7 @@ from typing import Dict
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.reward.composition import RouterComposition
-from rm_gallery.gallery.rm.alignment.base import HelpfulnessPointWiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
 from rm_gallery.gallery.rm.alignment.helpfulness.brainstorming import (
     BrainstormingListWiseReward,
 )
@@ -50,7 +50,7 @@ class RMBBenchRouter(RouterComposition):
     that maps task types to corresponding reward implementation classes.
     """
 
-    router: Dict[str, dict] = {
+    rewards: Dict[str, dict] = {
         "brainstorming": {"cls": BrainstormingListWiseReward},
         "chat": {"cls": ChatListWiseReward},
         "classification": {"cls": ClassificationListWiseReward},
@@ -63,7 +63,7 @@ class RMBBenchRouter(RouterComposition):
         "role_playing": {"cls": RolePlayingListWiseReward},
         "summarization": {"cls": SummarizationListWiseReward},
         "translation": {"cls": TranslationListWiseReward},
-        "general": {"cls": HelpfulnessPointWiseReward},
+        "general": {"cls": BaseHelpfulnessListwiseReward},
     }
 
     def _condition(self, sample: DataSample) -> str:
@@ -83,6 +83,12 @@ class RMBBenchRouter(RouterComposition):
                 - "general" as default fallback when subset field is missing
         """
         try:
-            return sample.metadata["subset"].lower()
+            cond = sample["meta"]["category_path"].split("/")[-2].lower()
+
         except Exception:
-            return "general"
+            # Fallback to general reward model when path extraction fails
+            cond = "general"
+
+        if cond not in self.rewards:
+            cond = "general"
+        return cond

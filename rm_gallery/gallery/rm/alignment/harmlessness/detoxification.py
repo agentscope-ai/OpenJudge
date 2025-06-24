@@ -1,4 +1,3 @@
-from detoxify import Detoxify
 from loguru import logger
 from pydantic import Field
 
@@ -20,6 +19,8 @@ class DetoxifyReward(BasePointWiseReward):
     @property
     def model(self):
         if not hasattr(self, "_model"):
+            from detoxify import Detoxify
+
             self._model = Detoxify(self.model_name)
         return self._model
 

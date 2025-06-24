@@ -2,7 +2,7 @@ from typing import Dict
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.reward.composition import RouterComposition
-from rm_gallery.gallery.rm.alignment.base import HelpfulnessPointWiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
 from rm_gallery.gallery.rm.alignment.harmlessness.safety import SafetyListWiseReward
 from rm_gallery.gallery.rm.alignment.helpfulness.focus import FocusListWiseReward
 from rm_gallery.gallery.rm.alignment.helpfulness.math import MathListWiseReward
@@ -22,13 +22,13 @@ class RewardBench2Router(RouterComposition):
 
     # Reward model routing configuration
     # Maps category identifiers to corresponding reward model implementations
-    router: Dict[str, dict] = {
+    rewards: Dict[str, dict] = {
         "safety": {"cls": SafetyListWiseReward},
         "focus": {"cls": FocusListWiseReward},
         "math": {"cls": MathListWiseReward},
         "factuality": {"cls": FactualityListWiseReward},
         "precis_if": {"cls": PreciseIFListWiseReward},
-        "general": {"cls": HelpfulnessPointWiseReward},
+        "general": {"cls": BaseHelpfulnessListwiseReward},
     }
 
     def _condition(self, sample: DataSample) -> str:
@@ -44,8 +44,13 @@ class RewardBench2Router(RouterComposition):
         """
         # Extract third-level category from path and normalize to lowercase
         # Example: "Safety/Content/Toxicity" -> "toxicity"
+
         try:
-            return sample["meta"]["category_path"].split("/")[2].lower()
+            cond = sample.metadata["raw_data"]["subset"].lower()
         except Exception:
             # Fallback to general reward model when path extraction fails
-            return "general"
+            cond = "general"
+
+        if cond not in self.rewards:
+            cond = "general"
+        return cond
