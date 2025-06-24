@@ -7,14 +7,14 @@ from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
 
 SCENARIO = "Closed QA: Search for direct answers to specific questions in given text sources (i.e. given context, given options)."
 
-PRINCIPLES = [
-    "Accuracy in Answering: Prioritize factually correct responses directly addressing the question with verified information.",
-    "Logical and Structured Reasoning: Provide clear, step-by-step explanations without gaps or contradictions to ensure transparency.",
-    "Avoidance of Errors: Prevent computational, logical, or interpretive mistakes that compromise the validity of the response.",
-]
+PRINCIPLES = []
+DESC = """
+Your role is that of a professional evaluation expert. I will provide you with a question and several candidate answers. Your task is to select the single best answer from the candidates.
+"""
 
 
 @RewardRegistry.register("closed_qa_listwise_reward")
 class ClosedQAListWiseReward(BaseHelpfulnessListwiseReward):
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)
+    desc: str = Field(default=DESC)

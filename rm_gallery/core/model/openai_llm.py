@@ -16,6 +16,7 @@ from rm_gallery.core.model.message import (
     ChatResponse,
     GeneratorChatResponse,
 )
+from rm_gallery.core.utils.text import detect_consecutive_repetition
 
 
 class OpenaiLLM(BaseLLM):
@@ -39,6 +40,8 @@ class OpenaiLLM(BaseLLM):
     max_retries: int = Field(default=10)
     stream: bool = Field(default=False)
     max_tokens: int = Field(default=8192)
+    thinking_budget: int = Field(default=8192)
+    stop_if_detect_repetition: bool = Field(default=False)
 
     @model_validator(mode="before")
     @classmethod
@@ -107,7 +110,10 @@ class OpenaiLLM(BaseLLM):
         }
 
         if "qwen3" in self.model:
-            call_params["extra_body"] = {"enable_thinking": self.enable_thinking}
+            call_params["extra_body"] = {
+                "enable_thinking": self.enable_thinking,
+                "thinking_budget": self.thinking_budget,
+            }
 
         if self.tools:
             call_params.update({"tools": self.tools, "tool_choice": self.tool_choice})
@@ -289,7 +295,10 @@ class OpenaiLLM(BaseLLM):
                         leave_think = True
                         ans += "</think>"
                     ans += delta.content
-
+            if self.stop_if_detect_repetition:
+                repetition_text = detect_consecutive_repetition(ans)
+                if repetition_text:
+                    logger.info(f"repetition_text={repetition_text},stop")
             if len(ans) > 32768:
                 return ans
 

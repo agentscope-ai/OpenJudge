@@ -75,8 +75,10 @@ class BasePromptTemplate(BaseModel):
         """
         schema_str = "Note: Ensure all outputs are placed within the tags like <tag> </tag> as required!!!\n"
         for key, property in cls.model_json_schema(by_alias=True)["properties"].items():
-            if key != "think" or not enable_thinking:
+            if key != "think" or enable_thinking:
                 schema_str += f"<{key}>\n{property['description']}\n</{key}>\n"
+            else:
+                schema_str += f"<reason>\n{property['description']}\n</reason>\n"
         return schema_str
 
     @classmethod
