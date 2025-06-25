@@ -16,7 +16,7 @@ English | [**中文**](./README_ZH.md)
 
 ## 🌟 Why RM-Gallery?
 
-RM-Gallery is a one-stop platform for training, building and operationalizing reward models. It provides a comprehensive solution for implementing reward models at both task-level and component-level, with high-throughput and fault-tolerant capabilities.
+RM-Gallery is a one-stop platform for training, building and applying reward models. It provides a comprehensive solution for implementing reward models at both task-level and component-level, with high-throughput and fault-tolerant capabilities.
 
 <p align="center">
  <img src="./docs/images/framework.png" alt="Framework" width="75%">
@@ -32,7 +32,7 @@ RM-Gallery is a one-stop platform for training, building and operationalizing re
 
 - **Principle-Critic-Score Paradigm**: Adopts the Principle+Critic+Score-based reasoning Reward Model  paradigm, offering best practices to help users generate principles with limited preference data.
 
-### Operationalizing RM
+### Applying RM
 
 - **Multiple Usage Scenarios**: Covers multiple Reward Model (RM) usage scenarios with detailed best practices, including Training with Rewards (e.g., post-training), Inference with Rewards (e.g., Best-of-N，refinement)
 
