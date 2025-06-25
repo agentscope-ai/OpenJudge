@@ -9,7 +9,6 @@ __pycache__
 *.parquet
 /log
 /dist
-tests/data
 uv*
 _del
 docs/log

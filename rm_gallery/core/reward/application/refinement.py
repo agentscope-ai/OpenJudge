@@ -94,13 +94,22 @@ Please generate a better response based on the feedback provided on candidate re
         Args:
             sample: Data sample containing input-response pair for evaluation
             **kwargs: Additional parameters for reward evaluation
-
         Returns:
             Feedback string describing response quality assessment
         """
         # Evaluate response quality using reward module
         sample = self.reward_module.evaluate(sample)
-        feedback = sample.output[0].answer.reward.details[0].reason
+
+        # safety check
+        if (
+            len(sample.output) > 0
+            and hasattr(sample.output[0].answer, "reward")
+            and len(sample.output[0].answer.reward.details) > 0
+        ):
+            feedback = sample.output[0].answer.reward.details[0].reason
+        else:
+            feedback = "No valid evaluation feedback available."
+
         return feedback
 
     def run(self, sample: DataSample, **kwargs) -> DataSample:

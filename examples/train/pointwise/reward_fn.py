@@ -1,6 +1,6 @@
 import math
 
-from examples.train.pointwise.template import HelpfulnessTrainTemplate
+from examples.train.pointwise.template import PointwiseTrainTemplate
 
 
 def calculate_helpfulness_reward(predicted_score, true_score):
@@ -39,7 +39,7 @@ def compute_score(data_source, solution_str, ground_truth, extra_info=None, **kw
     """
     try:
         # extract helpfulness score from solution_str using BasePromptTemplate logic
-        parsed_result = HelpfulnessTrainTemplate.parse(solution_str)
+        parsed_result = PointwiseTrainTemplate.parse(solution_str)
 
         # Extract integer score from violation (now List[int])
         predicted_helpfulness = parsed_result.score

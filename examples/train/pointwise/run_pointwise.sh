@@ -3,16 +3,16 @@
 
 TIMESTAMP=$(date "+%m%dT%H%M")
 
-TRAIN_FILE=./examples/data/train.parquet
-VAL_FILE=./examples/data/test.parquet
+TRAIN_FILE=./examples/data/helpsteer2_train.parquet
+VAL_FILE=./examples/data/helpsteer2_test.parquet
 MODEL_PATH=./models/Qwen3-8B
 
-PROJECT_NAME=helpsteer2_pointwise_${MODEL_NAME}
-EXPERIMENT_NAME=rm-gallery-${MODEL_NAME}-${TIMESTAMP}
+PROJECT_NAME=pointwise_train_${MODEL_NAME}
+EXPERIMENT_NAME=rm-gallery-pointwise_${MODEL_NAME}-${TIMESTAMP}
 
 CUSTOM_REWARD_FUNCTION_PATH=./examples/train/pointwise/reward_fn.py
 CUSTOM_CHAT_RL_DATASET_PATH=./examples/train/pointwise/dataset.py
-CUSTOM_CHAT_RL_DATASET_NAME=HelpfulnessTrainDataset
+CUSTOM_CHAT_RL_DATASET_NAME=HelpfulnessPointwiseTrainDataset
 REWARD_MANAGER=naive
 REWARD_FUNCTION_NAME=compute_score
 
@@ -25,7 +25,7 @@ N_NODES=1
 set -x
 
 ray job submit --address="http://127.0.0.1:8265" \
-    --runtime-env=./rm_gallery/gallery/train/pointwise/runtime_env.yaml \
+    --runtime-env=./examples/train/pairwise/runtime_env.yaml \
     -- \
     python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \

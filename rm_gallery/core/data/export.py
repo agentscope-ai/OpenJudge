@@ -435,7 +435,7 @@ class DataExport(BaseDataModule):
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 for sample in dataset.datas:
-                    json.dump(sample.dict(), f, ensure_ascii=False, default=str)
+                    json.dump(sample.model_dump(), f, ensure_ascii=False, default=str)
                     f.write("\n")
             logger.info(f"Exported to JSONL: {filepath}")
         except Exception as e:
@@ -463,10 +463,10 @@ class DataExport(BaseDataModule):
                 record = {
                     "unique_id": sample.unique_id,
                     "input": json.dumps(
-                        [msg.dict() for msg in sample.input], default=str
+                        [msg.model_dump() for msg in sample.input], default=str
                     ),
                     "output": json.dumps(
-                        [out.dict() for out in sample.output], default=str
+                        [out.model_dump() for out in sample.output], default=str
                     ),
                     "task_category": sample.task_category,
                     "source": sample.source,

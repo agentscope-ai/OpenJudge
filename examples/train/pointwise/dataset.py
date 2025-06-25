@@ -1,17 +1,17 @@
 from typing import Any, Dict, List
 
-from examples.train.pointwise.template import HelpfulnessTrainTemplate
+from examples.train.pointwise.template import PointwiseTrainTemplate
 from rm_gallery.core.train.dataset import BaseTrainDataset
 from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessPointWiseReward
 
 
-class HelpfulnessTrainDataset(BaseTrainDataset):
+class HelpfulnessPointwiseTrainDataset(BaseTrainDataset):
     """Specialized dataset for principle-based pointwise evaluation tasks"""
 
     def __init__(self, *args, **kwargs):
         self.helpfulness_reward = BaseHelpfulnessPointWiseReward(
             name="helpfulness_train",
-            template=HelpfulnessTrainTemplate,
+            template=PointwiseTrainTemplate,
             examples=self._get_examples(),
             llm=None,
         )

@@ -188,7 +188,7 @@ class BaseDataSet(BaseModel):
         return {
             "name": self.name,
             "metadata": self.metadata,
-            "datas": [data.dict() for data in self.datas],
+            "datas": [data.model_dump() for data in self.datas],
         }
 
     @classmethod
