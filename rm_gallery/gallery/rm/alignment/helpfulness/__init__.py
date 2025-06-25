@@ -1,6 +1,5 @@
 # Import all submodules in the helpfulness directory
 # Import base classes
-from ..base import HelpfulnessPairWiseReward, HelpfulnessPointWiseReward
 from .brainstorming import *
 from .chat import *
 from .classification import *

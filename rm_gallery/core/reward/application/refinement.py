@@ -1,3 +1,4 @@
+import re
 from copy import deepcopy
 
 from pydantic import Field
@@ -7,6 +8,11 @@ from rm_gallery.core.data.schema import DataOutput, DataSample, Step
 from rm_gallery.core.model.base import BaseLLM
 from rm_gallery.core.model.message import MessageRole, format_messages
 from rm_gallery.core.reward.base import BaseReward
+
+
+def filter_think(text):
+    filtered_text = re.sub(r"<think>(.*?)</think>", "", text, flags=re.DOTALL)
+    return filtered_text
 
 
 class LLMRefinement(BaseModule):
@@ -75,7 +81,9 @@ Please generate a better response based on the feedback provided on candidate re
 
         respoonse = self.llm.simple_chat(prompt)
         sample.output.append(
-            DataOutput(answer=Step(role=MessageRole.ASSISTANT, content=respoonse))
+            DataOutput(
+                answer=Step(role=MessageRole.ASSISTANT, content=filter_think(respoonse))
+            )
         )
         return sample
 
@@ -112,7 +120,10 @@ Please generate a better response based on the feedback provided on candidate re
             response = self.llm.chat(sample.input)
             sample.output.append(
                 DataOutput(
-                    answer=Step(role=MessageRole.ASSISTANT, content=response.content)
+                    answer=Step(
+                        role=MessageRole.ASSISTANT,
+                        content=filter_think(response.message.content),
+                    )
                 )
             )
 
