@@ -1,4 +1,4 @@
-# Built-in Rewards
+# Ready-to-use Rewards
 RM Gallery provides a comprehensive collection of ready-to-use reward models, organized by application scenarios to facilitate easy selection and implementation.
 Our reward model collection is continuously expanding.
 

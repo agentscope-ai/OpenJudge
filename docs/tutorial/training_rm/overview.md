@@ -1,4 +1,4 @@
-# VERL-based Pointwise Reward Model Training Guide
+# VERL-based Reasoning Reward Model Training Guide
 
 ## 📖 Overview
 

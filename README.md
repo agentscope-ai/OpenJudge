@@ -78,13 +78,17 @@ For complete basic usage of RM-Gallery, please refer to [Quick Start](docs/quick
         - [data loader](docs/tutorial/data/load.ipynb)
         - [data processor](docs/tutorial/data/process.ipynb)
     - training rm
-        - [training a reasoning reward model](docs/tutorial/training_rm/pointwise.ipynb)
+        - [training overview](docs/tutorial/training_rm/overview.md)
+        - [training a pointwise rm](docs/tutorial/training_rm/pointwise.md)
+        - [training a pairwise rm](docs/tutorial/training_rm/pairwise.md)
 
     - building rm
         - [overview](docs/tutorial/building_rm/overview.ipynb)
-        - [ready-to-use RMs](docs/tutorial/building_rm/ready2use.ipynb)
-        - [building a custom RM](docs/tutorial/building_rm/customization.ipynb)
-        - [auto principle](docs/tutorial/building_rm/customization.ipynb)
+        - [ready-to-use RMs](docs/tutorial/building_rm/ready2use_rewards.md)
+        - [building a custom RM](docs/tutorial/building_rm/custom_reward.ipynb)
+        - [auto principle](docs/tutorial/building_rm/autoprinciple.ipynb)
+        - [benchmark practices](docs/tutorial/building_rm/benchmark_practices.ipynb)
+
     - rm serving
         - [High-Performance RM Serving](docs/tutorial/rm_serving/rm_server.md)
 
