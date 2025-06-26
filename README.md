@@ -50,8 +50,8 @@ RM-Gallery is a one-stop platform for training, building and applying reward mod
 # Pull the source code from GitHub
 git clone https://github.com/modelscope/rm-gallery.git
 
-# Install the package in editable mode
-pip install -e .
+# Install the package
+pip install .
 ```
 
 ### Install From PyPi
