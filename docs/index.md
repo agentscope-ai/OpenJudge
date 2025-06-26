@@ -1,4 +1,5 @@
 <!-- # RM-Gallery: A One-Stop Reward Model Platform -->
+English | [**中文**](./README_ZH.md)
 <h2 align="center">RM-Gallery: A One-Stop Reward Model Platform</h2>
 
 [![](https://img.shields.io/badge/python-3.10+-blue)](https://pypi.org/project/rm-gallery/)
@@ -10,7 +11,7 @@
 
 ----
 ## 📢 News
-- **[2025-06-XX]** We release RM Gallery v0.1.0 now, which is also available in [PyPI](https://pypi.org/simple/rm-gallery/)!
+- **[2025-06-30]** We release RM Gallery v0.1.0 now, which is also available in [PyPI](https://pypi.org/simple/rm-gallery/)!
 ----
 
 ## 🌟 Why RM-Gallery?
@@ -18,7 +19,7 @@
 RM-Gallery is a one-stop platform for training, building and applying reward models. It provides a comprehensive solution for implementing reward models at both task-level and component-level, with high-throughput and fault-tolerant capabilities.
 
 <p align="center">
- <img src="./docs/images/framework.png" alt="Framework" width="75%">
+ <img src="./images/framework.png" alt="Framework" width="75%">
 </p>
 
 ### Training RM
@@ -66,33 +67,33 @@ pip install rm-gallery
 #Initialize using the registry pattern
 rm = RewardRegistry.get("Your RM's Registry Name")(name="demo_rm")
 ```
-For complete basic usage of RM-Gallery, please refer to [Quick Start](docs/quick_start.ipynb).
+For complete basic usage of RM-Gallery, please refer to [Quick Start](./quick_start.ipynb).
 
 
 ## 📚 Documentation
 - Tutorial:
     - data
-        - [data pipeline](tutorial/data/pipeline.ipynb)
-        - [data annotator](tutorial/data/annotation.ipynb)
-        - [data loader](tutorial/data/load.ipynb)
-        - [data processor](tutorial/data/process.ipynb)
+        - [data pipeline](./tutorial/data/pipeline.ipynb)
+        - [data annotator](./tutorial/data/annotation.ipynb)
+        - [data loader](./tutorial/data/load.ipynb)
+        - [data processor](./tutorial/data/process.ipynb)
     - training rm
-        - [training guide](docs/tutorial/training_rm/complete_guide.md)
+        - [training a pointwise or pairwise rm](./tutorial/training_rm/training_rm.md)
 
     - building rm
-        - [overview](tutorial/building_rm/overview.ipynb)
-        - [ready-to-use RMs](tutorial/building_rm/ready2use_rewards.md)
-        - [building a custom RM](tutorial/building_rm/custom_reward.ipynb)
-        - [auto principle](tutorial/building_rm/autoprinciple.ipynb)
-        - [benchmark practices](tutorial/building_rm/benchmark_practices.ipynb)
+        - [overview](./tutorial/building_rm/overview.ipynb)
+        - [ready-to-use RMs](./tutorial/building_rm/ready2use_rewards.md)
+        - [building a custom RM](./tutorial/building_rm/custom_reward.ipynb)
+        - [auto principle](./tutorial/building_rm/autoprinciple.ipynb)
+        - [benchmark practices](./tutorial/building_rm/benchmark_practices.ipynb)
 
     - rm serving
-        - [High-Performance RM Serving](tutorial/rm_serving/rm_server.md)
+        - [High-Performance RM Serving](./tutorial/rm_serving/rm_server.md)
 
     - rm application
-        - [post training](tutorial/rm_application/post_training.ipynb)
-        - [best-of-n](tutorial/rm_application/best_of_n.ipynb)
-        - [refinement](tutorial/rm_application/refinement.ipynb)
+        - [post training](./tutorial/rm_application/post_training.ipynb)
+        - [best-of-n](./tutorial/rm_application/best_of_n.ipynb)
+        - [refinement](./tutorial/rm_application/refinement.ipynb)
 
 
 
@@ -109,7 +110,7 @@ pip install -e .
 pre-commit install
 ```
 
-Please refer to our [Contribution Guide](.contribution.md) for more details.
+Please refer to our [Contribution Guide](./contribution.md) for more details.
 
 ## 📝 Citation
 
@@ -117,10 +118,10 @@ Reference to cite if you use RM-Gallery in a paper:
 
 ```
 @software{
-author = {GM-Gallery},
+title = {RM-Gallery: A One-Stop Reward Model Platform},
+author = {The GM-Gallery Team},
+url = {https://github.com/modelscope/RM-Gallery},
 month = {06},
-title = {GM-Gallery},
-url = {},
 year = {2025}
 }
 ```
