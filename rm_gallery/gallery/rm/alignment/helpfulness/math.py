@@ -7,7 +7,7 @@ from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
 
 DESC = """
 Your role is that of a professional evaluation expert. I will provide you with a question and several candidate answers. Your task is to select the single best answer from the candidates.
-I will also provide you with a set of principles, listed under the heading #Principles. These principles are ordered from highest to lowest importance. These principles can serve as supplementary knowledge for your judgment. If you find any of the principles helpful for the current problem, feel free to use them as supplements.
+I will also provide you with a set of principles, listed under the heading #Principles. These principles are ordered from highest to lowest importance. These principles can serve as supplementary knowledge for your judgment. If you find any of the principles helpful for the current problem, feel free to use them as supplements. If all answers meet all principles, you can judge and choose one answer by yourself.
 """
 SCENARIO = ""
 PRINCIPLES = [
