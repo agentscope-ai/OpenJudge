@@ -78,9 +78,7 @@ For complete basic usage of RM-Gallery, please refer to [Quick Start](docs/quick
         - [data loader](docs/tutorial/data/load.ipynb)
         - [data processor](docs/tutorial/data/process.ipynb)
     - training rm
-        - [training overview](docs/tutorial/training_rm/overview.md)
-        - [training a pointwise rm](docs/tutorial/training_rm/pointwise.md)
-        - [training a pairwise rm](docs/tutorial/training_rm/pairwise.md)
+        - [training guide](docs/tutorial/training_rm/complete_guide.md)
 
     - building rm
         - [overview](docs/tutorial/building_rm/overview.ipynb)

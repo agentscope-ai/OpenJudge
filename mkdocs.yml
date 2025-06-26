@@ -17,10 +17,7 @@ nav:
       - Load: tutorial/data/load.ipynb
       - Pipeline: tutorial/data/pipeline.ipynb
       - Process: tutorial/data/process.ipynb
-    - Train RM:
-      - Overview: tutorial/training_rm//train.md
-      - Pointwise: tutorial/training_rm/pointwise.md
-      - Pairwise: tutorial/training_rm/pairwise.md
+    - Train RM: tutorial/training_rm/complete_guide.md
     - Build RM:
       - Overview: docs/tutorial/building_rm/overview.ipynb
       - Customization: tutorial/building_rm/custom_reward.ipynb
