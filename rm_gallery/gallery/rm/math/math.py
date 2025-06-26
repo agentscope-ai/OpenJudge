@@ -4,9 +4,11 @@ from pydantic import Field
 
 from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.reward.base import BasePointWiseReward
+from rm_gallery.core.reward.registry import RewardRegistry
 from rm_gallery.core.reward.schema import RewardDimensionWithScore, RewardResult
 
 
+@RewardRegistry.register("math_verify_reward")
 class MathVerifyReward(BasePointWiseReward):
     """
     Verify mathematical expressions using math_verify library
