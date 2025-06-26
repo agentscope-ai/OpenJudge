@@ -16,14 +16,14 @@ English | [**中文**](./README_ZH.md)
 
 ## 🌟 Why RM-Gallery?
 
-RM-Gallery is a one-stop platform for training, building and applying reward models. It provides a comprehensive solution for implementing reward models at both task-level and component-level, with high-throughput and fault-tolerant capabilities.
+RM-Gallery is a one-stop platform for training, building and applying reward models. It provides a comprehensive solution for implementing reward models at both task-level and atomic-level, with high-throughput and fault-tolerant capabilities.
 
 <p align="center">
  <img src="./docs/images/framework.png" alt="Framework" width="75%">
 </p>
 
 ### Training RM
-- **Integrated RM Training Pipeline**: Provides an RL-based framework for training reasoning reward models, compatible with popular frameworks (e.g., verl, OpenRLHF), and offers examples for integrating RM-Gallery into the framework.
+- **Integrated RM Training Pipeline**: Provides an RL-based framework for training reasoning reward models, compatible with popular frameworks (e.g., verl), and offers examples for integrating RM-Gallery into the framework.
 
 ### Building RM
 - **Unified Reward Model Architecture**: Flexible implementation of reward models through standardized interfaces, supporting various architectures (model-based/free), reward formats (scalar/critique), and scoring patterns (pointwise/listwise/pairwise)
@@ -119,7 +119,7 @@ Reference to cite if you use RM-Gallery in a paper:
 ```
 @software{
 title = {RM-Gallery: A One-Stop Reward Model Platform},
-author = {The GM-Gallery Team},
+author = {The RM-Gallery Team},
 url = {https://github.com/modelscope/RM-Gallery},
 month = {06},
 year = {2025}
