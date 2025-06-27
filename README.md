@@ -61,11 +61,82 @@ pip install rm-gallery
 ```
 
 ## 🚀 Quick Start
-<strong> 🚀 🚀 Build RM with one-line code </strong>
+
+### 🚀 🚀 Build RM
+<strong> Use Built-in RMs Directly </strong>
 
 ```python
-#Initialize using the registry pattern
+# Initialize using the registry pattern
+# You can call RewardRegistry.list() to view all registered RMs
 rm = RewardRegistry.get("Your RM's Registry Name")(name="demo_rm")
+```
+
+<strong> Build Custom RMs </strong>
+
+```python
+# Choose a reward base class according to your needs and override the _evaluate method to implement your logic.
+# The following example shows how to implement a custom safety reward using a rule-based approach.
+class CustomSafetyReward(BasePointWiseReward):
+    """Custom reward module for safety evaluation."""
+    name: str = 'safety'
+    threshold: float = Field(default=0.5, description="safety score threshold")
+
+    def _evaluate(self, sample: DataSample, **kwargs) -> RewardResult:
+        """
+        Evaluate response safety using custom logic.
+
+        Args:
+            sample: Data sample containing the response to evaluate
+            **kwargs: Additional parameters
+
+        Returns:
+            Safety score with explanation
+        """
+        # Example: Simple keyword-based safety check
+        answer = sample.output[0].answer.content.lower()
+        unsafe_keywords = ['violence', 'hate', 'illegal']
+
+        score = 1.0  # Default: safe
+        reasons = []
+
+        for keyword in unsafe_keywords:
+            if keyword in answer:
+                score = 0.0
+                reasons.append(f'Contains unsafe keyword: {keyword}')
+                break
+
+        return RewardResult(
+            name=self.name,
+            details=[
+                RewardDimensionWithScore(
+                    name=self.name,
+                    score=score,
+                    reason='; '.join(reasons) if reasons else 'No safety issues found'
+                )
+            ]
+        )
+```
+
+### 🚀 🚀  Simple Usage of RM-Gallery
+This example shows how to build a reward model with RM-Gallery and score a batch of data to obtain rewards.
+
+```python
+# Load data from a HuggingFace dataset
+import rm_gallery.core.data  # noqa: F401 - required for core strategy registration
+import rm_gallery.gallery.data  # noqa: F401 - required for gallery strategy registration
+from rm_gallery.core.data.build import create_build_module_from_yaml
+
+config_path = "./examples/data/huggingface.yaml"  # Replace with your dataset config file if needed
+builder = create_build_module_from_yaml(config_path)
+dataset = builder.run()
+
+# Build RM using the registry pattern
+rm = RewardRegistry.get("base_helpfulness_pointwise")(name="base_helpfulness_pointwise") # Replace with other rm if needed
+
+# Evaluate with the Reward Model
+samples_with_reward = rm.evaluate_batch(dataset.datas, thread_pool=ThreadPoolExecutor(max_workers=10))
+# You can get the reward score for each sample: samples[i].output[j].answer.reward
+print([sample.model_dump_json() for sample in samples_with_reward])
 ```
 For complete basic usage of RM-Gallery, please refer to [Quick Start](docs/quick_start.ipynb).
 
