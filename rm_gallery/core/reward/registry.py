@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from typing import Dict, List, Type
 
 from rm_gallery.core.reward.base import BaseReward
 
@@ -56,4 +56,13 @@ class RewardRegistry:
         Returns:
             The corresponding BaseReward subclass if found, None otherwise
         """
-        return cls._registry.get(reward_name)
+        assert reward_name in cls._registry, f"Reward module '{reward_name}' not found"
+        return cls._registry.get(reward_name, None)
+
+    @classmethod
+    def list(cls) -> List[str]:
+        """
+        Returns:
+            A list of all registered reward modules
+        """
+        return list(cls._registry.keys())
