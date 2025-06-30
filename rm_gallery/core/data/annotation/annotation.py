@@ -270,7 +270,7 @@ class DataAnnotator(BaseDataModule):
             )
 
             return BaseDataSet(
-                name=result_name, metadata=result_metadata, datas=data_samples
+                name=result_name, metadata=result_metadata, datasamples=data_samples
             )
 
         except Exception as e:
@@ -290,7 +290,7 @@ class DataAnnotator(BaseDataModule):
     ) -> List[DataSample]:
         """Prepare data for annotation"""
         if isinstance(input_data, BaseDataSet):
-            data_samples = list(input_data.datas)
+            data_samples = list(input_data.datasamples)
         else:
             data_samples = input_data
 
@@ -372,7 +372,7 @@ class DataAnnotator(BaseDataModule):
             return BaseDataSet(
                 name=f"{self.name}_annotations_empty",
                 metadata={"annotation_status": "no_annotations"},
-                datas=[],
+                datasamples=[],
             )
 
         # Convert annotations to DataSample format
@@ -386,7 +386,7 @@ class DataAnnotator(BaseDataModule):
                 "annotation_status": "exported",
                 "data_format": "DataSample",
             },
-            datas=annotated_samples,
+            datasamples=annotated_samples,
         )
 
     def _convert_annotations_to_schema(
@@ -693,7 +693,7 @@ class DataAnnotator(BaseDataModule):
             return None
 
 
-def create_annotation_module(
+def create_annotator(
     name: str = "annotation",
     label_config: Optional[str] = None,
     template_name: Optional[str] = None,

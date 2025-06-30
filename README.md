@@ -124,17 +124,18 @@ This example shows how to build a reward model with RM-Gallery and score a batch
 # Load data from a HuggingFace dataset
 import rm_gallery.core.data  # noqa: F401 - required for core strategy registration
 import rm_gallery.gallery.data  # noqa: F401 - required for gallery strategy registration
-from rm_gallery.core.data.build import create_build_module_from_yaml
+from rm_gallery.core.data.build import create_builder_from_yaml
 
 config_path = "./examples/data/huggingface.yaml"  # Replace with your dataset config file if needed
-builder = create_build_module_from_yaml(config_path)
+builder = create_builder_from_yaml(config_path)
 dataset = builder.run()
 
 # Build RM using the registry pattern
-rm = RewardRegistry.get("base_helpfulness_pointwise")(name="base_helpfulness_pointwise") # Replace with other rm if needed
+rm = RewardRegistry.get("base_helpfulness_pointwise")(
+    name="base_helpfulness_pointwise")  # Replace with other rm if needed
 
 # Evaluate with the Reward Model
-samples_with_reward = rm.evaluate_batch(dataset.datas, thread_pool=ThreadPoolExecutor(max_workers=10))
+samples_with_reward = rm.evaluate_batch(dataset.datasamples, thread_pool=ThreadPoolExecutor(max_workers=10))
 # You can get the reward score for each sample: samples[i].output[j].answer.reward
 print([sample.model_dump_json() for sample in samples_with_reward])
 ```

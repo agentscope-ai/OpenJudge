@@ -116,7 +116,7 @@ class DataConverterRegistry:
         return list(cls._converters.keys())
 
 
-class DataLoad(BaseDataModule):
+class DataLoader(BaseDataModule):
     """
     Unified data loading module supporting multiple strategies and sources.
 
@@ -203,12 +203,12 @@ class DataLoad(BaseDataModule):
             RuntimeError: If loading fails at any stage
         """
         # If this is a strategy instance (subclass), call the abstract method
-        if self.__class__ != DataLoad:
+        if self.__class__ != DataLoader:
             return self._load_data_impl(**kwargs)
 
         # Choose strategy based on load_strategy_type
         if self.load_strategy_type == "local":
-            strategy = FileDataLoadStrategy(
+            strategy = FileDataLoader(
                 name=self.name,
                 load_strategy_type=self.load_strategy_type,
                 data_source=self.data_source,
@@ -216,7 +216,7 @@ class DataLoad(BaseDataModule):
                 metadata=self.metadata,
             )
         elif self.load_strategy_type == "huggingface":
-            strategy = HuggingFaceDataLoadStrategy(
+            strategy = HuggingFaceDataLoader(
                 name=self.name,
                 load_strategy_type=self.load_strategy_type,
                 data_source=self.data_source,
@@ -296,7 +296,7 @@ class DataLoad(BaseDataModule):
                     "strategy_type": self.load_strategy_type,
                     "config": self.config,
                 },
-                datas=data_samples,
+                datasamples=data_samples,
             )
             logger.info(
                 f"Successfully loaded {len(data_samples)} items from {self.data_source}"
@@ -309,7 +309,7 @@ class DataLoad(BaseDataModule):
             raise RuntimeError(error_msg) from e
 
 
-class FileDataLoadStrategy(DataLoad):
+class FileDataLoader(DataLoader):
     """
     File-based data loading strategy for local JSON, JSONL, and Parquet files.
 
@@ -597,7 +597,7 @@ class FileDataLoadStrategy(DataLoad):
         )
 
 
-class HuggingFaceDataLoadStrategy(DataLoad):
+class HuggingFaceDataLoader(DataLoader):
     """
     HuggingFace dataset loading strategy for remote datasets from Hugging Face Hub.
 
@@ -757,13 +757,13 @@ class HuggingFaceDataLoadStrategy(DataLoad):
         )
 
 
-def create_load_module(
+def create_loader(
     name: str,
     load_strategy_type: str = "local",
     data_source: str = "*",
     config: Optional[Dict[str, Any]] = None,
     metadata: Optional[Dict[str, Any]] = None,
-) -> DataLoad:
+) -> DataLoader:
     """
     Factory function to create data loading module with specified strategy.
 
@@ -775,9 +775,9 @@ def create_load_module(
         metadata: Additional metadata for tracking and debugging
 
     Returns:
-        Configured DataLoad instance ready for pipeline integration
+        Configured DataLoader instance ready for pipeline integration
     """
-    return DataLoad(
+    return DataLoader(
         name=name,
         load_strategy_type=load_strategy_type,
         data_source=data_source,

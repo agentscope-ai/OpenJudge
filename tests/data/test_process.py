@@ -3,9 +3,9 @@ from loguru import logger
 
 import rm_gallery.core.data  # noqa: F401 - needed for core strategy registration
 import rm_gallery.gallery.data  # noqa: F401 - needed for example strategy registration
-from rm_gallery.core.data.load.base import create_load_module
+from rm_gallery.core.data.load.base import create_loader
 from rm_gallery.core.data.process.ops.base import OperatorFactory
-from rm_gallery.core.data.process.process import create_process_module
+from rm_gallery.core.data.process.process import create_processor
 from rm_gallery.core.data.schema import BaseDataSet, DataSample
 
 
@@ -42,7 +42,7 @@ def conversation_filter_config():
 @pytest.fixture
 def test_dataset(dataset_info, load_config):
     """Create a test dataset for processing tests"""
-    load_module = create_load_module(
+    load_module = create_loader(
         name=dataset_info["name"],
         load_strategy_type=dataset_info["type"],
         data_source=dataset_info["data_source"],
@@ -54,7 +54,7 @@ def test_dataset(dataset_info, load_config):
 def test_create_process_module(conversation_filter_config):
     """Test creating process module"""
     operator = OperatorFactory.create_operator(conversation_filter_config)
-    process_module = create_process_module(
+    process_module = create_processor(
         name="test-processor",
         operators=[operator],
     )
@@ -69,7 +69,7 @@ def test_process_with_conversation_filter(test_dataset, conversation_filter_conf
 
     # Create process module
     operator = OperatorFactory.create_operator(conversation_filter_config)
-    process_module = create_process_module(
+    process_module = create_processor(
         name="conversation-filter-processor",
         operators=[operator],
     )
@@ -91,12 +91,12 @@ def test_process_empty_dataset(conversation_filter_config):
     """Test processing empty dataset"""
     # Create empty dataset
     empty_dataset = BaseDataSet(
-        name="empty-test", metadata={"source": "test"}, datas=[]
+        name="empty-test", metadata={"source": "test"}, datasamples=[]
     )
 
     # Create process module
     operator = OperatorFactory.create_operator(conversation_filter_config)
-    process_module = create_process_module(
+    process_module = create_processor(
         name="empty-processor",
         operators=[operator],
     )
@@ -123,7 +123,7 @@ def test_process_with_multiple_operators(test_dataset):
         # Add more operators as needed
     ]
 
-    process_module = create_process_module(
+    process_module = create_processor(
         name="multi-operator-processor",
         operators=operators,
     )
@@ -156,7 +156,7 @@ def test_conversation_filter_parametrized(test_dataset, min_turns, max_turns):
     }
 
     operator = OperatorFactory.create_operator(filter_config)
-    process_module = create_process_module(
+    process_module = create_processor(
         name=f"filter-{min_turns}-{max_turns}",
         operators=[operator],
     )
@@ -175,7 +175,7 @@ def test_conversation_filter_parametrized(test_dataset, min_turns, max_turns):
 def test_process_preserves_metadata(test_dataset, conversation_filter_config):
     """Test that processing preserves dataset metadata"""
     operator = OperatorFactory.create_operator(conversation_filter_config)
-    process_module = create_process_module(
+    process_module = create_processor(
         name="metadata-test-processor",
         operators=[operator],
     )
@@ -191,7 +191,7 @@ def test_process_preserves_metadata(test_dataset, conversation_filter_config):
 def test_process_data_integrity(test_dataset, conversation_filter_config):
     """Test that processed data maintains integrity"""
     operator = OperatorFactory.create_operator(conversation_filter_config)
-    process_module = create_process_module(
+    process_module = create_processor(
         name="integrity-test-processor",
         operators=[operator],
     )
@@ -201,7 +201,7 @@ def test_process_data_integrity(test_dataset, conversation_filter_config):
     assert isinstance(result, BaseDataSet)
 
     # Check that all items in result are DataSample instances
-    for item in result.datas:
+    for item in result.datasamples:
         assert isinstance(item, DataSample), f"Expected DataSample, got {type(item)}"
 
     logger.info("Data integrity test passed")
@@ -230,7 +230,7 @@ def test_process_with_invalid_operator():
                 "config": {},
             }
         )
-        create_process_module(
+        create_processor(
             name="invalid-processor",
             operators=[operator],
         )
@@ -245,7 +245,7 @@ def test_process_large_dataset_performance(dataset_info):
         "huggingface_split": "test",
     }
 
-    load_module = create_load_module(
+    load_module = create_loader(
         name=dataset_info["name"],
         load_strategy_type=dataset_info["type"],
         data_source=dataset_info["data_source"],
@@ -262,7 +262,7 @@ def test_process_large_dataset_performance(dataset_info):
     }
 
     operator = OperatorFactory.create_operator(filter_config)
-    process_module = create_process_module(
+    process_module = create_processor(
         name="performance-test-processor",
         operators=[operator],
     )

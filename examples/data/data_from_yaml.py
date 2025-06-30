@@ -11,7 +11,7 @@ from loguru import logger
 
 import rm_gallery.core.data  # noqa: F401 - needed for core strategy registration
 import rm_gallery.gallery.data  # noqa: F401 - needed for gallery strategy registration
-from rm_gallery.core.data.build import create_build_module_from_yaml
+from rm_gallery.core.data.build import create_builder_from_yaml
 
 
 def load_and_process_dataset():
@@ -23,7 +23,7 @@ def load_and_process_dataset():
         logger.info(f"📄 Loading config: {config_path}")
 
         # Create builder from YAML config
-        builder = create_build_module_from_yaml(config_path)
+        builder = create_builder_from_yaml(config_path)
         logger.info(f"🔧 Created builder: {builder.name}")
 
         # Run the complete pipeline (Load → Process → Export)

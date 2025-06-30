@@ -8,20 +8,17 @@ from typing import Any, Dict, List, Optional, Union
 from loguru import logger
 from pydantic import Field
 
-from rm_gallery.core.data.annotation.annotation import (
-    DataAnnotator,
-    create_annotation_module,
-)
+from rm_gallery.core.data.annotation.annotation import DataAnnotator, create_annotator
 from rm_gallery.core.data.base import BaseDataModule, DataModuleType
-from rm_gallery.core.data.export import DataExport, create_export_module
-from rm_gallery.core.data.load.base import DataLoad, create_load_module
+from rm_gallery.core.data.export import DataExporter, create_exporter
+from rm_gallery.core.data.load.base import DataLoader, create_loader
 from rm_gallery.core.data.process.ops.base import OperatorFactory
-from rm_gallery.core.data.process.process import DataProcess, create_process_module
+from rm_gallery.core.data.process.process import DataProcessor, create_processor
 from rm_gallery.core.data.schema import BaseDataSet, DataSample
 from rm_gallery.core.utils.file import read_yaml
 
 
-class DataBuild(BaseDataModule):
+class DataBuilder(BaseDataModule):
     """
     Main pipeline orchestrator that coordinates all data processing stages.
 
@@ -35,10 +32,10 @@ class DataBuild(BaseDataModule):
         export_module: Optional export component for outputting data in target formats
     """
 
-    load_module: Optional[DataLoad] = Field(default=None)
-    process_module: Optional[DataProcess] = Field(default=None)
+    load_module: Optional[DataLoader] = Field(default=None)
+    process_module: Optional[DataProcessor] = Field(default=None)
     annotation_module: Optional[DataAnnotator] = Field(default=None)
-    export_module: Optional[DataExport] = Field(default=None)
+    export_module: Optional[DataExporter] = Field(default=None)
 
     def __init__(
         self,
@@ -109,9 +106,9 @@ class DataBuild(BaseDataModule):
             raise e
 
 
-def create_build_module(
+def create_builder(
     name: str, config: Optional[Dict[str, Any]] = None, **modules
-) -> DataBuild:
+) -> DataBuilder:
     """
     Factory function to create a data build module with specified configuration.
 
@@ -121,12 +118,12 @@ def create_build_module(
         **modules: Individual module instances to include in the pipeline
 
     Returns:
-        Configured DataBuild instance ready for execution
+        Configured DataBuilder instance ready for execution
     """
-    return DataBuild(name=name, config=config, **modules)
+    return DataBuilder(name=name, config=config, **modules)
 
 
-def create_build_module_from_yaml(config_path: str) -> DataBuild:
+def create_builder_from_yaml(config_path: str) -> DataBuilder:
     """
     Create a data build module from YAML configuration file.
 
@@ -137,7 +134,7 @@ def create_build_module_from_yaml(config_path: str) -> DataBuild:
         config_path: Path to YAML configuration file
 
     Returns:
-        Fully configured DataBuild instance based on YAML specification
+        Fully configured DataBuilder instance based on YAML specification
 
     Raises:
         FileNotFoundError: If configuration file does not exist
@@ -156,7 +153,7 @@ def create_build_module_from_yaml(config_path: str) -> DataBuild:
         raise ValueError("Invalid configuration file")
 
 
-def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
+def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuilder:
     """
     Create build module from dataset configuration with automatic module instantiation.
 
@@ -167,7 +164,7 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
         dataset_config: Dictionary containing complete dataset configuration
 
     Returns:
-        Configured DataBuild instance with all specified modules
+        Configured DataBuilder instance with all specified modules
 
     Raises:
         Exception: If module creation fails for any configured component
@@ -179,7 +176,7 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
     # Create load module from data source configuration
     load_config = dataset_config.get("configs", {})
     if load_config:
-        modules["load_module"] = create_load_module(
+        modules["load_module"] = create_loader(
             name=dataset_name,
             load_strategy_type=load_config.get("type", "local"),
             data_source=load_config.get("source", "*"),
@@ -197,14 +194,14 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
             except Exception as e:
                 logger.error(f"Failed to create operator {proc_config}: {str(e)}")
 
-        modules["process_module"] = create_process_module(
+        modules["process_module"] = create_processor(
             name=dataset_name, operators=operators, metadata=metadata
         )
 
     # Create annotation module from annotation configuration
     annotation_config = dataset_config.get("annotation", {})
     if annotation_config:
-        modules["annotation_module"] = create_annotation_module(
+        modules["annotation_module"] = create_annotator(
             name=dataset_name,
             label_config=annotation_config.get("label_config"),
             template_name=annotation_config.get("template_name"),
@@ -219,13 +216,13 @@ def _create_from_dataset_config(dataset_config: Dict[str, Any]) -> DataBuild:
     # Create export module from export configuration
     export_config = dataset_config.get("export", {})
     if export_config:
-        modules["export_module"] = create_export_module(
+        modules["export_module"] = create_exporter(
             name=dataset_name,
             config=export_config,
             metadata=metadata,
         )
 
-    return create_build_module(
+    return create_builder(
         name=dataset_name,
         config={"description": f"Build module for {dataset_name}"},
         **modules,

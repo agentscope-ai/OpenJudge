@@ -34,12 +34,12 @@ from loguru import logger
 
 import rm_gallery.core.data  # noqa: F401 - needed for core strategy registration
 import rm_gallery.gallery.data  # noqa: F401 - needed for example strategy registration
-from rm_gallery.core.data.annotation.annotation import create_annotation_module
-from rm_gallery.core.data.build import create_build_module
-from rm_gallery.core.data.export import create_export_module
-from rm_gallery.core.data.load.base import create_load_module
+from rm_gallery.core.data.annotation.annotation import create_annotator
+from rm_gallery.core.data.build import create_builder
+from rm_gallery.core.data.export import create_exporter
+from rm_gallery.core.data.load.base import create_loader
 from rm_gallery.core.data.process.ops.base import OperatorFactory
-from rm_gallery.core.data.process.process import create_process_module
+from rm_gallery.core.data.process.process import create_processor
 from rm_gallery.core.data.schema import BaseDataSet
 
 
@@ -69,7 +69,7 @@ class DataPipelineValidator:
 
     def create_load_module(self):
         """Create load module"""
-        return create_load_module(
+        return create_loader(
             name=self.name,
             load_strategy_type=self.type,
             data_source=self.data_source,
@@ -78,18 +78,18 @@ class DataPipelineValidator:
 
     def create_process_module(self):
         """Create simple process module"""
-        return create_process_module(
+        return create_processor(
             name="test-processor",
             operators=[OperatorFactory.create_operator(self.process_config)],
         )
 
     def create_export_module(self):
         """Create export module"""
-        return create_export_module(name="test-exporter", config=self.export_config)
+        return create_exporter(name="test-exporter", config=self.export_config)
 
     def create_annotation_module(self, api_token: str):
         """Create annotation module"""
-        return create_annotation_module(
+        return create_annotator(
             name="test-annotation",
             api_token=api_token,
             server_url="http://localhost:8080",
@@ -167,7 +167,7 @@ class DataPipelineValidator:
         """Run basic pipeline: Load → Process → Export"""
         logger.info("Running basic pipeline...")
         try:
-            build_module = create_build_module(
+            build_module = create_builder(
                 name="basic_pipeline",
                 load_module=self.create_load_module(),
                 process_module=self.create_process_module(),
@@ -197,7 +197,7 @@ class DataPipelineValidator:
             return False
 
         try:
-            build_module = create_build_module(
+            build_module = create_builder(
                 name="annotation_pipeline",
                 load_module=self.create_load_module(),
                 process_module=self.create_process_module(),

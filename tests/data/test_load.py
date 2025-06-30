@@ -3,7 +3,7 @@ from loguru import logger
 
 import rm_gallery.core.data  # noqa: F401 - needed for core strategy registration
 import rm_gallery.gallery.data  # noqa: F401 - needed for example strategy registration
-from rm_gallery.core.data.load.base import create_load_module
+from rm_gallery.core.data.load.base import create_loader
 from rm_gallery.core.data.schema import BaseDataSet
 
 
@@ -29,7 +29,7 @@ def dataset_info():
 
 def test_create_load_module(dataset_info, load_config):
     """Test creating load module"""
-    load_module = create_load_module(
+    load_module = create_loader(
         name=dataset_info["name"],
         load_strategy_type=dataset_info["type"],
         data_source=dataset_info["data_source"],
@@ -45,7 +45,7 @@ def test_data_load(dataset_info, load_config):
     logger.info("Testing data load...")
 
     # Create load module
-    load_module = create_load_module(
+    load_module = create_loader(
         name=dataset_info["name"],
         load_strategy_type=dataset_info["type"],
         data_source=dataset_info["data_source"],
@@ -77,7 +77,7 @@ def test_data_load_with_different_limits(dataset_info, load_config):
         config["limit"] = limit
 
         # Create and run load module
-        load_module = create_load_module(
+        load_module = create_loader(
             name=dataset_info["name"],
             load_strategy_type=dataset_info["type"],
             data_source=dataset_info["data_source"],
@@ -99,7 +99,7 @@ def test_data_load_empty_config(dataset_info):
     """Test data loading with minimal config should fail without required path"""
     minimal_config = {"limit": 10}
 
-    load_module = create_load_module(
+    load_module = create_loader(
         name=dataset_info["name"],
         load_strategy_type=dataset_info["type"],
         data_source=dataset_info["data_source"],
@@ -119,7 +119,7 @@ def test_data_load_parametrized(dataset_info, load_config, limit):
     config = load_config.copy()
     config["limit"] = limit
 
-    load_module = create_load_module(
+    load_module = create_loader(
         name=dataset_info["name"],
         load_strategy_type=dataset_info["type"],
         data_source=dataset_info["data_source"],
@@ -138,7 +138,7 @@ def test_data_load_parametrized(dataset_info, load_config, limit):
 def test_invalid_data_source():
     """Test handling of invalid data source"""
     # Create module with invalid data source
-    load_module = create_load_module(
+    load_module = create_loader(
         name="invalid/dataset",
         load_strategy_type="local",
         data_source="invalid_source",
@@ -153,7 +153,7 @@ def test_invalid_data_source():
 def test_invalid_load_strategy_type(dataset_info, load_config):
     """Test handling of invalid load strategy type"""
     # Create module with invalid strategy type
-    load_module = create_load_module(
+    load_module = create_loader(
         name=dataset_info["name"],
         load_strategy_type="invalid_type",
         data_source=dataset_info["data_source"],

@@ -28,8 +28,8 @@ from loguru import logger
 
 import rm_gallery.core.data  # noqa: F401 - needed for core strategy registration
 import rm_gallery.gallery.data  # noqa: F401 - needed for example strategy registration
-from rm_gallery.core.data.export import create_export_module
-from rm_gallery.core.data.load.base import create_load_module
+from rm_gallery.core.data.export import create_exporter
+from rm_gallery.core.data.load.base import create_loader
 
 # Import core modules
 from rm_gallery.core.data.schema import DataSample
@@ -197,7 +197,7 @@ class RefinementProcessor:
             Export module instance for saving processing results
         """
         if self._export_module is None:
-            self._export_module = create_export_module(
+            self._export_module = create_exporter(
                 name="refinement_exporter",
                 config={
                     "output_dir": self.export_config.output_dir,
@@ -222,15 +222,15 @@ class RefinementProcessor:
             Exception: Raised when data loading fails
         """
         try:
-            load_module = create_load_module(
+            load_module = create_loader(
                 name=load_config.source,
                 load_strategy_type=load_config.load_strategy_type,
                 data_source=load_config.source,
                 config={"path": load_config.path, "limit": load_config.limit},
             )
             dataset = load_module.run()
-            logger.info(f"Successfully loaded {len(dataset.datas)} samples")
-            return dataset.datas
+            logger.info(f"Successfully loaded {len(dataset.datasamples)} samples")
+            return dataset.datasamples
         except Exception as e:
             logger.error(f"Data loading failed: {e}")
             raise

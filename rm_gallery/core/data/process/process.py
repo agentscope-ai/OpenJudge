@@ -15,7 +15,7 @@ from rm_gallery.core.data.process.ops.base import BaseOperator
 from rm_gallery.core.data.schema import BaseDataSet, DataSample
 
 
-class DataProcess(BaseDataModule):
+class DataProcessor(BaseDataModule):
     """
     Main data processing module that applies operator pipelines to datasets.
 
@@ -121,7 +121,7 @@ class DataProcess(BaseDataModule):
             output_dataset = BaseDataSet(
                 name=f"{self.name}_processed",
                 metadata=combined_metadata,
-                datas=processed_data,
+                datasamples=processed_data,
             )
 
             logger.info(
@@ -146,7 +146,7 @@ class DataProcess(BaseDataModule):
             List of DataSample objects ready for operator processing
         """
         if isinstance(input_data, BaseDataSet):
-            return list(input_data.datas)
+            return list(input_data.datasamples)
         return input_data
 
     def get_operators_info(self) -> List[Dict[str, Any]]:
@@ -163,12 +163,12 @@ class DataProcess(BaseDataModule):
         ]
 
 
-def create_process_module(
+def create_processor(
     name: str,
     config: Optional[Dict[str, Any]] = None,
     operators: Optional[List[BaseOperator]] = None,
     metadata: Optional[Dict[str, Any]] = None,
-) -> DataProcess:
+) -> DataProcessor:
     """
     Factory function to create data processing module with specified configuration.
 
@@ -179,6 +179,8 @@ def create_process_module(
         metadata: Additional metadata for tracking and debugging
 
     Returns:
-        Configured DataProcess instance ready for pipeline integration
+        Configured DataProcessor instance ready for pipeline integration
     """
-    return DataProcess(name=name, config=config, operators=operators, metadata=metadata)
+    return DataProcessor(
+        name=name, config=config, operators=operators, metadata=metadata
+    )

@@ -28,7 +28,6 @@ class DataModuleType(Enum):
 
     BUILD = "builder"
     LOAD = "loader"
-    GENERATE = "generator"
     PROCESS = "processor"
     ANNOTATION = "annotator"
     EXPORT = "exporter"

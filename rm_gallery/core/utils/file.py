@@ -81,21 +81,21 @@ def write_jsonl(file_path, data):
             writer.write(item)
 
 
-def write_raw_content(file_path, datas, auto_create_dir=True, mode="w"):
+def write_raw_content(file_path, data, auto_create_dir=True, mode="w"):
     """
     Writes raw text data to a file, optionally creating the directory path.
 
     Args:
         file_path (str): Path to the output file.
-        datas (List[str]): List of strings to be written line by line.
+        data (List[str]): List of strings to be written line by line.
         auto_create_dir (bool, optional): Whether to automatically create the directory if it doesn't exist. Defaults to True.
     """
     dir_path = os.path.dirname(file_path)
     if auto_create_dir and not os.path.exists(dir_path):
         os.makedirs(dir_path)
     with open(file_path, mode) as f:
-        for data in datas:
-            f.write(data)
+        for line in data:
+            f.write(line)
             f.write("\n")
 
 

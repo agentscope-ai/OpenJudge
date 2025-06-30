@@ -20,9 +20,9 @@ import pytest
 
 import rm_gallery.core.data  # noqa: F401 - needed for core strategy registration
 import rm_gallery.gallery.data  # noqa: F401 - needed for example strategy registration
-from rm_gallery.core.data.build import create_build_module
-from rm_gallery.core.data.export import DataExport, create_export_module
-from rm_gallery.core.data.load.base import create_load_module
+from rm_gallery.core.data.build import create_builder
+from rm_gallery.core.data.export import DataExporter, create_exporter
+from rm_gallery.core.data.load.base import create_loader
 from rm_gallery.core.data.schema import (
     BaseDataSet,
     ChatMessage,
@@ -55,7 +55,7 @@ def sample_dataset(sample_data_samples) -> BaseDataSet:
     return BaseDataSet(
         name="test_dataset",
         metadata={"test_meta": "test_value"},
-        datas=sample_data_samples,
+        datasamples=sample_data_samples,
     )
 
 
@@ -67,15 +67,15 @@ def temp_output_dir():
 
 
 class TestDataExport:
-    """Test suite for DataExport module"""
+    """Test suite for DataExporter module"""
 
     def test_create_export_module(self):
         """Test basic export module creation"""
         config = {"output_dir": "./test_exports", "formats": ["jsonl"]}
 
-        export_module = create_export_module(name="test_exporter", config=config)
+        export_module = create_exporter(name="test_exporter", config=config)
 
-        assert isinstance(export_module, DataExport)
+        assert isinstance(export_module, DataExporter)
         assert export_module.name == "test_exporter"
         assert export_module.config == config
 
@@ -83,7 +83,7 @@ class TestDataExport:
         """Test JSONL format export"""
         config = {"output_dir": str(temp_output_dir), "formats": ["jsonl"]}
 
-        export_module = create_export_module("test_exporter", config=config)
+        export_module = create_exporter("test_exporter", config=config)
         result = export_module.run(sample_dataset)
 
         # Verify result is the original dataset (passthrough)
@@ -96,7 +96,7 @@ class TestDataExport:
         # Verify file content
         with open(output_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
-            assert len(lines) == len(sample_dataset.datas)
+            assert len(lines) == len(sample_dataset.datasamples)
 
             # Check first line is valid JSON
             first_line = json.loads(lines[0])
@@ -108,7 +108,7 @@ class TestDataExport:
         """Test JSON format export"""
         config = {"output_dir": str(temp_output_dir), "formats": ["json"]}
 
-        export_module = create_export_module("test_exporter", config=config)
+        export_module = create_exporter("test_exporter", config=config)
         result = export_module.run(sample_dataset)
 
         # Check output file exists
@@ -119,14 +119,14 @@ class TestDataExport:
         with open(output_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             assert "name" in data
-            assert "datas" in data
-            assert len(data["datas"]) == len(sample_dataset.datas)
+            assert "datasamples" in data
+            assert len(data["datasamples"]) == len(sample_dataset.datasamples)
 
     def test_export_parquet_format(self, sample_dataset, temp_output_dir):
         """Test Parquet format export"""
         config = {"output_dir": str(temp_output_dir), "formats": ["parquet"]}
 
-        export_module = create_export_module("test_exporter", config=config)
+        export_module = create_exporter("test_exporter", config=config)
         result = export_module.run(sample_dataset)
 
         # Check output file exists
@@ -135,7 +135,7 @@ class TestDataExport:
 
         # Verify file content
         df = pd.read_parquet(output_file)
-        assert len(df) == len(sample_dataset.datas)
+        assert len(df) == len(sample_dataset.datasamples)
         assert "unique_id" in df.columns
         assert "input" in df.columns
         assert "output" in df.columns
@@ -147,7 +147,7 @@ class TestDataExport:
             "formats": ["json", "jsonl", "parquet"],
         }
 
-        export_module = create_export_module("test_exporter", config=config)
+        export_module = create_exporter("test_exporter", config=config)
         result = export_module.run(sample_dataset)
 
         # Check all format files exist
@@ -163,7 +163,7 @@ class TestDataExport:
             "split_ratio": {"train": 0.8, "test": 0.2},
         }
 
-        export_module = create_export_module("test_exporter", config=config)
+        export_module = create_exporter("test_exporter", config=config)
         result = export_module.run(sample_dataset)
 
         # Check split files exist
@@ -179,7 +179,7 @@ class TestDataExport:
         with open(test_file, "r") as f:
             test_lines = len(f.readlines())
 
-        total_samples = len(sample_dataset.datas)
+        total_samples = len(sample_dataset.datasamples)
         expected_train = int(total_samples * 0.8)
         expected_test = total_samples - expected_train
 
@@ -215,7 +215,7 @@ class TestExportPipelineIntegration:
         # Create load module
         load_config = {"path": mock_data_file, "limit": 5}
 
-        load_module = create_load_module(
+        load_module = create_loader(
             name="test_pipeline",
             load_strategy_type="local",
             data_source="chat_message",
@@ -229,10 +229,10 @@ class TestExportPipelineIntegration:
             "split_ratio": {"train": 0.8, "test": 0.2},
         }
 
-        export_module = create_export_module(name="test_pipeline", config=export_config)
+        export_module = create_exporter(name="test_pipeline", config=export_config)
 
         # Create complete pipeline
-        pipeline = create_build_module(
+        pipeline = create_builder(
             name="load_export_pipeline",
             load_module=load_module,
             export_module=export_module,
@@ -243,7 +243,7 @@ class TestExportPipelineIntegration:
 
         # Verify pipeline result
         assert isinstance(result, BaseDataSet)
-        assert len(result.datas) == 5
+        assert len(result.datasamples) == 5
 
         # Verify export files were created
         train_file = temp_output_dir / "test_pipeline_train.jsonl"

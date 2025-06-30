@@ -15,7 +15,7 @@ from rm_gallery.core.data.base import BaseDataModule, DataModuleType
 from rm_gallery.core.data.schema import BaseDataSet, DataSample
 
 
-class DataExport(BaseDataModule):
+class DataExporter(BaseDataModule):
     """
     Data export module for outputting processed datasets to various target formats.
 
@@ -75,11 +75,11 @@ class DataExport(BaseDataModule):
         try:
             if input_data is None:
                 logger.warning("No input data provided for export")
-                return BaseDataSet(name="empty_export", datas=[])
+                return BaseDataSet(name="empty_export", datasamples=[])
 
             # Convert to BaseDataSet if needed
             if isinstance(input_data, list):
-                dataset = BaseDataSet(name=self.name, datas=input_data)
+                dataset = BaseDataSet(name=self.name, datasamples=input_data)
             else:
                 dataset = input_data
 
@@ -98,16 +98,18 @@ class DataExport(BaseDataModule):
 
             # Split dataset if requested
             if split_ratio:
-                train_data, test_data = self._split_dataset(dataset.datas, split_ratio)
+                train_data, test_data = self._split_dataset(
+                    dataset.datasamples, split_ratio
+                )
                 datasets_to_export = {
                     "train": BaseDataSet(
                         name=f"{dataset.name}_train",
-                        datas=train_data,
+                        datasamples=train_data,
                         metadata=dataset.metadata,
                     ),
                     "test": BaseDataSet(
                         name=f"{dataset.name}_test",
-                        datas=test_data,
+                        datasamples=test_data,
                         metadata=dataset.metadata,
                     ),
                 }
@@ -134,7 +136,7 @@ class DataExport(BaseDataModule):
                         )
 
             logger.info(
-                f"Successfully exported {len(dataset.datas)} samples to {output_dir}"
+                f"Successfully exported {len(dataset.datasamples)} samples to {output_dir}"
             )
             return dataset
 
@@ -173,7 +175,7 @@ class DataExport(BaseDataModule):
             if "path" in config:
                 base_path = Path(config["path"])
 
-        for sample in dataset.datas:
+        for sample in dataset.datasamples:
             source_file_path = (
                 sample.metadata.get("source_file_path") if sample.metadata else None
             )
@@ -194,7 +196,7 @@ class DataExport(BaseDataModule):
                 # Create a mini dataset for this file group
                 file_dataset = BaseDataSet(
                     name=f"{dataset.name}_file_group",
-                    datas=samples,
+                    datasamples=samples,
                     metadata=dataset.metadata,
                 )
 
@@ -434,7 +436,7 @@ class DataExport(BaseDataModule):
         """
         try:
             with open(filepath, "w", encoding="utf-8") as f:
-                for sample in dataset.datas:
+                for sample in dataset.datasamples:
                     json.dump(sample.model_dump(), f, ensure_ascii=False, default=str)
                     f.write("\n")
             logger.info(f"Exported to JSONL: {filepath}")
@@ -459,7 +461,7 @@ class DataExport(BaseDataModule):
         try:
             # Convert data samples to flat dictionary format
             records = []
-            for sample in dataset.datas:
+            for sample in dataset.datasamples:
                 record = {
                     "unique_id": sample.unique_id,
                     "input": json.dumps(
@@ -486,11 +488,11 @@ class DataExport(BaseDataModule):
             raise
 
 
-def create_export_module(
+def create_exporter(
     name: str,
     config: Optional[Dict[str, Any]] = None,
     metadata: Optional[Dict[str, Any]] = None,
-) -> DataExport:
+) -> DataExporter:
     """
     Factory function to create a data export module with specified configuration.
 
@@ -500,6 +502,6 @@ def create_export_module(
         metadata: Additional metadata for tracking and debugging
 
     Returns:
-        Configured DataExport instance ready for pipeline integration
+        Configured DataExporter instance ready for pipeline integration
     """
-    return DataExport(name=name, config=config, metadata=metadata)
+    return DataExporter(name=name, config=config, metadata=metadata)

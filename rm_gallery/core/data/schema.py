@@ -135,12 +135,12 @@ class BaseDataSet(BaseModel):
     iteration, and serialization for consistent data handling across the pipeline.
 
     Attributes:
-        datas: Collection of data samples in the dataset
+        datasamples: Collection of data samples in the dataset
         name: Human-readable identifier for the dataset
         metadata: Additional information about dataset origin and processing
     """
 
-    datas: List[DataSample] = Field(
+    datasamples: List[DataSample] = Field(
         default_factory=list, description="List of data items"
     )
     name: str = Field(..., description="dataset name")
@@ -153,7 +153,7 @@ class BaseDataSet(BaseModel):
         Returns:
             Integer count of data samples
         """
-        return len(self.datas)
+        return len(self.datasamples)
 
     def __getitem__(
         self, index: Union[int, slice]
@@ -167,7 +167,7 @@ class BaseDataSet(BaseModel):
         Returns:
             Single DataSample for integer index, list for slice
         """
-        return self.datas[index]
+        return self.datasamples[index]
 
     def get_data_samples(self) -> List[DataSample]:
         """
@@ -176,7 +176,7 @@ class BaseDataSet(BaseModel):
         Returns:
             Complete list of DataSample objects in the dataset
         """
-        return [data for data in self.datas]
+        return [data for data in self.datasamples]
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -188,7 +188,7 @@ class BaseDataSet(BaseModel):
         return {
             "name": self.name,
             "metadata": self.metadata,
-            "datas": [data.model_dump() for data in self.datas],
+            "datasamples": [data.model_dump() for data in self.datasamples],
         }
 
     @classmethod
@@ -205,7 +205,7 @@ class BaseDataSet(BaseModel):
         return cls(
             name=data["name"],
             metadata=data.get("metadata", {}),
-            datas=[DataSample(**item) for item in data["datas"]],
+            datasamples=[DataSample(**item) for item in data["datasamples"]],
         )
 
     class Config:
