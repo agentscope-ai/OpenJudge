@@ -188,14 +188,14 @@ def pointwise_reward(predicted_score, true_score):
     """Reward function optimized for HelpSteer2's 0-4 scale"""
     if true_score is None:
         return 0.0
-    
+
     abs_error = abs(predicted_score - true_score)
     max_error = 4  # HelpSteer2 scale: 0-4
-    
+
     k = 2.0  # Decay coefficient
     error_ratio = abs_error / max_error
     reward = math.exp(-k * error_ratio)
-    
+
     return float(reward)
 ```
 
@@ -464,7 +464,7 @@ Monitor the training progress through these key curves:
    **Solution**: For reasoning models (e.g., Qwen3):
    - `apply_chat_template` with `enable_thinking=True`
    - `format` with `enable_thinking=False`
-   
+
    For non-reasoning models:
    - `apply_chat_template` with `enable_thinking=False`
    - `format` with `enable_thinking=True`
@@ -524,4 +524,4 @@ This guide provides a complete workflow for training reward models using the VER
 5. **Monitoring and Debugging**: Key metrics and troubleshooting
 6. **Best Practices**: Performance optimization and configuration recommendations
 
-By following this guide, you can successfully train reward models tailored to your specific needs, whether for absolute scoring or preference comparison tasks. 
+By following this guide, you can successfully train reward models tailored to your specific needs, whether for absolute scoring or preference comparison tasks.

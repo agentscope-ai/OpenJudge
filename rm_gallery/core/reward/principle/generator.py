@@ -3,7 +3,7 @@ import json
 import random
 import re
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
-from typing import Dict, List
+from typing import Dict, List, Type
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -165,10 +165,18 @@ class PrincipleGenerator(BaseModel):
     """Main class for generating and clustering evaluation principles.
 
     Attributes:
-        llm: Language model client for generating responses
-        scenario: Task context description
-        generate_number: Number of principles to generate per sample
-        cluster_number: Number of principles to cluster in final output
+        llm (BaseLLM): Language model client for generating responses. Must be provided
+                      as no default value is available (default=...).
+        scenario (str): Description of the task context or scenario. Must be provided
+                       (default=...).
+        generate_number (int): Number of principles to generate per sample. Default is 10.
+        cluster_number (int): Number of principles to include in the final clustered output.
+                           Default is 1.
+        max_retries (int): Maximum number of retry attempts for generation steps. Default is 3.
+        generate_template (Type[BaseGeneratorTemplate]): Template class used for generating
+                           principles. Default is PrincipleGenerateTempalte.
+        cluster_template (Type[BaseGeneratorTemplate]): Template class used for clustering
+                           principles. Default is PrincipleClusterTemplate.
     """
 
     llm: BaseLLM = Field(default=..., description="llm client")
@@ -178,6 +186,14 @@ class PrincipleGenerator(BaseModel):
     )
     cluster_number: int = Field(default=1, description="number of clustered principles")
     max_retries: int = Field(default=3, description="max retries")
+    generate_template: Type[BaseGeneratorTemplate] = Field(
+        default=PrincipleGenerateTempalte,
+        description="template for generating principles",
+    )
+    cluster_template: Type[BaseGeneratorTemplate] = Field(
+        default=PrincipleClusterTemplate,
+        description="template for clustering principles",
+    )
 
     def generate(self, sample: DataSample):
         """Generate principles for a single data sample.
@@ -204,7 +220,7 @@ class PrincipleGenerator(BaseModel):
         completions = [completion for _, completion in completions]
 
         # Generate prompt and get LLM response
-        prompt = PrincipleGenerateTempalte.format(
+        prompt = self.generate_template.format(
             instruction=instruction,
             completions=completions,
             preference=best,
@@ -220,7 +236,7 @@ class PrincipleGenerator(BaseModel):
                 prompt,
                 sys_prompt="You are a professional assistant skilled in extracting key insights and summarizing information.",
             )
-            result = PrincipleGenerateTempalte.parse(response)
+            result = self.generate_template.parse(response)
             sample.input[-1].additional_kwargs["generate"] = result.model_dump()
             return sample
 
@@ -268,7 +284,7 @@ class PrincipleGenerator(BaseModel):
         @retry(tries=self.max_retries, delay=1.0)
         def call():
             response = self.llm.simple_chat(
-                PrincipleClusterTemplate.format(
+                self.cluster_template.format(
                     scenario=self.scenario,
                     examples=str_examples,
                     enable_thinking=self.llm.enable_thinking,
@@ -276,7 +292,7 @@ class PrincipleGenerator(BaseModel):
                 ),
                 sys_prompt="You are a skilled professional assistant focusing on induction and summarization.",
             )
-            result = PrincipleClusterTemplate.parse(response)
+            result = self.cluster_template.parse(response)
             logger.info("===CLUSTER RESULT===\n" + result.model_dump_json())
             return result.principles
 

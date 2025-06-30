@@ -2,7 +2,7 @@ import copy
 import random
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 from copy import deepcopy
-from typing import Dict, List
+from typing import Dict, List, Type
 
 import numpy as np
 from loguru import logger
@@ -61,7 +61,7 @@ class PrincipleGenerateTempalte(BaseGeneratorTemplate):
             )
 
         return f"""## Overview
-Please propose additional principles about why a potential completion is qualified for a given instruction in the scenario, by completing the following analysis.
+Please propose additional principles that are different from the original principles, about why a potential completion is qualified for a given instruction in the scenario, by completing the following analysis.
 1. Compare and analyze the prediction and the ground truth, and analyze the reasons why the prediction is incorrect.
 2. Summarize the points to pay attention to in order to "correctly" determin which one is the best in the same scenario, with following the requirements.
 
@@ -84,7 +84,7 @@ Another assistant will evaluate the completions based on these principles.
 ### Completions
 {completion_str}
 
-### Initial Principles
+### Original Principles
 {principles}
 
 ### Prediction Preference
@@ -126,12 +126,11 @@ class PrincipleClusterTemplate(BaseGeneratorTemplate):
         return f"""## Overview
 As an principle aggregation and analysis expert, your task is to conduct cluster analysis on a large collection of pre-generated principles based on examples and provide the optimization principles for each category in the scenario.
 **Specific Steps:**
-1. Organize the initial principles and the provided improvement principles into distinct categories, ensuring that each category is unique and succinct.
+1. Organize the original principles and the provided improvement principles into distinct categories, ensuring that each category is unique and succinct.
 2. Summarize the principles within each category into a sample set for that category, while retaining detailed information.
 
 Another assistant will evaluate the completions in the scenario based on these principles.
 When consolidating the principles, be sure to maintain the integrity, clarity, and conciseness of each category.
-
 
 ## Requirements for Principles
 (1) Principles are presented from most important to least important.
@@ -144,7 +143,7 @@ When consolidating the principles, be sure to maintain the integrity, clarity, a
 ### Scenario
 {scenario}
 
-### Initial Principles
+### Original Principles
 {principles}
 
 ### Examples
@@ -168,6 +167,14 @@ class IterPrincipleGenerator(PrincipleGenerator):
         default=..., description="reward module"
     )
     max_epochs: int = Field(default=2, description="max epochs")
+    generate_template: Type[BaseGeneratorTemplate] = Field(
+        default=PrincipleGenerateTempalte,
+        description="template for generating principles",
+    )
+    cluster_template: Type[BaseGeneratorTemplate] = Field(
+        default=PrincipleClusterTemplate,
+        description="template for clustering principles",
+    )
 
     def evaluate(
         self,
@@ -228,7 +235,7 @@ class IterPrincipleGenerator(PrincipleGenerator):
 
         completions = [completion for _, completion, _ in completions]
 
-        prompt = PrincipleGenerateTempalte.format(
+        prompt = self.generate_template.format(
             instruction=instruction,
             completions=completions,
             enable_thinking=self.llm.enable_thinking,
@@ -248,7 +255,7 @@ class IterPrincipleGenerator(PrincipleGenerator):
                 prompt,
                 sys_prompt="You are a professional assistant skilled in extracting key insights and summarizing information.",
             )
-            result = PrincipleGenerateTempalte.parse(response)
+            result = self.generate_template.parse(response)
             sample.input[-1].additional_kwargs["generate"] = result.model_dump()
             return sample
 
@@ -319,7 +326,7 @@ class IterPrincipleGenerator(PrincipleGenerator):
         @retry(tries=self.max_retries, delay=1.0)
         def call():
             response = self.llm.simple_chat(
-                PrincipleClusterTemplate.format(
+                self.cluster_template.format(
                     scenario=self.scenario,
                     examples=str_examples,
                     enable_thinking=self.llm.enable_thinking,
@@ -330,7 +337,7 @@ class IterPrincipleGenerator(PrincipleGenerator):
                 ),
                 sys_prompt="You are a skilled professional assistant focusing on induction and summarization.",
             )
-            result = PrincipleClusterTemplate.parse(response)
+            result = self.cluster_template.parse(response)
             logger.info("===CLUSTER RESULT===\n" + result.model_dump_json())
             return result.principles
 
