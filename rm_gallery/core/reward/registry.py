@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Dict, List, Type
 
 from rm_gallery.core.reward.base import BaseReward
@@ -58,9 +57,7 @@ class RewardRegistry:
             The corresponding BaseReward subclass if found, None otherwise
         """
         assert reward_name in cls._registry, f"Reward module '{reward_name}' not found"
-        module = cls._registry.get(reward_name, None)
-        assert module is not None
-        return partial(module, name=reward_name)
+        return cls._registry.get(reward_name, None)
 
     @classmethod
     def list(cls) -> List[str]:

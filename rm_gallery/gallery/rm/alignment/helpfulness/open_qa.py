@@ -14,6 +14,7 @@ Your role is that of a professional evaluation expert. I will provide you with a
 
 @RewardRegistry.register("open_qa_listwise_reward")
 class OpenQAListWiseReward(BaseHelpfulnessListwiseReward):
+    name: str = Field(default="open_qa_listwise_reward")
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)
     desc: str = Field(default=DESC)

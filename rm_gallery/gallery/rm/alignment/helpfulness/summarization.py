@@ -22,6 +22,9 @@ You may organize your reasoning as you see fit, but keep your thought process as
 
 @RewardRegistry.register("summarization_listwise_reward")
 class SummarizationListWiseReward(BaseHelpfulnessListwiseReward):
+    name: str = Field(
+        default="summarization_listwise_reward", description="reward name"
+    )
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)
     desc: str = Field(default=DESC, description="task description")

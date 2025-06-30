@@ -19,6 +19,7 @@ PRINCIPLES = [
 
 @RewardRegistry.register("precise_if_listwise_reward")
 class PreciseIFListWiseReward(BaseHelpfulnessListwiseReward):
+    name: str = Field(default="precise_if_listwise_reward")
     desc: str = Field(default=DESC)
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)

@@ -24,6 +24,7 @@ I will also provide you with a set of principles, listed under the heading #Prin
 
 @RewardRegistry.register("role_playing_listwise_reward")
 class RolePlayingListWiseReward(BaseHelpfulnessListwiseReward):
+    name: str = Field(default="role_playing_listwise_reward")
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)
     desc: str = Field(default=DESC, description="task description")

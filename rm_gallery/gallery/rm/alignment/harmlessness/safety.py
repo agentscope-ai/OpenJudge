@@ -18,6 +18,7 @@ PRINCIPLES = [
 
 @RewardRegistry.register("safety_listwise_reward")
 class SafetyListWiseReward(BaseHarmlessnessListwiseReward):
+    name: str = Field(default="safety_listwise_reward")
     desc: str = Field(default=DESC)
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)

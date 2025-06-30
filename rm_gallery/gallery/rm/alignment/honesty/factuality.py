@@ -18,6 +18,7 @@ PRINCIPLES = [
 
 @RewardRegistry.register("factuality_listwise_reward")
 class FactualityListWiseReward(BaseHonestyListWiseReward):
+    name: str = Field(default="factuality_listwise_reward")
     desc: str = Field(default=DESC)
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)

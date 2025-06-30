@@ -14,6 +14,7 @@ Your role is that of a professional evaluation expert. I will provide you with a
 
 @RewardRegistry.register("reasoning_listwise_reward")
 class ReasoningListWiseReward(BaseHelpfulnessListwiseReward):
+    name: str = Field(default="reasoning_listwise_reward", description="reward name")
     scenario: str = Field(default=SCENARIO, description="assistant scenario")
     principles: List[str] = Field(default=PRINCIPLES)
     desc: str = Field(default=DESC)

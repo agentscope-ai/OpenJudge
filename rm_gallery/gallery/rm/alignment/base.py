@@ -48,6 +48,7 @@ DEFAULT_HONESTY_PRINCIPLES = [
 
 @RewardRegistry.register("base_helpfulness_listwise")
 class BaseHelpfulnessListwiseReward(BaseListWisePrincipleReward):
+    name: str = Field(default="base_helpfulness_listwise")
     desc: str = Field(default=DEFAULT_HELPFULNESS_DESC)
     scenario: str = Field(
         default=DEFAULT_HELPFULNESS_SCENARIO, description="assistant scenario"
@@ -57,6 +58,7 @@ class BaseHelpfulnessListwiseReward(BaseListWisePrincipleReward):
 
 @RewardRegistry.register("base_harmlessness_listwise")
 class BaseHarmlessnessListwiseReward(BaseListWisePrincipleReward):
+    name: str = Field(default="base_harmlessness_listwise")
     desc: str = Field(default=DEFAULT_HARMLESSNESS_DESC)
     scenario: str = Field(
         default=DEFAULT_HARMLESSNESS_SCENARIO, description="assistant scenario"
@@ -66,6 +68,7 @@ class BaseHarmlessnessListwiseReward(BaseListWisePrincipleReward):
 
 @RewardRegistry.register("base_honesty_listwise")
 class BaseHonestyListWiseReward(BaseListWisePrincipleReward):
+    name: str = Field(default="base_honesty_listwise")
     desc: str = Field(default=DEFAULT_HONESTY_DESC)
     scenario: str = Field(
         default=DEFAULT_HONESTY_SCENARIO, description="assistant scenario"
@@ -75,6 +78,7 @@ class BaseHonestyListWiseReward(BaseListWisePrincipleReward):
 
 @RewardRegistry.register("base_helpfulness_pointwise")
 class BaseHelpfulnessPointWiseReward(BasePointWisePrincipleReward):
+    name: str = Field(default="base_helpfulness_pointwise")
     desc: str = Field(default=DEFAULT_HELPFULNESS_DESC)
     scenario: str = Field(
         default=DEFAULT_HELPFULNESS_SCENARIO, description="assistant scenario"
@@ -84,6 +88,7 @@ class BaseHelpfulnessPointWiseReward(BasePointWisePrincipleReward):
 
 @RewardRegistry.register("base_harmlessness_pointwise")
 class BaseHarmlessnessPointWiseReward(BasePointWisePrincipleReward):
+    name: str = Field(default="base_harmlessness_pointwise")
     desc: str = Field(default=DEFAULT_HARMLESSNESS_DESC)
     scenario: str = Field(
         default=DEFAULT_HARMLESSNESS_SCENARIO, description="assistant scenario"
@@ -93,6 +98,7 @@ class BaseHarmlessnessPointWiseReward(BasePointWisePrincipleReward):
 
 @RewardRegistry.register("base_honesty_pointwise")
 class BaseHonestyPointWiseReward(BasePointWisePrincipleReward):
+    name: str = Field(default="base_honesty_pointwise")
     desc: str = Field(default=DEFAULT_HONESTY_DESC)
     scenario: str = Field(
         default=DEFAULT_HONESTY_SCENARIO, description="assistant scenario"
