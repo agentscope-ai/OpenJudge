@@ -97,14 +97,13 @@ class SimpleComposition(BaseComposition):
             # Merge results from parallel evaluations
             for s in samples:
                 sample.update(s)
-            return sample
 
         # Sequential evaluation mode
         else:
             for name, reward in self.rewards.items():
                 sample = reward.evaluate(sample, thread_pool)
 
-        # Weighted reward calculation function
+        # Weighted reward calculation function (executed for both parallel and sequential modes)
         def weight(reward: Reward):
             """Calculate weighted average based on configured weights"""
             w_sum = 0
