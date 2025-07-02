@@ -1,6 +1,6 @@
 # VERL-based Reward Model Training Complete Guide
 
-## 📖 Overview
+## 1. Overview
 
 This document provides a comprehensive guide for training reward models using the VERL framework. Through this tutorial, you will learn how to configure the environment, prepare data, design reward functions, and execute the training pipeline.
 
@@ -10,31 +10,29 @@ This guide covers two main training approaches:
 
 We will use the HelpSteer2 dataset as concrete examples, providing end-to-end implementation demonstrations.
 
-## 🏗️ System Architecture
-
-### Core Components
+## 2. System Architecture
 
 The VERL reward model training system consists of three core components:
 
-#### 1. **Training Dataset** - Inherits from `BaseTrainDataset`
+### 2.1. **Training Dataset** - Inherits from `BaseTrainDataset`
    - Supports 0-4 scale helpfulness scoring (Pointwise)
    - Supports preference comparison evaluation (Pairwise)
    - Provides flexible conversation template system
    - Integrates custom reward functions
 
-#### 2. **Prompt Template** - Based on `BasePromptTemplate`
+### 2.2. **Prompt Template** - Based on `BasePromptTemplate`
    - Defines structured output format for scoring
    - Supports extensible scoring criteria
    - Adapts to different evaluation tasks
 
-#### 3. **Reward Function** - Customizable reward computation module
+### 2.3. **Reward Function** - Customizable reward computation module
    - Supports exponential decay reward calculation
    - Provides flexible evaluation metric configuration
    - Real-time accuracy and MAE statistics
 
-## 🔧 Environment Configuration
+## 3. Environment Configuration
 
-### System Requirements
+### 3.1. System Requirements
 
 | Component | Recommended Version |
 |-----------|-------------------|
@@ -45,7 +43,7 @@ The VERL reward model training system consists of three core components:
 | VERL      | ≥ 0.4.0 |
 | VLLM      | ≥ 0.8.4 |
 
-### Runtime Configuration
+### 3.2. Runtime Configuration
 
 Create a `runtime_env.yaml` configuration file:
 
@@ -60,7 +58,7 @@ env_vars:
   HYDRA_FULL_ERROR: "1"
 ```
 
-### Dependency Installation
+### 3.3. Dependency Installation
 
 Ensure the following core dependencies are installed:
 - `verl==0.4.0` (core framework)
@@ -70,22 +68,22 @@ Ensure the following core dependencies are installed:
 
 ---
 
-## 🚀 Quick Start
+## 4. Quick Start
 
-### Step 1: Prepare Training Data
+### 4.1. Prepare Training Data
 
 Training data should conform to the `DataSample` format specification. For detailed data loading and preprocessing steps, please refer to the data loading section.
 
-### Step 2: Launch Ray Distributed Cluster
+### 4.2. Launch Ray Distributed Cluster
 
-#### Single Node Setup
+#### 4.2.1. Single Node Setup
 Example for a **single node with 8 × A100**:
 
 ```bash
 ray start --head --node-ip-address $MASTER_ADDR --num-gpus 8 --dashboard-host 0.0.0.0
 ```
 
-#### Multi-Node Setup
+#### 4.2.2. Multi-Node Setup
 **Master Node:**
 ```bash
 ray start --head --node-ip-address $MASTER_ADDR --num-gpus 8
@@ -96,18 +94,18 @@ ray start --head --node-ip-address $MASTER_ADDR --num-gpus 8
 ray start --address=$MASTER_ADDR:6379 --num-gpus 8
 ```
 
-### Step 3: Choose Training Mode
+### 4.3. Choose Training Mode
 
 Select the appropriate training mode based on your needs:
 
-#### Pointwise Training (Absolute Scoring)
+#### 4.3.1. Pointwise Training (Absolute Scoring)
 ```bash
 cd examples/train/pointwise
 chmod +x run_pointwise.sh
 ./run_pointwise.sh
 ```
 
-#### Pairwise Training (Preference Comparison)
+#### 4.3.2. Pairwise Training (Preference Comparison)
 ```bash
 cd examples/train/pairwise
 chmod +x run_pairwise.sh
@@ -116,11 +114,11 @@ chmod +x run_pairwise.sh
 
 ---
 
-## 📊 Pointwise Training Detailed Guide
+## 5. Pointwise Training Detailed Guide
 
 > Pointwise training is suitable for absolute scoring scenarios, such as HelpSteer2's 0-4 scale helpfulness scoring.
 
-### Data Download
+### 5.1. Data Download
 
 HelpSteer2 dataset: <https://huggingface.co/datasets/nvidia/helpsteer2>
 
@@ -132,9 +130,9 @@ mkdir -p ~/data/HelpSteer2 && cd ~/data/HelpSteer2
 git clone https://huggingface.co/datasets/nvidia/helpsteer2
 ```
 
-### Data Conversion
+### 5.2. Data Conversion
 
-#### Prepare YAML Configuration
+#### 5.2.1. Prepare YAML Configuration
 
 `examples/train/pointwise/data_config.yaml`:
 
@@ -152,14 +150,14 @@ dataset:
     split_ratio: {train: 0.8, test: 0.2}
 ```
 
-#### Execute Conversion
+#### 5.2.2. Execute Conversion
 
 ```bash
 python examples/data/data_from_yaml.py \
        --config examples/train/pointwise/data_config.yaml
 ```
 
-### Training Script Configuration
+### 5.3. Training Script Configuration
 
 Check key configurations in `examples/train/pointwise/run_pointwise.sh`:
 
@@ -169,20 +167,20 @@ VAL_FILE=./examples/data/exports/helpsteer2_test.parquet
 MODEL_PATH=/path/to/your/base/model  # e.g., Qwen3-8B
 ```
 
-### Pointwise Core Components
+### 5.4. Pointwise Core Components
 
-#### Data Converter
+#### 5.4.1. Data Converter
 - File: `rm_gallery/gallery/data/load/helpsteer2_pointwise.py`
 - Class: `HelpSteer2PointwiseConverter`
 - Function: Convert raw HelpSteer2 data to `DataSample` with helpfulness scores
 
-#### Prompt Template
+#### 5.4.2. Prompt Template
 ```python
 class PointwiseTrainTemplate(BasePromptTemplate):
     score: int = Field(default=..., description="helpfulness score from 0 to 4")
 ```
 
-#### Reward Function
+#### 5.4.3. Reward Function
 ```python
 def pointwise_reward(predicted_score, true_score):
     """Reward function optimized for HelpSteer2's 0-4 scale"""
@@ -201,11 +199,11 @@ def pointwise_reward(predicted_score, true_score):
 
 ---
 
-## 🔄 Pairwise Training Detailed Guide
+## 6. Pairwise Training Detailed Guide
 
 > Pairwise training is suitable for preference comparison scenarios, judging which of two responses is better.
 
-### Data Download
+### 6.1. Data Download
 
 HelpSteer2 preference dataset: <https://huggingface.co/datasets/nvidia/HelpSteer2/tree/main/preference>
 
@@ -220,9 +218,9 @@ wget -c https://huggingface.co/datasets/nvidia/HelpSteer2/resolve/main/preferenc
 gunzip -k preference.jsonl.gz
 ```
 
-### Data Conversion
+### 6.2. Data Conversion
 
-#### Prepare YAML Configuration
+#### 6.2.1. Prepare YAML Configuration
 
 `examples/train/pairwise/data_config.yaml`:
 
@@ -240,14 +238,14 @@ dataset:
     split_ratio: {train: 0.8, test: 0.2}
 ```
 
-#### Execute Conversion
+#### 6.2.2. Execute Conversion
 
 ```bash
 python examples/data/data_from_yaml.py \
        --config examples/train/pairwise/data_config.yaml
 ```
 
-### Training Script Configuration
+### 6.3. Training Script Configuration
 
 Check key configurations in `examples/train/pairwise/run_pairwise.sh`:
 
@@ -257,9 +255,9 @@ VAL_FILE=./examples/data/exports/preference_test.parquet
 MODEL_PATH=/path/to/your/base/model
 ```
 
-### Pairwise Core Components
+### 6.4. Pairwise Core Components
 
-#### Data Converter
+#### 6.4.1. Data Converter
 - File: `rm_gallery/gallery/data/load/helpsteer2_pairwise.py`
 - Class: `HelpSteer2PairwiseConverter`
 - Function: Convert raw JSONL to `DataSample` and create both forward & reverse preference pairs
@@ -269,7 +267,7 @@ Conversion Logic:
 2. Determine preference (>0 → `response_2` is better, <0 → `response_1` is better, 0 → tie)
 3. Generate two samples (forward + reverse order)
 
-#### Prompt Template
+#### 6.4.2. Prompt Template
 ```python
 class PairwiseComparisonTemplate(BasePromptTemplate):
     think: str       # (optional) chain-of-thought
@@ -280,7 +278,7 @@ class PairwiseComparisonTemplate(BasePromptTemplate):
 # <preference>A</preference>
 ```
 
-#### Reward Function
+#### 6.4.3. Reward Function
 - File: `examples/train/pairwise/reward_fn.py`
 - Core Function: `compute_score()`
 
@@ -288,16 +286,16 @@ Processing Flow:
 1. Parse model output with `extract_preference_from_response(solution_str)`
 2. Compare with `metadata.preferred` to produce reward: 1.0 (correct) / 0.0 (wrong)
 
-### Training Results & Evaluation
+### 6.5. Training Results & Evaluation
 
-#### Model Performance Comparison
+#### 6.5.1. Model Performance Comparison
 
 We conducted pairwise training experiments using two different base models on the HelpSteer2 preference dataset:
 
 - **Qwen2.5-14B**: Traditional language model
 - **Qwen3-14B**: Reasoning-enhanced model
 
-#### Validation Accuracy Results
+#### 6.5.2. Validation Accuracy Results
 
 ![HelpSteer2 Pairwise Training Accuracy](../../images/building_rm/helpsteer2_pairwise_training_eval_accuracy.png)
 
@@ -323,7 +321,7 @@ The training curves show validation accuracy on the test dataset over 350 traini
    - **Convergence**: Both models show good learning progression
    - **Final Performance**: Both achieve >60% accuracy on preference prediction
 
-#### Cross-Dataset Evaluation: RM-Bench Results
+#### 6.5.3. Cross-Dataset Evaluation: RM-Bench Results
 
 To further validate the robustness of our trained models, we evaluated the same Qwen2.5-14B model (trained on HelpSteer2 pairwise data) on the RM-Bench dataset:
 
@@ -353,9 +351,9 @@ To further validate the robustness of our trained models, we evaluated the same 
 
 ---
 
-## 🧩 Core Component Details
+## 7. Core Component Details
 
-### Custom Training Dataset
+### 7.1. Custom Training Dataset
 
 Complete implementation example of a custom training dataset:
 
@@ -387,7 +385,7 @@ class CustomTrainDataset(BaseTrainDataset):
 >   - `apply_chat_template` with `enable_thinking=False`
 >   - `format` with `enable_thinking=True`
 
-### PPO + GRPO Pipeline
+### 7.2. PPO + GRPO Pipeline
 
 1. **Data Loading**: Ray workers read the dataset and build prompts + ground truth scores
 2. **Generation**: **Actor** uses VLLM to generate score predictions in batches
@@ -397,16 +395,16 @@ class CustomTrainDataset(BaseTrainDataset):
 
 ---
 
-## 📊 Training Monitoring
+## 8. Training Monitoring
 
-### Logging and Metrics
+### 8.1. Logging and Metrics
 
 The training process logs to both **Console** and **Weights & Biases**:
 
 * **Console**: Use `ray job logs <job_id> -f` for real-time logs
 * **WandB**: Set `WANDB_API_KEY` and `WANDB_BASE_URL` environment variables to upload metrics automatically
 
-### Key Monitoring Metrics
+### 8.2. Key Monitoring Metrics
 
 | Metric | Meaning | Target Range |
 |--------|---------|--------------|
@@ -414,7 +412,7 @@ The training process logs to both **Console** and **Weights & Biases**:
 | `accuracy` | Accuracy of score predictions | > 0.7 |
 | `kl_loss` | KL divergence to the reference model | < 0.1 |
 
-### Training Curves
+### 8.3. Training Curves
 
 Monitor the training progress through these key curves:
 
@@ -424,11 +422,11 @@ Monitor the training progress through these key curves:
 
 ---
 
-## ❓ FAQ & Troubleshooting
+## 9. FAQ & Troubleshooting
 
-### Common Issues and Solutions
+### 9.1. Common Issues and Solutions
 
-#### 1. **`num_samples=0` error**
+#### 9.1.1. **`num_samples=0` error**
 
    **Problem**: The dataset is empty after filtering.
 
@@ -439,7 +437,7 @@ Monitor the training progress through these key curves:
    print(len(ds))
    ```
 
-#### 2. **Ray connection issues**
+#### 9.1.2. **Ray connection issues**
 
    **Problem**: Ray can't connect to `127.0.0.1:8265`
 
@@ -448,7 +446,7 @@ Monitor the training progress through these key curves:
    - Check that port 8265 is reachable
    - Update `--address` parameter in the training script
 
-#### 3. **Out of Memory Errors**
+#### 9.1.3. **Out of Memory Errors**
 
    **Problem**: CUDA out of memory during training
 
@@ -457,7 +455,7 @@ Monitor the training progress through these key curves:
    - Reduce `data.train_batch_size` or `ppo_micro_batch_size_per_gpu`
    - Use gradient checkpointing if available
 
-#### 4. **Reasoning Model Configuration Issues**
+#### 9.1.4. **Reasoning Model Configuration Issues**
 
    **Problem**: Incorrect thinking/reasoning token handling
 
@@ -469,7 +467,7 @@ Monitor the training progress through these key curves:
    - `apply_chat_template` with `enable_thinking=False`
    - `format` with `enable_thinking=True`
 
-#### 5. **HelpSteer2 Specific Issues**
+#### 9.1.5. **HelpSteer2 Specific Issues**
 
    **Data Format Validation**:
    ```python
@@ -481,7 +479,7 @@ Monitor the training progress through these key curves:
 
    **Score Range Configuration**: HelpSteer2 uses 0-4 helpfulness scale, ensure `max_error = 4` is set correctly in `reward_fn.py`.
 
-### Performance Optimization Tips
+### 9.2. Performance Optimization Tips
 
 1. **Batch Size Tuning**: Start with smaller batch sizes and gradually increase
 2. **Memory Management**: Monitor GPU memory usage with `nvidia-smi`
@@ -490,7 +488,7 @@ Monitor the training progress through these key curves:
 
 ---
 
-## 🧪 Inference & Evaluation
+## 10. Inference & Evaluation
 
 After training, look for **LoRA** or full weights in `checkpoints/<TIMESTAMP>/actor_latest`.
 
@@ -498,22 +496,22 @@ After training, look for **LoRA** or full weights in `checkpoints/<TIMESTAMP>/ac
 
 ---
 
-## 🔗 Related Resources
+## 11. Related Resources
 
-### Tutorial Documentation
+### 11.1. Tutorial Documentation
 - **[Data Processing Tutorial](../data/)** - Comprehensive data handling techniques
 
-### Framework Documentation
+### 11.2. Framework Documentation
 - **[VERL Framework](https://github.com/volcengine/verl)**: Core training framework
 - **[Ray Distributed](https://docs.ray.io/)**: Distributed computing platform
 - **[VLLM Inference](https://docs.vllm.ai/)**: High-performance inference engine
 
-### Dataset Resources
+### 11.3. Dataset Resources
 - **[HelpSteer2](https://huggingface.co/datasets/nvidia/helpsteer2)**: Human preference dataset
 
 ---
 
-## 📝 Summary
+## 12. Conclusion
 
 This guide provides a complete workflow for training reward models using the VERL framework, including:
 

@@ -1,26 +1,26 @@
-# Tutorial: Deploying a High-Performance RM Serving Platform with New API
+# Deploying a High-Performance RM Serving Platform with New API
 
 This tutorial will guide you through deploying [New API](https://github.com/Calcium-Ion/new-api) as a high-performance serving gateway for your Reward Models (RMs) created with RM-Gallery.
 
-## Why Use `new-api` for RM Serving?
+## 1. Why Use `new-api` for RM Serving?
 
 In a production environment, simply running a reward model as a script is not enough. You need a robust system to manage, scale, and monitor it. `new-api` provides a powerful solution, acting as a unified gateway for all your AI models, including the RMs you've built. By deploying your RMs behind `new-api`, you gain several key advantages:
 
-### 1. Unified Management and Standardized Access
+### 1.1. Unified Management and Standardized Access
 
 Real-world applications often require multiple reward models for different tasks (e.g., a math-specific RM, a coding RM, and a general helpfulness RM). `new-api` allows you to consolidate all these models under a single platform.
 
 - **Centralized Control Panel:** Manage all your models, whether they are hosted locally, on different cloud servers, or from various providers, through one intuitive web interface.
 - **Standardized API:** It provides an OpenAI-compatible API format. This means you can interact with any of your reward models using the same familiar request/response structure, dramatically simplifying integration with other applications.
 
-### 2. High Performance, Scalability, and Reliability
+### 1.2. High Performance, Scalability, and Reliability
 
 `new-api` is designed for high-throughput scenarios, ensuring your reward model service remains responsive and available even under heavy load.
 
 - **Load Balancing:** Distribute incoming requests across multiple instances of your reward model. If you have several servers running the same RM, `new-api` can balance the traffic between them, preventing any single instance from being overloaded.
 - **Channel Weighting & Retries:** You can set priorities or weights for different model channels and configure automatic retries. If one model endpoint fails, `new-api` can automatically reroute the request to a backup, ensuring high availability.
 
-### 3. Multi-User Support and Granular Access Control
+### 1.3. Multi-User Support and Granular Access Control
 
 When your reward model is used by different teams, applications, or end-users, you need a secure way to manage access.
 
@@ -28,14 +28,14 @@ When your reward model is used by different teams, applications, or end-users, y
 - **Quota and Rate Limiting:** Prevent abuse and manage costs by setting usage quotas (e.g., number of requests or token count) and rate limits for each API key.
 - **Model Permissions:** Restrict which models a specific API key can access. For example, you can grant one team access to only the coding RM, while another gets access to all models.
 
-### 4. Cost-Effectiveness and Monitoring
+### 1.4. Cost-Effectiveness and Monitoring
 
 - **Built-in Caching:** `new-api` can cache responses to identical requests. If the same input is sent to your reward model multiple times, the cached result is returned instantly, saving computation time and cost.
 - **Usage Dashboard:** The platform provides a clear dashboard to monitor usage statistics, helping you understand which models are being used most frequently and by whom.
 
 By leveraging these features, `new-api` transforms your reward models from standalone components into a production-ready, scalable, and manageable service. The rest of this tutorial will show you how to set it up.
 
-## Prerequisites
+## 2. Prerequisites
 
 Before you start, make sure you have the following tools installed on your system:
 
@@ -44,11 +44,11 @@ Before you start, make sure you have the following tools installed on your syste
 
 You should also have a reward model from the RM-Gallery that is running and accessible via an HTTP endpoint (e.g., `http://localhost:8000`).
 
-## Step-by-Step Deployment
+## 3. Step-by-Step Deployment
 
 We will use Docker Compose to deploy `new-api`. This is the recommended approach for a clean and manageable setup.
 
-### 1. Create a `docker-compose.yml` File
+### 3.1. Create a `docker-compose.yml` File
 
 Create a new directory for your `new-api` instance and create a file named `docker-compose.yml` inside it.
 
@@ -76,7 +76,7 @@ services:
       - TZ=Asia/Shanghai
 ```
 
-### 2. Launch `new-api`
+### 3.2. Launch `new-api`
 
 With the `docker-compose.yml` file in your current directory, run the following command to download the `new-api` image and start the service in the background:
 
@@ -92,7 +92,7 @@ docker-compose ps
 
 You should see an output indicating that the `rm_gallery_new_api` service is "Up".
 
-### 3. Access the Web UI
+### 3.3. Access the Web UI
 
 Once the service is running, you can access the `new-api` web interface by navigating your browser to:
 
@@ -100,11 +100,11 @@ Once the service is running, you can access the `new-api` web interface by navig
 
 You should be greeted with the `new-api` login page.
 
-## Configuring `new-api` for Your Reward Model
+## 4. Configuring `new-api` for Your Reward Model
 
 Now that the gateway is running, let's configure it to route requests to your reward model.
 
-### 1. Initial Setup: Create an Administrator Account
+### 4.1. Initial Setup: Create an Administrator Account
 
 The first time you visit the UI, you'll need to create an administrator account.
 
@@ -114,7 +114,7 @@ The first time you visit the UI, you'll need to create an administrator account.
 
 You will also be given a default token with 500,000 credits. We will create a new, specific token for our RM later.
 
-### 2. Configure Your Reward Model Channel
+### 4.2. Configure Your Reward Model Channel
 
 In `new-api`, a "Channel" represents a connection to a model endpoint. The **Channels** page is your central hub for managing all your models.
 
@@ -145,7 +145,7 @@ Here is how you fill out the form to add your custom reward model, following the
 5.  **Models**: Enter the model names that will be served through this channel (e.g., `rm/math-rm-v1`). This is the name you will use in your API requests. You can add multiple model names here.
 6.  **Submit**: Click **Submit** to save the channel.
 
-### 3. Create a Token (API Key)
+### 4.3. Create a Token (API Key)
 
 A "Token" is an API key that applications use to authenticate with `new-api`. Let's create a token to use for testing.
 
@@ -163,13 +163,13 @@ Follow these steps to configure the token:
 
 After creation, a new token will appear in the list. Click the **Copy** button to copy the API key (it will start with `sk-...`). **Store this key securely**, as you will not be able to see it again.
 
-## Testing Your Deployment
+## 5. Testing Your Deployment
 
 With everything configured, you can now make API requests to your reward model through the `new-api` gateway. The gateway exposes an OpenAI-compatible API endpoint.
 
 Replace `YOUR_API_KEY` with the token you just copied.
 
-### Using `curl`
+### 5.1. Using `curl`
 
 Open your terminal and run the following command. We are using the `/v1/chat/completions` endpoint, which is the standard for chat models.
 
@@ -191,7 +191,7 @@ curl -X POST http://localhost:3000/v1/chat/completions \
 
 You should receive a JSON response from your reward model, proxied through `new-api`.
 
-### Using Python
+### 5.2. Using Python
 
 You can use any OpenAI-compatible client library. Here is an example using the `requests` library.
 
@@ -229,11 +229,11 @@ else:
     print(response.text)
 ```
 
-## Key Platform Operations
+## 6. Key Platform Operations
 
 Here are a few common administrative operations you might perform.
 
-### Adjusting the Initial User Quota
+### 6.1. Adjusting the Initial User Quota
 
 **Why it's useful:** The platform assigns a default credit quota to every new user. Since different models have different pricing, this quota can sometimes be insufficient for extensive testing. To avoid running into "insufficient quota" errors, it's a good practice to set a higher initial amount for new users.
 
@@ -244,7 +244,7 @@ Here are a few common administrative operations you might perform.
 
 ![Setting the initial user quota](../../images/rm_server/inital_token_setting.png)
 
-### Managing Users
+### 6.2. Managing Users
 
 **Why it's useful:** As the administrator (`root`) user, you have complete oversight over all user accounts on the platform. This allows you to manage access for your team, adjust individual permissions, or monitor usage.
 
@@ -254,7 +254,7 @@ Here are a few common administrative operations you might perform.
 
 ![Managing users](../../images/rm_server/manage_users.png)
 
-### User Registration and Roles
+### 6.3. User Registration and Roles
 
 For scenarios with multiple users or teams, `new-api` allows individuals to self-register for an account and obtain their own API keys. However, platform management remains centralized with the administrator (`root`) user.
 
@@ -273,7 +273,7 @@ For scenarios with multiple users or teams, `new-api` allows individuals to self
 
 This separation of roles ensures that while access can be decentralized, the core configuration of the model-serving platform remains secure and consistent.
 
-## Conclusion
+## 7. Conclusion
 
 Congratulations! You have successfully deployed `new-api` as a high-performance gateway for your reward model.
 
