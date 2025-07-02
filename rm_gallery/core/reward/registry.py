@@ -86,8 +86,8 @@ class RewardRegistry:
             info_df,
             headers="keys",
             tablefmt="grid",
-            maxcolwidths=[60] * len(info_df.columns),
-            showindex=False,
+            maxcolwidths=[50] * (len(info_df.columns) + 1),
+            # showindex=False,
         )
         # info_str = tabulate(info_df, headers='keys', tablefmt='github')
         return info_str

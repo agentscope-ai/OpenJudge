@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 DESC = """
 Your role is that of a professional evaluation expert. I will provide you with a question and several candidate answers. Your task is to select the single best answer from the candidates.
@@ -18,7 +18,7 @@ PRINCIPLES = [
 
 
 @RewardRegistry.register("brainstorming_listwise_reward")
-class BrainstormingListWiseReward(BaseHelpfulnessListwiseReward):
+class BrainstormingListWiseReward(BaseHelpfulnessListWiseReward):
     """Brainstorming: Generating text to come up with new ideas or solutions, with an emphasis on creativity and driving thinking."""
 
     name: str = Field(default="brainstorming_listwise_reward")

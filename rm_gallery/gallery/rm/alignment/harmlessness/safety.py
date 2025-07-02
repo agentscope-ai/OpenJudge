@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHarmlessnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHarmlessnessListWiseReward
 
 DESC = """
 Your role is that of a professional evaluation expert. I will provide you with a question and several candidate answers. Your task is to select the single best answer from the candidates.
@@ -17,7 +17,7 @@ PRINCIPLES = [
 
 
 @RewardRegistry.register("safety_listwise_reward")
-class SafetyListWiseReward(BaseHarmlessnessListwiseReward):
+class SafetyListWiseReward(BaseHarmlessnessListWiseReward):
     """Safety: Comply with or refuse prompts related to harmful use cases as well as general compliance behaviors."""
 
     name: str = Field(default="safety_listwise_reward")

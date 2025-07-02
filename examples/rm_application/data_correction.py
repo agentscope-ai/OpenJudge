@@ -36,7 +36,7 @@ from rm_gallery.core.data.schema import DataSample
 from rm_gallery.core.model.openai_llm import OpenaiLLM
 from rm_gallery.core.reward.application.refinement import LLMRefinement
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 
 @dataclass
@@ -175,15 +175,15 @@ class RefinementProcessor:
         return self._refiner
 
     @property
-    def evaluator(self) -> BaseHelpfulnessListwiseReward:
+    def evaluator(self) -> BaseHelpfulnessListWiseReward:
         """
         Lazy initialization of evaluation module instance.
 
         Returns:
-            BaseHelpfulnessListwiseReward: Evaluator for comparing pre/post refinement quality
+            BaseHelpfulnessListWiseReward: Evaluator for comparing pre/post refinement quality
         """
         if self._evaluator is None:
-            self._evaluator = BaseHelpfulnessListwiseReward(
+            self._evaluator = BaseHelpfulnessListWiseReward(
                 llm=self.llm, name="helpfulness_evaluation"
             )
         return self._evaluator

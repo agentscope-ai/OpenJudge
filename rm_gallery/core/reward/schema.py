@@ -30,7 +30,7 @@ class RewardDimensionWithScore(RewardDimension):
 
 class RewardDimensionWithRank(RewardDimension):
     """
-    Listwise/Pointwise reward dimension with ranking values.
+    ListWise/Pointwise reward dimension with ranking values.
 
     Attributes:
         rank (List[float]): Collection of ranking scores for different positions

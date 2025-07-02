@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 PRINCIPLES = []
 
@@ -16,7 +16,7 @@ Your role is that of a professional evaluation expert. I will provide you with a
 
 
 @RewardRegistry.register("classification_listwise_reward")
-class ClassificationListWiseReward(BaseHelpfulnessListwiseReward):
+class ClassificationListWiseReward(BaseHelpfulnessListWiseReward):
     """Classification: Entails assigning predefined categories or labels to text based on its content."""
 
     name: str = Field(

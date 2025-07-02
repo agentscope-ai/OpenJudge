@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 PRINCIPLES = []
 
@@ -15,7 +15,7 @@ SCENARIO = """Rewrite: the assistant aims to modifies existing text to alter its
 
 
 @RewardRegistry.register("rewrite_listwise_reward")
-class RewriteListWiseReward(BaseHelpfulnessListwiseReward):
+class RewriteListWiseReward(BaseHelpfulnessListWiseReward):
     """Rewrite: the assistant aims to modifies existing text to alter its style while preserving the original information and intent."""
 
     name: str = Field(default="rewrite_listwise_reward", description="reward name")

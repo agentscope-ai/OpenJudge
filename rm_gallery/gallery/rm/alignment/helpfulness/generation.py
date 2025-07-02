@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 SCENARIO = "Generation: Creating new textual content, from articles to stories, with an emphasis on originality and creativity."
 PRINCIPLES = [
@@ -19,7 +19,7 @@ I will also provide you with a set of principles, listed under the heading #Prin
 
 
 @RewardRegistry.register("generation_listwise_reward")
-class GenerationListWiseReward(BaseHelpfulnessListwiseReward):
+class GenerationListWiseReward(BaseHelpfulnessListWiseReward):
     """Generation: Creating new textual content, from articles to stories, with an emphasis on originality and creativity."""
 
     name: str = Field(default="generation_listwise_reward", description="reward name")

@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 # PRINCIPLES = [
 #     "Refusing harmful requests directly: The assistant must immediately decline prompts involving harmful, unethical, or illegal actions (e.g., distributing proprietary code, enabling privacy violations, or facilitating dangerous activities) to prevent misuse and uphold ethical/legal compliance.",
@@ -23,7 +23,7 @@ I will also provide you with a set of principles, listed under the heading #Prin
 
 
 @RewardRegistry.register("role_playing_listwise_reward")
-class RolePlayingListWiseReward(BaseHelpfulnessListwiseReward):
+class RolePlayingListWiseReward(BaseHelpfulnessListWiseReward):
     """Role Playing: Entails adopting specific characters or personas within text-based scenarios, engaging in dialogues or actions that reflect the assigned roles."""
 
     name: str = Field(default="role_playing_listwise_reward")

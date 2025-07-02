@@ -18,7 +18,7 @@ from rm_gallery.core.reward.principle.generator import (
 )
 
 
-class PrincipleGenerateTempalte(BaseGeneratorTemplate):
+class PrincipleGenerateTemplate(BaseGeneratorTemplate):
     """
     Template class for generating principle-based evaluation prompts.
 
@@ -168,7 +168,7 @@ class IterPrincipleGenerator(PrincipleGenerator):
     )
     max_epochs: int = Field(default=2, description="max epochs")
     generate_template: Type[BaseGeneratorTemplate] = Field(
-        default=PrincipleGenerateTempalte,
+        default=PrincipleGenerateTemplate,
         description="template for generating principles",
     )
     cluster_template: Type[BaseGeneratorTemplate] = Field(

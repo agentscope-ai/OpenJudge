@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 PRINCIPLES = [
     "Comprehensive Coverage of Core Content: A superior summary captures all critical elements, themes, and details central to the source material without omitting key information.",
@@ -21,7 +21,7 @@ You may organize your reasoning as you see fit, but keep your thought process as
 
 
 @RewardRegistry.register("summarization_listwise_reward")
-class SummarizationListWiseReward(BaseHelpfulnessListwiseReward):
+class SummarizationListWiseReward(BaseHelpfulnessListWiseReward):
     """Summarization: The text is compressed into a short form, retaining the main information, which is divided into extraction (directly selected from the original text) and production (rewriting the information)."""
 
     name: str = Field(

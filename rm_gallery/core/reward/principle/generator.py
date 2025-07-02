@@ -61,7 +61,7 @@ class BaseGeneratorTemplate(BasePromptTemplate):
         )
 
 
-class PrincipleGenerateTempalte(BaseGeneratorTemplate):
+class PrincipleGenerateTemplate(BaseGeneratorTemplate):
     """Template for generating evaluation principles from completion comparisons."""
 
     @classmethod
@@ -174,7 +174,7 @@ class PrincipleGenerator(BaseModel):
                            Default is 1.
         max_retries (int): Maximum number of retry attempts for generation steps. Default is 3.
         generate_template (Type[BaseGeneratorTemplate]): Template class used for generating
-                           principles. Default is PrincipleGenerateTempalte.
+                           principles. Default is PrincipleGenerateTemplate.
         cluster_template (Type[BaseGeneratorTemplate]): Template class used for clustering
                            principles. Default is PrincipleClusterTemplate.
     """
@@ -187,7 +187,7 @@ class PrincipleGenerator(BaseModel):
     cluster_number: int = Field(default=1, description="number of clustered principles")
     max_retries: int = Field(default=3, description="max retries")
     generate_template: Type[BaseGeneratorTemplate] = Field(
-        default=PrincipleGenerateTempalte,
+        default=PrincipleGenerateTemplate,
         description="template for generating principles",
     )
     cluster_template: Type[BaseGeneratorTemplate] = Field(

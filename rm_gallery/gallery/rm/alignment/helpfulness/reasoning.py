@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 SCENARIO = "Reasoning: Involves processing and analyzing text to draw inferences, make predictions, or solve problems, requiring an understanding of underlying concepts and relationships within the text."
 PRINCIPLES = []
@@ -13,7 +13,7 @@ Your role is that of a professional evaluation expert. I will provide you with a
 
 
 @RewardRegistry.register("reasoning_listwise_reward")
-class ReasoningListWiseReward(BaseHelpfulnessListwiseReward):
+class ReasoningListWiseReward(BaseHelpfulnessListWiseReward):
     """Reasoning: Involves processing and analyzing text to draw inferences, make predictions, or solve problems, requiring an understanding of underlying concepts and relationships within the text."""
 
     name: str = Field(default="reasoning_listwise_reward", description="reward name")

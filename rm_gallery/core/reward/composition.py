@@ -70,6 +70,14 @@ class SimpleComposition(BaseComposition):
                     )
                 else:
                     raise ValueError(f"Invalid dimension: {reward}")
+            elif isinstance(reward, str):
+                self.rewards[name] = RewardRegistry.get(reward)(**self.params)
+            elif isinstance(reward, BaseReward):
+                self.rewards[name] = reward
+            elif issubclass(reward, BaseReward):
+                self.rewards[name] = reward(**self.params)
+            else:
+                raise NotImplementedError(f"Invalid dimension: {reward}")
 
     def evaluate(
         self, sample: DataSample, thread_pool: ThreadPoolExecutor | None = None

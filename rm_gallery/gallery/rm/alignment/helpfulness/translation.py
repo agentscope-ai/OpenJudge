@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 PRINCIPLES = [
     "Accuracy in Translation: Faithfully convey the original text's meaning, intent, and nuances without distortion, omission, or addition.",
@@ -19,7 +19,7 @@ I will also provide you with a set of principles, listed under the heading #Prin
 
 
 @RewardRegistry.register("translation_listwise_reward")
-class TranslationListWiseReward(BaseHelpfulnessListwiseReward):
+class TranslationListWiseReward(BaseHelpfulnessListWiseReward):
     """Translation: Converting text from one language to another."""
 
     name: str = Field(default="translation_listwise_reward", description="reward name")

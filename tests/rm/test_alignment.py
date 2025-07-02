@@ -3,7 +3,7 @@ import pytest
 from rm_gallery.core.data.schema import DataOutput, DataSample, Step
 from rm_gallery.core.model.message import ChatMessage
 from rm_gallery.core.reward.template import BasePromptTemplate
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def reward_instance():
 
         pass
 
-    class TestReward(BaseHelpfulnessListwiseReward):
+    class TestReward(BaseHelpfulnessListWiseReward):
         def __init__(self):
             # Initialize all required fields with proper types
             super().__init__(
@@ -30,7 +30,7 @@ def reward_instance():
     return TestReward()
 
 
-class TestBaseHelpfulnessListwiseReward:
+class TestBaseHelpfulnessListWiseReward:
     """Test suite with full inheritance chain coverage using proper DataSample structure"""
 
     def test_required_attributes_exist(self, reward_instance):

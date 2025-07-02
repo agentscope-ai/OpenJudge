@@ -15,7 +15,7 @@ from rm_gallery.core.reward.principle.generator import (
 from rm_gallery.core.reward.template import BasePromptTemplate
 
 
-class JustificationTempalte(BasePromptTemplate):
+class JustificationTemplate(BasePromptTemplate):
     """
     Prompt template for generating justification analysis of preferred completion.
 
@@ -164,7 +164,7 @@ class AutoRuleGenerator(PrincipleGenerator):
                 best = i + 1
         completions = [completion for _, completion in completions]
 
-        prompt = JustificationTempalte.format(
+        prompt = JustificationTemplate.format(
             instruction=instruction,
             completions=completions,
             preference=best,

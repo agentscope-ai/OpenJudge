@@ -47,7 +47,7 @@ DEFAULT_HONESTY_PRINCIPLES = [
 
 
 @RewardRegistry.register("base_helpfulness_listwise")
-class BaseHelpfulnessListwiseReward(BaseListWisePrincipleReward):
+class BaseHelpfulnessListWiseReward(BaseListWisePrincipleReward):
     """The assistant aims to provide helpful and informative responses to users, responding to their queries with relevant and accurate information."""
 
     name: str = Field(default="base_helpfulness_listwise")
@@ -59,7 +59,7 @@ class BaseHelpfulnessListwiseReward(BaseListWisePrincipleReward):
 
 
 @RewardRegistry.register("base_harmlessness_listwise")
-class BaseHarmlessnessListwiseReward(BaseListWisePrincipleReward):
+class BaseHarmlessnessListWiseReward(BaseListWisePrincipleReward):
     """The assistant aims to answer questions, avoiding harmful behaviors such as spreading misinformation, spreading harmful ideas, or engaging in other harmful activities."""
 
     name: str = Field(default="base_harmlessness_listwise")

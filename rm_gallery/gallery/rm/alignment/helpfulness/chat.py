@@ -3,7 +3,7 @@ from typing import List
 from pydantic import Field
 
 from rm_gallery.core.reward.registry import RewardRegistry
-from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListwiseReward
+from rm_gallery.gallery.rm.alignment.base import BaseHelpfulnessListWiseReward
 
 PRINCIPLES = [
     "Address Core Argument/Intent Directly: Prioritize engaging with the user's central claim, perspective, or question explicitly, ensuring responses align with their stated goals or concerns rather than diverging into tangential topics.",
@@ -20,7 +20,7 @@ I will also provide you with a set of principles, listed under the heading #Prin
 
 
 @RewardRegistry.register("chat_listwise_reward")
-class ChatListWiseReward(BaseHelpfulnessListwiseReward):
+class ChatListWiseReward(BaseHelpfulnessListWiseReward):
     """Chat: Simulates human conversation and communicates a variety of topics through text understanding and generation, emphasizing coherence and natural flow of interaction."""
 
     name: str = Field(default="chat_listwise_reward", description="reward name")
