@@ -162,8 +162,8 @@ python examples/data/data_from_yaml.py \
 Check key configurations in `examples/train/pointwise/run_pointwise.sh`:
 
 ```bash
-TRAIN_FILE=./examples/data/exports/helpsteer2_train.parquet
-VAL_FILE=./examples/data/exports/helpsteer2_test.parquet
+TRAIN_FILE=./examples/data/exports/helpsteer2_pointwise_train.parquet
+VAL_FILE=./examples/data/exports/helpsteer2_pointwise_test.parquet
 MODEL_PATH=/path/to/your/base/model  # e.g., Qwen3-8B
 ```
 
@@ -285,8 +285,8 @@ python examples/data/data_from_yaml.py \
 Check key configurations in `examples/train/pairwise/run_pairwise.sh`:
 
 ```bash
-TRAIN_FILE=./examples/data/exports/preference_train.parquet
-VAL_FILE=./examples/data/exports/preference_test.parquet
+TRAIN_FILE=./examples/data/exports/helpsteer2_pairwise_train.parquet
+VAL_FILE=./examples/data/exports/helpsteer2_pairwise_test.parquet
 MODEL_PATH=/path/to/your/base/model
 ```
 

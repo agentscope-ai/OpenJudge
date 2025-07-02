@@ -201,13 +201,28 @@ class DataExporter(BaseDataModule):
                 )
 
                 # Determine output path structure
-                if source_path == "unknown":
+                # Try to get source name from dataset metadata
+                source_name = None
+                if dataset.metadata and "config" in dataset.metadata:
+                    config = dataset.metadata["config"]
+                    source_name = config.get("source")
+
+                if source_name:
+                    # Use source name from config as base filename
+                    if split_name == "full":
+                        file_stem = source_name
+                    else:
+                        file_stem = f"{source_name}_{split_name}"
+                    relative_path = Path(file_stem)
+                    logger.info(f"Using source-based filename: {file_stem}")
+                elif source_path == "unknown":
                     # Handle samples without source file path
                     if split_name == "full":
                         relative_path = Path(f"{filename_prefix}_unknown")
                     else:
                         relative_path = Path(f"{filename_prefix}_{split_name}_unknown")
                 else:
+                    # Fallback to original file path based naming
                     source_path_obj = Path(source_path)
 
                     # Calculate relative path from base path

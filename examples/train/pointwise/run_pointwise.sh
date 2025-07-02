@@ -3,8 +3,8 @@
 
 TIMESTAMP=$(date "+%m%dT%H%M")
 
-TRAIN_FILE=./examples/data/helpsteer2_train.parquet
-VAL_FILE=./examples/data/helpsteer2_test.parquet
+TRAIN_FILE=./examples/data/exports/helpsteer2_pointwise_train.parquet
+VAL_FILE=./examples/data/exports/helpsteer2_pointwise_test.parquet
 MODEL_PATH=./models/Qwen3-8B
 
 PROJECT_NAME=pointwise_train_${MODEL_NAME}

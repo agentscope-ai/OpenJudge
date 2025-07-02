@@ -4,8 +4,15 @@ Data Loading and Processing Script
 Load and process dataset using YAML configuration with integrated export functionality.
 
 Usage:
+    python data_from_yaml.py [--config CONFIG_PATH]
+
+Examples:
     python data_from_yaml.py
+    python data_from_yaml.py --config examples/train/pointwise/data_config.yaml
+    python data_from_yaml.py --config /absolute/path/to/config.yaml
 """
+
+import argparse
 
 from loguru import logger
 
@@ -14,10 +21,12 @@ import rm_gallery.gallery.data  # noqa: F401 - needed for gallery strategy regis
 from rm_gallery.core.data.build import create_builder_from_yaml
 
 
-def load_and_process_dataset():
-    """Load and process dataset using YAML configuration"""
-    config_path = "examples/train/pairwise/data_config.yaml"
+def load_and_process_dataset(config_path):
+    """Load and process dataset using YAML configuration
 
+    Args:
+        config_path (str): Path to the YAML configuration file
+    """
     try:
         logger.info("🚀 Starting data processing...")
         logger.info(f"📄 Loading config: {config_path}")
@@ -44,11 +53,39 @@ def load_and_process_dataset():
         return None
 
 
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+        description="Load and process dataset using YAML configuration",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python data_from_yaml.py
+  python data_from_yaml.py --config examples/train/pointwise/data_config.yaml
+  python data_from_yaml.py --config /absolute/path/to/config.yaml
+        """,
+    )
+
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="examples/train/pairwise/data_config.yaml",
+        help="Path to YAML configuration file (default: examples/train/pairwise/data_config.yaml)",
+    )
+
+    return parser.parse_args()
+
+
 def main():
     """Main function"""
     logger.info("🎯 Data Processing Pipeline")
 
-    dataset = load_and_process_dataset()
+    # Parse command line arguments
+    args = parse_args()
+
+    logger.info(f"🔧 Using config file: {args.config}")
+
+    dataset = load_and_process_dataset(args.config)
 
     if dataset:
         logger.success("🎉 data processing completed successfully!")
