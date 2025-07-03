@@ -360,7 +360,7 @@ for sample in samples:
 # Method 2: Batch evaluation with parallel processing
 samples_with_reward = rm.evaluate_batch(
     samples,
-    thread_pool=ThreadPoolExecutor(max_workers=10)
+    max_workers=10,
 )
 print([sample.model_dump_json() for sample in samples_with_reward])
 

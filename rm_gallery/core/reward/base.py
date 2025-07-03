@@ -28,9 +28,11 @@ class BaseReward(BaseModule):
 
     Attributes:
         name (str): Identifier for the reward module
+        max_workers (int): Maximum number of workers for parallel evaluation
     """
 
     name: str = Field(default=..., description="The name of the reward module")
+    max_workers: int = Field(default=8, description="max workers")
 
     def _evaluate(self, sample: DataSample, **kwargs) -> RewardResult:
         """
@@ -106,7 +108,7 @@ class BaseReward(BaseModule):
     def evaluate_batch(
         self,
         samples: List[DataSample | dict],
-        thread_pool: ThreadPoolExecutor | None = None,
+        max_workers: int | None = 0,
         **kwargs,
     ) -> List[DataSample]:
         """
@@ -116,13 +118,16 @@ class BaseReward(BaseModule):
 
         Parameters:
             samples (List[DataSample]): Batch of samples to process
-            thread_pool (ThreadPoolExecutor | None): Optional executor for parallel processing
+            max_workers (int): Max workers for parallel processing
             **kwargs: Parameters passed to individual evaluations
 
         Returns:
             List[DataSample]: Processed samples with reward metrics
         """
-        if thread_pool:
+        max_workers = self.max_workers if max_workers else self.max_workers
+
+        if max_workers > 1:
+            thread_pool = ThreadPoolExecutor(max_workers=max_workers)
             futures = [
                 thread_pool.submit(
                     self.evaluate, sample=sample, thread_pool=None, **kwargs

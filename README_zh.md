@@ -354,7 +354,7 @@ for sample in samples:
 # 方法2：批量并行评测
 samples_with_reward = rm.evaluate_batch(
     samples,
-    thread_pool=ThreadPoolExecutor(max_workers=10)
+    max_workers=10,
 )
 print([sample.model_dump_json() for sample in samples_with_reward])
 

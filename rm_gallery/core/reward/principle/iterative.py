@@ -175,6 +175,7 @@ class IterativePrincipleGenerator(AutoPrincipleGenerator):
         default=PrincipleClusterTemplate,
         description="template for clustering principles",
     )
+    max_workers: int = Field(default=0, description="max workers")
 
     def evaluate(
         self,
@@ -200,7 +201,7 @@ class IterativePrincipleGenerator(AutoPrincipleGenerator):
         ]
         return self.reward.evaluate_batch(
             samples=samples,
-            thread_pool=thread_pool,
+            max_workers=self.max_workers,
             **kwargs,
         )
 
