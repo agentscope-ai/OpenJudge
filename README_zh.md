@@ -130,7 +130,7 @@ cd examples/train/pointwise
 chmod +x run_pointwise.sh
 ./run_pointwise.sh
 ```
-更多细节与高级用法见 [training_rm 教程](./examples/train/training_rm.md)。
+更多细节与高级用法见 [training_rm 教程](./docs/tutorial/training_rm/training_rm.md)。
 
 
 ### 🏗️ 奖励模型构建
@@ -392,7 +392,7 @@ print(sample_best_of_n.model_dump_json())
 |                 | [data annotator](docs/tutorial/data/annotation.ipynb)                   | 奖励模型训练数据标注指南                                           |
 |                 | [data loader](docs/tutorial/data/load.ipynb)                            | 数据加载与预处理                                                |
 |                 | [data processor](docs/tutorial/data/process.ipynb)                      | 数据处理与转换最佳实践                                             |
-| **训练RM** | [training rm guide](examples/train/training_rm.md)            | 奖励模型训练分步指南                                                 |
+| **训练RM** | [training rm guide](docs/tutorial/training_rm/training_rm.md)            | 奖励模型训练分步指南                                                 |
 | **构建RM** | [overview](docs/tutorial/building_rm/overview.ipynb)                     | 自定义奖励模型构建概览                                                     |
 |                 | [ready-to-use RMs](docs/tutorial/building_rm/ready2use_rewards.md)        | 内置奖励模型列表与用法                                        |
 |                 | [building a custom RM](docs/tutorial/building_rm/custom_reward.ipynb)     | 自定义奖励模型设计与实现                                             |

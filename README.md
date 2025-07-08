@@ -131,7 +131,7 @@ cd examples/train/pointwise
 chmod +x run_pointwise.sh
 ./run_pointwise.sh
 ```
-For more details and advanced options, see the [training_rm tutorial](./examples/train/training_rm.md).
+For more details and advanced options, see the [training_rm tutorial](./docs/tutorial/training_rm/training_rm.md).
 
 
 ### 🏗️ Building RM
@@ -398,7 +398,7 @@ See Details in [data_refinement](./docs/tutorial/rm_application/data_refinement.
 |                 | [data annotator](docs/tutorial/data/annotation.ipynb)                    | Guide for annotating data for reward model training                                           |
 |                 | [data loader](docs/tutorial/data/load.ipynb)                             | How to load and preprocess data for RM-Gallery                                                |
 |                 | [data processor](docs/tutorial/data/process.ipynb)                       | Data processing and transformation best practices                                             |
-| **Training RM** | [training rm guide](examples/train/training_rm.md)            | Step-by-step guide for training reward models                                                 |
+| **Training RM** | [training rm guide](docs/tutorial/training_rm/training_rm.md)            | Step-by-step guide for training reward models                                                 |
 | **Building RM** | [overview](docs/tutorial/building_rm/overview.ipynb)                     | Overview of building custom reward models                                                     |
 |                 | [ready-to-use RMs](docs/tutorial/building_rm/ready2use_rewards.md)        | List and usage of built-in, ready-to-use reward models                                        |
 |                 | [building a custom RM](docs/tutorial/building_rm/custom_reward.ipynb)     | How to design and implement your own reward model                                             |

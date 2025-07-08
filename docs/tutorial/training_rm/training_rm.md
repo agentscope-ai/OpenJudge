@@ -208,7 +208,7 @@ We conducted pairwise training experiments using two different base models on th
 
 #### 5.5.2. Validation Accuracy Results
 
-![HelpSteer2 Pairwise Training Accuracy](../../docs/images/building_rm/helpsteer2_pointwise_eval_14b.png)
+![HelpSteer2 Pairwise Training Accuracy](../../images/building_rm/helpsteer2_pointwise_eval_14b.png)
 
 The training curves show validation accuracy on the test dataset over 350 training steps:
 
@@ -332,7 +332,7 @@ We conducted pairwise training experiments using two different base models on th
 
 #### 6.5.2. Validation Accuracy Results
 
-![HelpSteer2 Pairwise Training Accuracy](../../docs/images/building_rm/helpsteer2_pairwise_training_eval_accuracy.png)
+![HelpSteer2 Pairwise Training Accuracy](../../images/building_rm/helpsteer2_pairwise_training_eval_accuracy.png)
 
 The training curves show validation accuracy on the test dataset over 350 training steps:
 
@@ -360,7 +360,7 @@ The training curves show validation accuracy on the test dataset over 350 traini
 
 To further validate the robustness of our trained models, we evaluated the same Qwen2.5-14B model (trained on HelpSteer2 pairwise data) on the RM-Bench dataset:
 
-![HelpSteer2 Pairwise Training RM-Bench Accuracy](../../docs/images/building_rm/helpsteer2_pairwise_training_RM-Bench_eval_accuracy.png)
+![HelpSteer2 Pairwise Training RM-Bench Accuracy](../../images/building_rm/helpsteer2_pairwise_training_RM-Bench_eval_accuracy.png)
 
 **RM-Bench Evaluation Results:**
 
@@ -534,7 +534,7 @@ After training, look for **LoRA** or full weights in `checkpoints/<TIMESTAMP>/ac
 ## 11. Related Resources
 
 ### 11.1. Tutorial Documentation
-- **[Data Processing Tutorial](../data/)** - Comprehensive data handling techniques
+- **[Data Processing Tutorial](../data/process.ipynb)** - Comprehensive data handling techniques
 
 ### 11.2. Framework Documentation
 - **[VERL Framework](https://github.com/volcengine/verl)**: Core training framework

@@ -9,15 +9,13 @@ theme:
     primary: light blue
 nav:
   - Overview: index.md
-  - Quick Start: quick_start.ipynb
-  - Contribution: contribution.md
   - Tutorials:
     - Data:
       - Annotation: tutorial/data/annotation.ipynb
       - Load: tutorial/data/load.ipynb
       - Pipeline: tutorial/data/pipeline.ipynb
       - Process: tutorial/data/process.ipynb
-    - Train RM: examples/train/training_rm.md
+    - Train RM: tutorial/training_rm/training_rm.md
     - Build RM:
       - Overview: docs/tutorial/building_rm/overview.ipynb
       - Customization: tutorial/building_rm/custom_reward.ipynb
@@ -27,8 +25,9 @@ nav:
     - RM Server: tutorial/rm_servering/rm_server.md
     - Application:
       - Best of N: tutorial/deploying_rm/best_of_n.ipynb
-      - Post Training with RM: tutorial/deploying_rm/post_traning_with_rm.ipynb
-      - Refinement: tutorial/deploying_rm/refinement.ipynb
+      - Post Training with RM: tutorial/deploying_rm/post_traning.ipynb
+      - Refinement: tutorial/deploying_rm/data_refinement.ipynb
+  - Contribution: contribution.md
 plugins:
   - search
   - mkdocs-autoapi:
