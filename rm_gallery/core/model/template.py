@@ -49,9 +49,16 @@ class Template(BaseModel):
             r"\{([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\}"
         )
 
-        required_fields = [
-            field.get("name") for field in values.get("required_fields", [])
-        ]
+        # Handle both dict and RequiredField instances
+        required_fields_raw = values.get("required_fields", [])
+        required_fields = []
+        for field in required_fields_raw:
+            if isinstance(field, dict):
+                required_fields.append(field.get("name"))
+            elif isinstance(field, RequiredField):
+                required_fields.append(field.name)
+            elif hasattr(field, "name"):
+                required_fields.append(field.name)
         required = []
 
         all_messages = []
