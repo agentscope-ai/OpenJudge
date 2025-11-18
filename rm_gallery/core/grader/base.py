@@ -181,7 +181,7 @@ class Grader(ABC):
             except Exception as e:
                 error_msg = f"Error in {self.name} during evaluation: {str(e)}"
                 logger.error(error_msg)
-                return GraderError(reason=error_msg)
+                return GraderError(name=self.name, reason=error_msg)
 
         # Use the concurrency manager to control execution
         return await concurrency_manager.run_with_concurrency_control(
@@ -190,13 +190,29 @@ class Grader(ABC):
 
     async def _a_evaluate_data_sample(
         self,
-        data_sample: DataSample | List[DataSample],
+        data_sample: DataSample,
         parser: DataSampleParser | None = None,
         *args,
         **kwargs,
     ) -> List[GraderScore]:
-        """
-        Evaluate a data sample using this grader.
+        """Evaluate a data sample using this grader.
+
+        This method evaluates a data sample based on the grader's mode (pointwise or listwise).
+        In pointwise mode, each sample is evaluated individually. In listwise mode, all samples
+        are evaluated together in one call.
+
+        Args:
+            data_sample (DataSample): The data sample to evaluate.
+            parser (DataSampleParser | None, optional): Optional parser to transform the
+                data sample before evaluation. Defaults to None.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            List[GraderScore]: A list of grader scores, one for each sample in the data sample.
+
+        Raises:
+            ValueError: If the grader mode is invalid.
         """
         if parser is not None:
             data_sample = parse_data_sample(data_sample, parser)
@@ -214,7 +230,9 @@ class Grader(ABC):
                     _results.append(result)
                 elif isinstance(result, GraderError):
                     _results.append(
-                        GraderScore(score=0.0, reason=result.reason),
+                        GraderScore(
+                            name=result.name, score=0.0, reason=result.reason
+                        ),
                     )
                 else:
                     raise ValueError(f"Invalid result type: {type(result)}")
@@ -235,21 +253,33 @@ class Grader(ABC):
             if isinstance(result, GraderRank):
                 results = [
                     GraderScore(
+                        name=result.name,
                         score=score,
                         reason=result.reason,
+                        metadata=result.metadata,
                     )
                     for score in result.rank
                 ]
             elif isinstance(result, GraderError):
-                results = [GraderScore(score=0.0, reason=result.reason)]
+                results = [
+                    GraderScore(
+                        name=result.name, score=0.0, reason=result.reason
+                    )
+                ]
             else:
                 raise ValueError(f"Invalid result type: {type(result)}")
 
             return results
         else:
             raise ValueError(f"Invalid grader mode: {self.mode}")
-        
-    async def a_evaluate_data_samples(self, data_samples: List[DataSample] | DataSample, parser: DataSampleParser | Callable | None = None, *args, **kwargs) -> List[List[GraderScore]] | List[GraderScore]:
+
+    async def a_evaluate_data_samples(
+        self,
+        data_samples: List[DataSample] | DataSample,
+        parser: DataSampleParser | Callable | None = None,
+        *args,
+        **kwargs,
+    ) -> List[List[GraderScore]] | List[GraderScore]:
         """Main entry point to evaluate data sample.
 
         Evaluates one data samples using the  grader.
@@ -338,7 +368,9 @@ class Grader(ABC):
             results = await asyncio.gather(*corutines)
             return list(results)  # type: ignore
         else:
-            return await self._a_evaluate_data_sample(data_sample=data_samples, parser=parser, *args, **kwargs)
+            return await self._a_evaluate_data_sample(
+                data_sample=data_samples, parser=parser, *args, **kwargs
+            )
 
     @classmethod
     def from_config(
@@ -415,7 +447,7 @@ class LLMGrader(Grader):
         """Initialize an LLMGrader.
 
         Args:
-            model: The language model used for evaluation. Can be either a ChatModelBase 
+            model: The language model used for evaluation. Can be either a ChatModelBase
                    instance or a dictionary configuration. If a dict is provided, it will
                    be used to initialize an OpenAIChatModel.
             name: The name of the grader.
@@ -444,14 +476,14 @@ class LLMGrader(Grader):
 
         if isinstance(model, dict):
             model = OpenAIChatModel(**model)
-        
+
         self.model = model
         self.rubrics = rubrics
         if self.template is not None and self.model is not None:
             self.chat = Chat(template=self.template, model=self.model)
         else:
             raise ValueError("Chat template or model is not set")
-        
+
     @property
     def meta(self) -> GraderInfo:
         """Get the metadata of the grader.
@@ -605,7 +637,16 @@ class LLMGrader(Grader):
         params.update(kwargs)
 
         language = os.environ.get("LANGUAGE", "en")
-        response = await self.chat(callback=self.callback, language=language, **params)
+        from rm_gallery.core.schema.template import LanguageEnum
+
+        language_enum = (
+            LanguageEnum(language)
+            if language in [item.value for item in LanguageEnum]
+            else LanguageEnum.EN
+        )
+        response = await self.chat(
+            callback=self.callback, language=language_enum, **params
+        )
         metadata = response.metadata if response.metadata else {}
         if self.mode == GraderMode.LISTWISE:
             rank = metadata.pop("rank")

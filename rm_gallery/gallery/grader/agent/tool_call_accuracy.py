@@ -12,8 +12,7 @@ from rm_gallery.core.schema.message import ChatMessage
 from rm_gallery.core.schema.template import Template, PromptDict
 
 
-TOOL_CALL_ACCURACY_SYSTEM_PROMPT = (
-    """# Instruction
+TOOL_CALL_ACCURACY_SYSTEM_PROMPT = """# Instruction
 ## Goal
 Your are an expert in evaluating the accuracy of a tool call considering relevance and potential usefulness including syntactic and semantic correctness of a proposed tool call from an intelligent system based on provided definition and data. Your goal will involve answering the questions below using the information provided.
 
@@ -58,8 +57,7 @@ Tool calls were fully relevant and efficient:
   • Correct tools were called with the correct and grounded parameters
   • No unnecessary or excessive tool calls were made
   • No errors occurred in any of the tools
-  • The tool calls made helped the agent address the user's query without facing any issues""",
-)
+  • The tool calls made helped the agent address the user's query without facing any issues"""
 
 
 TOOL_CALL_ACCURACY_USER_PROMPT = """# Data
@@ -137,7 +135,7 @@ class ToolCallAccuracyGrader(LLMGrader):
         """Initialize the ToolCallAccuracyGrader.
 
         Args:
-            model: The language model used for evaluation. Can be either a ChatModelBase 
+            model: The language model used for evaluation. Can be either a ChatModelBase
                    instance or a dictionary configuration. If a dict is provided, it will
                    be used to initialize an OpenAIChatModel.
             **kwargs: Additional keyword arguments.
@@ -299,7 +297,7 @@ if __name__ == "__main__":
 
     async def main():
         # Initialize the grader
-        model = OpenAIChatModel(model_name="qwen-plus", stream=False)
+        model = OpenAIChatModel(model_name="qwen3-32b", stream=False)
         grader = ToolCallAccuracyGrader(model=model)
 
         # Example conversation
