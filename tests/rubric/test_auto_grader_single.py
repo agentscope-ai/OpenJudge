@@ -73,8 +73,8 @@ async def test_auto_grader_with_default_config() -> None:
 
     # Evaluate test data
     result = await grader.aevaluate_batch(
+        eval_cases=[test_data],
         parser=None,
-        eval_cases=test_data,
     )
 
     assert result is not None, "Evaluation result should not be None"
@@ -112,8 +112,8 @@ async def test_auto_grader_with_custom_config() -> None:
 
     # Evaluate test data
     result = await grader.aevaluate_batch(
+        eval_cases=[test_data],
         parser=None,
-        eval_cases=test_data,
     )
 
     assert result is not None, "Evaluation result should not be None"
@@ -158,12 +158,12 @@ async def test_auto_grader_comparison() -> None:
 
     # Evaluate with both graders
     default_result = await default_grader.aevaluate_batch(
+        eval_cases=[test_data],
         parser=None,
-        eval_cases=test_data,
     )
     custom_result = await custom_grader.aevaluate_batch(
+        eval_cases=[test_data],
         parser=None,
-        eval_cases=test_data,
     )
 
     # Assertions

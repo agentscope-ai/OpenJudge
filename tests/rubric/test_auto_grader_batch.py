@@ -484,7 +484,7 @@ async def test_batch_with_results_saving(
 
 async def main() -> None:
     """Run batch tests manually for development/debugging."""
-    train_file = "./data/processed_mxc/train_samples_结论实用.jsonl"
+    train_file = "./data/processed_mxc/train_samples.jsonl"
 
     # Check if data file exists
     if not Path(train_file).exists():
@@ -531,7 +531,7 @@ async def main() -> None:
 
         # Save results
         output_path = Path(
-            "results/auto_grader_batch_结论实用_ZH/manual_test_results.json",
+            "results/auto_grader_batch/manual_test_results.json",
         )
         batch_tester.save_results(results, output_path)
 
