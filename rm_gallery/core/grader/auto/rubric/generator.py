@@ -572,7 +572,7 @@ class QuerySpecificRubricGenerator:
     def _get_query_from_sample(self, sample: EvalCase) -> str:
         """Extract query from sample data or first sample item"""
         data_query = ""
-        if hasattr(sample, "data") and isinstance(sample.input, dict):
+        if isinstance(sample.input, dict):
             data_query = sample.input.get("query", "")
 
         # Fallback to first sample's query if no data-level query
