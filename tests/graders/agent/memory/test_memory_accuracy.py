@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Test Memory Hallucination Grader
+Test Memory Accuracy Grader
 
-Tests for the MemoryHallucinationGrader class functionality.
+Tests for the MemoryAccuracyGrader class functionality.
 """
 
 import pytest
 
-from rm_gallery.core.graders.predefined.agent import MemoryHallucinationGrader
+from rm_gallery.core.graders.predefined.agent import MemoryAccuracyGrader
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
-def test_memory_hallucination_grader_creation():
-    """Test creating a MemoryHallucinationGrader instance"""
+def test_memory_accuracy_grader_creation():
+    """Test creating a MemoryAccuracyGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="fake-api-key", stream=False)
-    grader = MemoryHallucinationGrader(model=model)
+    grader = MemoryAccuracyGrader(model=model)
 
     assert grader is not None
     assert hasattr(grader, "name")
-    assert grader.name == "memory_hallucination"
+    assert grader.name == "memory_accuracy"
 
 
-def test_memory_hallucination_grader_chinese():
+def test_memory_accuracy_grader_chinese():
     """Test creating a Chinese grader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="fake-api-key", stream=False)
-    grader = MemoryHallucinationGrader(
+    grader = MemoryAccuracyGrader(
         model=model,
         language=LanguageEnum.ZH,
     )
@@ -36,12 +36,12 @@ def test_memory_hallucination_grader_chinese():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_hallucination_detection():
-    """Test detecting hallucinated information in memory"""
+async def test_memory_accuracy_poor():
+    """Test detecting poor memory accuracy (hallucination)"""
     model = OpenAIChatModel(model="qwen3-32b", api_key="fake-api-key", stream=False)
-    grader = MemoryHallucinationGrader(model=model)
+    grader = MemoryAccuracyGrader(model=model)
 
-    # Test case with hallucinated memory
+    # Test case with inaccurate memory (hallucination)
     result = await grader.aevaluate(
         observation="You see a closed cabinet.",
         memory="There is a red vase inside the cabinet with gold trim.",
@@ -50,15 +50,15 @@ async def test_memory_hallucination_detection():
 
     assert result is not None
     assert hasattr(result, "score")
-    assert result.score == 0.0  # Should detect hallucination
+    assert result.score == 0.0  # Should detect poor accuracy
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_no_hallucination():
-    """Test with correct memory without hallucination"""
+async def test_memory_accuracy_good():
+    """Test with good memory accuracy"""
     model = OpenAIChatModel(model="qwen3-32b", stream=False)
-    grader = MemoryHallucinationGrader(model=model)
+    grader = MemoryAccuracyGrader(model=model)
 
     result = await grader.aevaluate(
         observation="Cabinet 1 contains 3 red apples.",
@@ -67,15 +67,15 @@ async def test_memory_no_hallucination():
     )
 
     assert result is not None
-    assert result.score == 1.0  # Should be correct
+    assert result.score == 1.0  # Should have good accuracy
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_hallucination_with_history():
-    """Test memory hallucination with history"""
+async def test_memory_accuracy_with_history():
+    """Test memory accuracy with history"""
     model = OpenAIChatModel(model="qwen3-32b", stream=False)
-    grader = MemoryHallucinationGrader(model=model)
+    grader = MemoryAccuracyGrader(model=model)
 
     history = [
         {"observation": "Cabinet is locked", "memory": "Cabinet 1 is locked"},
@@ -83,7 +83,7 @@ async def test_memory_hallucination_with_history():
 
     result = await grader.aevaluate(
         observation="Cabinet is still locked. Cannot see inside.",
-        memory="Cabinet contains 5 golden coins.",  # Cannot know this
+        memory="Cabinet contains 5 golden coins.",  # Cannot know this - poor accuracy
         history_steps=history,
     )
 

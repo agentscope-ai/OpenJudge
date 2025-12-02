@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Auto rubric generator implementation.
+"""Iterative rubric generator implementation.
 
 This module implements a training-free framework for automatically extracting
 evaluation rubrics from preference data. The framework uses a two-stage approach:
@@ -224,7 +224,7 @@ class IterativeRubricsGenerator(LLMGraderGenerator):
         dataset: List[dict],
         **kwargs,
     ) -> LLMGrader:
-        """Generate an LLMGrader with auto-generated rubrics from training data.
+        """Generate an LLMGrader with iteratively-generated rubrics from training data.
 
         This method generates evaluation rubrics from the provided training data
         and creates an LLMGrader instance configured with these rubrics. The training

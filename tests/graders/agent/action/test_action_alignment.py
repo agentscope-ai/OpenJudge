@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Test Action Misalignment Grader
+Test Action Alignment Grader
 
-Tests for the ActionMisalignmentGrader class functionality.
+Tests for the ActionAlignmentGrader class functionality.
 """
 
 import pytest
 
-from rm_gallery.core.graders.predefined.agent import ActionMisalignmentGrader
+from rm_gallery.core.graders.predefined.agent import ActionAlignmentGrader
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
-def test_action_misalignment_grader_creation():
-    """Test creating an ActionMisalignmentGrader instance"""
+def test_action_alignment_grader_creation():
+    """Test creating an ActionAlignmentGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ActionMisalignmentGrader(model=model)
+    grader = ActionAlignmentGrader(model=model)
 
     assert grader is not None
     assert hasattr(grader, "name")
-    assert grader.name == "action_misalignment"
+    assert grader.name == "action_alignment"
 
 
-def test_action_misalignment_grader_creation_chinese():
-    """Test creating a Chinese ActionMisalignmentGrader instance"""
+def test_action_alignment_grader_creation_chinese():
+    """Test creating a Chinese ActionAlignmentGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ActionMisalignmentGrader(model=model, language=LanguageEnum.ZH)
+    grader = ActionAlignmentGrader(model=model, language=LanguageEnum.ZH)
 
     assert grader is not None
     assert grader.language == LanguageEnum.ZH
@@ -33,12 +33,12 @@ def test_action_misalignment_grader_creation_chinese():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_action_misalignment_detection():
-    """Test detecting action misalignment"""
+async def test_action_alignment_poor():
+    """Test detecting poor action alignment"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ActionMisalignmentGrader(model=model)
+    grader = ActionAlignmentGrader(model=model)
 
-    # Test case with clear action misalignment
+    # Test case with poor action alignment (misalignment)
     result = await grader.aevaluate(
         plan="I will open drawer 1 to find the key.",
         action="close drawer 1",
@@ -48,18 +48,18 @@ async def test_action_misalignment_detection():
     assert result is not None
     assert hasattr(result, "score")
     assert hasattr(result, "reason")
-    assert result.score == 0.0  # Should detect error
-    assert "misalignment" in result.reason.lower() or "contradict" in result.reason.lower()
+    assert result.score == 0.0  # Should detect poor alignment
+    assert "alignment" in result.reason.lower() or "contradict" in result.reason.lower()
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_action_alignment_correct():
-    """Test with correct action alignment"""
+async def test_action_alignment_good():
+    """Test with good action alignment"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ActionMisalignmentGrader(model=model)
+    grader = ActionAlignmentGrader(model=model)
 
-    # Test case with correct alignment
+    # Test case with good alignment
     result = await grader.aevaluate(
         plan="I will open drawer 1 to find the key.",
         action="open drawer 1",
@@ -67,15 +67,15 @@ async def test_action_alignment_correct():
     )
 
     assert result is not None
-    assert result.score == 1.0  # Should be correct
+    assert result.score == 1.0  # Should be good alignment
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_action_misalignment_with_history():
-    """Test action misalignment with history steps"""
+async def test_action_alignment_with_history():
+    """Test action alignment with history steps"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ActionMisalignmentGrader(model=model)
+    grader = ActionAlignmentGrader(model=model)
 
     history = [
         {"plan": "Check drawer 1", "action": "examine drawer 1"},

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Reflection Outcome Misinterpretation Grader
+Reflection Accuracy Grader
 
-Evaluates whether the agent misinterprets the outcome or result of an action
-in its reflection module.
+Evaluates whether the agent provides accurate reflections based on actual observations.
 """
 
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -20,27 +19,27 @@ from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTe
 # pylint: disable=line-too-long
 
 # English Prompt
-REFLECTION_OUTCOME_MISINTERPRETATION_PROMPT_EN = """
-You are an expert in analyzing agent behavior. Your task is to detect whether the agent misinterprets the outcome or result of an action in its reflection.
+REFLECTION_ACCURACY_PROMPT_EN = """
+You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent provides accurate reflections based on actual observations.
 
-<Error Type: Reflection Outcome Misinterpretation>
-The agent misinterprets the outcome or result of an action in its reflection. This occurs when the agent receives an observation indicating a specific result, but in the reflection module, the agent incorrectly understands what that observation means.
-</Error Type>
+<Evaluation Type: Reflection Accuracy>
+The agent should provide accurate reflections based on actual observations. The agent should reflect only on objects, states, and details that are actually mentioned in the observation, without inventing or fabricating information.
+</Evaluation Type>
 
-<Rubrics for Detection>
-1. The agent claims an action succeeded when the observation shows it failed
-2. The agent claims an action failed when the observation shows it succeeded
-3. The agent misunderstands the state change that resulted from an action
-4. The agent draws incorrect conclusions about what the observation indicates
-5. The agent's reflection contradicts the factual content of the observation
+<Rubrics for Evaluation>
+1. The agent mentions only objects or entities in reflection that were present in the observation
+2. The agent describes only states or conditions that were reported in the observation
+3. The agent uses only specific details (colors, numbers, locations) found in the observation
+4. The agent reflects only on things that were actually seen or detected in the observation
+5. The agent's reflection includes only information that can be derived from the observation
 </Rubrics>
 
 <Evaluation Criteria>
 For your analysis:
-1. Apply each rubric: Check if the step matches the error patterns described in each rubric
+1. Apply each rubric: Check if the step demonstrates good accuracy patterns described in each rubric
 2. Focus on relevant modules: Only consider observation and reflection modules
-3. Provide evidence-based reasoning: Explain whether the step matches the rubric patterns and why
-4. Assess confidence: Rate your confidence based on how clearly the patterns are exhibited
+3. Provide evidence-based reasoning: Explain how the reflection demonstrates accuracy and why
+4. Assess confidence: Rate your confidence based on how clearly the accuracy is exhibited
 </Evaluation Criteria>
 
 {context_section}
@@ -50,40 +49,40 @@ For your analysis:
 </trajectory_steps>
 
 # Scoring Instructions
-- If the error is detected: score = 0.0 (has problem)
-- If no error is detected: score = 1.0 (good quality)
+- If the reflection is accurate and grounded: score = 1.0 (good accuracy)
+- If the reflection contains fabrications: score = 0.0 (poor accuracy)
 
 Provide your evaluation in the following structured JSON format:
 {{
     "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation including error_step if applicable and confidence level>"
+    "reason": "<detailed explanation of reflection accuracy and confidence level>"
 }}
 
 JSON:
 """
 
 # Chinese Prompt
-REFLECTION_OUTCOME_MISINTERPRETATION_PROMPT_ZH = """
-你是一名分析智能体行为的专家。你的任务是检测智能体是否在其反思中误解了动作的结果或输出。
+REFLECTION_ACCURACY_PROMPT_ZH = """
+你是一名分析智能体行为的专家。你的任务是评估智能体是否基于实际观察提供了准确的反思。
 
-<错误类型：反思结果误解>
-智能体在其反思中误解了动作的结果或输出。这发生在智能体收到表明特定结果的观察时，但在反思模块中，智能体错误地理解了该观察的含义。
-</错误类型>
+<评估类型：反思准确性>
+智能体应该基于实际观察提供准确的反思。智能体应该只反思实际在观察中提到的对象、状态和细节，而不捏造或编造信息。
+</评估类型>
 
-<检测准则>
-1. 智能体声称动作成功，但观察显示它失败了
-2. 智能体声称动作失败，但观察显示它成功了
-3. 智能体误解了动作导致的状态变化
-4. 智能体对观察所表明的内容得出了错误的结论
-5. 智能体的反思与观察的事实内容相矛盾
-</检测准则>
+<评估准则>
+1. 智能体在反思中只提到了观察中存在的对象或实体
+2. 智能体只描述了观察中报告的状态或条件
+3. 智能体只使用了观察中找到的具体细节（颜色、数字、位置）
+4. 智能体只反思在观察中实际看到或检测到的内容
+5. 智能体的反思只包含了可以从观察中推导出的信息
+</评估准则>
 
 <评估标准>
 进行分析时：
-1. 应用每个准则：检查步骤是否匹配每个准则中描述的错误模式
+1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好准确性模式
 2. 关注相关模块：仅考虑观察和反思模块
-3. 提供基于证据的推理：解释步骤是否匹配准则模式以及原因
-4. 评估置信度：根据模式表现的清晰程度评估你的置信度
+3. 提供基于证据的推理：解释反思如何展示准确性以及原因
+4. 评估置信度：根据准确性表现的清晰程度评估你的置信度
 </评估标准>
 
 {context_section}
@@ -93,43 +92,42 @@ REFLECTION_OUTCOME_MISINTERPRETATION_PROMPT_ZH = """
 </trajectory_steps>
 
 # 评分指令
-- 如果检测到错误：score = 0.0（有问题）
-- 如果未检测到错误：score = 1.0（质量良好）
+- 如果反思准确且基于事实：score = 1.0（良好准确性）
+- 如果反思包含捏造的内容：score = 0.0（准确性不佳）
 
 请按以下结构化 JSON 格式提供你的评估：
 {{
     "score": <0.0 或 1.0>,
-    "reason": "<详细解释，包括错误步骤（如适用）和置信度水平>"
+    "reason": "<关于反思准确性的详细解释和置信度水平>"
 }}
 
 JSON:
 """
 
 # Build default template from prompts
-DEFAULT_REFLECTION_OUTCOME_MISINTERPRETATION_TEMPLATE = PromptTemplate(
+DEFAULT_REFLECTION_ACCURACY_TEMPLATE = PromptTemplate(
     messages={
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(REFLECTION_OUTCOME_MISINTERPRETATION_PROMPT_EN),
+                content=textwrap.dedent(REFLECTION_ACCURACY_PROMPT_EN),
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(REFLECTION_OUTCOME_MISINTERPRETATION_PROMPT_ZH),
+                content=textwrap.dedent(REFLECTION_ACCURACY_PROMPT_ZH),
             ),
         ],
     },
 )
 
 
-class ReflectionOutcomeMisinterpretationGrader(LLMGrader):
+class ReflectionAccuracyGrader(LLMGrader):
     """
-    Reflection Outcome Misinterpretation Grader
+    Reflection Accuracy Grader
 
-    Evaluates whether the agent misinterprets the outcome or result of an action
-    in its reflection module.
+    Evaluates whether the agent provides accurate reflections based on actual observations.
 
     Required modules: observation, reflection
 
@@ -149,33 +147,33 @@ class ReflectionOutcomeMisinterpretationGrader(LLMGrader):
         ...     generate_kwargs={"temperature": 0.1}
         ... )
         >>>
-        >>> grader = ReflectionOutcomeMisinterpretationGrader(
+        >>> grader = ReflectionAccuracyGrader(
         ...     model=api,
         ...     language=LanguageEnum.EN
         ... )
         >>>
         >>> result = await grader.aevaluate(
-        ...     observation="The drawer is still closed.",
-        ...     reflection="I successfully opened the drawer."
+        ...     observation="You see a closed cabinet.",
+        ...     reflection="I observed a closed cabinet."
         ... )
-        >>> print(f"Score: {result.score}")  # 0.0 (error detected)
+        >>> print(f"Score: {result.score}")  # 1.0 (accurate reflection)
     """
 
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_REFLECTION_OUTCOME_MISINTERPRETATION_TEMPLATE,
+        template: Optional[PromptTemplate] = DEFAULT_REFLECTION_ACCURACY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
     ):
         super().__init__(
-            name="reflection_outcome_misinterpretation",
+            name="reflection_accuracy",
             mode=GraderMode.POINTWISE,
-            description="Detect reflection outcome misinterpretation errors",
+            description="Evaluate reflection accuracy",
             model=model,
             template=template,
             language=language,
         )
-        self.template = template if template is not None else DEFAULT_REFLECTION_OUTCOME_MISINTERPRETATION_TEMPLATE
+        self.template = template if template is not None else DEFAULT_REFLECTION_ACCURACY_TEMPLATE
 
     def _format_trajectory_steps(
         self,
@@ -218,9 +216,10 @@ class ReflectionOutcomeMisinterpretationGrader(LLMGrader):
         reflection: str,
         history_steps: Optional[list] = None,
         task_context: Optional[str] = None,
+        **kwargs: Any,
     ) -> GraderScore:
         """
-        Evaluate reflection outcome misinterpretation
+        Evaluate reflection accuracy
 
         Args:
             observation: Agent's observation from the environment
@@ -230,29 +229,15 @@ class ReflectionOutcomeMisinterpretationGrader(LLMGrader):
             **kwargs: Additional arguments
 
         Returns:
-            GraderScore: Score with binary value (1.0 = no error, 0.0 = error detected)
+            GraderScore: Score with binary value (1.0 = accurate, 0.0 = inaccurate)
 
         Example:
             >>> result = await grader.aevaluate(
-            ...     observation="The drawer is still closed.",
-            ...     reflection="I successfully opened the drawer.",
-            ...     task_context="Task: Open the drawer"
+            ...     observation="You see a closed cabinet.",
+            ...     reflection="I observed a closed cabinet.",
+            ...     task_context="Task: Find objects in the room"
             ... )
         """
-        return await self._aevaluate(
-            observation=observation,
-            reflection=reflection,
-            history_steps=history_steps,
-            task_context=task_context,
-        )
-
-    async def _aevaluate(
-        self,
-        observation: str,
-        reflection: str,
-        history_steps: Optional[list] = None,
-        task_context: Optional[str] = None,
-    ) -> GraderScore:
         # Format trajectory steps
         trajectory_steps = self._format_trajectory_steps(
             observation=observation,
@@ -279,7 +264,7 @@ class ReflectionOutcomeMisinterpretationGrader(LLMGrader):
             normalized_score = 1.0 if score > 0.5 else 0.0
 
         except Exception as e:
-            logger.error(f"Error evaluating reflection outcome misinterpretation: {e}")
+            logger.error(f"Error evaluating reflection accuracy: {e}")
             normalized_score = 0.0
             score = 0.0
             reason = f"Evaluation error: {str(e)}"
@@ -287,7 +272,7 @@ class ReflectionOutcomeMisinterpretationGrader(LLMGrader):
         # Prepare metadata
         metadata = {
             "raw_score": score,
-            "error_type": "reflection_outcome_misinterpretation",
+            "evaluation_type": "reflection_accuracy",
         }
 
         return GraderScore(
@@ -299,6 +284,6 @@ class ReflectionOutcomeMisinterpretationGrader(LLMGrader):
 
 
 __all__ = [
-    "ReflectionOutcomeMisinterpretationGrader",
-    "DEFAULT_REFLECTION_OUTCOME_MISINTERPRETATION_TEMPLATE",
+    "ReflectionAccuracyGrader",
+    "DEFAULT_REFLECTION_ACCURACY_TEMPLATE",
 ]

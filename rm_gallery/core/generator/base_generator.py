@@ -17,11 +17,11 @@ class GraderGeneratorConfig:
 
     Attributes:
         grader_name (str): Human-readable name for the generated grader.
-                          Defaults to "Auto Grader".
+                          Defaults to "Generated Grader".
     """
 
     # Grader configuration
-    grader_name: str = "Auto Grader"
+    grader_name: str = "Generated Grader"
     """Human-readable name for the generated grader"""
 
 

@@ -23,18 +23,18 @@ from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTe
 TOOL_PARAMETER_CHECK_PROMPT_EN = """
 You are an expert in analyzing tool calls. Your task is to evaluate whether the generated tool call extracts completely correct parameters from the user query.
 
-<Error Type: Tool Parameter Extraction Correctness>
+<Evaluation Type: Tool Parameter Extraction Correctness>
 Evaluate whether the agent correctly extracted all required parameters from the user query when making a tool call. This includes checking if parameters are accurate, complete, and properly formatted.
-</Error Type>
+</Evaluation Type>
 
-<Rubrics for Detection>
+<Rubrics for Evaluation>
 1. All required parameters are present and extracted from the query
 2. Parameter values match exactly what was specified in the query
-3. No parameters are fabricated or hallucinated (not present in the query)
+3. All parameters are grounded in the query (no fabricated values)
 4. Parameter data types and formats are correct
 5. Optional parameters are used appropriately when specified in the query
-6. No parameters are missing that were explicitly mentioned in the query
-7. Parameters are not confused or swapped with each other
+6. All parameters mentioned in the query are captured
+7. Parameters are correctly mapped without confusion
 </Rubrics>
 
 <Evaluation Criteria>
@@ -46,28 +46,28 @@ For your analysis:
 5. Assess overall correctness: Determine if the tool call is executable with correct parameters
 </Evaluation Criteria>
 
-<query>
-{query}
-</query>
+<user_query>
+{user_query}
+</user_query>
 
-<tool_definitions>
-{tool_definitions}
-</tool_definitions>
+<tool_definition>
+{tool_definition}
+</tool_definition>
 
-<tool_calls>
-{tool_calls}
-</tool_calls>
+<generated_tool_call>
+{generated_tool_call}
+</generated_tool_call>
 
 {context_section}
 
 # Scoring Instructions
-- If all parameters are correct: score = 1.0 (perfect parameter extraction)
-- If any parameter is wrong/missing/hallucinated: score = 0.0 (incorrect parameter extraction)
+- If all parameters are correct and complete: score = 1.0 (excellent parameter extraction)
+- If parameters have issues: score = 0.0 (poor parameter extraction)
 
 Provide your evaluation in the following structured JSON format:
 {{
     "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of parameter correctness, listing any errors found>"
+    "reason": "<detailed explanation of parameter quality and correctness>"
 }}
 
 JSON:
@@ -77,19 +77,19 @@ JSON:
 TOOL_PARAMETER_CHECK_PROMPT_ZH = """
 你是一名分析工具调用的专家。你的任务是评估生成的工具调用是否从用户查询中提取了完全正确的参数。
 
-<错误类型：工具参数提取正确性>
+<评估类型：工具参数提取正确性>
 评估智能体在进行工具调用时是否正确地从用户查询中提取了所有必需的参数。这包括检查参数是否准确、完整且格式正确。
-</错误类型>
+</评估类型>
 
-<检测准则>
+<评估准则>
 1. 所有必需的参数都存在并从查询中提取
 2. 参数值与查询中指定的完全匹配
-3. 没有参数是捏造或幻觉的（查询中不存在）
+3. 所有参数都基于查询（没有捏造的值）
 4. 参数数据类型和格式正确
 5. 当查询中指定时，适当使用可选参数
-6. 没有遗漏查询中明确提到的参数
-7. 参数没有混淆或互相交换
-</检测准则>
+6. 查询中提到的所有参数都被捕获
+7. 参数正确映射，没有混淆
+</评估准则>
 
 <评估标准>
 进行分析时：
@@ -100,28 +100,28 @@ TOOL_PARAMETER_CHECK_PROMPT_ZH = """
 5. 评估整体正确性：确定工具调用是否可以用正确的参数执行
 </评估标准>
 
-<query>
-{query}
-</query>
+<user_query>
+{user_query}
+</user_query>
 
-<tool_definitions>
-{tool_definitions}
-</tool_definitions>
+<tool_definition>
+{tool_definition}
+</tool_definition>
 
-<tool_calls>
-{tool_calls}
-</tool_calls>
+<generated_tool_call>
+{generated_tool_call}
+</generated_tool_call>
 
 {context_section}
 
 # 评分指令
-- 如果所有参数都正确：score = 1.0（完美的参数提取）
-- 如果任何参数错误/缺失/幻觉：score = 0.0（参数提取不正确）
+- 如果所有参数都正确且完整：score = 1.0（优秀的参数提取）
+- 如果参数存在问题：score = 0.0（参数提取不佳）
 
 请按以下结构化 JSON 格式提供你的评估：
 {{
     "score": <0.0 或 1.0>,
-    "reason": "<关于参数正确性的详细解释，列出发现的任何错误>"
+    "reason": "<关于参数质量和正确性的详细解释>"
 }}
 
 JSON:
@@ -175,9 +175,9 @@ class ToolParameterCheckGrader(LLMGrader):
         ... )
         >>>
         >>> result = await grader.aevaluate(
-        ...     query="Search for Python files in the src directory",
-        ...     tool_definitions="search_files(pattern: str, directory: str)",
-        ...     tool_calls='search_files(pattern="*.py", directory="src")'
+        ...     user_query="Search for Python files in the src directory",
+        ...     tool_definition="search_files(pattern: str, directory: str)",
+        ...     generated_tool_call='search_files(pattern="*.py", directory="src")'
         ... )
         >>> print(f"Score: {result.score}")  # 1.0 (correct parameters)
     """
@@ -203,6 +203,7 @@ class ToolParameterCheckGrader(LLMGrader):
         query: Union[str, List[Dict[str, Any]]],
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
         tool_calls: Union[Dict[str, Any], List[Dict[str, Any]]],
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate tool parameter extraction correctness
@@ -213,6 +214,7 @@ class ToolParameterCheckGrader(LLMGrader):
             tool_definitions: List of tool definitions available to the agent.
                              Each definition includes name, description, and parameters.
             tool_calls: List of tool calls made by the agent, including arguments and results.
+            **kwargs: Additional arguments
 
         Returns:
             GraderScore: Score with binary value (1.0 = correct, 0.0 = incorrect)
@@ -235,18 +237,6 @@ class ToolParameterCheckGrader(LLMGrader):
             ...     tool_calls=tool_calls
             ... )
         """
-        return await self._aevaluate(
-            query=query,
-            tool_definitions=tool_definitions,
-            tool_calls=tool_calls,
-        )
-
-    async def _aevaluate(
-        self,
-        query: Union[str, List[Dict[str, Any]]],
-        tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
-        tool_calls: Union[Dict[str, Any], List[Dict[str, Any]]],
-    ) -> GraderScore:
         # Ensure tool_calls and tool_definitions are lists
         if not isinstance(tool_calls, list):
             tool_calls = [tool_calls]
@@ -255,23 +245,23 @@ class ToolParameterCheckGrader(LLMGrader):
 
         # Format query as string for the prompt
         if isinstance(query, list):
-            query = "\n".join(
+            user_query = "\n".join(
                 [f"{msg.get('role', 'user')}: {msg.get('content', '')}" for msg in query],
             )
         else:
-            query = str(query)
+            user_query = str(query)
 
         # Format tool definitions
-        tool_definitions = json.dumps(tool_definitions, indent=2)
+        tool_definition = json.dumps(tool_definitions, indent=2)
 
         # Format tool calls (focus on arguments)
-        tool_calls = json.dumps(tool_calls, indent=2)
+        generated_tool_call = json.dumps(tool_calls, indent=2)
 
         try:
             result = await super().aevaluate(
-                query=query,
-                tool_definitions=tool_definitions,
-                tool_calls=tool_calls,
+                user_query=user_query,
+                tool_definition=tool_definition,
+                generated_tool_call=generated_tool_call,
                 context_section="",
             )
             score = result.score

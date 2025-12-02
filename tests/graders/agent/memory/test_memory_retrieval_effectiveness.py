@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Test Memory Retrieval Failure Grader
+Test Memory Retrieval Effectiveness Grader
 
-Tests for the MemoryRetrievalFailureGrader class functionality.
+Tests for the MemoryRetrievalEffectivenessGrader class functionality.
 """
 
 import pytest
 
-from rm_gallery.core.graders.predefined.agent import MemoryRetrievalFailureGrader
+from rm_gallery.core.graders.predefined.agent import MemoryRetrievalEffectivenessGrader
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
-def test_memory_retrieval_failure_grader_creation():
-    """Test creating a MemoryRetrievalFailureGrader instance"""
+def test_memory_retrieval_effectiveness_grader_creation():
+    """Test creating a MemoryRetrievalEffectivenessGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = MemoryRetrievalFailureGrader(model=model)
+    grader = MemoryRetrievalEffectivenessGrader(model=model)
 
     assert grader is not None
     assert hasattr(grader, "name")
-    assert grader.name == "memory_retrieval_failure"
+    assert grader.name == "memory_retrieval_effectiveness"
 
 
-def test_memory_retrieval_failure_grader_chinese():
+def test_memory_retrieval_effectiveness_grader_chinese():
     """Test creating a Chinese grader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = MemoryRetrievalFailureGrader(
+    grader = MemoryRetrievalEffectivenessGrader(
         model=model,
         language=LanguageEnum.ZH,
     )
@@ -36,12 +36,12 @@ def test_memory_retrieval_failure_grader_chinese():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_retrieval_failure_detection():
-    """Test detecting memory retrieval failure"""
+async def test_memory_retrieval_effectiveness_poor():
+    """Test detecting poor memory retrieval effectiveness"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = MemoryRetrievalFailureGrader(model=model)
+    grader = MemoryRetrievalEffectivenessGrader(model=model)
 
-    # Test case where plan ignores known information from memory
+    # Test case where plan ignores known information from memory (poor effectiveness)
     result = await grader.aevaluate(
         plan="I will search for the key in drawer 1.",
         observation="You are in the room.",
@@ -51,15 +51,15 @@ async def test_memory_retrieval_failure_detection():
 
     assert result is not None
     assert hasattr(result, "score")
-    assert result.score == 0.0  # Should detect failure to retrieve memory
+    assert result.score == 0.0  # Should detect poor effectiveness
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_retrieval_success():
-    """Test with successful memory retrieval"""
+async def test_memory_retrieval_effectiveness_good():
+    """Test with good memory retrieval effectiveness"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = MemoryRetrievalFailureGrader(model=model)
+    grader = MemoryRetrievalEffectivenessGrader(model=model)
 
     result = await grader.aevaluate(
         plan="I will use the key I found earlier to unlock the door.",
@@ -69,15 +69,15 @@ async def test_memory_retrieval_success():
     )
 
     assert result is not None
-    assert result.score == 1.0  # Should be correct
+    assert result.score == 1.0  # Should have good effectiveness
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_retrieval_failure_with_history():
-    """Test memory retrieval failure with history"""
+async def test_memory_retrieval_effectiveness_with_history():
+    """Test memory retrieval effectiveness with history"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = MemoryRetrievalFailureGrader(model=model)
+    grader = MemoryRetrievalEffectivenessGrader(model=model)
 
     history = [
         {"observation": "Found key in drawer 1", "memory": "Key in drawer 1"},
@@ -85,7 +85,7 @@ async def test_memory_retrieval_failure_with_history():
     ]
 
     result = await grader.aevaluate(
-        plan="I should search all drawers to find a key.",  # Ignoring memory
+        plan="I should search all drawers to find a key.",  # Ignoring memory - poor effectiveness
         observation="Standing in the room with key in inventory.",
         memory="Key is in inventory.",
         history_steps=history,

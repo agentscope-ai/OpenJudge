@@ -22,7 +22,7 @@ from rm_gallery.core.models.schema.prompt_template import PromptTemplate
 
 @dataclass
 class LLMGraderGeneratorConfig(GraderGeneratorConfig):
-    """Configuration for auto rubric-based grader generator.
+    """Configuration for LLM-based grader generator.
 
     Extends the base grader generator configuration with parameters specific
     to LLM-based rubric generation.

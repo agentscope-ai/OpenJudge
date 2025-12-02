@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Test Memory Over-Simplification Grader
+Test Memory Detail Preservation Grader
 
-Tests for the MemoryOverSimplificationGrader class functionality.
+Tests for the MemoryDetailPreservationGrader class functionality.
 """
 
 import pytest
 
-from rm_gallery.core.graders.predefined.agent import MemoryOverSimplificationGrader
+from rm_gallery.core.graders.predefined.agent import MemoryDetailPreservationGrader
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
-def test_memory_over_simplification_grader_creation():
-    """Test creating a MemoryOverSimplificationGrader instance"""
+def test_memory_detail_preservation_grader_creation():
+    """Test creating a MemoryDetailPreservationGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="fake-api-key", stream=False)
-    grader = MemoryOverSimplificationGrader(model=model)
+    grader = MemoryDetailPreservationGrader(model=model)
 
     assert grader is not None
     assert hasattr(grader, "name")
-    assert grader.name == "memory_over_simplification"
+    assert grader.name == "memory_detail_preservation"
 
 
-def test_memory_over_simplification_grader_chinese():
+def test_memory_detail_preservation_grader_chinese():
     """Test creating a Chinese grader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="fake-api-key", stream=False)
-    grader = MemoryOverSimplificationGrader(
+    grader = MemoryDetailPreservationGrader(
         model=model,
         language=LanguageEnum.ZH,
     )
@@ -36,12 +36,12 @@ def test_memory_over_simplification_grader_chinese():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_over_simplification_detection():
-    """Test detecting over-simplified memory"""
+async def test_memory_detail_preservation_poor():
+    """Test detecting poor detail preservation (over-simplification)"""
     model = OpenAIChatModel(model="qwen3-32b", api_key="fake-api-key", stream=False)
-    grader = MemoryOverSimplificationGrader(model=model)
+    grader = MemoryDetailPreservationGrader(model=model)
 
-    # Test case with over-simplified memory (lost important details)
+    # Test case with poor detail preservation (lost important details)
     result = await grader.aevaluate(
         observation="Cabinet 1 at coordinates (3.5, 2.1) contains 5 red apples and 3 green apples.",
         memory="Found some apples in a cabinet.",  # Too vague
@@ -50,15 +50,15 @@ async def test_memory_over_simplification_detection():
 
     assert result is not None
     assert hasattr(result, "score")
-    assert result.score == 0.0  # Should detect over-simplification
+    assert result.score == 0.0  # Should detect poor detail preservation
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_appropriate_detail():
-    """Test with appropriate memory detail"""
+async def test_memory_detail_preservation_good():
+    """Test with good detail preservation"""
     model = OpenAIChatModel(model="qwen3-32b", stream=False)
-    grader = MemoryOverSimplificationGrader(model=model)
+    grader = MemoryDetailPreservationGrader(model=model)
 
     result = await grader.aevaluate(
         observation="Cabinet 1 at (3.5, 2.1) contains 5 red apples.",
@@ -67,15 +67,15 @@ async def test_memory_appropriate_detail():
     )
 
     assert result is not None
-    assert result.score == 1.0  # Should be correct
+    assert result.score == 1.0  # Should have good detail preservation
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_memory_over_simplification_with_history():
-    """Test over-simplification detection with history"""
+async def test_memory_detail_preservation_with_history():
+    """Test detail preservation with history"""
     model = OpenAIChatModel(model="qwen3-32b", stream=False)
-    grader = MemoryOverSimplificationGrader(model=model)
+    grader = MemoryDetailPreservationGrader(model=model)
 
     history = [
         {"observation": "Room A has 10 items", "memory": "Room A: 10 items"},

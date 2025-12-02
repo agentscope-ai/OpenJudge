@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Test Reflection Progress Misjudge Grader
+Test Reflection Progress Awareness Grader
 
-Tests for the ReflectionProgressMisjudgeGrader class functionality.
+Tests for the ReflectionProgressAwarenessGrader class functionality.
 """
 
 import pytest
 
-from rm_gallery.core.graders.predefined.agent import ReflectionProgressMisjudgeGrader
+from rm_gallery.core.graders.predefined.agent import ReflectionProgressAwarenessGrader
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
-def test_reflection_progress_misjudge_grader_creation():
-    """Test creating a ReflectionProgressMisjudgeGrader instance"""
+def test_reflection_progress_awareness_grader_creation():
+    """Test creating a ReflectionProgressAwarenessGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionProgressMisjudgeGrader(model=model)
+    grader = ReflectionProgressAwarenessGrader(model=model)
 
     assert grader is not None
     assert hasattr(grader, "name")
-    assert grader.name == "reflection_progress_misjudge"
+    assert grader.name == "reflection_progress_awareness"
 
 
-def test_reflection_progress_misjudge_grader_chinese():
+def test_reflection_progress_awareness_grader_chinese():
     """Test creating a Chinese grader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionProgressMisjudgeGrader(
+    grader = ReflectionProgressAwarenessGrader(
         model=model,
         language=LanguageEnum.ZH,
     )
@@ -36,12 +36,12 @@ def test_reflection_progress_misjudge_grader_chinese():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_reflection_progress_overestimation():
-    """Test detecting progress overestimation"""
+async def test_reflection_progress_awareness_poor():
+    """Test detecting poor progress awareness (overestimation)"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionProgressMisjudgeGrader(model=model)
+    grader = ReflectionProgressAwarenessGrader(model=model)
 
-    # Test case with overestimated progress
+    # Test case with poor awareness (overestimated progress)
     result = await grader.aevaluate(
         observation="Cabinet 1 is still empty. No items found.",
         reflection="Excellent progress! I'm making great headway toward finding the apples!",
@@ -50,15 +50,15 @@ async def test_reflection_progress_overestimation():
 
     assert result is not None
     assert hasattr(result, "score")
-    assert result.score == 0.0  # Should detect error
+    assert result.score == 0.0  # Should detect poor awareness
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_reflection_progress_correct():
-    """Test with correct progress assessment"""
+async def test_reflection_progress_awareness_good():
+    """Test with good progress awareness"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionProgressMisjudgeGrader(model=model)
+    grader = ReflectionProgressAwarenessGrader(model=model)
 
     result = await grader.aevaluate(
         observation="Found 3 apples in cabinet 2.",
@@ -72,10 +72,10 @@ async def test_reflection_progress_correct():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_reflection_progress_with_history():
-    """Test progress misjudge with history showing repeated failures"""
+async def test_reflection_progress_awareness_with_history():
+    """Test progress awareness with history showing repeated failures"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionProgressMisjudgeGrader(model=model)
+    grader = ReflectionProgressAwarenessGrader(model=model)
 
     history = [
         {"observation": "Cabinet 1 empty", "reflection": "No items"},
@@ -85,7 +85,7 @@ async def test_reflection_progress_with_history():
 
     result = await grader.aevaluate(
         observation="Cabinet 1 is empty.",
-        reflection="Making excellent progress!",  # Overestimating
+        reflection="Making excellent progress!",  # Poor awareness - overestimating
         history_steps=history,
         task_context="Task: Find items",
     )

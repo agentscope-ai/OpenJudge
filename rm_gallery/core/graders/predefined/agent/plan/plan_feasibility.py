@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Memory Hallucination Grader
+Plan Feasibility Grader
 
-Evaluates whether the agent stores false or fabricated information in its memory module.
+Evaluates whether the agent creates a plan that is logically sound and feasible.
 """
 
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -19,27 +19,27 @@ from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTe
 # pylint: disable=line-too-long
 
 # English Prompt
-MEMORY_HALLUCINATION_PROMPT_EN = """
-You are an expert in analyzing agent behavior. Your task is to detect whether the agent stores false or fabricated information in its memory module.
+PLAN_FEASIBILITY_PROMPT_EN = """
+You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent creates a plan that is logically sound and feasible.
 
-<Error Type: Memory Hallucination>
-The agent stores false or fabricated information in its memory module. This includes recording information that was never observed, storing incorrect interpretations as facts, or fabricating details about objects or states.
-</Error Type>
+<Evaluation Type: Plan Feasibility>
+The agent should create plans that are logically sound and feasible, respecting causal logic, specifying actions in correct order, and proposing executable actions. The plan should respect physical constraints, logical prerequisites, and the current state of the environment.
+</Evaluation Type>
 
-<Rubrics for Detection>
-1. The agent stores information in memory that was not present in the observation
-2. The agent records fabricated details (colors, quantities, locations) not mentioned in observation
-3. The agent saves incorrect interpretations of observations as factual memories
-4. The agent creates false associations or relationships not supported by observations
-5. The agent's memory contains information that contradicts or goes beyond what was observed
+<Rubrics for Evaluation>
+1. The plan respects causal logic (e.g., obtaining an object before using it)
+2. The plan specifies actions in a feasible order (e.g., opening before closing)
+3. The plan proposes actions that can be executed given the current environment state
+4. The plan accounts for necessary preconditions or prerequisites for actions
+5. The plan contains logically consistent steps and goals
 </Rubrics>
 
 <Evaluation Criteria>
 For your analysis:
-1. Apply each rubric: Check if the step matches the error patterns described in each rubric
-2. Focus on relevant modules: Only consider observation and memory modules
-3. Provide evidence-based reasoning: Explain whether the step matches the rubric patterns and why
-4. Assess confidence: Rate your confidence based on how clearly the patterns are exhibited
+1. Apply each rubric: Check if the step demonstrates good feasibility patterns described in each rubric
+2. Focus on relevant modules: Only consider plan, observation, and memory modules
+3. Provide evidence-based reasoning: Explain how the plan demonstrates feasibility and why
+4. Assess confidence: Rate your confidence based on how clearly the feasibility is exhibited
 </Evaluation Criteria>
 
 {context_section}
@@ -49,40 +49,40 @@ For your analysis:
 </trajectory_steps>
 
 # Scoring Instructions
-- If the error is detected: score = 0.0 (has problem)
-- If no error is detected: score = 1.0 (good quality)
+- If the plan is feasible and logically sound: score = 1.0 (good feasibility)
+- If the plan has feasibility issues: score = 0.0 (poor feasibility)
 
 Provide your evaluation in the following structured JSON format:
 {{
     "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation including error_step if applicable and confidence level>"
+    "reason": "<detailed explanation of plan feasibility and confidence level>"
 }}
 
 JSON:
 """
 
 # Chinese Prompt
-MEMORY_HALLUCINATION_PROMPT_ZH = """
-你是一名分析智能体行为的专家。你的任务是检测智能体是否在其记忆模块中存储了虚假或捏造的信息。
+PLAN_FEASIBILITY_PROMPT_ZH = """
+你是一名分析智能体行为的专家。你的任务是评估智能体是否创建了逻辑上合理且可行的计划。
 
-<错误类型：记忆幻觉>
-智能体在其记忆模块中存储了虚假或捏造的信息。这包括记录从未观察到的信息、将错误的解释存储为事实，或捏造有关对象或状态的细节。
-</错误类型>
+<评估类型：计划可行性>
+智能体应该创建逻辑上合理且可行的计划，尊重因果逻辑、以正确的顺序指定动作，并提出可执行的动作。该计划应该尊重物理约束、逻辑前提和环境的当前状态。
+</评估类型>
 
-<检测准则>
-1. 智能体在记忆中存储了观察中不存在的信息
-2. 智能体记录了观察中未提及的捏造细节（颜色、数量、位置）
-3. 智能体将对观察的错误解释保存为事实记忆
-4. 智能体创建了观察不支持的虚假关联或关系
-5. 智能体的记忆包含了与观察相矛盾或超出观察范围的信息
-</检测准则>
+<评估准则>
+1. 计划尊重因果逻辑（例如，在使用对象之前获得它）
+2. 计划以可行的顺序指定动作（例如，在关闭之前打开）
+3. 计划提出了在当前环境状态下可以执行的动作
+4. 计划考虑了动作的必要前提条件或先决条件
+5. 计划包含逻辑上一致的步骤和目标
+</评估准则>
 
 <评估标准>
 进行分析时：
-1. 应用每个准则：检查步骤是否匹配每个准则中描述的错误模式
-2. 关注相关模块：仅考虑观察和记忆模块
-3. 提供基于证据的推理：解释步骤是否匹配准则模式以及原因
-4. 评估置信度：根据模式表现的清晰程度评估你的置信度
+1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好可行性模式
+2. 关注相关模块：仅考虑计划、观察和记忆模块
+3. 提供基于证据的推理：解释计划如何展示可行性以及原因
+4. 评估置信度：根据可行性表现的清晰程度评估你的置信度
 </评估标准>
 
 {context_section}
@@ -92,44 +92,44 @@ MEMORY_HALLUCINATION_PROMPT_ZH = """
 </trajectory_steps>
 
 # 评分指令
-- 如果检测到错误：score = 0.0（有问题）
-- 如果未检测到错误：score = 1.0（质量良好）
+- 如果计划可行且逻辑合理：score = 1.0（良好可行性）
+- 如果计划存在可行性问题：score = 0.0（可行性不佳）
 
 请按以下结构化 JSON 格式提供你的评估：
 {{
     "score": <0.0 或 1.0>,
-    "reason": "<详细解释，包括错误步骤（如适用）和置信度水平>"
+    "reason": "<关于计划可行性的详细解释和置信度水平>"
 }}
 
 JSON:
 """
 
 # Build default template from prompts
-DEFAULT_MEMORY_HALLUCINATION_TEMPLATE = PromptTemplate(
+DEFAULT_PLAN_FEASIBILITY_TEMPLATE = PromptTemplate(
     messages={
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(MEMORY_HALLUCINATION_PROMPT_EN),
+                content=textwrap.dedent(PLAN_FEASIBILITY_PROMPT_EN),
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(MEMORY_HALLUCINATION_PROMPT_ZH),
+                content=textwrap.dedent(PLAN_FEASIBILITY_PROMPT_ZH),
             ),
         ],
     },
 )
 
 
-class MemoryHallucinationGrader(LLMGrader):
+class PlanFeasibilityGrader(LLMGrader):
     """
-    Memory Hallucination Grader
+    Plan Feasibility Grader
 
-    Evaluates whether the agent stores false or fabricated information in its memory module.
+    Evaluates whether the agent creates a plan that is logically sound and feasible.
 
-    Required modules: observation, memory
+    Required modules: plan, observation, memory
 
     Attributes:
         name: Grader name
@@ -147,36 +147,38 @@ class MemoryHallucinationGrader(LLMGrader):
         ...     generate_kwargs={"temperature": 0.1}
         ... )
         >>>
-        >>> grader = MemoryHallucinationGrader(
+        >>> grader = PlanFeasibilityGrader(
         ...     model=api,
         ...     language=LanguageEnum.EN
         ... )
         >>>
         >>> result = await grader.aevaluate(
-        ...     observation="You see a closed cabinet.",
-        ...     memory="There is a red vase inside the cabinet."
+        ...     plan="I will first open the drawer to get the key, then use it to unlock the door.",
+        ...     observation="The drawer is closed. You don't have any items.",
+        ...     memory="The key is inside the drawer."
         ... )
-        >>> print(f"Score: {result.score}")  # 0.0 (error detected)
+        >>> print(f"Score: {result.score}")  # 1.0 (feasible plan)
     """
 
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_MEMORY_HALLUCINATION_TEMPLATE,
+        template: Optional[PromptTemplate] = DEFAULT_PLAN_FEASIBILITY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
     ):
         super().__init__(
-            name="memory_hallucination",
+            name="plan_feasibility",
             mode=GraderMode.POINTWISE,
-            description="Detect memory hallucination errors",
+            description="Evaluate plan feasibility",
             model=model,
             template=template,
             language=language,
         )
-        self.template = template if template is not None else DEFAULT_MEMORY_HALLUCINATION_TEMPLATE
+        self.template = template if template is not None else DEFAULT_PLAN_FEASIBILITY_TEMPLATE
 
     def _format_trajectory_steps(
         self,
+        plan: str,
         observation: str,
         memory: str,
         history_steps: Optional[list] = None,
@@ -184,6 +186,7 @@ class MemoryHallucinationGrader(LLMGrader):
         """Format trajectory steps for evaluation.
 
         Args:
+            plan: Agent's planning/reasoning
             observation: Agent's observation from the environment
             memory: Agent's memory content
             history_steps: Optional list of previous step dictionaries
@@ -205,6 +208,7 @@ class MemoryHallucinationGrader(LLMGrader):
         # Add current step
         step_number = len(history_steps) + 1 if history_steps else 1
         lines.append(f"Step {step_number}:")
+        lines.append(f"Plan: {plan}")
         lines.append(f"Observation: {observation}")
         lines.append(f"Memory: {memory}")
 
@@ -212,15 +216,18 @@ class MemoryHallucinationGrader(LLMGrader):
 
     async def aevaluate(
         self,
+        plan: str,
         observation: str,
         memory: str,
         history_steps: Optional[list] = None,
         task_context: Optional[str] = None,
+        **kwargs: Any,
     ) -> GraderScore:
         """
-        Evaluate memory hallucination
+        Evaluate plan feasibility
 
         Args:
+            plan: Agent's planning/reasoning
             observation: Agent's observation from the environment
             memory: Agent's memory content
             history_steps: Optional list of previous step dictionaries for context
@@ -228,31 +235,19 @@ class MemoryHallucinationGrader(LLMGrader):
             **kwargs: Additional arguments
 
         Returns:
-            GraderScore: Score with binary value (1.0 = no error, 0.0 = error detected)
+            GraderScore: Score with binary value (1.0 = feasible, 0.0 = infeasible)
 
         Example:
             >>> result = await grader.aevaluate(
-            ...     observation="You see a closed cabinet.",
-            ...     memory="There is a red vase inside the cabinet.",
-            ...     task_context="Task: Inventory room objects"
+            ...     plan="I will first open the drawer to get the key, then use it.",
+            ...     observation="The drawer is closed. You don't have any items.",
+            ...     memory="The key is inside the drawer.",
+            ...     task_context="Task: Unlock the door"
             ... )
         """
-        return await self._aevaluate(
-            observation=observation,
-            memory=memory,
-            history_steps=history_steps,
-            task_context=task_context,
-        )
-
-    async def _aevaluate(
-        self,
-        observation: str,
-        memory: str,
-        history_steps: Optional[list] = None,
-        task_context: Optional[str] = None,
-    ) -> GraderScore:
         # Format trajectory steps
         trajectory_steps = self._format_trajectory_steps(
+            plan=plan,
             observation=observation,
             memory=memory,
             history_steps=history_steps,
@@ -277,7 +272,7 @@ class MemoryHallucinationGrader(LLMGrader):
             normalized_score = 1.0 if score > 0.5 else 0.0
 
         except Exception as e:
-            logger.error(f"Error evaluating memory hallucination: {e}")
+            logger.error(f"Error evaluating plan feasibility: {e}")
             normalized_score = 0.0
             score = 0.0
             reason = f"Evaluation error: {str(e)}"
@@ -285,7 +280,7 @@ class MemoryHallucinationGrader(LLMGrader):
         # Prepare metadata
         metadata = {
             "raw_score": score,
-            "error_type": "memory_hallucination",
+            "evaluation_type": "plan_feasibility",
         }
 
         return GraderScore(
@@ -297,6 +292,6 @@ class MemoryHallucinationGrader(LLMGrader):
 
 
 __all__ = [
-    "MemoryHallucinationGrader",
-    "DEFAULT_MEMORY_HALLUCINATION_TEMPLATE",
+    "PlanFeasibilityGrader",
+    "DEFAULT_PLAN_FEASIBILITY_TEMPLATE",
 ]

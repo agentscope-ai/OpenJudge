@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Test Plan Impossible Action Grader
+Test Plan Feasibility Grader
 
-Tests for the PlanImpossibleActionGrader class functionality.
+Tests for the PlanFeasibilityGrader class functionality.
 """
 
 import pytest
 
-from rm_gallery.core.graders.predefined.agent import PlanImpossibleActionGrader
+from rm_gallery.core.graders.predefined.agent import PlanFeasibilityGrader
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
-def test_plan_impossible_action_grader_creation():
-    """Test creating a PlanImpossibleActionGrader instance"""
+def test_plan_feasibility_grader_creation():
+    """Test creating a PlanFeasibilityGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = PlanImpossibleActionGrader(model=model)
+    grader = PlanFeasibilityGrader(model=model)
 
     assert grader is not None
     assert hasattr(grader, "name")
-    assert grader.name == "plan_impossible_action"
+    assert grader.name == "plan_feasibility"
 
 
-def test_plan_impossible_action_grader_chinese():
+def test_plan_feasibility_grader_chinese():
     """Test creating a Chinese grader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = PlanImpossibleActionGrader(
+    grader = PlanFeasibilityGrader(
         model=model,
         language=LanguageEnum.ZH,
     )
@@ -36,12 +36,12 @@ def test_plan_impossible_action_grader_chinese():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_plan_impossible_action_detection():
-    """Test detecting impossible action in plan"""
+async def test_plan_feasibility_poor():
+    """Test detecting poor plan feasibility (impossible action)"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = PlanImpossibleActionGrader(model=model)
+    grader = PlanFeasibilityGrader(model=model)
 
-    # Test case with impossible action (using object before obtaining it)
+    # Test case with infeasible plan (using object before obtaining it)
     result = await grader.aevaluate(
         plan="I will use the key to unlock the door.",
         observation="The drawer is closed. You don't have any items.",
@@ -51,15 +51,15 @@ async def test_plan_impossible_action_detection():
 
     assert result is not None
     assert hasattr(result, "score")
-    assert result.score == 0.0  # Should detect impossible action
+    assert result.score == 0.0  # Should detect poor feasibility
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_plan_possible_action():
-    """Test with feasible plan"""
+async def test_plan_feasibility_good():
+    """Test with good plan feasibility"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = PlanImpossibleActionGrader(model=model)
+    grader = PlanFeasibilityGrader(model=model)
 
     result = await grader.aevaluate(
         plan="I will first open the drawer to get the key, then unlock the door.",
@@ -69,15 +69,15 @@ async def test_plan_possible_action():
     )
 
     assert result is not None
-    assert result.score == 1.0  # Should be correct
+    assert result.score == 1.0  # Should have good feasibility
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_plan_impossible_action_with_history():
-    """Test impossible action detection with history"""
+async def test_plan_feasibility_with_history():
+    """Test plan feasibility with history"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = PlanImpossibleActionGrader(model=model)
+    grader = PlanFeasibilityGrader(model=model)
 
     history = [
         {"observation": "Door is locked", "plan": "Need to find key"},
@@ -85,7 +85,7 @@ async def test_plan_impossible_action_with_history():
     ]
 
     result = await grader.aevaluate(
-        plan="I will close the door.",  # Door is already locked, can't close
+        plan="I will close the door.",  # Door is already locked, can't close - infeasible
         observation="Door is locked, cannot be closed further.",
         memory="Door is locked.",
         history_steps=history,

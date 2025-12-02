@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Test Reflection Hallucination Grader
+Test Reflection Accuracy Grader
 
-Tests for the ReflectionHallucinationGrader class functionality.
+Tests for the ReflectionAccuracyGrader class functionality.
 """
 
 import pytest
 
-from rm_gallery.core.graders.predefined.agent import ReflectionHallucinationGrader
+from rm_gallery.core.graders.predefined.agent import ReflectionAccuracyGrader
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
-def test_reflection_hallucination_grader_creation():
-    """Test creating a ReflectionHallucinationGrader instance"""
+def test_reflection_accuracy_grader_creation():
+    """Test creating a ReflectionAccuracyGrader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionHallucinationGrader(model=model)
+    grader = ReflectionAccuracyGrader(model=model)
 
     assert grader is not None
     assert hasattr(grader, "name")
-    assert grader.name == "reflection_hallucination"
+    assert grader.name == "reflection_accuracy"
 
 
-def test_reflection_hallucination_grader_chinese():
+def test_reflection_accuracy_grader_chinese():
     """Test creating a Chinese grader instance"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionHallucinationGrader(
+    grader = ReflectionAccuracyGrader(
         model=model,
         language=LanguageEnum.ZH,
     )
@@ -36,12 +36,12 @@ def test_reflection_hallucination_grader_chinese():
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_reflection_hallucination_detection():
-    """Test detecting hallucinated information in reflection"""
+async def test_reflection_accuracy_poor():
+    """Test detecting poor reflection accuracy (hallucination)"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionHallucinationGrader(model=model)
+    grader = ReflectionAccuracyGrader(model=model)
 
-    # Test case with hallucinated details
+    # Test case with inaccurate reflection (hallucinated details)
     result = await grader.aevaluate(
         observation="You see a closed cabinet.",
         reflection="I observed a red vase on top of the cabinet with three flowers.",
@@ -50,15 +50,15 @@ async def test_reflection_hallucination_detection():
 
     assert result is not None
     assert hasattr(result, "score")
-    assert result.score == 0.0  # Should detect hallucination
+    assert result.score == 0.0  # Should detect poor accuracy
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_reflection_no_hallucination():
-    """Test with correct reflection without hallucination"""
+async def test_reflection_accuracy_good():
+    """Test with good reflection accuracy"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionHallucinationGrader(model=model)
+    grader = ReflectionAccuracyGrader(model=model)
 
     result = await grader.aevaluate(
         observation="You see a closed cabinet and a table.",
@@ -67,15 +67,15 @@ async def test_reflection_no_hallucination():
     )
 
     assert result is not None
-    assert result.score == 1.0  # Should be correct
+    assert result.score == 1.0  # Should have good accuracy
 
 
 @pytest.mark.skip(reason="Requires API key and network access")
 @pytest.mark.asyncio
-async def test_reflection_hallucination_with_history():
-    """Test hallucination detection with history"""
+async def test_reflection_accuracy_with_history():
+    """Test reflection accuracy with history"""
     model = OpenAIChatModel(model="qwen-plus", api_key="your-key", stream=False)
-    grader = ReflectionHallucinationGrader(model=model)
+    grader = ReflectionAccuracyGrader(model=model)
 
     history = [
         {"observation": "Empty room", "reflection": "Room has no objects"},
@@ -83,7 +83,7 @@ async def test_reflection_hallucination_with_history():
 
     result = await grader.aevaluate(
         observation="You see an empty room.",
-        reflection="I see a golden statue in the corner.",  # Hallucinated
+        reflection="I see a golden statue in the corner.",  # Inaccurate - hallucinated
         history_steps=history,
     )
 
