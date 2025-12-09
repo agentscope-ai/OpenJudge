@@ -189,7 +189,7 @@ class InstructionFollowingGrader(LLMGrader):
         - RelevanceEvaluator: Evaluates **relevance to the query** - Did the model address
           the user's question? Focuses on whether the response is on-topic and appropriately
           addresses the user's needs.
-        
+
         Example: If asked "Write 3 bullet points about AI", a response with 5 well-written
         paragraphs would score low on instruction following (wrong format, wrong count) but
         could score high on relevance (addresses the AI topic).
@@ -330,4 +330,3 @@ class InstructionFollowingGrader(LLMGrader):
 
 
 __all__ = ["InstructionFollowingGrader", "DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE"]
-

@@ -3,9 +3,12 @@
 Tests for RelevanceEvaluator
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
 
 from rm_gallery.core.graders.common.relevance import RelevanceEvaluator
+from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
@@ -13,12 +16,22 @@ from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 async def test_relevance_evaluator_basic():
     """Test RelevanceEvaluator with basic query and response"""
     # Initialize evaluator with mock model
+    model = OpenAIChatModel(
+        model="qwen-max",
+        api_key="mock-key",
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
+
+    # Mock the model response
+    mock_response = AsyncMock()
+    mock_response.metadata = {
+        "score": 5.0,
+        "reason": "Relevance evaluation score: Response directly addresses the query",
+    }
+    model.achat = AsyncMock(return_value=mock_response)
+
     evaluator = RelevanceEvaluator(
-        model={
-            "api_key": "mock-key",
-            "model": "qwen-max",
-            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        },
+        model=model,
         threshold=0.7,
         language=LanguageEnum.EN,
     )
@@ -41,12 +54,22 @@ async def test_relevance_evaluator_basic():
 async def test_relevance_evaluator_with_context():
     """Test RelevanceEvaluator with context"""
     # Initialize evaluator with mock model
+    model = OpenAIChatModel(
+        model="qwen-max",
+        api_key="mock-key",
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
+
+    # Mock the model response
+    mock_response = AsyncMock()
+    mock_response.metadata = {
+        "score": 5.0,
+        "reason": "Relevance evaluation score: Response is relevant with context",
+    }
+    model.achat = AsyncMock(return_value=mock_response)
+
     evaluator = RelevanceEvaluator(
-        model={
-            "api_key": "mock-key",
-            "model": "qwen-max",
-            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        },
+        model=model,
         threshold=0.7,
         language=LanguageEnum.EN,
     )
@@ -69,12 +92,22 @@ async def test_relevance_evaluator_with_context():
 async def test_relevance_evaluator_chinese():
     """Test RelevanceEvaluator with Chinese language"""
     # Initialize evaluator with Chinese language
+    model = OpenAIChatModel(
+        model="qwen-max",
+        api_key="mock-key",
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
+
+    # Mock the model response
+    mock_response = AsyncMock()
+    mock_response.metadata = {
+        "score": 5.0,
+        "reason": "相关性评估得分：回应与查询相关",
+    }
+    model.achat = AsyncMock(return_value=mock_response)
+
     evaluator = RelevanceEvaluator(
-        model={
-            "api_key": "mock-key",
-            "model": "qwen-max",
-            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        },
+        model=model,
         threshold=0.7,
         language=LanguageEnum.ZH,
     )
@@ -96,12 +129,22 @@ async def test_relevance_evaluator_chinese():
 async def test_relevance_evaluator_with_ground_truth():
     """Test RelevanceEvaluator with ground truth for comparison"""
     # Initialize evaluator
+    model = OpenAIChatModel(
+        model="qwen-max",
+        api_key="mock-key",
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
+
+    # Mock the model response
+    mock_response = AsyncMock()
+    mock_response.metadata = {
+        "score": 5.0,
+        "reason": "Relevance evaluation score: Response is highly relevant",
+    }
+    model.achat = AsyncMock(return_value=mock_response)
+
     evaluator = RelevanceEvaluator(
-        model={
-            "api_key": "mock-key",
-            "model": "qwen-max",
-            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        },
+        model=model,
         threshold=0.7,
         language=LanguageEnum.EN,
     )
@@ -118,4 +161,3 @@ async def test_relevance_evaluator_with_ground_truth():
     assert isinstance(result.score, (int, float))
     assert result.score >= 1 and result.score <= 5
     assert result.metadata["threshold"] == 0.7
-

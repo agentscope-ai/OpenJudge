@@ -2,15 +2,15 @@ import argparse
 import asyncio
 import json
 import os
-import nest_asyncio
 
+import nest_asyncio
 
 from rm_gallery.core.graders.agent import *
 from rm_gallery.core.graders.common import *
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
-
 nest_asyncio.apply()
+
 
 def run_cases(case_file: str, skip: int):
     model_config = {

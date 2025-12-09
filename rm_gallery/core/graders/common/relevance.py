@@ -349,4 +349,3 @@ class RelevanceEvaluator(LLMGrader):
 
 
 __all__ = ["RelevanceEvaluator", "DEFAULT_RELEVANCE_TEMPLATE"]
-

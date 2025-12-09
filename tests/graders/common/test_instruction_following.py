@@ -52,4 +52,3 @@ async def test_instruction_following_grader_execution():
     assert "{instruction}" not in grader.to_dict().get("template")
     assert "{response}" not in grader.to_dict().get("template")
     assert "{input_section}" not in grader.to_dict().get("template")
-

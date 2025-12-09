@@ -20,9 +20,11 @@ import json
 from itertools import combinations
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
 import fire
 from loguru import logger
 from pydantic import Field
+
 from rm_gallery.core.analyzer.base_analyzer import AnalysisResult, BaseAnalyzer
 from rm_gallery.core.graders.llm_grader import GraderMode, LLMGrader
 from rm_gallery.core.graders.schema import GraderResult, GraderScore
@@ -30,7 +32,6 @@ from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.message import ChatMessage
 from rm_gallery.core.models.schema.prompt_template import PromptTemplate
 from rm_gallery.core.runner.grading_runner import GraderConfig, GradingRunner
-
 
 # Default example data for direct invocation
 DEFAULT_INSTRUCTION = "Write a short poem about artificial intelligence"
@@ -170,37 +171,37 @@ class PairwiseWinRateAnalyzer(BaseAnalyzer):
 
 def prepare_comparison_data(
     instruction: str,
-    model_outputs: Dict[str, str]
+    model_outputs: Dict[str, str],
 ) -> Tuple[List[dict], List[str]]:
     """Step 1: Prepare pairwise comparison data
-    
-    This function generates all pairwise comparison combinations with order swapping 
+
+    This function generates all pairwise comparison combinations with order swapping
     to eliminate position bias.
-    
+
     Args:
         instruction: Task instruction text
         model_outputs: Dictionary mapping model names to their output text
             Example: {"model_v1": "response text 1", "model_v2": "response text 2"}
-        
+
     Returns:
         Tuple containing:
         - dataset: List of comparison samples with evaluation_data and metadata
         - model_names: List of model names being compared
     """
     model_names = list(model_outputs.keys())
-    
+
     # Generate all pairwise combinations
     pairs = list(combinations(model_names, 2))
-    
+
     # Helper function to create comparison sample
     def create_comparison(model_a: str, model_b: str, order: str) -> dict:
         """Create a single pairwise comparison sample
-        
+
         Args:
             model_a: First model name
             model_b: Second model name
             order: Order indicator ("original" or "swapped")
-            
+
         Returns:
             Comparison sample with evaluation_data and metadata
         """
@@ -216,7 +217,7 @@ def prepare_comparison_data(
                 "order": order,
             },
         }
-    
+
     # Create dataset with both orders for each pair (to eliminate position bias)
     # Following rm-gallery design: separate evaluation data from metadata
     dataset = [
@@ -227,25 +228,25 @@ def prepare_comparison_data(
             create_comparison(model_b, model_a, "swapped"),  # Order 2: B vs A
         ]
     ]
-    
+
     logger.info(f"[Step 1] Prepared {len(dataset)} comparisons for {len(model_names)} models")
-    
+
     return dataset, model_names
 
 
 async def run_pairwise_evaluation(
-    dataset: List[dict], 
-    max_concurrency: int = 10
+    dataset: List[dict],
+    max_concurrency: int = 10,
 ) -> List[GraderResult]:
     """Step 2: Initialize grader runner and evaluate
-    
+
     This function creates the pairwise comparison grader using RM-Gallery's LLMGrader,
     sets up the GradingRunner with parallel execution, and runs the evaluation.
-    
+
     Args:
         dataset: List of comparison samples to evaluate
         max_concurrency: Maximum number of parallel comparisons (default: 10)
-        
+
     Returns:
         List of grader results for all pairwise comparisons
     """
@@ -269,14 +270,14 @@ async def run_pairwise_evaluation(
             ),
         ],
     )
-    
+
     grader = LLMGrader(
         name="pairwise_comparator",
         mode=GraderMode.POINTWISE,  # Use POINTWISE mode for pairwise comparisons
         model=OpenAIChatModel(model="qwen-max", temperature=0.1),
         template=template,
     )
-    
+
     # Define mapper to extract evaluation data fields
     # Following rm-gallery design: use dict mapper for simple field extraction
     mapper = {
@@ -284,7 +285,7 @@ async def run_pairwise_evaluation(
         "response_a": "evaluation_data.response_a",
         "response_b": "evaluation_data.response_b",
     }
-    
+
     # Use GradingRunner with parallel execution and mapper
     runner = GradingRunner(
         grader_configs={
@@ -295,41 +296,43 @@ async def run_pairwise_evaluation(
         },
         max_concurrency=max_concurrency,
     )
-    
+
     logger.info(f"[Step 2] Running {len(dataset)} evaluations (concurrency={max_concurrency})...")
-    
+
     results = await runner.arun(dataset)
     all_results = results["pairwise"]
-    
+
     logger.info(f"[Step 2] Completed {len(all_results)} evaluations")
-    
+
     return all_results
 
 
 def analyze_and_rank_models(
     dataset: List[dict],
     grader_results: List[GraderResult],
-    model_names: List[str]
+    model_names: List[str],
 ) -> PairwiseAnalysisResult:
     """Step 3: Analyze grader results and get rank of versions
-    
+
     This function analyzes the pairwise comparison results, computes win rates for each model,
     generates the win matrix, and ranks models by their performance.
-    
+
     Args:
         dataset: List of comparison samples (contains metadata)
         grader_results: Results from pairwise grading
         model_names: List of all model names being compared
-        
+
     Returns:
         PairwiseAnalysisResult with win rates, win matrix, and model rankings
     """
     # Use custom PairwiseWinRateAnalyzer to compute win rates and rankings
     analyzer = PairwiseWinRateAnalyzer(model_names=model_names)
     analysis_result = analyzer.analyze(dataset, grader_results)
-    
-    logger.info(f"[Step 3] Analysis complete - Best: {analysis_result.best_model}, Worst: {analysis_result.worst_model}")
-    
+
+    logger.info(
+        f"[Step 3] Analysis complete - Best: {analysis_result.best_model}, Worst: {analysis_result.worst_model}",
+    )
+
     return analysis_result
 
 
@@ -337,22 +340,22 @@ async def evaluate_task(
     instruction: str,
     model_outputs: Dict[str, str],
     max_concurrency: int = 10,
-    task_name: str = "pairwise_evaluation"
+    task_name: str = "pairwise_evaluation",
 ):
     """Evaluate task using pairwise comparisons with a clear three-step pipeline
-    
+
     Pipeline:
         Step 1: prepare_comparison_data() - Create pairwise comparison dataset
         Step 2: run_pairwise_evaluation() - Initialize grader runner and evaluate
         Step 3: analyze_and_rank_models() - Analyze grader results and get rank of versions
-    
+
     Args:
         instruction: Task instruction text
         model_outputs: Dictionary mapping model names to their output text
             Example: {"model_v1": "response text 1", "model_v2": "response text 2"}
         max_concurrency: Maximum number of parallel comparisons (default: 10)
         task_name: Optional name for the task (for logging/results, default: "pairwise_evaluation")
-    
+
     Returns:
         Dictionary containing:
         - task_name: Name of the evaluated task
@@ -360,7 +363,7 @@ async def evaluate_task(
         - raw_results: List of raw grader results
         - dataset: List of comparison samples
         - model_names: List of model names
-    
+
     Example:
         >>> instruction = "Write a poem about the ocean"
         >>> model_outputs = {
@@ -373,19 +376,19 @@ async def evaluate_task(
     """
     logger.info(f"Starting evaluation for task: {task_name}")
     logger.info(f"Number of models to compare: {len(model_outputs)}")
-    
+
     # Step 1: Prepare comparison data
     dataset, model_names = prepare_comparison_data(instruction, model_outputs)
-    
+
     # Step 2: Initialize grader runner and evaluate
     all_results = await run_pairwise_evaluation(dataset, max_concurrency)
-    
+
     # Step 3: Analyze grader results and get rank of versions
     analysis_result = analyze_and_rank_models(dataset, all_results, model_names)
 
     # Display evaluation results
     display_evaluation_results(task_name, analysis_result, model_names, dataset, all_results)
-    
+
     # Return analysis results for programmatic use
     return {
         "task_name": task_name,
@@ -398,24 +401,24 @@ async def evaluate_task(
 
 def load_task_from_files(task_name: str) -> Tuple[str, Dict[str, str]]:
     """Helper function to load task data from files (for backward compatibility)
-    
+
     This function loads task instruction and model outputs from the file structure
     used in the casesv4 evaluation framework.
-    
+
     Args:
         task_name: Name of the task to evaluate
-        
+
     Returns:
         Tuple containing:
         - instruction: Task instruction text
         - model_outputs: Dictionary mapping model names to their output text
     """
     base_path = Path(__file__).parent
-    
+
     # Load task instruction
     with open(base_path / "data" / f"{task_name}.json", "r") as f:
         instruction = json.load(f)["request"]["instruction"]
-    
+
     # Load model outputs
     model_outputs = {}
     for model_dir in (base_path / "results").iterdir():
@@ -426,18 +429,18 @@ def load_task_from_files(task_name: str) -> Tuple[str, Dict[str, str]]:
                     msgs = json.load(f)
                     if msgs and msgs[0].get("contents"):
                         model_outputs[model_dir.name] = msgs[0]["contents"][0]["text"]
-    
+
     logger.info(f"Loaded task '{task_name}' with {len(model_outputs)} model outputs")
     return instruction, model_outputs
 
 
 def save_evaluation_results(results: dict, task_name: str) -> Path:
     """Save evaluation results to JSON file
-    
+
     Args:
         results: Evaluation results dictionary from evaluate_task()
         task_name: Name of the task for output filename
-        
+
     Returns:
         Path to the saved file
     """
@@ -473,7 +476,7 @@ def display_evaluation_results(
     grader_results: List[GraderResult],
 ):
     """Display evaluation results including rankings, win matrix, and sample comparisons
-    
+
     Args:
         task_name: Name of the evaluated task
         analysis_result: Analysis result with win rates and rankings
@@ -487,7 +490,7 @@ def display_evaluation_results(
     logger.info("=" * 60)
     for rank, (model, win_rate) in enumerate(analysis_result.rankings, 1):
         logger.info(f"{rank}. {model}: {win_rate:.3f}")
-    
+
     # Display win matrix (compact format)
     logger.info("\nWin Matrix:")
     logger.info(f"{'Model':<30} " + " ".join([f"{m[:6]:<8}" for m in model_names]))
@@ -510,24 +513,24 @@ def main(
     save_results: bool = False,
 ):
     """Main entry point for pairwise evaluation
-    
+
     Usage examples:
         # Load from files (backward compatibility)
         python pairwise_evaluation.py --task_name="task1-任务分类" --max_concurrency=10 --save_results=True
-        
+
         # Direct data input
         python pairwise_evaluation.py --instruction="Write a poem" --model_outputs='{"model_v1": "...", "model_v2": "..."}'
-        
+
         # Run with defaults (example data)
         python pairwise_evaluation.py
-    
+
     Args:
         task_name: Task name to load from files (mutually exclusive with instruction/model_outputs)
         instruction: Task instruction text (used when task_name is None)
         model_outputs: Dictionary mapping model names to outputs (used when task_name is None)
         max_concurrency: Maximum number of parallel comparisons
         save_results: Whether to save results to JSON file
-    
+
     Returns:
         Evaluation results dictionary
     """
@@ -535,23 +538,25 @@ def main(
     if task_name:
         logger.info(f"Loading task from files: {task_name}")
         instruction, model_outputs = load_task_from_files(task_name)
-    
+
     # Run evaluation
     logger.info(f"Starting pairwise evaluation (concurrency={max_concurrency})")
-    results = asyncio.run(evaluate_task(
-        instruction, 
-        model_outputs, 
-        max_concurrency, 
-        task_name or "pairwise_evaluation"
-    ))
-    
+    results = asyncio.run(
+        evaluate_task(
+            instruction,
+            model_outputs,
+            max_concurrency,
+            task_name or "pairwise_evaluation",
+        ),
+    )
+
     # Save if requested
     if save_results:
         save_evaluation_results(results, task_name or "example")
-    
+
     logger.info("Evaluation completed successfully")
     logger.info(f"Best model: {results['pairwise'].best_model}")
-    
+
     return results
 
 
