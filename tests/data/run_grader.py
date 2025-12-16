@@ -12,7 +12,7 @@ from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 nest_asyncio.apply()
 
 
-def run_cases(case_file: str, skip: int):
+def run_cases(case_file: str, skip: int, id: int):
     model_config = {
         "model": "qwen-long",
         "base_url": os.getenv("BASE_URL"),
@@ -24,8 +24,12 @@ def run_cases(case_file: str, skip: int):
     with open(case_file) as f:
         content = f.read()
         cases = json.loads(content)
+        if id > 0:
+            cases = [cases[id]]
+        if skip:
+            cases = cases[skip:]
 
-        for case in cases[skip:]:
+        for case in cases:
             cls_name = case.get("grader")
             kwargs = case.get("parameters")
             index = case["index"]
@@ -49,7 +53,7 @@ def run_cases(case_file: str, skip: int):
                     print(f"\033[91mFAILED\033[0m, index: {index}, result: {result}")
                     continue
 
-                print(f"PASSED: index: {index}, score: {result.score}")
+                print(f"PASSED: index: {index}, result: {result}")
 
             except Exception as e:
                 print(f"failed case index: {index}")
@@ -64,6 +68,12 @@ if __name__ == "__main__":
         default=0,
         help="Number of test cases to skip from the beginning (default: 0)",
     )
+    parser.add_argument(
+        "--id",
+        type=int,
+        default=-1,
+        help="Which case to run, defaults to -1, meaning run all.",
+    )
     args = parser.parse_args()
 
-    run_cases(case_file="grader_cases.json", skip=args.skip)
+    run_cases(case_file="grader_cases.json", skip=args.skip, id=args.id)

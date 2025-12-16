@@ -20,7 +20,7 @@ from rm_gallery.core.models.schema.message import ChatMessage
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTemplate
 from rm_gallery.core.models.schema.response import ChatResponse
 
-# pylint: disable=line-too-long
+# pylint: disable=line-too-long,too-many-statements
 
 # Chinese Prompt
 TRAJECTORY_COMPREHENSIVE_PROMPT_ZH = """# 任务描述
@@ -437,13 +437,14 @@ class TrajectoryComprehensiveGrader(LLMGrader):
         Extract user query, trajectory, and final answer from messages.
 
         Args:
-            messages: List of message dicts (standard format)
+            messages: List of message dicts (standard format).
             language: Language for formatting trajectory messages (ZH or EN)
 
         Returns:
             Tuple of (user_query, trajectory_messages, final_answer)
         """
         # Filter out system messages
+        messages = [msg.get("message", msg) for msg in messages]
         non_system_messages = [msg for msg in messages if msg.get("role", "") != "system"]
 
         if not non_system_messages:
@@ -492,22 +493,21 @@ class TrajectoryComprehensiveGrader(LLMGrader):
                 # Format tool calls with step index
                 tool_calls_formatted = []
                 for tc in tool_calls:
+                    tc = tc.get("tool_call", tc)
                     func = tc.get("function", {})
                     tool_name = func.get("name", "unknown")
                     tool_args = func.get("arguments", "{}")
 
                     try:
-                        args_dict = json.loads(tool_args)
-                        tool_calls_formatted.append(
-                            f"  - {tool_name}({json.dumps(args_dict, ensure_ascii=False)})",
-                        )
+                        args = json.dumps(json.loads(tool_args), ensure_ascii=False)
+                        tool_calls_formatted.append(f"  - {tool_name}({args})")
                     except json.JSONDecodeError:
                         tool_calls_formatted.append(f"  - {tool_name}({tool_args})")
 
-                trajectory_parts.append(
-                    f"**{step_label} {step_index} - {assistant_label} {tool_calls_label}**:\n"
-                    + "\n".join(tool_calls_formatted),
+                step = (
+                    f"**{step_label} {step_index} - {assistant_label} {tool_calls_label}**:\n\n{tool_calls_formatted}"
                 )
+                trajectory_parts.append(step)
                 step_index += 1
 
             elif role == "tool":
@@ -529,7 +529,6 @@ class TrajectoryComprehensiveGrader(LLMGrader):
     async def aevaluate(
         self,
         messages: List[Dict[str, Any]],
-        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate complete agent trajectory comprehensively.
@@ -546,7 +545,23 @@ class TrajectoryComprehensiveGrader(LLMGrader):
 
         Args:
             messages: List of messages (standard format, including system, user, assistant, tool)
-            **kwargs: Additional arguments
+                "message" key for message, and "tool_call" key for tool call can be optional.
+                example without "message" and "tool_call"
+                ```
+                [
+                  {"role": "system", "content": "..."},
+                  {"role": "user", "content": "Plan travel from Shanghai to Hangzhou."},
+                  {"role": "assistant", "tool_calls": [{"function": {"arguments": "{\"city\": \"Hangzhou\"}","name": "weather"}}]}
+                ]
+                ```
+                or with "message" and "tool_call"
+                ```
+                [
+                  {"message":{"role": "system", "content": "..."}},
+                  {"message":{"role": "user", "content": "Plan travel from Shanghai to Hangzhou."}},
+                  {"role": "assistant", "tool_calls": [{"tool_call":{"function": {"arguments": "{\"city\": \"Hangzhou\"}","name": "weather"}}}]}
+                ]
+                ```
 
         Returns:
             GraderScore: Comprehensive evaluation score for the trajectory (normalized 0.0-1.0)
