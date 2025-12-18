@@ -42,11 +42,14 @@ For your analysis:
 4. Assess confidence: Rate your confidence based on how clearly the alignment is exhibited
 </Evaluation Criteria>
 
-{context_section}
+{context}
 
-<trajectory_steps>
-{trajectory_steps}
-</trajectory_steps>
+{history}
+
+<Current Step>
+Plan: {plan}
+Action: {action}
+</Current Step>
 
 # Scoring Instructions
 - If the action aligns well with the plan: score = 1.0 (good alignment)
@@ -85,11 +88,14 @@ ACTION_ALIGNMENT_PROMPT_ZH = """
 4. 评估置信度：根据对齐表现的清晰程度评估你的置信度
 </评估标准>
 
-{context_section}
+{context}
 
-<trajectory_steps>
-{trajectory_steps}
-</trajectory_steps>
+{history}
+
+<当前步骤>
+计划：{plan}
+动作：{action}
+</当前步骤>
 
 # 评分指令
 - 如果动作与计划很好地对齐：score = 1.0（良好对齐）
@@ -184,38 +190,26 @@ class ActionAlignmentGrader(LLMGrader):
         )
         self.template = template if template is not None else DEFAULT_ACTION_ALIGNMENT_TEMPLATE
 
-    def _format_trajectory_steps(
-        self,
-        plan: str,
-        action: str,
-        history: Optional[list] = None,
-    ) -> str:
-        """Format trajectory steps for evaluation.
+    def _format_history(self, history: Optional[list] = None) -> str:
+        """Format history steps for evaluation.
 
         Args:
-            plan: Agent's planning/reasoning
-            action: Agent's chosen action
             history: Optional list of previous step dictionaries
 
         Returns:
-            Formatted trajectory string
+            Formatted history string, or empty string if no history
         """
-        lines = []
+        if not history:
+            return ""
 
-        # Add history steps if provided
-        if history:
-            for i, hist_step in enumerate(history):
-                lines.append(f"Step {i + 1}:")
-                for key, value in hist_step.items():
-                    if value:
-                        lines.append(f"{key.capitalize()}: {value}")
-                lines.append("")
-
-        # Add current step
-        step_number = len(history) + 1 if history else 1
-        lines.append(f"Step {step_number}:")
-        lines.append(f"Plan: {plan}")
-        lines.append(f"Action: {action}")
+        lines = ["<History Steps>"]
+        for i, hist_step in enumerate(history):
+            lines.append(f"Step {i + 1}:")
+            for key, value in hist_step.items():
+                if value:
+                    lines.append(f"{key.capitalize()}: {value}")
+            lines.append("")
+        lines.append("</History Steps>")
 
         return "\n".join(lines)
 
@@ -247,24 +241,20 @@ class ActionAlignmentGrader(LLMGrader):
             ...     context="Task: Find the key"
             ... )
         """
-        # Format trajectory steps
-        trajectory_steps = self._format_trajectory_steps(
-            plan=plan,
-            action=action,
-            history=history,
-        )
-
-        # Prepare context section
-        context_section = ""
+        # Format context section
+        context_str = ""
         if context:
-            context_section = f"""<context>
-{context}
-</context>"""
+            context_str = f"<context>\n{context}\n</context>"
+
+        # Format history
+        history_str = self._format_history(history)
 
         try:
             result = await super().aevaluate(
-                trajectory_steps=trajectory_steps,
-                context_section=context_section,
+                plan=plan,
+                action=action,
+                history=history_str,
+                context=context_str,
             )
             score = result.score
             reason = result.reason

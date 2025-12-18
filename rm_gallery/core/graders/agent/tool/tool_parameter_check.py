@@ -58,8 +58,6 @@ For your analysis:
 {tool_calls}
 </tool_calls>
 
-{context_section}
-
 # Scoring Instructions
 - If all parameters are correct and complete: score = 1.0 (excellent parameter extraction)
 - If parameters have issues: score = 0.0 (poor parameter extraction)
@@ -111,8 +109,6 @@ TOOL_PARAMETER_CHECK_PROMPT_ZH = """
 <工具调用>
 {tool_calls}
 </工具调用>
-
-{context_section}
 
 # 评分指令
 - 如果所有参数都正确且完整：score = 1.0（优秀的参数提取）
@@ -256,7 +252,6 @@ class ToolParameterCheckGrader(LLMGrader):
                 query=query,
                 tool_definitions=json.dumps(tool_definitions, indent=2),
                 tool_calls=json.dumps(tool_calls, indent=2),
-                context_section="",
             )
             score = result.score
             reason = result.reason

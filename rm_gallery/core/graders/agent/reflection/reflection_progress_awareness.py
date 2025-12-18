@@ -48,11 +48,14 @@ For your analysis:
 7. Progress Overestimation Check: Detect if the agent claims to be "close" or "almost done" while ignoring critical unfinished sub-goals
 </Evaluation Criteria>
 
-{context_section}
+{context}
 
-<trajectory_steps>
-{trajectory_steps}
-</trajectory_steps>
+{history}
+
+<Current Step>
+Observation: {observation}
+Reflection: {reflection}
+</Current Step>
 
 # Scoring Instructions
 - If progress awareness is accurate: score = 1.0 (good awareness)
@@ -110,11 +113,14 @@ REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = """
 7. 进度高估检查：检测智能体是否在忽略关键未完成子目标的情况下声称"接近"或"几乎完成"
 </评估标准>
 
-{context_section}
+{context}
 
-<trajectory_steps>
-{trajectory_steps}
-</trajectory_steps>
+{history}
+
+<当前步骤>
+观察：{observation}
+反思：{reflection}
+</当前步骤>
 
 # 评分指令
 - 如果进度意识准确：score = 1.0（良好意识）
@@ -216,38 +222,26 @@ class ReflectionProgressAwarenessGrader(LLMGrader):
         )
         self.template = template if template is not None else DEFAULT_REFLECTION_PROGRESS_AWARENESS_TEMPLATE
 
-    def _format_trajectory_steps(
-        self,
-        observation: str,
-        reflection: str,
-        history: Optional[list] = None,
-    ) -> str:
-        """Format trajectory steps for evaluation.
+    def _format_history(self, history: Optional[list] = None) -> str:
+        """Format history steps for evaluation.
 
         Args:
-            observation: Agent's observation from the environment
-            reflection: Agent's reflection on the situation
             history: Optional list of previous step dictionaries
 
         Returns:
-            Formatted trajectory string
+            Formatted history string, or empty string if no history
         """
-        lines = []
+        if not history:
+            return ""
 
-        # Add history steps if provided
-        if history:
-            for i, hist_step in enumerate(history):
-                lines.append(f"Step {i + 1}:")
-                for key, value in hist_step.items():
-                    if value:
-                        lines.append(f"{key.capitalize()}: {value}")
-                lines.append("")
-
-        # Add current step
-        step_number = len(history) + 1 if history else 1
-        lines.append(f"Step {step_number}:")
-        lines.append(f"Observation: {observation}")
-        lines.append(f"Reflection: {reflection}")
+        lines = ["<History Steps>"]
+        for i, hist_step in enumerate(history):
+            lines.append(f"Step {i + 1}:")
+            for key, value in hist_step.items():
+                if value:
+                    lines.append(f"{key.capitalize()}: {value}")
+            lines.append("")
+        lines.append("</History Steps>")
 
         return "\n".join(lines)
 
@@ -279,24 +273,20 @@ class ReflectionProgressAwarenessGrader(LLMGrader):
             ...     context="Task: Find apples in cabinets"
             ... )
         """
-        # Format trajectory steps
-        trajectory_steps = self._format_trajectory_steps(
-            observation=observation,
-            reflection=reflection,
-            history=history,
-        )
-
-        # Prepare context section
-        context_section = ""
+        # Format context section
+        context_str = ""
         if context:
-            context_section = f"""<context>
-{context}
-</context>"""
+            context_str = f"<context>\n{context}\n</context>"
+
+        # Format history
+        history_str = self._format_history(history)
 
         try:
             result = await super().aevaluate(
-                trajectory_steps=trajectory_steps,
-                context_section=context_section,
+                observation=observation,
+                reflection=reflection,
+                history=history_str,
+                context=context_str,
             )
             score = result.score
             reason = result.reason

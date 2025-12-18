@@ -42,11 +42,14 @@ For your analysis:
 4. Assess confidence: Rate your confidence based on how clearly the accuracy is exhibited
 </Evaluation Criteria>
 
-{context_section}
+{context}
 
-<trajectory_steps>
-{trajectory_steps}
-</trajectory_steps>
+{history}
+
+<Current Step>
+Observation: {observation}
+Memory: {memory}
+</Current Step>
 
 # Scoring Instructions
 - If the memory is accurate and factual: score = 1.0 (good accuracy)
@@ -85,11 +88,14 @@ MEMORY_ACCURACY_PROMPT_ZH = """
 4. 评估置信度：根据准确性表现的清晰程度评估你的置信度
 </评估标准>
 
-{context_section}
+{context}
 
-<trajectory_steps>
-{trajectory_steps}
-</trajectory_steps>
+{history}
+
+<当前步骤>
+观察：{observation}
+记忆：{memory}
+</当前步骤>
 
 # 评分指令
 - 如果记忆准确且真实：score = 1.0（良好准确性）
@@ -174,38 +180,26 @@ class MemoryAccuracyGrader(LLMGrader):
             language=language,
         )
 
-    def _format_trajectory_steps(
-        self,
-        observation: str,
-        memory: str,
-        history: Optional[list] = None,
-    ) -> str:
-        """Format trajectory steps for evaluation.
+    def _format_history(self, history: Optional[list] = None) -> str:
+        """Format history steps for evaluation.
 
         Args:
-            observation: Agent's observation from the environment
-            memory: Agent's memory content
             history: Optional list of previous step dictionaries
 
         Returns:
-            Formatted trajectory string
+            Formatted history string, or empty string if no history
         """
-        lines = []
+        if not history:
+            return ""
 
-        # Add history steps if provided
-        if history:
-            for i, hist_step in enumerate(history):
-                lines.append(f"Step {i + 1}:")
-                for key, value in hist_step.items():
-                    if value:
-                        lines.append(f"{key.capitalize()}: {value}")
-                lines.append("")
-
-        # Add current step
-        step_number = len(history) + 1 if history else 1
-        lines.append(f"Step {step_number}:")
-        lines.append(f"Observation: {observation}")
-        lines.append(f"Memory: {memory}")
+        lines = ["<History Steps>"]
+        for i, hist_step in enumerate(history):
+            lines.append(f"Step {i + 1}:")
+            for key, value in hist_step.items():
+                if value:
+                    lines.append(f"{key.capitalize()}: {value}")
+            lines.append("")
+        lines.append("</History Steps>")
 
         return "\n".join(lines)
 
@@ -237,24 +231,20 @@ class MemoryAccuracyGrader(LLMGrader):
             ...     context="Task: Inventory room objects"
             ... )
         """
-        # Format trajectory steps
-        trajectory_steps = self._format_trajectory_steps(
-            observation=observation,
-            memory=memory,
-            history=history,
-        )
-
-        # Prepare context section
-        context_section = ""
+        # Format context section
+        context_str = ""
         if context:
-            context_section = f"""<context>
-{context}
-</context>"""
+            context_str = f"<context>\n{context}\n</context>"
+
+        # Format history
+        history_str = self._format_history(history)
 
         try:
             result = await super().aevaluate(
-                trajectory_steps=trajectory_steps,
-                context_section=context_section,
+                observation=observation,
+                memory=memory,
+                history=history_str,
+                context=context_str,
             )
             score = result.score
             reason = result.reason

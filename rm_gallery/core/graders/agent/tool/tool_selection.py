@@ -58,8 +58,6 @@ For your analysis:
 {selected_tools}
 </selected_tools>
 
-{context_section}
-
 # Scoring Instructions
 Use a scale from 1 to 5:
 - 5: Optimal tool selection - Accurately identifies the task intent and selects the most direct, efficient, and semantically relevant tool from the available options.
@@ -115,8 +113,6 @@ TOOL_SELECTION_PROMPT_ZH = """
 <选择工具>
 {selected_tools}
 </选择工具>
-
-{context_section}
 
 # 评分指令
 使用 1 到 5 的评分标准：
@@ -272,7 +268,6 @@ class ToolSelectionGrader(LLMGrader):
                 query=query,
                 available_tools=available_tools,
                 selected_tools=selected_tools,
-                context_section="",
             )
             score = result.score
             reason = result.reason
