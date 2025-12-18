@@ -12,17 +12,17 @@ using ReflectionOutcomeUnderstandingGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/reflection/test_reflection_outcome_understanding.py -v
+    pytest tests/graders/agent/reflection/test_reflection_outcome_understanding.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/reflection/test_reflection_outcome_understanding.py -m unit
+    pytest tests/graders/agent/reflection/test_reflection_outcome_understanding.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/reflection/test_reflection_outcome_understanding.py -m quality
+    pytest tests/graders/agent/reflection/test_reflection_outcome_understanding.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestReflectionOutcomeUnderstandingGraderUnit:
         """Test successful evaluation with good outcome understanding"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Reflection correctly understands the action outcome",
         }
@@ -99,7 +100,8 @@ class TestReflectionOutcomeUnderstandingGraderUnit:
         """Test evaluation detecting outcome misinterpretation"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.1,  # Will be normalized to 0.0 (< 0.5)
             "reason": "Reflection misinterprets the action outcome - claims success when action failed",
         }
@@ -132,7 +134,8 @@ class TestReflectionOutcomeUnderstandingGraderUnit:
         """Test evaluation with task context and history"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.85,  # Will be normalized to 1.0
             "reason": "Reflection correctly understands outcome given the context",
         }

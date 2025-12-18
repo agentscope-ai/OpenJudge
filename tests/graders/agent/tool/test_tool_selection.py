@@ -12,17 +12,17 @@ using ToolSelectionGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_selection.py -v
+    pytest tests/graders/agent/tool/test_tool_selection.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_selection.py -m unit
+    pytest tests/graders/agent/tool/test_tool_selection.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_selection.py -m quality
+    pytest tests/graders/agent/tool/test_tool_selection.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestToolSelectionGraderUnit:
         """Test successful evaluation with good tool selection"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 4.5,  # Score from 1-5 scale
             "reason": "Appropriate tools selected for the given query",
         }
@@ -106,7 +107,8 @@ class TestToolSelectionGraderUnit:
         """Test evaluation detecting poor tool selection"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 2.0,  # Score from 1-5 scale
             "reason": "Inappropriate tool selection - selected tools don't match the query intent",
         }

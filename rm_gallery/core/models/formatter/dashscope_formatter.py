@@ -1,424 +1,192 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-branches
-"""The dashscope formatter module."""
+"""Formatter for DashScope models."""
 
-import json
-import os.path
-from typing import Any
+from typing import Any, Dict, List, Union
 
-from loguru import logger
-
-from ..schema.block import (
-    AudioBlock,
-    ImageBlock,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
-)
-from ..schema.message import ChatMessage
-from ..token_counter import BaseTokenCounter
-from .truncated_formatter import TruncatedFormatterBase
+from rm_gallery.core.models.formatter.base_formatter import BaseFormatter
+from rm_gallery.core.models.schema.oai.message import ChatMessage
 
 
-def _is_accessible_local_file(url: str) -> bool:
-    """Check if the given URL is a local URL."""
-    return os.path.isfile(url)
+class DashScopeFormatter(BaseFormatter):
+    """Formatter for converting between DashScope and OpenAI message formats."""
 
-
-def _reformat_messages(
-    messages: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Reformat the content to be compatible with HuggingFaceTokenCounter.
-
-     This function processes a list of messages and converts multi-part
-     text content into single string content when all parts are plain text.
-     This is necessary for compatibility with HuggingFaceTokenCounter which
-     expects simple string content rather than structured content with
-     multiple parts.
-
-    Args:
-        messages (list[dict[str, Any]]):
-            A list of message dictionaries where each message may contain a
-            "content" field. The content can be either:
-            - A string (unchanged)
-            - A list of content items, where each item is a dict that may
-                contain "text", "type", and other fields
-
-    Returns:
-        list[dict[str, Any]]:
-            A list of reformatted messages. For messages where all content
-            items are plain text (have "text" field and either no "type"
-            field or "type" == "text"), the content list is converted to a
-            single newline-joined string. Other messages remain unchanged.
-
-    Example:
-        .. code-block:: python
-
-            # Case 1: All text content - will be converted
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"text": "Hello", "type": "text"},
-                        {"text": "World", "type": "text"}
-                    ]
-                }
-            ]
-            result = _reformat_messages(messages)
-            print(result[0]["content"])
-            # Output: "Hello\nWorld"
-
-            # Case 2: Mixed content - will remain unchanged
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"text": "Hello", "type": "text"},
-                        {"image_url": "...", "type": "image"}
-                    ]
-                }
-            ]
-
-            result = _reformat_messages(messages)  # remain unchanged
-            print(type(result[0]["content"]))
-            # Output: <class 'list'>
-
-    """
-    for message in messages:
-        content = message.get("content", [])
-
-        is_all_text = True
-        texts = []
-        for item in content:
-            if not isinstance(item, dict) or "text" not in item:
-                is_all_text = False
-                break
-            if "type" in item and item["type"] != "text":
-                is_all_text = False
-                break
-            if item["text"]:
-                texts.append(item["text"])
-
-        if is_all_text and texts:
-            message["content"] = "\n".join(texts)
-
-    return messages
-
-
-class DashScopeChatFormatter(TruncatedFormatterBase):
-    """Formatter for DashScope messages."""
-
-    support_tools_api: bool = True
-    """Whether support tools API"""
-
-    support_multiagent: bool = False
-    """Whether support multi-agent conversations"""
-
-    support_vision: bool = True
-    """Whether support vision data"""
-
-    supported_blocks: list[type] = [
-        TextBlock,
-        ImageBlock,
-        AudioBlock,
-        ToolUseBlock,
-        ToolResultBlock,
-    ]
-
-    async def _format(
-        self,
-        msgs: list[ChatMessage],
-    ) -> list[dict[str, Any]]:
-        """Format message objects into DashScope API format.
+    def format_to_openai(self, messages: List[Dict[str, Any]]) -> List[ChatMessage]:
+        """Convert DashScope format messages to OpenAI format.
 
         Args:
-            msgs (`list[ChatMessage]`):
-                The list of message objects to format.
+            messages: List of dictionaries in DashScope format.
 
         Returns:
-            `list[dict[str, Any]]`:
-                The formatted messages as a list of dictionaries.
+            List of ChatMessage objects in OpenAI format.
         """
-        self.assert_list_of_msgs(msgs)
+        openai_messages = []
 
-        formatted_msgs: list[dict] = []
-        for msg in msgs:
-            content_blocks = []
-            tool_calls = []
-            for block in msg.get_content_blocks():
-                typ = block.type
-
-                if typ == "text":
-                    content_blocks.append(
-                        {
-                            "text": block.text,
-                        },
-                    )
-
-                elif typ in ["image", "audio"]:
-                    source = block.source
-                    if source.type == "url":
-                        url = source.url
-                        if _is_accessible_local_file(url):
-                            content_blocks.append(
-                                {typ: "file://" + os.path.abspath(url)},
-                            )
-                        else:
-                            # treat as web url
-                            content_blocks.append({typ: url})
-
-                    elif source.type == "base64":
-                        media_type = source.media_type
-                        base64_data = source.data
-                        content_blocks.append(
-                            {typ: f"data:{media_type};base64,{base64_data}"},
-                        )
-
-                    else:
-                        raise NotImplementedError(
-                            f"Unsupported source type '{source.get('type')}' " f"for {typ} block.",
-                        )
-
-                elif typ == "tool_use":
-                    tool_calls.append(
-                        {
-                            "id": block.id,
-                            "type": "function",
-                            "function": {
-                                "name": block.name,
-                                "arguments": json.dumps(
-                                    block.input,
-                                    ensure_ascii=False,
-                                ),
-                            },
-                        },
-                    )
-
-                elif typ == "tool_result":
-                    formatted_msgs.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": block.id,
-                            "content": self.convert_tool_result_to_string(
-                                block.output,  # type: ignore[arg-type]
-                            ),
-                            "name": block.name,
-                        },
-                    )
-
-                else:
-                    logger.warning(
-                        "Unsupported block type %s in the message, skipped.",
-                        typ,
-                    )
-
-            msg_dashscope = {
-                "role": msg.role,
-                "content": content_blocks or [{"text": None}],
+        for msg in messages:
+            # Convert DashScope message format to OpenAI format
+            openai_msg = {
+                "role": msg.get("role", "user"),
+                "content": self._convert_content_to_openai(msg.get("content", "")),
             }
 
-            if tool_calls:
-                msg_dashscope["tool_calls"] = tool_calls
+            # Add name if present
+            if "name" in msg:
+                openai_msg["name"] = msg["name"]
 
-            if msg_dashscope["content"] != [
-                {"text": None},
-            ] or msg_dashscope.get(
-                "tool_calls",
-            ):
-                formatted_msgs.append(msg_dashscope)
+            # Create ChatMessage object
+            chat_message = ChatMessage(**openai_msg)
+            openai_messages.append(chat_message)
 
-        return _reformat_messages(formatted_msgs)
+        return openai_messages
 
-
-class DashScopeMultiAgentFormatter(TruncatedFormatterBase):
-    """DashScope formatter for multi-agent conversations, where more than
-    a user and an agent are involved.
-
-    .. note:: This formatter will combine previous messages (except tool
-     calls/results) into a history section in the first system message with
-     the conversation history prompt.
-
-    .. note:: For tool calls/results, they will be presented as separate
-     messages as required by the DashScope API. Therefore, the tool calls/
-     results messages are expected to be placed at the end of the input
-     messages.
-
-    .. tip:: Telling the assistant's name in the system prompt is very
-     important in multi-agent conversations. So that LLM can know who it
-     is playing as.
-
-    """
-
-    support_tools_api: bool = True
-    """Whether support tools API"""
-
-    support_multiagent: bool = True
-    """Whether support multi-agent conversations"""
-
-    support_vision: bool = True
-    """Whether support vision data"""
-
-    supported_blocks: list[type] = [
-        TextBlock,
-        # Multimodal
-        ImageBlock,
-        AudioBlock,
-        # Tool use
-        ToolUseBlock,
-        ToolResultBlock,
-    ]
-    """The list of supported message blocks"""
-
-    def __init__(
-        self,
-        conversation_history_prompt: str = (
-            "# Conversation History\n"
-            "The content between <history></history> tags contains "
-            "your conversation history\n"
-        ),
-        token_counter: BaseTokenCounter | None = None,
-        max_tokens: int | None = None,
-    ) -> None:
-        """Initialize the DashScope multi-agent formatter.
+    def format_from_openai(self, messages: List[ChatMessage]) -> List[Dict[str, Any]]:
+        """Convert OpenAI format messages to DashScope format.
 
         Args:
-            conversation_history_prompt (`str`):
-                The prompt to use for the conversation history section.
-            token_counter (`TokenCounterBase | None`, optional):
-                The token counter used for truncation.
-            max_tokens (`int | None`, optional):
-                The maximum number of tokens allowed in the formatted
-                messages. If `None`, no truncation will be applied.
-        """
-        super().__init__(token_counter=token_counter, max_tokens=max_tokens)
-        self.conversation_history_prompt = conversation_history_prompt
-
-    async def _format_tool_sequence(
-        self,
-        msgs: list[ChatMessage],
-    ) -> list[dict[str, Any]]:
-        """Given a sequence of tool call/result messages, format them into
-        the required format for the DashScope API.
-
-        Args:
-            msgs (`list[ChatMessage]`):
-                The list of messages containing tool calls/results to format.
+            messages: List of ChatMessage objects in OpenAI format.
 
         Returns:
-            `list[dict[str, Any]]`:
-                A list of dictionaries formatted for the DashScope API.
+            List of dictionaries in DashScope format.
         """
-        return await DashScopeChatFormatter().format(msgs)
+        dashscope_messages = []
 
-    async def _format_agent_message(
-        self,
-        msgs: list[ChatMessage],
-        is_first: bool = True,
-    ) -> list[dict[str, Any]]:
-        """Given a sequence of messages without tool calls/results, format
-        them into a user message with conversation history tags. For the
-        first agent message, it will include the conversation history prompt.
+        for msg in messages:
+            # Convert ChatMessage to DashScope format
+            dashscope_msg = {
+                "role": msg.role,
+                "content": self._convert_content_to_dashscope(msg.content),
+            }
+
+            # Add name if present
+            if msg.name:
+                dashscope_msg["name"] = msg.name
+
+            dashscope_messages.append(dashscope_msg)
+
+        return dashscope_messages
+
+    def _convert_content_to_openai(
+        self, content: Union[str, List[Dict[str, Any]], None]
+    ) -> Union[str, List[Dict[str, Any]]]:
+        """Convert content from DashScope format to OpenAI format.
 
         Args:
-            msgs (`list[ChatMessage]`):
-                A list of ChatMessage objects to be formatted.
-            is_first (`bool`, defaults to `True`):
-                Whether this is the first agent message in the conversation.
-                If `True`, the conversation history prompt will be included.
+            content: Content in DashScope format (string or list of content parts).
 
         Returns:
-            `list[dict[str, Any]]`:
-                A list of dictionaries formatted for the DashScope API.
+            Content in OpenAI format.
         """
+        # If content is None, return empty string
+        if content is None:
+            return ""
 
-        if is_first:
-            conversation_history_prompt = self.conversation_history_prompt
-        else:
-            conversation_history_prompt = ""
+        # If content is a string, return as is
+        if isinstance(content, str):
+            return content
 
-        # Format into required DashScope format
-        formatted_msgs: list[dict] = []
+        # If content is a list, process each part
+        if isinstance(content, list):
+            openai_content = []
+            for part in content:
+                if isinstance(part, dict):
+                    # Handle different types of content parts
+                    part_type = part.get("type")
 
-        # Collect the multimodal files
-        conversation_blocks = []
-        accumulated_text = []
-        for msg in msgs:
-            for block in msg.get_content_blocks():
-                if block.type == "text":
-                    accumulated_text.append(f"{msg.name}: {block.text}")
+                    if part_type == "text":
+                        openai_content.append({"type": "text", "text": part.get("text", "")})
 
-                elif block.type in ["image", "audio"]:
-                    # Handle the accumulated text as a single block
-                    if accumulated_text:
-                        conversation_blocks.append(
-                            {"text": "\n".join(accumulated_text)},
-                        )
-                        accumulated_text.clear()
+                    elif part_type == "image":
+                        # Convert image to OpenAI format
+                        image_data = part.get("image", "")
+                        openai_content.append({"type": "image_url", "image_url": {"url": image_data}})
 
-                    if block.source.type == "url":
-                        url = block.source.url
-                        if _is_accessible_local_file(url):
-                            conversation_blocks.append(
-                                {
-                                    block.type: "file://" + os.path.abspath(url),
-                                },
-                            )
-                        else:
-                            conversation_blocks.append({block.type: url})
+                    # Handle audio content
+                    elif part_type == "audio":
+                        # Convert audio to OpenAI format
+                        audio_data = part.get("audio", "")
+                        openai_content.append({"type": "input_audio", "input_audio": {"data": audio_data}})
 
-                    elif block.source.type == "base64":
-                        media_type = block.source.media_type
-                        base64_data = block.source.data
-                        conversation_blocks.append(
-                            {
-                                block.type: f"data:{media_type};base64,{base64_data}",
-                            },
-                        )
+                    # Handle video content
+                    elif part_type == "video":
+                        # Convert video to OpenAI format (as video_url)
+                        video_data = part.get("video", "")
+                        openai_content.append({"type": "video_url", "video_url": {"url": video_data}})
 
+                    # For tool calls and functions, keep as is
+                    elif part_type in ["tool_call", "function"]:
+                        openai_content.append(part)
+
+                    # For any other type, keep as is
                     else:
-                        logger.warning(
-                            "Unsupported block type %s in the message, skipped.",
-                            block.type,
-                        )
+                        openai_content.append(part)
 
-        if accumulated_text:
-            conversation_blocks.append({"text": "\n".join(accumulated_text)})
+            return openai_content
 
-        if conversation_blocks:
-            if conversation_blocks[0].get("text"):
-                conversation_blocks[0]["text"] = (
-                    conversation_history_prompt + "<history>\n" + conversation_blocks[0]["text"]
-                )
+        # For any other type, convert to string
+        return str(content)
 
-            else:
-                conversation_blocks.insert(
-                    0,
-                    {
-                        "text": conversation_history_prompt + "<history>\n",
-                    },
-                )
+    def _convert_content_to_dashscope(
+        self, content: Union[str, List[Dict[str, Any]], None]
+    ) -> Union[str, List[Dict[str, Any]]]:
+        """Convert content from OpenAI format to DashScope format.
 
-            if conversation_blocks[-1].get("text"):
-                conversation_blocks[-1]["text"] += "\n</history>"
+        Args:
+            content: Content in OpenAI format (string or list of content parts).
 
-            else:
-                conversation_blocks.append({"text": "</history>"})
+        Returns:
+            Content in DashScope format.
+        """
+        # If content is None, return empty string
+        if content is None:
+            return ""
 
-            formatted_msgs.append(
-                {
-                    "role": "user",
-                    "content": conversation_blocks,
-                },
-            )
+        # If content is a string, return as is
+        if isinstance(content, str):
+            return content
 
-        return _reformat_messages(formatted_msgs)
+        # If content is a list, process each part
+        if isinstance(content, list):
+            dashscope_content = []
+            for part in content:
+                if isinstance(part, dict):
+                    # Handle different types of content parts
+                    part_type = part.get("type")
 
-    async def _format_system_message(
-        self,
-        msg: ChatMessage,
-    ) -> dict[str, Any]:
-        """Format system message for DashScope API."""
-        return {
-            "role": "system",
-            "content": msg.get_text_content(),
-        }
+                    if part_type == "text":
+                        dashscope_content.append({"type": "text", "text": part.get("text", "")})
+
+                    elif part_type == "image_url":
+                        # Convert image_url to DashScope format
+                        image_url = part.get("image_url", {}).get("url", "")
+                        dashscope_content.append({"type": "image", "image": image_url})
+
+                    # Handle audio content
+                    elif part_type == "input_audio":
+                        # Convert input_audio to DashScope format
+                        audio_data = part.get("input_audio", {})
+                        audio_url = audio_data.get("data", "")
+                        dashscope_content.append({"type": "audio", "audio": audio_url})
+
+                    # Handle tool calls
+                    elif part_type == "tool_call":
+                        # Keep tool_call as is for DashScope compatibility
+                        dashscope_content.append(part)
+
+                    # Handle function calls
+                    elif part_type == "function":
+                        # Keep function as is for DashScope compatibility
+                        dashscope_content.append(part)
+
+                    # Handle video content (if supported)
+                    elif part_type == "video_url":
+                        # Convert video_url to DashScope format
+                        video_url = part.get("video_url", {}).get("url", "")
+                        dashscope_content.append({"type": "video", "video": video_url})
+
+                    # For any other type, keep as is
+                    else:
+                        dashscope_content.append(part)
+
+            return dashscope_content
+
+        # For any other type, convert to string
+        return str(content)

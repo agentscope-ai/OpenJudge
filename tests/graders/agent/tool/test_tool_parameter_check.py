@@ -12,17 +12,17 @@ using ToolParameterCheckGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_parameter_check.py -v
+    pytest tests/graders/agent/tool/test_tool_parameter_check.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_parameter_check.py -m unit
+    pytest tests/graders/agent/tool/test_tool_parameter_check.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_parameter_check.py -m quality
+    pytest tests/graders/agent/tool/test_tool_parameter_check.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestToolParameterCheckGraderUnit:
         """Test successful evaluation with correct parameters"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Tool parameters are correctly extracted from the query",
         }
@@ -113,7 +114,8 @@ class TestToolParameterCheckGraderUnit:
         """Test evaluation detecting hallucinated parameters"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.1,  # Will be normalized to 0.0 (< 0.5)
             "reason": "Tool call contains hallucinated parameters not present in query or tool definition",
         }

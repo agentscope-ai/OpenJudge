@@ -11,7 +11,7 @@ from typing import Any, Dict, List, TypedDict, Union
 
 from pydantic import BaseModel, Field
 
-from rm_gallery.core.models.schema.message import ChatMessage
+from rm_gallery.core.models.schema.oai.message import ChatMessage
 
 
 class LanguageEnum(str, Enum):

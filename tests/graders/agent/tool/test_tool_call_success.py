@@ -12,17 +12,17 @@ using ToolCallSuccessGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_call_success.py -v
+    pytest tests/graders/agent/tool/test_tool_call_success.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_call_success.py -m unit
+    pytest tests/graders/agent/tool/test_tool_call_success.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_call_success.py -m quality
+    pytest tests/graders/agent/tool/test_tool_call_success.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestToolCallSuccessGraderUnit:
         """Test successful evaluation with successful tool calls"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 1.0,
             "reason": "Tool calls executed successfully and returned expected results",
         }
@@ -113,7 +114,8 @@ class TestToolCallSuccessGraderUnit:
         """Test evaluation detecting tool call failures"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.0,
             "reason": "Tool calls failed with error responses",
         }

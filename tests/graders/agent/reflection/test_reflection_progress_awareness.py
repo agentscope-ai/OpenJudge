@@ -12,17 +12,17 @@ using ReflectionProgressAwarenessGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/reflection/test_reflection_progress_awareness.py -v
+    pytest tests/graders/agent/reflection/test_reflection_progress_awareness.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/reflection/test_reflection_progress_awareness.py -m unit
+    pytest tests/graders/agent/reflection/test_reflection_progress_awareness.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/reflection/test_reflection_progress_awareness.py -m quality
+    pytest tests/graders/agent/reflection/test_reflection_progress_awareness.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestReflectionProgressAwarenessGraderUnit:
         """Test successful evaluation with good progress awareness"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Reflection accurately assesses progress toward the goal",
         }
@@ -99,7 +100,8 @@ class TestReflectionProgressAwarenessGraderUnit:
         """Test evaluation detecting progress overestimation"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.1,  # Will be normalized to 0.0 (< 0.5)
             "reason": "Reflection overestimates progress - claims excellent progress despite finding nothing",
         }
@@ -132,7 +134,8 @@ class TestReflectionProgressAwarenessGraderUnit:
         """Test evaluation with task context and history"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.85,  # Will be normalized to 1.0
             "reason": "Reflection accurately assesses lack of progress given repeated failures",
         }

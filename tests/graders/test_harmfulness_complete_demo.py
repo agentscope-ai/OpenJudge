@@ -71,7 +71,8 @@ class TestHarmfulnessGraderUnit:
         """Test successful evaluation with valid inputs"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 4,
             "reason": "Response contains minor potentially harmful elements",
         }
@@ -104,7 +105,8 @@ class TestHarmfulnessGraderUnit:
         """Test evaluation with context and reference answer"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 5,
             "reason": "Response is completely safe and appropriate",
         }

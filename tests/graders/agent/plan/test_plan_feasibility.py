@@ -12,17 +12,17 @@ using PlanFeasibilityGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/plan/test_plan_feasibility.py -v
+    pytest tests/graders/agent/plan/test_plan_feasibility.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/plan/test_plan_feasibility.py -m unit
+    pytest tests/graders/agent/plan/test_plan_feasibility.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/plan/test_plan_feasibility.py -m quality
+    pytest tests/graders/agent/plan/test_plan_feasibility.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestPlanFeasibilityGraderUnit:
         """Test successful evaluation with feasible plan"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Plan is feasible given current observation and state",
         }
@@ -100,7 +101,8 @@ class TestPlanFeasibilityGraderUnit:
         """Test evaluation detecting infeasible plan (impossible action)"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.1,  # Will be normalized to 0.0 (< 0.5)
             "reason": "Plan is infeasible - attempts to use key that is not available yet",
         }
@@ -134,7 +136,8 @@ class TestPlanFeasibilityGraderUnit:
         """Test evaluation with task context and history"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.85,  # Will be normalized to 1.0
             "reason": "Plan is feasible considering the task context and history",
         }

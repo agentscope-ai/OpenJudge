@@ -8,7 +8,7 @@ interface for different LLM services such as OpenAI, DashScope, etc.
 from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator
 
-from rm_gallery.core.models.schema.response import ChatResponse
+from rm_gallery.core.models.schema.oai.response import ChatResponse
 
 TOOL_CHOICE_MODES = ["auto", "none", "any", "required"]
 

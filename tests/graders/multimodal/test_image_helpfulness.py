@@ -12,17 +12,17 @@ using ImageHelpfulnessGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/multimodal/test_image_helpfulness.py -v
+    pytest tests/graders/multimodal/test_image_helpfulness.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/multimodal/test_image_helpfulness.py -m unit
+    pytest tests/graders/multimodal/test_image_helpfulness.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/multimodal/test_image_helpfulness.py -m quality
+    pytest tests/graders/multimodal/test_image_helpfulness.py -m quality
     ```
 """
 

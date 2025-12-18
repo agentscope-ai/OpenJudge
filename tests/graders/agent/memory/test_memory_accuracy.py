@@ -12,17 +12,17 @@ using MemoryAccuracyGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/memory/test_memory_accuracy.py -v
+    pytest tests/graders/agent/memory/test_memory_accuracy.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/memory/test_memory_accuracy.py -m unit
+    pytest tests/graders/agent/memory/test_memory_accuracy.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/memory/test_memory_accuracy.py -m quality
+    pytest tests/graders/agent/memory/test_memory_accuracy.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestMemoryAccuracyGraderUnit:
         """Test successful evaluation with accurate memory"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Memory accurately reflects the observation",
         }
@@ -99,7 +100,8 @@ class TestMemoryAccuracyGraderUnit:
         """Test evaluation detecting memory hallucination"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.1,  # Will be normalized to 0.0 (< 0.5)
             "reason": "Memory contains hallucinated information not present in observation",
         }
@@ -132,7 +134,8 @@ class TestMemoryAccuracyGraderUnit:
         """Test evaluation with task context and history"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.8,  # Will be normalized to 1.0
             "reason": "Memory is accurate given the observation and history context",
         }

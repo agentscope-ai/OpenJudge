@@ -24,14 +24,11 @@ from rm_gallery.core.graders.multimodal._internal.criteria_utils import (
     validate_criteria_and_evaluation_steps,
 )
 
-# Helper functions and data types
-from rm_gallery.core.graders.multimodal._internal.helpers import (
-    MLLMImage,
-    format_image_content,
-)
-
 # Schema definitions
 from rm_gallery.core.graders.multimodal._internal.schema import EvaluationSteps, Rubric
+
+# Helper functions and data types
+from rm_gallery.core.models.schema.qwen.mllmImage import MLLMImage, format_image_content
 
 __all__ = [
     # Schema

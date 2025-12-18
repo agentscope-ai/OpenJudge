@@ -6,16 +6,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai.types.completion_usage import CompletionUsage
 from pydantic import BaseModel
 
 from rm_gallery.core.models.openai_chat_model import (
     OpenAIChatModel,
     _format_audio_data_for_qwen_omni,
 )
-from rm_gallery.core.models.schema.block import TextBlock
-from rm_gallery.core.models.schema.message import ChatMessage
-from rm_gallery.core.models.schema.response import ChatResponse
+from rm_gallery.core.models.schema.oai.message import ChatMessage
+from rm_gallery.core.models.schema.oai.response import ChatResponse
 
 
 class PersonModelForTesting(BaseModel):
@@ -92,11 +90,6 @@ class TestOpenAIChatModel:
             created=1234567890,
             model="gpt-3.5-turbo",
             object="chat.completion",
-            usage=CompletionUsage(
-                completion_tokens=10,
-                prompt_tokens=20,
-                total_tokens=30,
-            ),
         )
 
         mock_instance = mock_async_openai.return_value
@@ -123,15 +116,8 @@ class TestOpenAIChatModel:
 
             # Verify the response
             assert isinstance(response, ChatResponse)
-            # Content is now a list of TextBlocks, not a string
-            assert isinstance(response.content, list)
-            assert isinstance(response.content[0], TextBlock)
-            assert response.content[0].text == "Hello! How can I help you today?"
-            # assert response.role == "assistant"
-            assert response.usage is not None
-            assert response.usage.input_tokens == 20
-            assert response.usage.output_tokens == 10
-
+            # Content can be either string or list depending on the message content
+            assert response.content == "Hello! How can I help you today?"
             # Verify the API was called correctly
             mock_instance.chat.completions.create.assert_called_once()
             call_kwargs = mock_instance.chat.completions.create.call_args[1]
@@ -157,11 +143,6 @@ class TestOpenAIChatModel:
             created=1234567890,
             model="gpt-3.5-turbo",
             object="chat.completion",
-            usage=CompletionUsage(
-                completion_tokens=15,
-                prompt_tokens=25,
-                total_tokens=40,
-            ),
         )
 
         mock_instance = mock_async_openai.return_value
@@ -195,9 +176,6 @@ class TestOpenAIChatModel:
 
             # Verify the response
             assert isinstance(response, ChatResponse)
-            assert response.usage is not None
-            assert response.usage.input_tokens == 25
-            assert response.usage.output_tokens == 15
 
             # Verify the API was called with correct parameters
             mock_instance.chat.completions.parse.assert_called_once()
@@ -224,11 +202,6 @@ class TestOpenAIChatModel:
             created=1234567890,
             model="gpt-3.5-turbo",
             object="chat.completion",
-            usage=CompletionUsage(
-                completion_tokens=8,
-                prompt_tokens=15,
-                total_tokens=23,
-            ),
         )
 
         mock_instance = mock_async_openai.return_value
@@ -254,10 +227,8 @@ class TestOpenAIChatModel:
 
             # Verify the response
             assert isinstance(response, ChatResponse)
-            # Content is now a list of TextBlocks, not a string
-            assert isinstance(response.content, list)
-            assert isinstance(response.content[0], TextBlock)
-            assert response.content[0].text == "Hello from assistant!"
+            # Content can be either string or list depending on the message content
+            assert response.content == "Hello from assistant!"
 
             # Verify ChatMessage objects were converted to dicts
             mock_instance.chat.completions.create.assert_called_once()
@@ -286,11 +257,6 @@ class TestOpenAIChatModel:
             created=1234567890,
             model="gpt-3.5-turbo",
             object="chat.completion",
-            usage=CompletionUsage(
-                completion_tokens=5,
-                prompt_tokens=10,
-                total_tokens=15,
-            ),
         )
 
         mock_instance = mock_async_openai.return_value
@@ -320,11 +286,11 @@ class TestOpenAIChatModel:
         response = asyncio.run(model.achat(messages=messages, callback=test_callback))
         print(response)
         # Verify callback was executed and metadata was added
-        assert response.metadata is not None
-        assert "processed" in response.metadata
-        assert response.metadata["processed"]
-        assert "tags" in response.metadata
-        assert response.metadata["tags"] == ["test"]
+        assert response.parsed is not None
+        assert "processed" in response.parsed
+        assert response.parsed["processed"]
+        assert "tags" in response.parsed
+        assert response.parsed["tags"] == ["test"]
 
     def test_qwen_omni_audio_formatting(self):
         """Test Qwen-omni audio data formatting."""

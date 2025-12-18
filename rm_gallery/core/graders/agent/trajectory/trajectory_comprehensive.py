@@ -16,9 +16,9 @@ from pydantic import BaseModel, Field
 from rm_gallery.core.graders.base_grader import GraderMode, GraderScore
 from rm_gallery.core.graders.llm_grader import LLMGrader
 from rm_gallery.core.models.base_chat_model import BaseChatModel
-from rm_gallery.core.models.schema.message import ChatMessage
+from rm_gallery.core.models.schema.oai.message import ChatMessage
+from rm_gallery.core.models.schema.oai.response import ChatResponse
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTemplate
-from rm_gallery.core.models.schema.response import ChatResponse
 
 # pylint: disable=line-too-long,too-many-statements
 

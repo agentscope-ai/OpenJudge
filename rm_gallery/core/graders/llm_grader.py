@@ -29,7 +29,7 @@ from rm_gallery.core.graders.base_grader import (
 from rm_gallery.core.graders.schema import GraderRankCallback, GraderScoreCallback
 from rm_gallery.core.models.base_chat_model import BaseChatModel
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
-from rm_gallery.core.models.schema.message import ChatMessage
+from rm_gallery.core.models.schema.oai.message import ChatMessage
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 
@@ -305,25 +305,25 @@ class LLMGrader(BaseGrader):
             async for chunk in chat_response:  # type: ignore
                 chat_response = chunk  # Iterate through all chunks, keeping the last one
 
-        metadata = getattr(chat_response, "metadata", {}) or {}
+        parsed = getattr(chat_response, "parsed", {}) or {}
 
         if self.mode == GraderMode.LISTWISE:
-            rank = metadata.pop("rank")
-            reason = metadata.pop("reason")
+            rank = parsed.pop("rank")
+            reason = parsed.pop("reason")
             result = GraderRank(
                 name=self.name,
                 rank=rank,  # type: ignore
                 reason=reason,  # type: ignore
-                metadata=metadata,  # type: ignore
+                metadata=parsed,  # type: ignore
             )
         elif self.mode == GraderMode.POINTWISE:
-            score = metadata.pop("score")
-            reason = metadata.pop("reason")
+            score = parsed.pop("score")
+            reason = parsed.pop("reason")
             result = GraderScore(
                 name=self.name,
                 score=score,  # type: ignore
                 reason=reason,  # type: ignore
-                metadata=metadata,  # type: ignore
+                metadata=parsed,  # type: ignore
             )
         else:
             raise ValueError(f"Unsupported grader mode: {self.mode}")

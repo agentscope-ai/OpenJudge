@@ -12,17 +12,17 @@ using RelevanceGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/common/test_relevance_new.py -v
+    pytest tests/graders/common/test_relevance_new.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/common/test_relevance_new.py -m unit
+    pytest tests/graders/common/test_relevance_new.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/common/test_relevance_new.py -m quality
+    pytest tests/graders/common/test_relevance_new.py -m quality
     ```
 """
 
@@ -63,7 +63,8 @@ class TestRelevanceGraderUnit:
         """Test successful evaluation with valid inputs"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 4,
             "reason": "Response is highly relevant to the query",
         }
@@ -95,7 +96,8 @@ class TestRelevanceGraderUnit:
         """Test evaluation with context"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 5,
             "reason": "Response is perfectly relevant and addresses the query directly",
         }

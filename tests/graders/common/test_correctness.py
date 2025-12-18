@@ -12,17 +12,17 @@ using CorrectnessGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/common/test_correctness.py -v
+    pytest tests/graders/common/test_correctness.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/common/test_correctness.py -m unit
+    pytest tests/graders/common/test_correctness.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/common/test_correctness.py -m quality
+    pytest tests/graders/common/test_correctness.py -m quality
     ```
 """
 
@@ -64,7 +64,8 @@ class TestCorrectnessGraderUnit:
         """Test CorrectnessGrader with reference response"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 5.0,
             "reason": "Correctness score: Response perfectly matches the reference response",
         }
@@ -106,7 +107,8 @@ class TestCorrectnessGraderUnit:
         """Test CorrectnessGrader without reference response"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 4.0,
             "reason": "Correctness score: Response is largely correct",
         }

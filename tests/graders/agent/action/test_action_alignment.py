@@ -12,17 +12,17 @@ using ActionAlignmentGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/action/test_action_alignment.py -v
+    pytest tests/graders/agent/action/test_action_alignment.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/action/test_action_alignment.py -m unit
+    pytest tests/graders/agent/action/test_action_alignment.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/action/test_action_alignment.py -m quality
+    pytest tests/graders/agent/action/test_action_alignment.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestActionAlignmentGraderUnit:
         """Test successful evaluation with good alignment"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.8,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Action aligns well with the plan",
         }
@@ -99,7 +100,8 @@ class TestActionAlignmentGraderUnit:
         """Test evaluation with task context"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0
             "reason": "Action perfectly aligns with plan given the context",
         }

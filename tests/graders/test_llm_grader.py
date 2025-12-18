@@ -157,7 +157,8 @@ class TestLLMGraderUnit:
         mock_response = AsyncMock()
         mock_response.score = 4.5
         mock_response.reason = "Response is mostly accurate with minor issues"
-        mock_response.metadata = {"tokens_used": 50}
+
+        mock_response.parsed = {"tokens_used": 50}
 
         mock_model = AsyncMock()
         mock_model.achat = AsyncMock(return_value=mock_response)
@@ -201,7 +202,8 @@ class TestLLMGraderUnit:
         mock_response = AsyncMock()
         mock_response.rank = [2, 1, 3]
         mock_response.reason = "First response is most relevant, second is partially relevant, third is off-topic"
-        mock_response.metadata = {"tokens_used": 75}
+
+        mock_response.parsed = {"tokens_used": 75}
 
         mock_model = AsyncMock()
         mock_model.achat = AsyncMock(return_value=mock_response)

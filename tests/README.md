@@ -33,7 +33,8 @@ class TestLLMGraderOffline:
     async def test_llm_based_grader_offline(self):
         # 设置模拟，注意LLMGrader期望从metadata中获取结果
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 5,
             "reason": "Perfect"
         }
@@ -82,7 +83,8 @@ class Test[ComponentClass]:
         """测试使用有效输入的成功操作"""
         # 设置模拟，注意LLMGrader期望的返回格式
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 5,
             "reason": "Good response"
         }

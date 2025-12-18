@@ -12,17 +12,17 @@ using InstructionFollowingGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/common/test_instruction_following.py -v
+    pytest tests/graders/common/test_instruction_following.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/common/test_instruction_following.py -m unit
+    pytest tests/graders/common/test_instruction_following.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/common/test_instruction_following.py -m quality
+    pytest tests/graders/common/test_instruction_following.py -m quality
     ```
 """
 
@@ -65,7 +65,8 @@ class TestInstructionFollowingGraderUnit:
         """Test successful evaluation with valid inputs"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 4,
             "reason": "Response follows most instructions",
         }
@@ -97,7 +98,8 @@ class TestInstructionFollowingGraderUnit:
         """Test evaluation with context"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 5,
             "reason": "Response perfectly follows all instructions",
         }

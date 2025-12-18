@@ -22,7 +22,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from rm_gallery.core.graders.base_grader import GraderMode, GraderRank, GraderScore
 from rm_gallery.core.models.base_chat_model import BaseChatModel
-from rm_gallery.core.models.schema.message import ChatMessage
+from rm_gallery.core.models.schema.oai.message import ChatMessage
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # pylint: disable=line-too-long

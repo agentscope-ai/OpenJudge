@@ -12,17 +12,17 @@ using ImageCoherenceGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/multimodal/test_image_coherence.py -v
+    pytest tests/graders/multimodal/test_image_coherence.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/multimodal/test_image_coherence.py -m unit
+    pytest tests/graders/multimodal/test_image_coherence.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/multimodal/test_image_coherence.py -m quality
+    pytest tests/graders/multimodal/test_image_coherence.py -m quality
     ```
 """
 

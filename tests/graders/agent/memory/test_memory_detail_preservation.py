@@ -12,17 +12,17 @@ using MemoryDetailPreservationGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/memory/test_memory_detail_preservation.py -v
+    pytest tests/graders/agent/memory/test_memory_detail_preservation.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/memory/test_memory_detail_preservation.py -m unit
+    pytest tests/graders/agent/memory/test_memory_detail_preservation.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/memory/test_memory_detail_preservation.py -m quality
+    pytest tests/graders/agent/memory/test_memory_detail_preservation.py -m quality
     ```
 """
 
@@ -66,7 +66,8 @@ class TestMemoryDetailPreservationGraderUnit:
         """Test successful evaluation with good detail preservation"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Memory preserves all important details from the observation",
         }
@@ -99,7 +100,8 @@ class TestMemoryDetailPreservationGraderUnit:
         """Test evaluation detecting memory over-simplification"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.1,  # Will be normalized to 0.0 (< 0.5)
             "reason": "Memory over-simplifies the observation, losing critical details like coordinates and quantities",
         }
@@ -132,7 +134,8 @@ class TestMemoryDetailPreservationGraderUnit:
         """Test evaluation with task context and history"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 0.8,  # Will be normalized to 1.0
             "reason": "Memory preserves key details given the task context",
         }

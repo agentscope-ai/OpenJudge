@@ -5,9 +5,9 @@ from typing import Callable, List
 from rm_gallery.core.graders.base_grader import BaseGrader
 from rm_gallery.core.graders.schema import GraderMode, GraderResult
 from rm_gallery.core.models.base_chat_model import BaseChatModel
-from rm_gallery.core.models.schema.message import ChatMessage
+from rm_gallery.core.models.schema.oai.message import ChatMessage
+from rm_gallery.core.models.schema.oai.response import ChatResponse
 from rm_gallery.core.models.schema.prompt_template import PromptTemplate
-from rm_gallery.core.models.schema.response import ChatResponse
 from rm_gallery.core.utils.mapping import parse_data_with_mapper
 
 

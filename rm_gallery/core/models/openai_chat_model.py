@@ -1,29 +1,19 @@
 # -*- coding: utf-8 -*-
 """OpenAI Client."""
 import os
-from datetime import datetime
-from typing import Any, AsyncGenerator, Callable, Dict, List, Literal, OrderedDict, Type
+from typing import Any, AsyncGenerator, Callable, Dict, Literal, Type
 
 from loguru import logger
-from openai import AsyncOpenAI, AsyncStream
-from openai.types.chat import ChatCompletion
+from openai import AsyncOpenAI
 from pydantic import BaseModel
 
 from rm_gallery.core.models.base_chat_model import BaseChatModel
-from rm_gallery.core.models.schema.block import (
-    AudioBlock,
-    Base64Source,
-    TextBlock,
-    ThinkingBlock,
-    ToolUseBlock,
-)
-from rm_gallery.core.models.schema.message import ChatMessage
-from rm_gallery.core.models.schema.response import ChatResponse
-from rm_gallery.core.models.schema.usage import ChatUsage
+from rm_gallery.core.models.schema.oai.message import ChatMessage
+from rm_gallery.core.models.schema.oai.response import ChatResponse
 from rm_gallery.core.utils.utils import repair_and_load_json
 
 
-def _format_audio_data_for_qwen_omni(messages: list[dict]) -> None:
+def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> None:
     """Qwen-omni uses OpenAI-compatible API but requires different audio
     data format than OpenAI with "data:;base64," prefix.
     Refer to `Qwen-omni documentation
@@ -35,8 +25,9 @@ def _format_audio_data_for_qwen_omni(messages: list[dict]) -> None:
             The list of message dictionaries from OpenAI formatter.
     """
     for msg in messages:
-        if isinstance(msg.get("content"), list):
-            for block in msg["content"]:
+        msg_dict = msg.to_dict() if isinstance(msg, ChatMessage) else msg
+        if isinstance(msg_dict.get("content"), list):
+            for block in msg_dict["content"]:
                 if (
                     isinstance(block, dict)
                     and "input_audio" in block
@@ -153,7 +144,7 @@ class OpenAIChatModel(BaseChatModel):
                 "OpenAI `messages` field expected type `list`, " f"got `{type(messages)}` instead.",
             )
         messages = [msg.to_dict() if isinstance(msg, ChatMessage) else msg for msg in messages]
-        if not all("role" in msg and "content" in msg for msg in messages):
+        if not all(isinstance(msg, dict) and "role" in msg and "content" in msg for msg in messages):
             raise ValueError(
                 "Each message in the 'messages' list must contain a 'role' and 'content' key for OpenAI API.",
             )
@@ -172,17 +163,8 @@ class OpenAIChatModel(BaseChatModel):
         if self.reasoning_effort and "reasoning_effort" not in kwargs:
             kwargs["reasoning_effort"] = self.reasoning_effort
 
-        if tools:
-            kwargs["tools"] = self._format_tools_json_schemas(tools)
-
         if tool_choice:
             self._validate_tool_choice(tool_choice, tools)
-            kwargs["tool_choice"] = self._format_tool_choice(tool_choice)
-
-        if self.stream:
-            kwargs["stream_options"] = {"include_usage": True}
-
-        start_datetime = datetime.now()
 
         if structured_model:
             if tools or tool_choice:
@@ -197,197 +179,27 @@ class OpenAIChatModel(BaseChatModel):
             kwargs.pop("tool_choice", None)
 
             if "qwen" in self.model:
-                structured_model = {"type": "json_object"}
+                structured_model = {"type": "json_object"}  # type: ignore
 
             kwargs["response_format"] = structured_model
             if not self.stream:
                 response = await self.client.chat.completions.parse(**kwargs)
             else:
                 response = self.client.chat.completions.stream(**kwargs)
-                return self._parse_openai_stream_response(
-                    start_datetime,
-                    response,
-                    structured_model,
-                )
         else:
             response = await self.client.chat.completions.create(**kwargs)
 
         if self.stream:
-            return self._parse_openai_stream_response(
-                start_datetime,
-                response,
-                structured_model,
-            )
+            return self._handle_streaming_response(response, structured_model, callback)
 
         # Non-streaming response
-        parsed_response = self._parse_openai_completion_response(
-            start_datetime,
-            response,
-            structured_model,
-        )
+        return self._handle_non_streaming_response(response, structured_model, callback)
 
-        # If callback is a function, call it with the response
-        if callback and callable(callback):
-            try:
-                callback_result = callback(parsed_response)
-                if isinstance(callback_result, dict):
-                    parsed_response.metadata = parsed_response.metadata or {}
-                    parsed_response.metadata.update(callback_result)
-            except Exception:
-                # Log the exception but don't fail the entire operation
-                logger.warning("Callback function raised an exception", exc_info=True)
-
-        return parsed_response
-
-    async def _parse_openai_stream_response(
+    def _handle_non_streaming_response(
         self,
-        start_datetime: datetime,
-        response: AsyncStream,
+        response,
         structured_model: Type[BaseModel] | None = None,
-    ) -> AsyncGenerator[ChatResponse, None]:
-        """Given an OpenAI streaming completion response, extract the content
-         blocks and usages from it and yield ChatResponse objects.
-
-        Args:
-            start_datetime (`datetime`):
-                The start datetime of the response generation.
-            response (`AsyncStream`):
-                OpenAI AsyncStream object to parse.
-            structured_model (`Type[BaseModel] | None`, default `None`):
-                A Pydantic BaseModel class that defines the expected structure
-                for the model's output.
-
-        Returns:
-            `AsyncGenerator[ChatResponse, None]`:
-                An async generator that yields ChatResponse objects containing
-                the content blocks and usage information for each chunk in
-                the streaming response.
-
-        .. note::
-            If `structured_model` is not `None`, the expected structured output
-            will be stored in the metadata of the `ChatResponse`.
-        """
-        usage, res = None, None
-        text = ""
-        thinking = ""
-        audio = ""
-        tool_calls = OrderedDict()
-        metadata: dict | None = None
-        contents: List[TextBlock | ToolUseBlock | ThinkingBlock | AudioBlock] = []
-
-        async with response as stream:
-            async for item in stream:
-                if structured_model:
-                    if item.type != "chunk":
-                        continue
-                    chunk = item.chunk
-                else:
-                    chunk = item
-
-                if chunk.usage:
-                    usage = ChatUsage(
-                        input_tokens=chunk.usage.prompt_tokens,
-                        output_tokens=chunk.usage.completion_tokens,
-                        time=(datetime.now() - start_datetime).total_seconds(),
-                    )
-
-                if not chunk.choices:
-                    if usage and contents:
-                        res = ChatResponse(
-                            content=contents,
-                            usage=usage,
-                            metadata=metadata,
-                        )
-                        yield res
-                    continue
-
-                choice = chunk.choices[0]
-
-                thinking += getattr(choice.delta, "reasoning_content", None) or ""
-                text += choice.delta.content or ""
-
-                if hasattr(choice.delta, "audio") and "data" in choice.delta.audio:
-                    audio += choice.delta.audio["data"]
-                if hasattr(choice.delta, "audio") and "transcript" in choice.delta.audio:
-                    text += choice.delta.audio["transcript"]
-
-                for tool_call in choice.delta.tool_calls or []:
-                    if tool_call.index in tool_calls:
-                        if tool_call.function.arguments is not None:
-                            tool_calls[tool_call.index]["input"] += tool_call.function.arguments
-
-                    else:
-                        tool_calls[tool_call.index] = {
-                            "type": "tool_use",
-                            "id": tool_call.id,
-                            "name": tool_call.function.name,
-                            "input": tool_call.function.arguments or "",
-                        }
-
-                contents = []
-
-                if thinking:
-                    contents.append(
-                        ThinkingBlock(
-                            type="thinking",
-                            thinking=thinking,
-                        ),
-                    )
-
-                if audio:
-                    media_type = self.kwargs.get("audio", {}).get(
-                        "format",
-                        "wav",
-                    )
-                    contents.append(
-                        AudioBlock(
-                            type="audio",
-                            source=Base64Source(
-                                data=audio,
-                                media_type=f"audio/{media_type}",
-                                type="base64",
-                            ),
-                        ),
-                    )
-
-                if text:
-                    contents.append(
-                        TextBlock(
-                            type="text",
-                            text=text,
-                        ),
-                    )
-
-                    if structured_model:
-                        metadata = repair_and_load_json(text)
-
-                for tool_call in tool_calls.values():
-                    contents.append(
-                        ToolUseBlock(
-                            type=tool_call["type"],
-                            id=tool_call["id"],
-                            name=tool_call["name"],
-                            input=repair_and_load_json(
-                                tool_call["input"] or "{}",
-                            ),
-                        ),
-                    )
-
-                if not contents:
-                    continue
-
-                res = ChatResponse(
-                    content=contents,
-                    usage=usage,
-                    metadata=metadata,
-                )
-                yield res
-
-    def _parse_openai_completion_response(
-        self,
-        start_datetime: datetime,
-        response: ChatCompletion,
-        structured_model: Type[BaseModel] | None = None,
+        callback: Callable | None = None,
     ) -> ChatResponse:
         """Given an OpenAI chat completion response object, extract the content
             blocks and usages from it.
@@ -409,119 +221,153 @@ class OpenAIChatModel(BaseChatModel):
             If `structured_model` is not `None`, the expected structured output
             will be stored in the metadata of the `ChatResponse`.
         """
-        content_blocks: List[TextBlock | ToolUseBlock | ThinkingBlock | AudioBlock] = []
-        metadata: dict | None = None
 
         if response.choices:
             choice = response.choices[0]
-            if hasattr(choice.message, "reasoning_content") and choice.message.reasoning_content is not None:
-                content_blocks.append(
-                    ThinkingBlock(
-                        type="thinking",
-                        thinking=response.choices[0].message.reasoning_content,
-                    ),
-                )
-
-            if choice.message.content:
-                content_blocks.append(
-                    TextBlock(
-                        type="text",
-                        text=response.choices[0].message.content,
-                    ),
-                )
-            if choice.message.audio:
-                media_type = self.kwargs.get("audio", {}).get(
-                    "format",
-                    "mp3",
-                )
-                content_blocks.append(
-                    AudioBlock(
-                        type="audio",
-                        source=Base64Source(
-                            data=choice.message.audio.data,
-                            media_type=f"audio/{media_type}",
-                            type="base64",
-                        ),
-                    ),
-                )
-
-                if choice.message.audio.transcript:
-                    content_blocks.append(
-                        TextBlock(
-                            type="text",
-                            text=choice.message.audio.transcript,
-                        ),
-                    )
-
-            for tool_call in choice.message.tool_calls or []:
-                content_blocks.append(
-                    ToolUseBlock(
-                        type="tool_use",
-                        id=tool_call.id,
-                        name=tool_call.function.name,
-                        input=repair_and_load_json(
-                            tool_call.function.arguments,
-                        ),
-                    ),
-                )
+            message_data = choice.message.model_dump()
+            # Ensure parsed field is present and is a dict
+            message_data.setdefault("parsed", {})
+            parsed_response = ChatResponse(**message_data)
 
             if structured_model:
                 try:
-                    metadata = choice.message.parsed.model_dump()
+                    # Check if message has parsed attribute (from chat.completions.parse)
+                    if hasattr(choice.message, "parsed") and choice.message.parsed:
+                        parsed = choice.message.parsed.model_dump()
+                        # Ensure parsed is always a dict
+                        if not isinstance(parsed, dict):
+                            parsed = {"result": parsed} if parsed is not None else {}
+                        parsed_response.parsed = parsed
+                    else:
+                        # Fallback to parsing content as JSON
+                        content = choice.message.content
+                        if content:
+                            parsed = repair_and_load_json(content)
+                            # Ensure parsed is always a dict
+                            if not isinstance(parsed, dict):
+                                parsed = {"result": parsed} if parsed is not None else {}
+                            parsed_response.parsed = parsed
+                        else:
+                            parsed_response.parsed = {}
                 except AttributeError:
-                    metadata = repair_and_load_json(
-                        choice.message.content,
-                    )
+                    content = choice.message.content
+                    if content:
+                        parsed = repair_and_load_json(content)
+                        # Ensure parsed is always a dict
+                        if not isinstance(parsed, dict):
+                            parsed = {"result": parsed} if parsed is not None else {}
+                        parsed_response.parsed = parsed
+                    else:
+                        parsed_response.parsed = {}
+        else:
+            raise ValueError("No choices found in the response.")
 
-        usage = None
-        if response.usage:
-            usage = ChatUsage(
-                input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens,
-                time=(datetime.now() - start_datetime).total_seconds(),
-            )
-
-        parsed_response = ChatResponse(
-            content=content_blocks,
-            usage=usage,
-            metadata=metadata,
-        )
+        # If callback is a function, call it with the response
+        if callback and callable(callback):
+            try:
+                callback_result = callback(parsed_response)
+                if isinstance(callback_result, dict):
+                    parsed_response.parsed = parsed_response.parsed or {}
+                    parsed_response.parsed.update(callback_result)
+            except Exception:
+                # Log the exception but don't fail the entire operation
+                logger.warning("Callback function raised an exception", exc_info=True)
 
         return parsed_response
 
-    def _format_tools_json_schemas(
+    # pylint: disable=too-many-statements
+    async def _handle_streaming_response(
         self,
-        schemas: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        """Format the tools JSON schemas to the OpenAI format."""
-        return schemas
-
-    def _format_tool_choice(
-        self,
-        tool_choice: Literal["auto", "none", "any", "required"] | str | None,
-    ) -> str | dict | None:
-        """Format tool_choice parameter for API compatibility.
+        response,
+        structured_model: Type[BaseModel] | None = None,
+        callback: Callable | None = None,
+    ) -> AsyncGenerator[ChatResponse, None]:
+        """Handle streaming response from OpenAI API.
 
         Args:
-            tool_choice (`Literal["auto", "none", "any", "required"] | str \
-            | None`, default `None`):
-                Controls which (if any) tool is called by the model.
-                 Can be "auto", "none", "any", "required", or specific tool
-                 name. For more details, please refer to
-                 https://platform.openai.com/docs/api-reference/responses/create#responses_create-tool_choice
-        Returns:
-            `dict | None`:
-                The formatted tool choice configuration dict, or None if
-                    tool_choice is None.
+            response: Async generator of ChatCompletion chunks or stream manager
+            structured_model: Pydantic model for parsing structured output
+            callback: Callback function to process the final response
+
+        Yields:
+            ChatResponse: Each chunk as ChatResponse object
         """
-        if tool_choice is None:
-            return None
-        mode_mapping = {
-            "auto": "auto",
-            "none": "none",
-            "any": "required",
-            "required": "required",
-        }
-        if tool_choice in mode_mapping:
-            return mode_mapping[tool_choice]
-        return {"type": "function", "function": {"name": tool_choice}}
+        full_content = ""
+        last_chunk = None
+        role = "assistant"  # Default role for responses
+
+        # Handle different types of streaming responses
+        # Some models return AsyncChatCompletionStreamManager, others return async generators
+        stream = response
+        if not hasattr(response, "__aiter__"):
+            # If response is not directly iterable, try to get the stream
+            # This handles cases like AsyncChatCompletionStreamManager
+            if hasattr(response, "__stream__"):
+                stream = response.__stream__()
+            elif callable(getattr(response, "stream", None)):
+                stream = response.stream()
+            elif callable(getattr(response, "__aiter__", None)):
+                stream = response
+            else:
+                # Last resort - try to treat it as a regular async iterable
+                stream = response
+
+        try:
+            async for chunk in stream:
+                if chunk.choices and len(chunk.choices) > 0:
+                    choice = chunk.choices[0]
+                    delta = getattr(choice, "delta", None)
+                    if delta:
+                        # Get role from first chunk if available
+                        if getattr(delta, "role", None):
+                            role = delta.role
+
+                        # Accumulate content
+                        if getattr(delta, "content", None):
+                            full_content += delta.content
+
+                        # Create ChatResponse from chunk with proper role
+                        chunk_data = delta.model_dump()
+                        chunk_data["role"] = role  # Ensure role is always set
+                        chunk_response = ChatResponse(**chunk_data)
+                        yield chunk_response
+                        last_chunk = chunk
+        except Exception as e:
+            logger.warning(f"Error during streaming: {e}")
+            # Even if streaming has issues, we try to yield a final response with accumulated content
+
+        # Process final chunk with accumulated content and parsed data
+        if last_chunk:
+            # Create a final response with complete content
+            final_choice = last_chunk.choices[0] if last_chunk.choices else None
+            delta = getattr(final_choice, "delta", None) if final_choice else None
+            if delta:
+                # Update with full content
+                delta.content = full_content
+                delta.role = role
+
+                final_response = ChatResponse(**delta.model_dump())
+
+                # Parse structured output if needed
+                if structured_model:
+                    try:
+                        # Try to parse the full content as structured output
+                        parsed = repair_and_load_json(full_content)
+                        if not isinstance(parsed, dict):
+                            parsed = {"result": parsed} if parsed is not None else {}
+                        final_response.parsed = parsed
+                    except Exception as e:
+                        logger.warning(f"Failed to parse structured output from streamed response: {e}")
+                        final_response.parsed = {}
+
+                # Apply callback if provided
+                if callback and callable(callback):
+                    try:
+                        callback_result = callback(final_response)
+                        if isinstance(callback_result, dict):
+                            final_response.parsed = final_response.parsed or {}
+                            final_response.parsed.update(callback_result)
+                    except Exception:
+                        logger.warning("Callback function raised an exception", exc_info=True)
+
+                yield final_response

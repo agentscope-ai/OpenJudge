@@ -18,7 +18,7 @@ from rm_gallery.core.graders.multimodal._internal import MLLMImage, format_image
 from rm_gallery.core.graders.schema import GraderScoreCallback
 from rm_gallery.core.models.base_chat_model import BaseChatModel
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
-from rm_gallery.core.models.schema.message import ChatMessage
+from rm_gallery.core.models.schema.oai.message import ChatMessage
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # pylint: disable=line-too-long

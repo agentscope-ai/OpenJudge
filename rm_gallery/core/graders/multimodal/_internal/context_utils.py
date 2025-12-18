@@ -8,7 +8,7 @@ Functions for extracting and processing context from multimodal content.
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 if TYPE_CHECKING:
-    from rm_gallery.core.graders.multimodal._internal.helpers import MLLMImage
+    from rm_gallery.core.models.schema.qwen.mllmImage import MLLMImage
 
 
 def get_image_indices(content_list: List[Union[str, "MLLMImage"]]) -> List[int]:
@@ -30,7 +30,7 @@ def get_image_indices(content_list: List[Union[str, "MLLMImage"]]) -> List[int]:
         ... ])
         >>> indices  # [1, 3]
     """
-    from rm_gallery.core.graders.multimodal._internal.helpers import MLLMImage
+    from rm_gallery.core.models.schema.qwen.mllmImage import MLLMImage
 
     return [index for index, element in enumerate(content_list) if isinstance(element, MLLMImage)]
 

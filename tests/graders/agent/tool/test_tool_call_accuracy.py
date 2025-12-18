@@ -11,17 +11,17 @@ using ToolCallAccuracyGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_call_accuracy.py -v
+    pytest tests/graders/agent/tool/test_tool_call_accuracy.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_call_accuracy.py -m unit
+    pytest tests/graders/agent/tool/test_tool_call_accuracy.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/tool/test_tool_call_accuracy.py -m quality
+    pytest tests/graders/agent/tool/test_tool_call_accuracy.py -m quality
     ```
 """
 
@@ -60,7 +60,8 @@ class TestToolCallAccuracyGraderUnit:
         """Test successful evaluation with accurate tool call"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 5.0,  # Perfect accuracy
             "reason": "Tool calls are fully relevant and parameters are correct",
         }
@@ -105,7 +106,8 @@ class TestToolCallAccuracyGraderUnit:
         """Test evaluation detecting inaccurate tool call"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+
+        mock_response.parsed = {
             "score": 1.0,  # Poor accuracy
             "reason": "Tool calls are irrelevant or parameters are incorrect",
         }

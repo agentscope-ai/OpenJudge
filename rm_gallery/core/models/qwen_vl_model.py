@@ -13,9 +13,9 @@ from dashscope import MultiModalConversation
 from loguru import logger
 from pydantic import BaseModel
 
-from rm_gallery.core.graders.multimodal._internal.helpers import MLLMImage
 from rm_gallery.core.models.base_chat_model import BaseChatModel
-from rm_gallery.core.models.schema.response import ChatResponse
+from rm_gallery.core.models.schema.oai.response import ChatResponse
+from rm_gallery.core.models.schema.qwen.mllmImage import MLLMImage
 
 
 class QwenVLModel(BaseChatModel):
@@ -105,7 +105,6 @@ class QwenVLModel(BaseChatModel):
         Returns:
             Formatted messages list
         """
-
         messages = []
 
         # Add system message if provided
@@ -156,7 +155,6 @@ class QwenVLModel(BaseChatModel):
             If response_format/schema provided: structured output (dict or BaseModel)
             Otherwise: response_text
         """
-
         # Build content list
         content: List[Union[str, MLLMImage]] = [text]
         if images:
@@ -233,6 +231,7 @@ class QwenVLModel(BaseChatModel):
             If response_format/schema provided: structured output
             Otherwise: response_text
         """
+
         # DashScope doesn't have native async support yet
         # Run in executor to avoid blocking
         loop = asyncio.get_event_loop()
@@ -250,7 +249,8 @@ class QwenVLModel(BaseChatModel):
 
     async def achat(
         self,
-        *args: Any,
+        text: str,
+        images: List[MLLMImage] | None = None,
         **kwargs: Any,
     ) -> ChatResponse:
         """
@@ -258,17 +258,12 @@ class QwenVLModel(BaseChatModel):
 
         This implements the BaseChatModel interface.
         """
-        # Extract parameters
-        text = kwargs.get("text", "")
-        images = kwargs.get("images", None)
 
         # Generate response
         response_text = await self.a_generate(text, images)
-
         # Return ChatResponse
         return ChatResponse(
             content=response_text,
-            model=self.model,
         )
 
     def _estimate_cost(self, response: Any) -> float:
@@ -292,7 +287,7 @@ class QwenVLModel(BaseChatModel):
 
     def generate_from_parts(
         self,
-        parts: List[Union[str, "MLLMImage"]],
+        parts: List[Union[str, Dict[str, Any]]],
         response_format: Optional[Type[BaseModel]] = None,
         system_prompt: Optional[str] = None,
     ) -> Union[str, BaseModel, Dict[str, Any]]:
@@ -307,7 +302,6 @@ class QwenVLModel(BaseChatModel):
         Returns:
             Generated response (text or structured)
         """
-
         # Separate text and images
         text_parts = []
         image_parts = []
@@ -331,7 +325,7 @@ class QwenVLModel(BaseChatModel):
 
     async def a_generate_from_parts(
         self,
-        parts: List[Union[str, "MLLMImage"]],
+        parts: List[Union[str, MLLMImage]],
         response_format: Optional[Type[BaseModel]] = None,
         system_prompt: Optional[str] = None,
     ) -> Union[str, BaseModel, Dict[str, Any]]:
@@ -346,7 +340,6 @@ class QwenVLModel(BaseChatModel):
         Returns:
             Generated response (text or structured)
         """
-
         # Separate text and images
         text_parts = []
         image_parts = []

@@ -12,17 +12,17 @@ using TrajectoryComprehensiveGrader as an example:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/agent/trajectory/test_trajectory_comprehensive.py -v
+    pytest tests/graders/agent/trajectory/test_trajectory_comprehensive.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/agent/trajectory/test_trajectory_comprehensive.py -m unit
+    pytest tests/graders/agent/trajectory/test_trajectory_comprehensive.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/agent/trajectory/test_trajectory_comprehensive.py -m quality
+    pytest tests/graders/agent/trajectory/test_trajectory_comprehensive.py -m quality
     ```
 """
 
@@ -43,7 +43,6 @@ from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
 
 @pytest.mark.unit
-@pytest.mark.asyncio
 class TestTrajectoryComprehensiveGraderUnit:
     """Unit tests for TrajectoryComprehensiveGrader - testing isolated functionality"""
 
@@ -147,6 +146,7 @@ class TestTrajectoryComprehensiveGraderUnit:
         # Model should not be called for empty input
         mock_model.achat.assert_not_called()
 
+    @pytest.mark.asyncio
     async def test_no_tool_calls_edge_case(self):
         """Test edge case with no tool calls"""
         mock_model = AsyncMock()
@@ -165,6 +165,7 @@ class TestTrajectoryComprehensiveGraderUnit:
         assert result.score >= 0.0
         assert isinstance(result.reason, str)
 
+    @pytest.mark.asyncio
     async def test_error_handling(self):
         """Test graceful error handling"""
         # Setup mock to raise exception
@@ -192,7 +193,8 @@ class TestTrajectoryComprehensiveGraderUnit:
         assert result.score == 0.0
         assert "error" in result.reason.lower() or "error" in str(result.metadata).lower()
 
-    async def test_malformed_messages_error_handling(self):
+    @pytest.mark.asyncio
+    async def test_malformed_messages_error_handler(self):
         """Test error handling with malformed messages"""
         mock_model = AsyncMock()
         grader = TrajectoryComprehensiveGrader(model=mock_model)

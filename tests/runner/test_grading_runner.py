@@ -284,7 +284,8 @@ class TestGradingRunner:
         mock_response = AsyncMock()
         mock_response.score = 5
         mock_response.reason = "Excellent"
-        mock_response.metadata = {}
+
+        mock_response.parsed = {}
         mock_model.achat = AsyncMock(return_value=mock_response)
 
         # We won't actually instantiate real graders that require API keys,

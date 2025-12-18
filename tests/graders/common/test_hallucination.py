@@ -12,17 +12,17 @@ using HallucinationGrader as an example of LLMGrader:
 Example:
     Run all tests:
     ```bash
-    poetry run pytest tests/graders/common/test_hallucination.py -v
+    pytest tests/graders/common/test_hallucination.py -v
     ```
 
     Run only unit tests:
     ```bash
-    poetry run pytest tests/graders/common/test_hallucination.py -m unit
+    pytest tests/graders/common/test_hallucination.py -m unit
     ```
 
     Run quality tests (only if API keys are configured):
     ```bash
-    poetry run pytest tests/graders/common/test_hallucination.py -m quality
+    pytest tests/graders/common/test_hallucination.py -m quality
     ```
 """
 
@@ -61,9 +61,9 @@ class TestHallucinationGraderUnit:
     @pytest.mark.asyncio
     async def test_successful_evaluation(self):
         """Test successful evaluation with valid inputs"""
-        # Setup mock response with the expected metadata structure
+        # Setup mock response with the expected parsed structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+        mock_response.parsed = {
             "score": 4,
             "reason": "Response contains minimal hallucinations",
         }
@@ -94,9 +94,9 @@ class TestHallucinationGraderUnit:
     @pytest.mark.asyncio
     async def test_evaluation_with_reference(self):
         """Test evaluation with reference answer"""
-        # Setup mock response with the expected metadata structure
+        # Setup mock response with the expected parsed structure
         mock_response = AsyncMock()
-        mock_response.metadata = {
+        mock_response.parsed = {
             "score": 5,
             "reason": "Response is factually accurate with no hallucinations",
         }
