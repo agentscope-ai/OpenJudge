@@ -108,21 +108,37 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
 
         # Now setup the actual mock response with the callback result
         mock_response = AsyncMock()
-        mock_response.metadata = callback_result
+        mock_response.parsed = callback_result
 
         mock_model.achat = AsyncMock(return_value=mock_response)
 
-        # Execute test
+        # Execute test with complete tool call flow
         messages = [
-            {"role": "user", "content": "分析我的持仓"},
+            {"role": "user", "content": "分析我的持仓中生物制品板块和电池板块的占比"},
+            {
+                "role": "assistant",
+                "content": "我将帮您查询持仓信息。",
+                "tool_calls": [
+                    {
+                        "id": "call_123abc",
+                        "function": {
+                            "arguments": '{"query": "持仓占比"}',
+                            "name": "search_portfolio",
+                        },
+                        "type": "function",
+                        "index": 0,
+                    }
+                ],
+            },
             {
                 "role": "tool",
-                "name": "search",
-                "content": "生物制品板块持仓占比0.46%，电池板块持仓占比0.29%（数据时间：2025年7月7日）",
+                "name": "search_portfolio",
+                "content": "截至2025年7月7日收盘数据：\n- 生物制品板块持仓占比：0.46%\n- 电池板块持仓占比：0.29%",
+                "tool_call_id": "call_123abc",
             },
             {
                 "role": "assistant",
-                "content": "根据您的持仓数据，生物制品板块占比0.46%，电池板块占比0.29%。",
+                "content": "根据您的投资组合数据（截至2025年7月7日），您的持仓情况如下：\n\n1. **生物制品板块**：持仓占比为0.46%\n2. **电池板块**：持仓占比为0.29%",
             },
         ]
 
@@ -154,7 +170,7 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
                     "value": "-1.92%",
                     "time": "近180天",
                     "error_type": "time_error",
-                    "error_reason": "用户画像中是7月7日数据",
+                    "error_reason": "【来源1】显示数据时间为2025年7月7日，报告中使用近180天，时间描述不一致",
                 },
                 {
                     "subject": "电池板块",
@@ -174,21 +190,37 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
 
         # Now setup the actual mock response with the callback result
         mock_response = AsyncMock()
-        mock_response.metadata = callback_result
+        mock_response.parsed = callback_result
 
         mock_model.achat = AsyncMock(return_value=mock_response)
 
-        # Execute test
+        # Execute test with complete tool call flow
         messages = [
-            {"role": "user", "content": "分析我的持仓"},
+            {"role": "user", "content": "分析我的持仓板块表现"},
+            {
+                "role": "assistant",
+                "content": "我将查询您的持仓数据和板块表现。",
+                "tool_calls": [
+                    {
+                        "id": "call_456def",
+                        "function": {
+                            "arguments": '{"query": "持仓板块收益率"}',
+                            "name": "search_portfolio",
+                        },
+                        "type": "function",
+                        "index": 0,
+                    }
+                ],
+            },
             {
                 "role": "tool",
-                "name": "search",
-                "content": "截至2025年7月7日，生物制品板块收益率为-1.92%，电池板块持仓占比0.29%",
+                "name": "search_portfolio",
+                "content": "截至2025年7月7日收盘数据：\n- 生物制品板块收益率：-1.92%\n- 电池板块持仓占比：0.29%\n- 数据来源：投资组合实时数据",
+                "tool_call_id": "call_456def",
             },
             {
                 "role": "assistant",
-                "content": "近180天生物制品板块收益率为-1.92%，电池板块持仓占比0.29%。",
+                "content": "根据投资组合数据分析：\n\n1. **生物制品板块**：近180天收益率为-1.92%\n2. **电池板块**：持仓占比为0.29%（截至2025年7月7日）",
             },
         ]
 
@@ -224,10 +256,31 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
         mock_model = AsyncMock()
         grader = FinancialTrajectoryFaithfulGrader(model=mock_model)
 
-        # Execute test with messages without AI answer
+        # Execute test with messages without AI answer (tool call but no final response)
         messages = [
             {"role": "user", "content": "分析我的持仓"},
-            {"role": "tool", "content": "搜索结果..."},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call_xyz",
+                        "function": {
+                            "arguments": '{"query": "持仓"}',
+                            "name": "search",
+                        },
+                        "type": "function",
+                        "index": 0,
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "name": "search",
+                "content": "持仓数据...",
+                "tool_call_id": "call_xyz",
+            },
+            # Missing final assistant response with content
         ]
 
         result = await grader.aevaluate(messages=messages)
@@ -254,15 +307,38 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
 
         # Now setup the actual mock response with the callback result
         mock_response = AsyncMock()
-        mock_response.metadata = callback_result
+        mock_response.parsed = callback_result
 
         mock_model.achat = AsyncMock(return_value=mock_response)
 
-        # Execute test
+        # Execute test with non-financial query
         messages = [
             {"role": "user", "content": "今天天气怎么样？"},
-            {"role": "tool", "content": "今天天气晴朗"},
-            {"role": "assistant", "content": "今天天气很好，适合出行。"},
+            {
+                "role": "assistant",
+                "content": "我将为您查询天气信息。",
+                "tool_calls": [
+                    {
+                        "id": "call_weather",
+                        "function": {
+                            "arguments": '{"city": "北京"}',
+                            "name": "get_weather",
+                        },
+                        "type": "function",
+                        "index": 0,
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "name": "get_weather",
+                "content": "北京今天天气晴朗，温度20-28°C",
+                "tool_call_id": "call_weather",
+            },
+            {
+                "role": "assistant",
+                "content": "今天北京天气很好，晴朗，温度20-28°C，适合出行。",
+            },
         ]
 
         result = await grader.aevaluate(messages=messages)
@@ -281,11 +357,34 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
         # Create grader
         grader = FinancialTrajectoryFaithfulGrader(model=mock_model)
 
-        # Execute test
+        # Execute test with complete message flow
         messages = [
             {"role": "user", "content": "分析我的持仓"},
-            {"role": "tool", "content": "持仓数据..."},
-            {"role": "assistant", "content": "持仓分析结果..."},
+            {
+                "role": "assistant",
+                "content": "正在查询持仓数据...",
+                "tool_calls": [
+                    {
+                        "id": "call_error",
+                        "function": {
+                            "arguments": '{"query": "持仓"}',
+                            "name": "get_portfolio",
+                        },
+                        "type": "function",
+                        "index": 0,
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "name": "get_portfolio",
+                "content": "持仓数据：生物制品板块占比0.46%",
+                "tool_call_id": "call_error",
+            },
+            {
+                "role": "assistant",
+                "content": "您的生物制品板块持仓占比为0.46%。",
+            },
         ]
 
         result = await grader.aevaluate(messages=messages)
@@ -300,11 +399,11 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
         """Test error handling with malformed tuple data"""
         # Setup mock response with malformed tuples
         mock_response = AsyncMock()
-        mock_response.metadata = {
+        mock_response.parsed = {
             "tuples": [
                 {
                     "subject": "板块",
-                    # Missing required fields
+                    # Missing required fields: indicator, value, time, error_type, error_reason
                 }
             ]
         }
@@ -315,11 +414,34 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
         # Create grader
         grader = FinancialTrajectoryFaithfulGrader(model=mock_model)
 
-        # Execute test
+        # Execute test with complete tool call flow
         messages = [
             {"role": "user", "content": "分析我的持仓"},
-            {"role": "tool", "content": "持仓数据..."},
-            {"role": "assistant", "content": "持仓分析结果..."},
+            {
+                "role": "assistant",
+                "content": "正在分析持仓...",
+                "tool_calls": [
+                    {
+                        "id": "call_malformed",
+                        "function": {
+                            "arguments": '{"query": "持仓"}',
+                            "name": "analyze_portfolio",
+                        },
+                        "type": "function",
+                        "index": 0,
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "name": "analyze_portfolio",
+                "content": "板块数据不完整",
+                "tool_call_id": "call_malformed",
+            },
+            {
+                "role": "assistant",
+                "content": "您的板块持仓情况...",
+            },
         ]
 
         result = await grader.aevaluate(messages=messages)
@@ -333,14 +455,33 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
         mock_model = AsyncMock()
         grader = FinancialTrajectoryFaithfulGrader(model=mock_model)
 
-        # Test with nested message structure
+        # Test with nested message structure including tool calls
         messages = [
             {"message": {"role": "system", "content": "System prompt"}},
             {"message": {"role": "user", "content": "分析我的持仓"}},
             {
                 "message": {
+                    "role": "assistant",
+                    "content": "查询中...",
+                    "tool_calls": [
+                        {
+                            "id": "call_nested",
+                            "function": {
+                                "arguments": '{"query": "持仓"}',
+                                "name": "search",
+                            },
+                            "type": "function",
+                            "index": 0,
+                        }
+                    ],
+                }
+            },
+            {
+                "message": {
                     "role": "tool",
+                    "name": "search",
                     "content": "生物制品板块持仓占比0.46%（截至2025年7月7日）",
+                    "tool_call_id": "call_nested",
                 }
             },
             {
@@ -375,7 +516,7 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
                     "value": "-1.92%",
                     "time": "近180天",
                     "error_type": "time_error",
-                    "error_reason": "时间不一致",
+                    "error_reason": "【来源1】显示时间为2025年7月7日，报告使用近180天，时间不一致",
                 },
                 {
                     "subject": "电池板块",
@@ -383,7 +524,7 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
                     "value": "-0.64",
                     "time": "2025年7月7日",
                     "error_type": "indicator_error",
-                    "error_reason": "应为收益率而非收益",
+                    "error_reason": "【来源1】显示为收益率-0.64%，报告使用收益-0.64，指标混淆",
                 },
                 {
                     "subject": "进阶资产",
@@ -391,7 +532,7 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
                     "value": "1.69%",
                     "time": "2025年7月7日",
                     "error_type": "subject_error",
-                    "error_reason": "应为增值资产",
+                    "error_reason": "【来源1】显示为增值资产持仓占比1.69%，报告使用进阶资产，主体错误",
                 },
                 {
                     "subject": "某板块",
@@ -399,7 +540,7 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
                     "value": "3%",
                     "time": "2025年7月7日",
                     "error_type": "value_error",
-                    "error_reason": "数值不准确",
+                    "error_reason": "【来源1】显示收益率为2.87%，报告使用3%，数值不准确",
                 },
             ]
         }
@@ -411,19 +552,51 @@ class TestFinancialTrajectoryFaithfulGraderUnit:
 
         # Now setup the actual mock response with the callback result
         mock_response = AsyncMock()
-        mock_response.metadata = callback_result
+        mock_response.parsed = callback_result
 
         mock_model.achat = AsyncMock(return_value=mock_response)
 
+        # Test with complete tool call flow
         messages = [
-            {"role": "user", "content": "分析我的持仓"},
-            {"role": "tool", "content": "持仓数据..."},
-            {"role": "assistant", "content": "持仓分析..."},
+            {"role": "user", "content": "分析我的持仓情况"},
+            {
+                "role": "assistant",
+                "content": "我将为您查询持仓数据。",
+                "tool_calls": [
+                    {
+                        "id": "call_789ghi",
+                        "function": {
+                            "arguments": '{"query": "持仓数据"}',
+                            "name": "get_portfolio",
+                        },
+                        "type": "function",
+                        "index": 0,
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "name": "get_portfolio",
+                "content": """截至2025年7月7日持仓数据：
+- 生物制品板块收益率：-1.92%
+- 电池板块收益率：-0.64%
+- 增值资产持仓占比：1.69%
+- 某板块收益率：2.87%""",
+                "tool_call_id": "call_789ghi",
+            },
+            {
+                "role": "assistant",
+                "content": """您的持仓情况如下：
+1. 生物制品板块近180天收益率为-1.92%
+2. 电池板块收益为-0.64（截至2025年7月7日）
+3. 进阶资产持仓占比为1.69%（截至2025年7月7日）
+4. 某板块收益率为3%（截至2025年7月7日）""",
+            },
         ]
 
         result = await grader.aevaluate(messages=messages)
 
-        # Assertions
+        # Assertions - 4 errors out of 4 tuples: 1 - 4/4 = 0.0
         assert result.score == 0.0
         # Check all error types are mentioned in the reason
         assert "time_error" in result.reason
@@ -440,12 +613,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 RUN_QUALITY_TESTS = bool(OPENAI_API_KEY and OPENAI_BASE_URL)
 
-pytestmark = pytest.mark.skipif(
+
+@pytest.mark.skipif(
     not RUN_QUALITY_TESTS,
     reason="Requires API keys and base URL to run quality tests",
 )
-
-
 @pytest.mark.quality
 class TestFinancialTrajectoryFaithfulGraderQuality:
     """Quality tests for FinancialTrajectoryFaithfulGrader - testing evaluation quality"""
