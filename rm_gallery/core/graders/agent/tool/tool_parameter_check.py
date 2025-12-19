@@ -199,7 +199,6 @@ class ToolParameterCheckGrader(LLMGrader):
         query: Union[str, List[Dict[str, Any]]],
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
         tool_calls: Union[Dict[str, Any], List[Dict[str, Any]]],
-        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate tool parameter extraction correctness
@@ -210,7 +209,6 @@ class ToolParameterCheckGrader(LLMGrader):
             tool_definitions: List of tool definitions available to the agent.
                              Each definition includes name, description, and parameters.
             tool_calls: List of tool calls made by the agent, including tool name and arguments.
-            **kwargs: Additional arguments
 
         Returns:
             GraderScore: Score with binary value (1.0 = correct, 0.0 = incorrect)

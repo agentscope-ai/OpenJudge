@@ -10,7 +10,12 @@ either scores or rankings.
 from abc import ABC, abstractmethod
 from typing import Any
 
-from rm_gallery.core.graders.schema import GraderMode, GraderRank, GraderScore
+from rm_gallery.core.graders.schema import (
+    GraderError,
+    GraderMode,
+    GraderRank,
+    GraderScore,
+)
 
 
 class BaseGrader(ABC):
@@ -74,7 +79,7 @@ class BaseGrader(ABC):
         self.kwargs = kwargs
 
     @abstractmethod
-    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
+    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank | GraderError:
         """Abstract method for performing the actual evaluation logic.
 
         This method must be implemented by all Grader subclasses. It performs
@@ -92,7 +97,7 @@ class BaseGrader(ABC):
                      typically include fields like 'query', 'answer', 'context', etc.
 
         Returns:
-            Union[GraderScore, GraderRank]: The evaluation result.
+            Union[GraderScore, GraderRank, GraderError]: The evaluation result.
 
             In pointwise mode:
                 GraderScore: Contains a numerical score and explanation.

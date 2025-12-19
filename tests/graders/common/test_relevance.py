@@ -144,8 +144,7 @@ class TestRelevanceGraderUnit:
             )
 
             # Assertions
-            assert result.score == 0.0
-            assert "Evaluation error: API Error" in result.reason
+            assert "Evaluation error: API Error" in result.error
 
 
 # ==================== QUALITY TESTS ====================

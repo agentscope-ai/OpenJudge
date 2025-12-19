@@ -6,7 +6,7 @@ Evaluates whether the agent executes an action that aligns with its stated plan 
 """
 
 import textwrap
-from typing import Any, Optional
+from typing import Optional
 
 from loguru import logger
 
@@ -219,7 +219,6 @@ class ActionAlignmentGrader(LLMGrader):
         action: str,
         history: Optional[list] = None,
         context: Optional[str] = None,
-        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate action alignment with plan
@@ -229,7 +228,6 @@ class ActionAlignmentGrader(LLMGrader):
             action: Agent's chosen action
             history: Optional list of previous step dictionaries for context
             context: Optional task context (task description, environment, available actions)
-            **kwargs: Additional arguments
 
         Returns:
             GraderScore: Score with binary value (1.0 = good alignment, 0.0 = poor alignment)

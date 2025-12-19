@@ -10,7 +10,12 @@ from typing import Any, Dict, List, Set, Tuple
 
 from loguru import logger
 
-from rm_gallery.core.graders.base_grader import BaseGrader, GraderMode, GraderScore
+from rm_gallery.core.graders.base_grader import (
+    BaseGrader,
+    GraderError,
+    GraderMode,
+    GraderScore,
+)
 
 # pylint: disable=line-too-long
 
@@ -71,12 +76,17 @@ class ToolCallSequenceMatchGrader(BaseGrader):
                 for chat_tool in tool_calls:
                     # Parse the tool call arguments
                     chat_tool = chat_tool.get("tool_call", chat_tool)
-                    function = chat_tool.get("function", {})
+                    function = chat_tool.get("function", chat_tool)
                     raw_args = function.get("arguments", "{}")
-                    try:
-                        params = json.loads(raw_args)
-                    except json.JSONDecodeError:
-                        params = {}
+
+                    if isinstance(raw_args, dict):
+                        params = raw_args
+                    else:
+                        try:
+                            params = json.loads(raw_args)
+                        except json.JSONDecodeError:
+                            params = {}
+
                     # Prepare the tool information
                     tool_info = {
                         "name": function.get("name", ""),
@@ -108,10 +118,14 @@ class ToolCallSequenceMatchGrader(BaseGrader):
                 tool_call = tool_call.get("tool_call", tool_call)
                 function = tool_call.get("function", tool_call)
                 raw_args = function.get("arguments", "{}")
-                try:
-                    params = json.loads(raw_args)
-                except json.JSONDecodeError:
-                    params = {}
+
+                if isinstance(raw_args, dict):
+                    params = raw_args
+                else:
+                    try:
+                        params = json.loads(raw_args)
+                    except json.JSONDecodeError:
+                        params = {}
 
                 tool_info = {
                     "name": function.get("name", ""),
@@ -316,7 +330,7 @@ class ToolCallSequenceMatchGrader(BaseGrader):
         self,
         messages: List[Dict[str, Any]],
         reference_tool_calls: List[List[Dict[str, Any]]],
-    ) -> GraderScore:
+    ) -> GraderScore | GraderError:
         """
         Evaluate tool call sequence matching against reference.
         Args:
@@ -372,10 +386,9 @@ class ToolCallSequenceMatchGrader(BaseGrader):
             reference_tool_steps = self.extract_reference_tool_sequence(reference_tool_calls)
         except Exception as e:
             logger.error(f"Sequence extraction failed: {e}")
-            return GraderScore(
+            return GraderError(
                 name=self.name,
-                score=0.0,
-                reason=f"Sequence extraction failed: {str(e)}",
+                error=f"Sequence extraction failed: {str(e)}",
                 metadata={"error": str(e)},
             )
         if not predicted_tool_steps and not reference_tool_steps:

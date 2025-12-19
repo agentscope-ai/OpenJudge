@@ -10,7 +10,7 @@ from typing import Optional
 
 from loguru import logger
 
-from rm_gallery.core.graders.base_grader import GraderMode, GraderScore
+from rm_gallery.core.graders.base_grader import GraderError, GraderMode, GraderScore
 from rm_gallery.core.graders.llm_grader import LLMGrader
 from rm_gallery.core.models.base_chat_model import BaseChatModel
 from rm_gallery.core.models.schema.oai.message import ChatMessage
@@ -340,8 +340,10 @@ class RelevanceGrader(LLMGrader):
 
         except Exception as e:
             logger.error(f"Error evaluating relevance: {e}")
-            score = 1  # Default to lowest score on error (valid range: 1-5)
-            reason = f"Evaluation error: {str(e)}"
+            return GraderError(
+                name=self.name,
+                error=f"Evaluation error: {str(e)}",
+            )
 
         # Prepare metadata
         metadata = {

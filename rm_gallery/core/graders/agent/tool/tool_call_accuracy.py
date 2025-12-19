@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from rm_gallery.core.graders.base_grader import GraderMode, GraderScore
+from rm_gallery.core.graders.base_grader import GraderError, GraderMode, GraderScore
 from rm_gallery.core.graders.llm_grader import LLMGrader
 from rm_gallery.core.models.base_chat_model import BaseChatModel
 from rm_gallery.core.models.schema.oai.message import ChatMessage
@@ -248,7 +248,7 @@ class ToolCallAccuracyGrader(LLMGrader):
         tool_definitions: Dict[str, Any] | List[Dict[str, Any]],
         tool_calls: Dict[str, Any] | List[Dict[str, Any]] | None = None,
         response: str | List[Dict[str, Any]] | None = None,
-    ) -> GraderScore:
+    ) -> GraderScore | GraderError:
         """
         Evaluate tool call accuracy
 
@@ -330,8 +330,11 @@ class ToolCallAccuracyGrader(LLMGrader):
             reason = result.reason
         except Exception as e:
             logger.error(f"Error evaluating tool call accuracy check: {e}")
-            score = 0.0
             reason = f"Evaluation error: {str(e)}"
+            return GraderError(
+                name=self.name,
+                error=reason,
+            )
 
         # Prepare metadata
         metadata = {

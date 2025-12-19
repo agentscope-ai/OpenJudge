@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from rm_gallery.core.graders.base_grader import GraderMode, GraderScore
+from rm_gallery.core.graders.base_grader import GraderError, GraderMode, GraderScore
 from rm_gallery.core.graders.llm_grader import LLMGrader
 from rm_gallery.core.models.base_chat_model import BaseChatModel
 from rm_gallery.core.models.schema.oai.message import ChatMessage
@@ -530,7 +530,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
     async def aevaluate(
         self,
         messages: List[Dict[str, Any]],
-    ) -> GraderScore:
+    ) -> GraderScore | GraderError:
         """
         Evaluate complete agent trajectory comprehensively.
 
@@ -590,10 +590,9 @@ class TrajectoryComprehensiveGrader(LLMGrader):
 
         if not user_query or not trajectory_messages:
             logger.warning("Empty user query or trajectory, returning zero score")
-            return GraderScore(
+            return GraderError(
                 name=self.name,
-                score=0.0,
-                reason="Empty user query or trajectory",
+                error="Empty user query or trajectory",
                 metadata={
                     "evaluation_type": "trajectory_comprehensive",
                     "error": "Empty input",
@@ -630,10 +629,9 @@ class TrajectoryComprehensiveGrader(LLMGrader):
 
         except Exception as e:
             logger.error(f"Error evaluating {self.name}: {e}")
-            return GraderScore(
+            return GraderError(
                 name=self.name,
-                score=0.0,
-                reason=f"Evaluation error: {str(e)}",
+                error=f"Evaluation error: {str(e)}",
                 metadata={
                     "evaluation_type": "trajectory_comprehensive",
                     "error": str(e),

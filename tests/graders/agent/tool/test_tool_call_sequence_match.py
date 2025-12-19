@@ -94,7 +94,7 @@ async def test_tool_call_sequence_match_grader_mismatch():
     ]
 
     reference_tool_calls = [
-        {"step": 0, "tool": [{"name": "calculate", "parameters": {"value": 42}}]},
+        [{"name": "calculate", "parameters": {"value": 42}}],
     ]
 
     result = await grader.aevaluate(

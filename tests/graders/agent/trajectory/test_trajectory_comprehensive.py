@@ -34,6 +34,7 @@ import pytest
 from rm_gallery.core.graders.agent.trajectory.trajectory_comprehensive import (
     TrajectoryComprehensiveGrader,
 )
+from rm_gallery.core.graders.base_grader import GraderError
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 
@@ -76,13 +77,14 @@ class TestTrajectoryComprehensiveGraderUnit:
         # Setup mock response for overall evaluation
         mock_overall_response = AsyncMock()
         mock_overall_response.metadata = {
-            "score": 5,
+            "score": 1,
             "reason": "Excellent problem solving with efficient tool usage",
             "is_resolved": True,
+            "step_evaluations": [mock_step_response.metadata],
         }
 
         mock_model = AsyncMock()
-        mock_model.achat = AsyncMock(side_effect=[mock_step_response, mock_overall_response])
+        mock_model.achat = AsyncMock(side_effect=[mock_overall_response])
 
         # Create grader
         grader = TrajectoryComprehensiveGrader(model=mock_model)
@@ -139,8 +141,7 @@ class TestTrajectoryComprehensiveGraderUnit:
         result = await grader.aevaluate(messages=[])
 
         # Assertions
-        assert result.score == 0.0
-        assert "empty" in result.reason.lower() or "empty" in str(result.metadata).lower()
+        assert "empty" in result.error.lower() or "empty" in str(result.metadata).lower()
         assert result.metadata.get("step_evaluations", []) == []
 
         # Model should not be called for empty input
@@ -162,8 +163,7 @@ class TestTrajectoryComprehensiveGraderUnit:
         result = await grader.aevaluate(messages=messages)
 
         # Assertions
-        assert result.score >= 0.0
-        assert isinstance(result.reason, str)
+        assert isinstance(result.error, str)
 
     @pytest.mark.asyncio
     async def test_error_handling(self):
@@ -190,8 +190,7 @@ class TestTrajectoryComprehensiveGraderUnit:
         result = await grader.aevaluate(messages=messages)
 
         # Assertions
-        assert result.score == 0.0
-        assert "error" in result.reason.lower() or "error" in str(result.metadata).lower()
+        assert "error" in result.error.lower() or "error" in str(result.metadata).lower()
 
     @pytest.mark.asyncio
     async def test_malformed_messages_error_handler(self):
@@ -208,8 +207,8 @@ class TestTrajectoryComprehensiveGraderUnit:
         result = await grader.aevaluate(messages=malformed_messages)
 
         # Assertions
-        assert result.score >= 0.0
-        assert isinstance(result.reason, str)
+        print(type(result))
+        assert isinstance(result, GraderError)
 
     def test_trajectory_extraction_format(self):
         """Test trajectory extraction format correctness"""

@@ -32,6 +32,7 @@ import pytest
 
 from rm_gallery.core.analyzer.validation import AccuracyAnalyzer, ConsistencyAnalyzer
 from rm_gallery.core.graders.agent import ToolCallAccuracyGrader
+from rm_gallery.core.graders.base_grader import GraderError
 from rm_gallery.core.models.openai_chat_model import OpenAIChatModel
 from rm_gallery.core.models.schema.prompt_template import LanguageEnum
 from rm_gallery.core.runner.grading_runner import GraderConfig, GradingRunner
@@ -162,8 +163,7 @@ class TestToolCallAccuracyGraderUnit:
             )
 
             # Should return error score
-            assert result.score == 0.0
-            assert "error" in result.reason.lower()
+            assert isinstance(result, GraderError)
 
 
 # ==================== QUALITY TESTS ====================
