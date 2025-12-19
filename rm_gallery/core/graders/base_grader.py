@@ -145,7 +145,6 @@ class BaseGrader(ABC):
         """
 
     @staticmethod
-    @abstractmethod
     def get_metadata() -> Dict[str, Any]:
         """Return the information about the grader's evaluation process.
 
@@ -159,8 +158,9 @@ class BaseGrader(ABC):
 
         Define this as a static method, because the explanation belongs to the class level, not the instance level.
 
-        Each subclass must implement its own, otherwise calling this method of a subclass will return the result of its parent class' method.
+        Each subclass must implement its own, otherwise calling this method from a subclass returns value from its parent's method.
         """
+        return {'warning': 'This Grader has not implemented its own get_metadata().'}
 
 
     @classmethod
