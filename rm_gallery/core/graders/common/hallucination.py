@@ -45,8 +45,6 @@ A hallucination-free response should:
 Focus only on factual accuracy. If context is provided, verify support from the context. If no context is provided or if the context is inconsistent with facts/common knowledge, verify factual correctness based on common knowledge. Do not consider style, grammar, or presentation when scoring. A short but factual response should score higher than a longer response containing unsupported claims.
 </Reminder>
 
-{context_section}
-
 <query>
 {query}
 </query>
@@ -55,7 +53,16 @@ Focus only on factual accuracy. If context is provided, verify support from the 
 {response}
 </response>
 
-{reference_section}
+Use the following context to help you evaluate whether there are hallucinations in the response (ignore if empty):
+<context>
+{context}
+</context>
+
+If available, you may also use the following reference response to help you identify hallucinations in the response (ignore if empty):
+<reference_response>
+{reference_response}
+</reference_response>
+
 
 # Output Instructions
 Provide your evaluation in the following structured JSON format:
@@ -100,17 +107,23 @@ HALLUCINATION_PROMPT_ZH = """
 仅关注事实准确性。如果提供了上下文，则需要参考上下文。如果未提供上下文或者上下文与事实/常识不一致，则基于事实/常识验证事实正确性。评分时不要考虑风格、语法或呈现方式。简短但真实的回答应该比包含无依据声明的较长回答得分更高。
 </提醒>
 
-{context_section}
-
-<query>
+<查询>
 {query}
-</query>
+</查询>
 
-<response>
+<回答>
 {response}
-</response>
+</回答>
 
-{reference_section}
+使用以下上下文帮助你评估输出中是否存在幻觉（如为空则忽略）:
+<上下文>
+{context}
+</上下文>
+
+如有需要，你也可以使用以下参考输出来帮助识别回答中的幻觉（如为空则忽略）：
+<参考回答>
+{reference_response}
+</参考回答>
 
 # 输出指令
 请按以下结构化 JSON 格式提供你的评估：
@@ -293,45 +306,13 @@ class HallucinationGrader(LLMGrader):
             ...     response="The capital of France is Paris."
             ... )
         """
-        # Prepare context section based on language
-        context_section = ""
-        if context:
-            if self.language == LanguageEnum.ZH:
-                context_section = f"""使用以下上下文帮助你评估输出中是否存在幻觉：
-<context>
-{context}
-</context>"""
-            else:
-                context_section = f"""Use the following context to help you evaluate whether there are hallucinations in the response:
-<context>
-{context}
-</context>"""
-        else:
-            if self.language == LanguageEnum.ZH:
-                context_section = """注意：未提供上下文信息。请基于常识、已知事实和逻辑一致性来评估输出是否包含幻觉、虚假信息或不合理的声明。"""
-            else:
-                context_section = """Note: No context is provided. Please evaluate whether the response contains hallucinations, false information, or unreasonable claims based on common knowledge, established facts, and logical consistency."""
-
-        # Prepare reference response section based on language
-        reference_section = ""
-        if reference_response:
-            if self.language == LanguageEnum.ZH:
-                reference_section = f"""如有需要，你也可以使用以下参考输出来帮助识别回答中的幻觉：
-<reference>
-{reference_response}
-</reference>"""
-            else:
-                reference_section = f"""If available, you may also use the following reference response to help you identify hallucinations in the response:
-<reference>
-{reference_response}
-</reference>"""
 
         try:
             result = await super().aevaluate(
                 query=query,
                 response=response,
-                context_section=context_section,
-                reference_section=reference_section,
+                context=context,
+                reference_response=reference_response,
             )
             score = result.score
             reason = result.reason

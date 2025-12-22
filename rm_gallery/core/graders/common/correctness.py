@@ -54,8 +54,6 @@ Points should be deducted for:
 The goal is to evaluate correctness against reference response, not general quality. A well-written response that contradicts the reference response should score low. A simple response that accurately reflects and properly uses the reference response should score high. Consider both accuracy and appropriate application of the reference response.
 </Reminder>
 
-{context_section}
-
 <query>
 {query}
 </query>
@@ -64,7 +62,15 @@ The goal is to evaluate correctness against reference response, not general qual
 {response}
 </response>
 
-{reference_section}
+Additional context (ignore if empty):
+<context>
+{context}
+</context>
+
+The following is the correct response for your reference (ignore if empty):
+<reference_response>
+{reference_response}
+</reference_response>
 
 # Output Instructions
 Provide your evaluation in the following structured JSON format:
@@ -120,8 +126,6 @@ CORRECTNESS_PROMPT_ZH = """
 目标是评估与参考回答的正确性，而不是一般质量。一个写得很好但与参考回答矛盾的回答应该得分低。一个简单但准确反映并正确使用参考回答的回答应该得分高。同时考虑准确性和参考回答的适当应用。
 </提醒>
 
-{context_section}
-
 <查询>
 {query}
 </查询>
@@ -130,7 +134,15 @@ CORRECTNESS_PROMPT_ZH = """
 {response}
 </回答>
 
-{reference_section}
+附加上下文（如为空则忽略）:
+<上下文>
+{context}
+</上下文>
+
+以下是正确的回复供你参考（用于比较，如为空则忽略）：
+<参考回答>
+{reference_response}
+</参考回答>
 
 # 输出指令
 请按以下结构化 JSON 格式提供你的评估：
@@ -267,8 +279,8 @@ class CorrectnessGrader(LLMGrader):
         self,
         query: str,
         response: str,
-        reference_response: str = "",
         context: str = "",
+        reference_response: str = "",
     ) -> GraderScore:
         """
         Evaluate correctness of response against reference response
@@ -276,8 +288,8 @@ class CorrectnessGrader(LLMGrader):
         Args:
             query: Original user query or question
             response: Model response to evaluate
-            reference_response: Correct response to compare against. Defaults to empty string.
             context: Additional context or background information. Defaults to empty string.
+            reference_response: Correct response to compare against. Defaults to empty string.
 
         Returns:
             GraderScore: Score with correctness value [1, 5]
@@ -292,38 +304,12 @@ class CorrectnessGrader(LLMGrader):
             ...     context="Geography quiz question"
             ... )
         """
-        # Prepare context section
-        context_section = ""
-        if context:
-            if self.language == LanguageEnum.ZH:
-                context_section = f"""<上下文>
-{context}
-</上下文>"""
-            else:
-                context_section = f"""<context>
-{context}
-</context>"""
-
-        # Prepare reference response section based on language
-        reference_section = ""
-        if reference_response:
-            if self.language == LanguageEnum.ZH:
-                reference_section = f"""以下是正确的回复供你参考：
-<参考回答>
-{reference_response}
-</参考回答>"""
-            else:
-                reference_section = f"""The following is the correct response for your reference:
-<reference_response>
-{reference_response}
-</reference_response>"""
-
         try:
             result = await super().aevaluate(
                 query=query,
                 response=response,
-                context_section=context_section,
-                reference_section=reference_section,
+                context=context,
+                reference_response=reference_response,
             )
             score = result.score
             reason = result.reason

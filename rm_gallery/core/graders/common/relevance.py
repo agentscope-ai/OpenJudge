@@ -52,9 +52,6 @@ The goal is to evaluate relevance to the query, not overall quality.
 A score of 5 means the response is highly relevant and comprehensive.
 A score of 1 means the response is completely irrelevant to the query.
 </Reminder>
-
-{context_section}
-
 <query>
 {query}
 </query>
@@ -63,7 +60,15 @@ A score of 1 means the response is completely irrelevant to the query.
 {response}
 </response>
 
-{reference}
+Additional context (ignore if empty):
+<context>
+{context}
+</context>
+
+The following is the correct response for your reference (ignore if empty):
+<reference_response>
+{reference_response}
+</reference_response>
 
 # Output Instructions
 **Note**: If a reference response is provided, you may use it as a baseline for comparison to better assess the quality and relevance of the evaluated response.
@@ -119,17 +124,23 @@ RELEVANCE_PROMPT_ZH = """
 分数1表示回答与查询完全无关。
 </提醒>
 
-{context_section}
-
-<query>
+<查询>
 {query}
-</query>
+</查询>
 
-<response>
+<回答>
 {response}
-</response>
+</回答>
 
-{reference}
+附加上下文（如为空则忽略）:
+<上下文>
+{context}
+</上下文>
+
+参考回答（用于比较，如为空则忽略）：
+<参考回答>
+{reference_response}
+</参考回答>
 
 # 输出指令
 **注意**：如果提供了参考回答，你可以将其作为基准进行比较，以更好地评估被评价回答的质量和相关性。
@@ -278,7 +289,7 @@ class RelevanceGrader(LLMGrader):
         query: str,
         response: str,
         context: str = "",
-        reference: str = "",
+        reference_response: str = "",
     ) -> GraderScore:
         """
         Evaluate relevance of response to query
@@ -300,40 +311,12 @@ class RelevanceGrader(LLMGrader):
             ...     context="User is a beginner asking for a simple explanation",
             ... )
         """
-        # Prepare context section for prompt
-        context_section = ""
-        if context:
-            if self.language == LanguageEnum.ZH:
-                context_section = f"""附加上下文:
-<context>
-{context}
-</context>"""
-            else:
-                context_section = f"""Additional context:
-<context>
-{context}
-</context>"""
-
-        # Format reference for prompt (if provided)
-        # Note: reference is used as a comparison baseline
-        if reference:
-            if self.language == LanguageEnum.ZH:
-                reference = f"""参考回答（用于比较）：
-<reference>
-{reference}
-</reference>"""
-            else:
-                reference = f"""Reference response (for comparison):
-<reference>
-{reference}
-</reference>"""
-
         try:
             result = await super().aevaluate(
                 query=query,
                 response=response,
-                context_section=context_section,
-                reference=reference,
+                context=context,
+                reference_response=reference_response,
             )
             score = result.score
             reason = result.reason

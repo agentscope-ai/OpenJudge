@@ -58,7 +58,9 @@ Evaluate the following:
 {instruction}
 </instruction>
 
-{input_section}
+<query>
+{query}
+</query>
 
 <response>
 {response}
@@ -118,15 +120,17 @@ INSTRUCTION_FOLLOWING_PROMPT_ZH = """
 
 评估以下内容：
 
-<instruction>
+<指令>
 {instruction}
-</instruction>
+</指令>
 
-{input_section}
+<查询>
+{query}
+</查询>
 
-<response>
+<回答>
 {response}
-</response>
+</回答>
 
 # 输出指令
 请按以下结构化 JSON 格式提供你的评估：
@@ -295,18 +299,11 @@ class InstructionFollowingGrader(LLMGrader):
             ...     response="• AI safety is important\\n• We need alignment research\\n• Testing is crucial",
             ... )
         """
-        # Prepare input section
-        input_section = ""
-        if query:
-            input_section = f"""<query>
-{query}
-</query>"""
-
         try:
             result = await super().aevaluate(
                 instruction=instruction,
                 response=response,
-                input_section=input_section,
+                query=query,
             )
             score = result.score
             reason = result.reason
