@@ -1,25 +1,35 @@
 # Core Concepts
 
-RM-Gallery is an advanced evaluation system designed for AI model assessment. This guide explains the fundamental components of the system: Graders, Runners, and Analyzers, and how they work together to provide comprehensive model evaluation. You'll learn what Graders are and why they matter, how Graders work to evaluate AI models, how Runners use Graders to orchestrate complex evaluation tasks, and how to analyze Grader results to assess evaluation quality.
+OpenJudge is an advanced evaluation system designed for AI model assessment. This guide explains the fundamental components of the system: Graders, Runners, and Analyzers, and how they work together to provide comprehensive model evaluation. You'll learn what Graders are, why they matter, how Graders work to evaluate AI models, how Runners use Graders to orchestrate complex evaluation tasks, and how to analyze Grader results to assess evaluation quality.
+
+## What is A Grader
+
+In the era of advanced AI systems, especially large language models (LLMs), having robust evaluation and reward mechanisms is critical for both measuring performance and guiding improvements.
+
+**Evaluation** refers to the process of assessing model outputs against specific criteria, quantifying performance across dimensions such as accuracy, helpfulness, safety, and coherence. Evaluation provides objective measurements that help developers understand how well their models are performing on specific tasks.
+
+**Reward** mechanisms, on the other hand, provide signals that guide model training through techniques like Reinforcement Learning from Human Feedback (RLHF). These reward signals enable automated optimization, allowing systems to self-improve without constant human intervention by providing feedback on the quality of model outputs.
+
+The OpenJudge framework unifies these two critical functions under a single abstraction: the Grader. A Grader is a modular, standardized component that can function as either an evaluator or a reward generator depending on your use case. As an **evaluator**, a Grader assesses model outputs against specific criteria. As a **reward generator**, a Grader provides signals that guide model training. This unified approach provides a consistent interface that simplifies the process of building, managing, and deploying both evaluation and reward systems, transforming raw model outputs into meaningful, quantifiable assessments that serve as the foundation for systematic model evaluation and automated model improvement.
 
 ## Why Graders Matter
 
-In the development of AI systems, measurement drives improvement. Graders serve as the fundamental building blocks that transform raw model outputs into meaningful, quantifiable assessments, enabling systematic evaluation of AI model and agent performance. Without reliable assessment tools powered by Graders, distinguishing between successful and unsuccessful experiments becomes nearly impossible, making it difficult to achieve consistent progress.
+Graders play a critical role in AI development by providing objective, consistent measurement tools that drive improvement. Without reliable assessment tools powered by Graders, distinguishing between successful and unsuccessful experiments becomes nearly impossible, making it difficult to achieve consistent progress.
 
-Graders function as standardized evaluation components that bridge the gap between model responses and actionable insights. They enable systematic measurement of various performance dimensions including quality, safety, effectiveness, and alignment with human preferences across diverse evaluation criteria. In the context of AI model and agent evaluation, Graders are essential because they:
+Graders solve key challenges in evaluation by:
 
-- **Provide a consistent evaluation framework**: A unified interface that supports diverse assessment methods, enabling seamless integration of different evaluation strategies for both models and agents.
-- **Enable modular architecture**: The ability to develop, modify, or replace individual evaluation components without disrupting the overall system, allowing for targeted assessment of specific agent capabilities.
-- **Offer standardized assessment**: Support for both quantitative metrics (such as accuracy, precision, or BLEU scores) and qualitative evaluations (such as helpfulness, safety, or appropriateness).
+- **Providing unified evaluation framework**: A single interface that handles both evaluation and reward generation, supporting diverse assessment methods while enabling seamless integration of different evaluation strategies.
+- **Enabling modular architecture**: Allowing individual evaluation components to be developed, modified, or replaced without disrupting the overall system, facilitating targeted assessment of specific capabilities.
+- **Standardizing assessment approaches**: Supporting both quantitative metrics (accuracy, precision, BLEU scores) and qualitative evaluations (helpfulness, safety, appropriateness) through consistent interfaces.
 
-By providing consistent, reusable assessment capabilities, Graders are particularly valuable for:
+This makes Graders particularly valuable for:
 - **Component evaluation and selection**: Comparing different AI components like language models, retrieval systems, or agent configurations using your specific data to identify optimal choices.
 - **Performance diagnosis**: Locating specific areas where applications underperform, facilitating targeted debugging and refinement of both models and agents.
 - **Ongoing performance monitoring**: Tracking application behavior over time to detect issues such as data drift, model degradation, or evolving user needs.
 
 ## How Graders Work
 
-Graders are the fundamental building blocks in RM-Gallery. They're standardized components that take input data (like questions and model responses) and produce evaluation results. You can think of them as black boxes that transform model outputs into meaningful scores or rankings.
+Graders are the fundamental building blocks in OpenJudge. They're standardized components that take input data (like questions and model responses) and produce evaluation results. You can think of them as black boxes that transform model outputs into meaningful scores or rankings.
 
 The evaluation process with a Grader involves three key stages:
 
@@ -95,13 +105,13 @@ Both output types maintain consistency across different grader implementation, m
 
 ### Built-in Predefined Graders
 
-RM-Gallery comes with a rich collection of pre-built graders across various domains including common, agent, code, format, multimodal, math, and text evaluations. These graders are ready to use and cover most common evaluation scenarios.
+OpenJudge comes with a rich collection of pre-built graders across various domains including common, agent, code, format, multimodal, math, and text evaluations. These graders are ready to use and cover most common evaluation scenarios.
 
 For a comprehensive list and detailed usage of the predefined graders, please refer to the [Built-in Graders documentation](../building_graders/built_in_graders.md).
 
 ### Creating Custom Graders
 
-While RM-Gallery provides many built-in graders, you'll often need to create custom graders for your specific use cases. The system supports three main approaches to grader creation:
+While OpenJudge provides many built-in graders, you'll often need to create custom graders for your specific use cases. The system supports three main approaches to grader creation:
 
 - **Custom implementation**: Implementing your own graders using Code-Based or LLM-Based approaches
 - **Automated generation**: Using the generator module to automatically create graders from data
@@ -111,7 +121,7 @@ For detailed instructions on creating custom graders, please refer to the [Build
 
 ## How Runners Use Graders
 
-The [GradingRunner](../../rm_gallery/core/runner/grading_runner.py) is the central execution engine of RM-Gallery that orchestrates the evaluation process across multiple graders. It acts as the conductor of an orchestra, coordinating all the different graders to create a harmonious evaluation process. The GradingRunner is specifically designed to serve Graders by providing the infrastructure they need to operate efficiently and effectively. It serves Graders by providing execution orchestration, data mapping services, concurrency management, result aggregation, and resource optimization to execute graders concurrently and maximize throughput.
+The [GradingRunner](../../rm_gallery/core/runner/grading_runner.py) is the central execution engine of OpenJudge that orchestrates the evaluation process across multiple graders. It acts as the conductor of an orchestra, coordinating all the different graders to create a harmonious evaluation process. The GradingRunner is specifically designed to serve Graders by providing the infrastructure they need to operate efficiently and effectively. It serves Graders by providing execution orchestration, data mapping services, concurrency management, result aggregation, and resource optimization to execute graders concurrently and maximize throughput.
 
 To better understand how Runners use Graders, let's look at a complete configuration example:
 

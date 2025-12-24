@@ -1,32 +1,40 @@
 # Quick Start
 
-Get started with RM-Gallery in 5 minutes. This guide walks you through installation, environment setup, and running your first evaluation.
+Get started with OpenJudge in 5 minutes. This guide walks you through installation, environment setup, and running your first evaluation.
 
 ## Installation
 
-=== "pip"
+=== "From PyPI"
 
-    ```bash
-    pip install rm-gallery
-    ```
+```bash
+# Install with Standard dependencies from PyPI
+pip install rm-gallery
 
+# For development purposes, install with dev dependencies
+pip install -e .[dev]
+
+# For reinforcement learning and training scenarios, use the VerL option
+pip install -e .[verl]
+```
 === "From Source"
 
-    ```bash
-    git clone https://github.com/modelscope/RM-Gallery.git
-    cd RM-Gallery
-    pip install -e .
-    ```
+```bash
+git clone https://github.com/modelscope/OpenJudge.git
+cd OpenJudge
+
+# Install based on your needs:
+pip install -e .        # Standard installation
+pip install -e .[dev]   # With development dependencies
+pip install -e .[verl]  # With VerL option for training scenarios
+```
 
 > **Tips:**
-> - RM-Gallery requires Python version >=3.10 and <3.13. For best compatibility, we recommend using Python 3.10 or 3.11.
-> - For development purposes, install with dev dependencies: `pip install -e .[dev]`
-> - For reinforcement learning and training scenarios, use the VerL option: `pip install -e .[verl]` which includes transformers library and other dependencies required for training reward models.
+> OpenJudge requires Python version >=3.10 and <3.13. For best compatibility, we recommend using Python 3.10 or 3.11.
 
 
 ## Configure Environment
 
-For LLM-Based graders, you need to configure API credentials. RM-Gallery uses the OpenAI-compatible API format.
+For LLM-Based graders, you need to configure API credentials. OpenJudge uses the OpenAI-compatible API format.
 
 === "Environment Variables (Recommended)"
 
@@ -68,7 +76,7 @@ For LLM-Based graders, you need to configure API credentials. RM-Gallery uses th
 
 Suppose you're building a QA system and want to evaluate: **Does the AI assistant's response actually answer the user's question?**
 
-This is a **relevance** evaluation task. RM-Gallery provides the `RelevanceGrader` for exactly this purpose—it scores how well a response addresses the query on a 1-5 scale.
+This is a **relevance** evaluation task. OpenJudge provides the `RelevanceGrader` for exactly this purpose—it scores how well a response addresses the query on a 1-5 scale.
 
 | Your Scenario | Recommended Grader |
 |---------------|-------------------|
@@ -111,7 +119,7 @@ grader = RelevanceGrader(model=model)
 ```
 
 !!! note "What is a Grader?"
-    A **Grader** is the core evaluation component in RM-Gallery. It takes a query-response pair and returns a score with an explanation. Learn more in [Core Concepts](core_concepts.md).
+    A **Grader** is the core evaluation component in OpenJudge. It takes a query-response pair and returns a score with an explanation. Learn more in [Core Concepts](core_concepts.md).
 
 
 ## Run Evaluation

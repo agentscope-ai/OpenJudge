@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """Validation analyzers that compare grader results with ground truth."""
 
+from ..statistical.consistency_analyzer import (
+    ConsistencyAnalysisResult,
+    ConsistencyAnalyzer,
+)
 from .accuracy_analyzer import AccuracyAnalysisResult, AccuracyAnalyzer
-from .consistency_analyzer import ConsistencyAnalysisResult, ConsistencyAnalyzer
 from .correlation_analyzer import CorrelationAnalysisResult, CorrelationAnalyzer
 from .f1_score_analyzer import F1ScoreAnalysisResult, F1ScoreAnalyzer
 from .false_negative_analyzer import FalseNegativeAnalysisResult, FalseNegativeAnalyzer
@@ -21,10 +24,10 @@ __all__ = [
     "RecallAnalyzer",
     "CorrelationAnalysisResult",
     "CorrelationAnalyzer",
-    "ConsistencyAnalysisResult",
-    "ConsistencyAnalyzer",
     "FalsePositiveAnalysisResult",
     "FalsePositiveAnalyzer",
     "FalseNegativeAnalysisResult",
     "FalseNegativeAnalyzer",
+    "ConsistencyAnalysisResult",
+    "ConsistencyAnalyzer",
 ]

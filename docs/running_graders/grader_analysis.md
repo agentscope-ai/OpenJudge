@@ -1,24 +1,24 @@
 
-# Grader Analysis
-After successfully [running grading tasks](run_tasks.md) on your dataset, the next crucial step is to analyze the grader results to understand how well your AI models or agents are performing. Grader analysis helps you gain insights from the evaluation results and generate comprehensive reports about model or agent performance.
+# Grader Results Analysis
+After successfully [running grading tasks](run_tasks.md) on your dataset, the next crucial step is to analyze the grader results to understand how well your AI models or agents are performing. Grader results analysis helps you gain insights from the evaluation results and generate comprehensive reports about model or agent performance.
 
-## Why Grader Analysis Matters
-Grader analysis is essential because it transforms raw evaluation scores into actionable insights about your AI models or agents. While running graders provides individual scores or rankings, analysis provides critical context to understand what these results mean for your model's real-world performance.
+## Why Grader Results Analysis Matters
+Grader results analysis is essential because it transforms raw evaluation scores into actionable insights about your AI models or agents. While running graders provides individual scores or rankings, analysis provides critical context to understand what these results mean for your model's real-world performance.
 
-Through Grader analysis, you can:
+Through the analysis, you can:
 - Identify model strengths and weaknesses across different evaluation dimensions
 - Measure overall performance consistency and reliability
 - Detect potential biases or blind spots in model behavior
 - Generate data-driven insights for model improvement
 
-More importantly, Grader analysis enables iterative optimization of the graders themselves. By analyzing the results, you can:
+More importantly, the analysis enables iterative optimization of the graders themselves. By analyzing the results, you can:
 - Refine grader criteria based on observed performance patterns
 - Adjust evaluation thresholds or parameters for better discrimination
 - Compare different graders' effectiveness and select the most appropriate one for your use case
 
 
-## How to Do Grader Analysis
-Grader analysis approaches can be broadly categorized into two types based on data availability: statistical analysis without ground truth and comparative analysis with ground truth. Each approach offers unique insights into your model's performance characteristics.
+## How to Do Grader Results Analysis
+Grader results analysis approaches can be broadly categorized into two types based on data availability: statistical analysis without ground truth and comparative analysis with ground truth. Each approach offers unique insights into your model's performance characteristics.
 
 ### Statistical Analysis Without Ground Truth
 In many cases, you won't have reference labels to compare against. In these scenarios, statistical analysis helps you understand your model's behavior patterns. This approach focuses on examining the intrinsic properties of the scores produced by your graders, revealing patterns that might indicate strengths or weaknesses in model performance.
@@ -47,19 +47,12 @@ print(f"Score range: {report.min_score} to {report.max_score}")
 This distribution analysis helps you understand how your model performs across different inputs. If all scores cluster closely together, it might indicate that your model has limited variability in its responses. On the other hand, if scores are spread widely, it might indicate varying performance on different inputs, which could reveal where your model excels or struggles.
 
 #### Built-in Statistical Analysis
-RM-Gallery provides several built-in statistical analysis for examining model performance without ground truth:
+OpenJudge provides several built-in statistical analysis for examining model performance without ground truth:
 
 | Analysis Name | Functionality |
 |---------------|---------------|
 | [DistributionAnalyzer](../../rm_gallery/core/analyzer/statistical/distribution_analyzer.py#L18-L60) | Examines the distribution of scores across the dataset, including mean, standard deviation, min, and max values to understand the range and variability of model performance |
 | [ConsistencyAnalyzer](../../rm_gallery/core/analyzer/validation/consistency_analyzer.py#L23-L84) | Evaluates how consistently your model performs when presented with similar inputs or when the same input is evaluated multiple times |
-| [AccuracyAnalyzer](../../rm_gallery/core/analyzer/validation/accuracy_analyzer.py#L15-L60) | Measures the accuracy of your model's evaluation when ground truth labels are available for comparison |
-| [F1ScoreAnalyzer](../../rm_gallery/core/analyzer/validation/f1_score_analyzer.py#L17-L74) | Calculates F1 scores balancing precision and recall for comprehensive evaluation, particularly useful for imbalanced datasets |
-| [FalsePositiveAnalyzer](../../rm_gallery/core/analyzer/validation/false_positive_analyzer.py#L15-L50) | Identifies instances where the model incorrectly identifies positive cases, helping to understand over-estimation patterns |
-| [FalseNegativeAnalyzer](../../rm_gallery/core/analyzer/validation/false_negative_analyzer.py#L15-L50) | Identifies instances where the model fails to detect actual positive cases, helping to understand under-estimation patterns |
-| [PrecisionAnalyzer](../../rm_gallery/core/analyzer/validation/precision_analyzer.py#L15-L56) | Calculates precision of the model's positive predictions compared to actual positive cases |
-| [RecallAnalyzer](../../rm_gallery/core/analyzer/validation/recall_analyzer.py#L15-L56) | Calculates recall of the model's ability to identify all actual positive cases |
-| [CorrelationAnalyzer](../../rm_gallery/core/analyzer/validation/correlation_analyzer.py#L16-L60) | Evaluates the correlation between different metrics or evaluation criteria to understand relationships in model performance |
 
 
 ### Comparative Analysis With Ground Truth
@@ -87,7 +80,7 @@ print(f"Overall accuracy: {accuracy_report.accuracy}")
 This comparative analysis tells you the percentage of times your model's evaluation matched the ground truth, providing a baseline performance measure. While accuracy alone doesn't tell the whole story, it serves as a foundational metric that helps you understand the general alignment of your model with reference standards.
 
 #### Built-in Comparative Analysis
-RM-Gallery provides several built-in comparative analysis for examining model performance with ground truth:
+OpenJudge provides several built-in comparative analysis for examining model performance with ground truth:
 
 | Analysis Name | Functionality |
 |---------------|---------------|
@@ -98,8 +91,6 @@ RM-Gallery provides several built-in comparative analysis for examining model pe
 | [PrecisionAnalyzer](../../rm_gallery/core/analyzer/validation/precision_analyzer.py#L15-L56) | Calculates precision of the model's positive predictions compared to actual positive cases |
 | [RecallAnalyzer](../../rm_gallery/core/analyzer/validation/recall_analyzer.py#L15-L56) | Calculates recall of the model's ability to identify all actual positive cases |
 | [CorrelationAnalyzer](../../rm_gallery/core/analyzer/validation/correlation_analyzer.py#L16-L60) | Evaluates the correlation between different metrics or evaluation criteria to understand relationships in model performance |
-| [DistributionAnalyzer](../../rm_gallery/core/analyzer/statistical/distribution_analyzer.py#L18-L60) | Examines the distribution of scores across the dataset, including mean, standard deviation, min, and max values to understand the range and variability of model performance |
-| [ConsistencyAnalyzer](../../rm_gallery/core/analyzer/validation/consistency_analyzer.py#L23-L84) | Evaluates how consistently your model performs when presented with similar inputs or when the same input is evaluated multiple times |
 
 ## Next Steps
 After analyzing your grader results, you can confidently [refine data quality](../applications/data_refinement.md) based on the insights gained from your analysis or [create custom graders](../building_graders/create_custom_graders.md) to address specific evaluation needs identified during analysis.

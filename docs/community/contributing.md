@@ -1,6 +1,6 @@
-# Contribute to RM-Gallery
+# Contribute to OpenJudge
 
-Welcome! RM-Gallery is an open-source reward model platform. Your contributions help make AI alignment and evaluation more accessible to the community.
+Welcome! OpenJudge is an open-source reward model platform. Your contributions help make AI alignment and evaluation more accessible to the community.
 
 !!! info "Ways to Contribute"
     We welcome contributions of all kinds:
@@ -16,8 +16,8 @@ Welcome! RM-Gallery is an open-source reward model platform. Your contributions 
 === "Step 1: Fork and Clone"
 
     ```bash
-    git clone https://github.com/YOUR_USERNAME/RM-Gallery.git
-    cd RM-Gallery
+    git clone https://github.com/YOUR_USERNAME/OpenJudge.git
+    cd OpenJudge
     ```
 
 === "Step 2: Install Dependencies"
@@ -40,7 +40,7 @@ Welcome! RM-Gallery is an open-source reward model platform. Your contributions 
     - `snake_case` for functions/variables
     - `PascalCase` for classes
     - `UPPER_CASE` for constants
-    
+
     **Requirements:**
     - Use type hints for all parameters and returns
     - Include docstrings (Args, Returns, Example)
@@ -49,7 +49,7 @@ Welcome! RM-Gallery is an open-source reward model platform. Your contributions 
     - Optimize for readability
 
 
-## Testing Your Changes
+## Testing Guidelines
 
 Before submitting, verify your changes work:
 
@@ -66,6 +66,77 @@ pytest tests/ -v
     - **Automated tests** — We'll help you add tests during PR review if needed
     - **Focus on functionality** — Make sure your code works for your use case
 
+To ensure the quality and reliability of OpenJudge project, all key components require proper testing. LLMGraders specifically must pass both unit and quality testing.
+
+### Unit Testing
+
+Unit tests verify individual components of your code. Each component should include tests for initialization, successful operation, edge cases, and error handling.
+
+```python
+import pytest
+from unittest.mock import AsyncMock
+from rm_gallery.core.graders.category.grader_module import YourGrader
+
+@pytest.mark.unit
+class TestYourGrader:
+    def test_initialization(self):
+        """Test successful initialization with required parameters"""
+        ...
+
+    @pytest.mark.asyncio
+    async def test_successful_operation(self):
+        """Test successful operation with valid inputs"""
+        ...
+
+    @pytest.mark.asyncio
+    async def test_error_handling(self):
+        """Test graceful error handling when dependencies fail"""
+        ...
+```
+
+All external services (especially LLM APIs) must be mocked to enable offline testing.
+
+### Quality Testing
+
+For LLMGraders, quality testing ensures the grader correctly evaluates response quality by comparing against human annotations or expected standards.
+
+#### Environment Configuration
+
+Quality tests require real API keys and detect them via environment variables:
+
+```python
+import os
+import pytest
+
+# Check for required environment variables
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
+RUN_QUALITY_TESTS = bool(OPENAI_API_KEY and OPENAI_BASE_URL)
+
+# Skip tests if API keys are not configured
+@pytest.mark.skipif(not RUN_QUALITY_TESTS, reason="Requires API keys to run quality tests")
+@pytest.mark.quality
+class TestGraderQuality:
+    @pytest.fixture
+    def dataset(self):
+        """Load dataset for quality testing"""
+        ...
+
+    @pytest.fixture
+    def model(self):
+        """Create a model instance for testing"""
+        ...
+
+    @pytest.mark.asyncio
+    async def test_discriminative_power_with_runner(self, dataset, model):
+        """Test discriminative power of the model against a dataset"""
+        ...
+
+    @pytest.mark.asyncio
+    async def test_consistency_with_runner(self, dataset, model):
+        """Test consistency of the model against a dataset"""
+        ...
+```
 
 ## Contributing Graders
 
@@ -93,14 +164,27 @@ Place your grader in the appropriate category:
     - Include clear docstring with usage example
     - Return `GraderScore` with `score` (0.0-1.0) and `reason`
     - Use naming: `MyGrader` (class), `my_grader.py` (file), `"my_grader"` (name)
-    
+
     **Documentation:**
     - Add to `docs/built_in_graders/` with When to use, Parameters, Scoring criteria, and Example
     - Use `qwen3-32b` as model name in examples
-    
+
     **Testing:**
     - Manually test your grader works
     - We'll help with automated tests during PR review
+
+### Grader Method Parameter Naming Convention
+
+To ensure consistency and usability, the [aevaluate](../../rm_gallery/core/graders/base_grader.py#L71-L116) method of Graders should follow these common parameter naming conventions:
+
+| Parameter Name | Description | Alternative Names (Not Recommended) |
+| --- | --- | --- |
+| `query` | User's original question or instruction | `user_query`, `input_query`, `question`, `instruction` |
+| `response` | Model-generated answer or output | `answer`, `generated`, `candidate`, `output`, `generated_text`, `prediction`, `generated_response`, `completion` |
+| `reference_response` | Standard answer or expected output | `expected`, `reference` |
+| `context` | Additional context required for evaluation | `input`, `input_text`, `text` |
+| `tool_definitions` | Available tool definitions list | `tool_definition` |
+| `tool_calls` | Actual tool call records | `generated_tool_call` |
 
 ### Minimal Grader Template
 
@@ -110,21 +194,21 @@ from rm_gallery.core.graders.schema import GraderScore
 
 class MyGrader(BaseGrader):
     """Evaluate [specific aspect].
-    
+
     Args:
         model: LLM model for evaluation
     """
-    
+
     def __init__(self, model, **kwargs):
         super().__init__(name="my_grader", **kwargs)
         self.model = model
-    
+
     async def aevaluate(self, query: str, response: str, **kwargs) -> GraderScore:
         """Evaluate response quality."""
         # Your evaluation logic
         score = 0.8
         reason = "Evaluation explanation"
-        
+
         return GraderScore(name=self.name, score=score, reason=reason)
 ```
 
@@ -196,13 +280,13 @@ Need assistance? Here's how to reach us:
 
 | Type | Where to Go |
 |------|-------------|
-| **Report Bugs** | [Open an Issue](https://github.com/modelscope/RM-Gallery/issues) |
-| **Propose Features** | [Start a Discussion](https://github.com/modelscope/RM-Gallery/discussions) |
+| **Report Bugs** | [Open an Issue](https://github.com/modelscope/OpenJudge/issues) |
+| **Propose Features** | [Start a Discussion](https://github.com/modelscope/OpenJudge/discussions) |
 | **Contact Team** | Check README for communication channels |
 
 !!! warning "Before Starting Major Work"
     Before starting major work, open an issue to discuss your approach. This prevents duplicate efforts and ensures alignment with project goals.
 
 
-Thank you for contributing to RM-Gallery!
+Thank you for contributing to OpenJudge!
 

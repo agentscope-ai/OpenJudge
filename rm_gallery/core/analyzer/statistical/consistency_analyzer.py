@@ -11,10 +11,7 @@ import numpy as np
 from loguru import logger
 from pydantic import Field
 
-from rm_gallery.core.analyzer.base_analyzer import AnalysisResult
-from rm_gallery.core.analyzer.validation.base_validation_analyzer import (
-    BaseValidationAnalyzer,
-)
+from rm_gallery.core.analyzer.base_analyzer import AnalysisResult, BaseAnalyzer
 from rm_gallery.core.graders.schema import GraderResult, GraderScore
 
 
@@ -44,7 +41,7 @@ class ConsistencyAnalysisResult(AnalysisResult):
     )
 
 
-class ConsistencyAnalyzer(BaseValidationAnalyzer):
+class ConsistencyAnalyzer(BaseAnalyzer):
     """Analyzer for computing consistency scores of graders.
 
     This analyzer computes the consistency of a grader by comparing results from
