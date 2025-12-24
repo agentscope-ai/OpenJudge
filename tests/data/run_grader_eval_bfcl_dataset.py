@@ -110,6 +110,12 @@ def run_cases(case_file: str, grader_name: str, sample_size: int, skip: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run grader test cases from BFCL dataset.")
     parser.add_argument(
+        "--case_file",
+        type=str,
+        default="bfcl_v3/tool_call/tool_call_bfcl_v3_multiple_eval_data.jsonl",
+        help="Specify the case file as input data",
+    )
+    parser.add_argument(
         "--grader_name",
         type=str,
         default="ToolCallAccuracyGrader",
@@ -130,7 +136,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_cases(
-        case_file="bfcl_v3/tool_call/tool_call_bfcl_v3_multiple_eval_data.jsonl",
+        case_file=args.case_file,
         grader_name=args.grader_name,
         sample_size=args.sample_size,
         skip=args.skip,

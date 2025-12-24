@@ -58,3 +58,20 @@ python process_bfcl_tool_call_data.py --input_path <tool_call_bfcl_v3_multiple.j
 ```
 python run_grader_eval_bfcl_dataset.py --grader_name ToolCallAccuracyGrader --sample_size 10 --skip 1
 ```
+
+### 4. `llm_select_tools.py`
+用llm选择工具，结果将用于对比bfcl_v3 ground-truth
+```
+python llm_select_tools.py
+```
+
+### 6. `generate_new_cases.py`
+基于llm选择工具的结果和bfcl_v3 ground-truth做比较，如果有不同，将用前者代替后者。
+注：需要人工判断一下每个case的max_expect_score（默认值=3）是否合理，并做适当调整
+```
+python generate_new_cases.py
+```
+再按步骤3运行测试脚本
+```
+python run_grader_eval_bfcl_dataset.py --case_file <tool_call_bfcl_v3_multiple_eval_data_new_cases.jsonl> --grader_name ToolCallAccuracyGrader 
+```
