@@ -269,9 +269,12 @@ class OpenAIChatModel(BaseChatModel):
                 if isinstance(callback_result, dict):
                     parsed_response.parsed = parsed_response.parsed or {}
                     parsed_response.parsed.update(callback_result)
-            except Exception:
+            except Exception as e:
                 # Log the exception but don't fail the entire operation
-                logger.warning("Callback function raised an exception", exc_info=True)
+                logger.warning(
+                    f"Callback function raised an exception: {type(e).__name__}: {e}",
+                    exc_info=True
+                )
 
         return parsed_response
 
@@ -367,7 +370,10 @@ class OpenAIChatModel(BaseChatModel):
                         if isinstance(callback_result, dict):
                             final_response.parsed = final_response.parsed or {}
                             final_response.parsed.update(callback_result)
-                    except Exception:
-                        logger.warning("Callback function raised an exception", exc_info=True)
+                    except Exception as e:
+                        logger.warning(
+                            f"Callback function raised an exception: {type(e).__name__}: {e}",
+                            exc_info=True
+                        )
 
                 yield final_response
