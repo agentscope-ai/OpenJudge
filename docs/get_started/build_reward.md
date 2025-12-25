@@ -94,11 +94,15 @@ dataset = [
 ]
 ```
 
-Notice that our data uses `ground_truth` as the field name, but `CorrectnessGrader` expects a field called `reference_response`. When field names don't match, use the `mapper` parameter to rename fields. The mapper tells the grader which field in your data corresponds to its expected input:
+Notice that our data uses `ground_truth` as the field name, but `CorrectnessGrader` expects a field called `reference_response`. When field names don't match, use the `mapper` parameter to map fields. The mapper extracts and renames fields from your data to match the grader's expected inputs:
 
 ```python
-# Map your "ground_truth" field to the grader's expected "reference_response" field
-mapper = {"reference_response": "ground_truth"}
+# Map fields: extract query, response, and rename ground_truth to reference_response
+mapper = {
+    "query": "query",
+    "response": "response", 
+    "reference_response": "ground_truth"
+}
 ```
 
 Now we can configure all three graders and combine their scores into a single reward. The `WeightedSumAggregator` computes a weighted average of individual grader scores, letting you control how much each quality dimension contributes to the final reward:
@@ -115,11 +119,21 @@ async def main():
 
     # Configure three graders for different quality dimensions
     grader_configs = {
-        "harmfulness": GraderConfig(grader=HarmfulnessGrader(model=model)),
-        "relevance": GraderConfig(grader=RelevanceGrader(model=model)),
+        "harmfulness": GraderConfig(
+            grader=HarmfulnessGrader(model=model),
+            mapper={"query": "query", "response": "response"}
+        ),
+        "relevance": GraderConfig(
+            grader=RelevanceGrader(model=model),
+            mapper={"query": "query", "response": "response"}
+        ),
         "correctness": GraderConfig(
             grader=CorrectnessGrader(model=model),
-            mapper={"reference_response": "ground_truth"}
+            mapper={
+                "query": "query",
+                "response": "response",
+                "reference_response": "ground_truth"
+            }
         ),
     }
 
@@ -197,11 +211,21 @@ async def main():
 
     # Configure graders
     grader_configs = {
-        "harmfulness": GraderConfig(grader=HarmfulnessGrader(model=model)),
-        "relevance": GraderConfig(grader=RelevanceGrader(model=model)),
+        "harmfulness": GraderConfig(
+            grader=HarmfulnessGrader(model=model),
+            mapper={"query": "query", "response": "response"}
+        ),
+        "relevance": GraderConfig(
+            grader=RelevanceGrader(model=model),
+            mapper={"query": "query", "response": "response"}
+        ),
         "correctness": GraderConfig(
             grader=CorrectnessGrader(model=model),
-            mapper={"reference_response": "ground_truth"}
+            mapper={
+                "query": "query",
+                "response": "response",
+                "reference_response": "ground_truth"
+            }
         ),
     }
 

@@ -30,14 +30,31 @@ Here's an example to analyzing your model's performance distribution:
 ```python
 from openjudge.analyzer.statistical.distribution_analyzer import DistributionAnalyzer
 from openjudge.runner.grading_runner import GradingRunner
+from openjudge.graders.common.correctness import CorrectnessGrader
+from openjudge.models.openai_chat_model import OpenAIChatModel
 
-# After running your graders on a dataset (as described in run_tasks.md)
+# Prepare dataset
+dataset = [
+    {"query": "What is AI?", "response": "AI is artificial intelligence."},
+    {"query": "What is ML?", "response": "ML is machine learning."},
+    {"query": "What is DL?", "response": "DL is deep learning."}
+]
+
+# Configure grader
+grader_configs = {
+    "correctness": {
+        "grader": CorrectnessGrader(model=OpenAIChatModel("qwen3-32b")),
+        "mapper": {"query": "query", "response": "response"}
+    }
+}
+
+# Run graders on the dataset (as described in run_tasks.md)
 runner = GradingRunner(grader_configs=grader_configs)
 results = await runner.arun(dataset)
 
 # Analyze score distribution to understand model performance
 analyzer = DistributionAnalyzer()
-report = analyzer.analyze(dataset, results["grader_name"])
+report = analyzer.analyze(dataset, results["correctness"])
 
 print(f"Mean score: {report.mean}")
 print(f"Standard deviation: {report.stdev}")
@@ -65,12 +82,33 @@ Here's an example to comparing your model's performance with ground truth labels
 
 ```python
 from openjudge.analyzer.validation.accuracy_analyzer import AccuracyAnalyzer
+from openjudge.runner.grading_runner import GradingRunner
+from openjudge.graders.common.correctness import CorrectnessGrader
+from openjudge.models.openai_chat_model import OpenAIChatModel
 
 # Dataset with ground truth labels for comparison
+dataset = [
+    {"query": "What is AI?", "response": "AI is artificial intelligence.", "correct_label": 1},
+    {"query": "What is ML?", "response": "ML is machine learning.", "correct_label": 1},
+    {"query": "What is DL?", "response": "Wrong answer", "correct_label": 0}
+]
+
+# Configure and run grader
+grader_configs = {
+    "correctness": {
+        "grader": CorrectnessGrader(model=OpenAIChatModel("qwen3-32b")),
+        "mapper": {"query": "query", "response": "response"}
+    }
+}
+
+runner = GradingRunner(grader_configs=grader_configs)
+results = await runner.arun(dataset)
+
+# Analyze accuracy
 analyzer = AccuracyAnalyzer()
 accuracy_report = analyzer.analyze(
     dataset=dataset,
-    grader_results=results["your_grader_name"],
+    grader_results=results["correctness"],
     label_path="correct_label"  # Path to ground truth in your data
 )
 

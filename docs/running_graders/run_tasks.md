@@ -22,7 +22,7 @@ Let's begin with a simple example to understand how GradingRunner works:
 ```python
 from openjudge.runner.grading_runner import GradingRunner
 from openjudge.runner.aggregator.weighted_sum_aggregator import WeightedSumAggregator
-from openjudge.graders.common.helpfulness import HelpfulnessGrader
+from openjudge.graders.common.correctness import CorrectnessGrader
 from openjudge.graders.common.relevance import RelevanceGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 
@@ -42,19 +42,19 @@ data = [
 
 # Configure graders with mappers to connect your data fields
 grader_configs = {
-    "helpfulness": {
-        "grader": HelpfulnessGrader(model=OpenAIChatModel("qwen3-32b")),
-        "mapper": {"question": "query", "answer": "response"}
+    "correctness": {
+        "grader": CorrectnessGrader(model=OpenAIChatModel("qwen3-32b")),
+        "mapper": {"query": "query", "response": "response", "reference_response": "reference_answer"}
     },
     "relevance": {
         "grader": RelevanceGrader(model=OpenAIChatModel("qwen3-32b")),
-        "mapper": {"q": "query", "a": "response", "ref": "reference_answer"}
+        "mapper": {"query": "query", "response": "response", "reference_response": "reference_answer"}
     }
 }
 
 # Configure aggregators to combine results
 aggregators = [
-    WeightedSumAggregator(weights={"helpfulness": 0.6, "relevance": 0.4})
+    WeightedSumAggregator(name="overall_quality", weights={"correctness": 0.6, "relevance": 0.4})
 ]
 
 # Run evaluation with concurrency control
@@ -72,8 +72,8 @@ This example demonstrates several key concepts that are essential to understandi
 The GradingRunner's mapper functionality allows you to transform your data fields to match the parameter names expected by your graders. Since your input data may not have the exact field names that your graders expect, mappers provide a way to map between your data structure and the grader's expected inputs.
 
 In the example above:
-- The HelpfulnessGrader expects inputs named "question" and "answer", but our data has fields named "query" and "response", so the mapper `{"question": "query", "answer": "response"}` connects them.
-- The RelevanceGrader expects inputs named "q", "a", and "ref", so the mapper `{"q": "query", "a": "response", "ref": "reference_answer"}` maps our data fields to the grader's expected inputs.
+- The CorrectnessGrader expects inputs named "query", "response", and "reference_response", so we map our data field "reference_answer" to "reference_response".
+- The RelevanceGrader expects the same inputs, so we use the same mapping pattern.
 
 Types of mappers include:
 - Dictionary mappers for simple key-value mappings (e.g., `{"question": "query", "answer": "response"}`)
@@ -94,19 +94,20 @@ dataset = [
 # Map your fields to what graders expect
 # This tells the runner how to convert your data format to what graders need
 grader_configs = {
-    "helpfulness": {
-        "grader": HelpfulnessGrader(),
+    "correctness": {
+        "grader": CorrectnessGrader(model=OpenAIChatModel("qwen3-32b")),
         "mapper": {
             "query": "question",      # Grader expects "query", your data has "question"
-            "response": "answer"      # Grader expects "response", your data has "answer"
+            "response": "answer",      # Grader expects "response", your data has "answer"
+            "reference_response": "reference_answer"  # Grader expects "reference_response", your data has "reference_answer"
         }
     },
     "relevance": {
-        "grader": RelevanceGrader(),
+        "grader": RelevanceGrader(model=OpenAIChatModel("qwen3-32b")),
         "mapper": {
             "query": "question",
             "response": "answer",
-            "reference": "reference_answer"  # Grader expects "reference", your data has "reference_answer"
+            "reference_response": "reference_answer"  # Grader expects "reference_response", your data has "reference_answer"
         }
     }
 }
@@ -131,8 +132,8 @@ def custom_mapper(sample):
     }
 
 grader_configs = {
-    "helpfulness": {
-        "grader": HelpfulnessGrader(),
+    "correctness": {
+        "grader": CorrectnessGrader(model=OpenAIChatModel("qwen3-32b")),
         "mapper": custom_mapper
     }
 }
@@ -157,7 +158,7 @@ from openjudge.runner.aggregator.weighted_sum_aggregator import WeightedSumAggre
 aggregator = WeightedSumAggregator(
     name="overall_score",
     weights={
-        "helpfulness": 0.6,  # Weight helpfulness at 60%
+        "correctness": 0.6,  # Weight correctness at 60%
         "relevance": 0.4     # Weight relevance at 40%
     }
 )

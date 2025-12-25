@@ -68,7 +68,7 @@ class SyntaxCheckGrader(BaseGrader):
         """
 
         # Extract code blocks
-        code_pattern = r"```(?:python)?\n(.*?)\n```"
+        code_pattern = r"```(?:python)?\s*\n(.*?)\n\s*```"
         code_blocks = re.findall(code_pattern, response, re.DOTALL)
 
         if not code_blocks:
