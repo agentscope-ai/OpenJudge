@@ -273,11 +273,7 @@ When built-in graders don't cover your specific requirements, you can create cus
 
 ## Next Steps
 
-**Expand Your Knowledge**: [Built-in Graders Overview](../built_in_graders/overview.md) — Browse all available graders organized by category
-
-**Evaluate AI Agents**: [Evaluate AI Agents](evaluate_ai_agents.md) — Learn to assess agent behaviors, tool usage, and multi-step reasoning
-
-**Advanced Features**: [Run Grading Tasks](../running_graders/run_tasks.md) — Explore parallel execution, caching, and result analysis
-
-**Custom Evaluators**: [Create Custom Graders](../building_graders/create_custom_graders.md) — Build domain-specific graders for specialized use cases
+- [Built-in Graders Overview](../built_in_graders/overview.md) — Browse all available graders organized by category
+- [Run Grading Tasks](../running_graders/run_tasks.md) — Explore parallel execution and result analysis
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build domain-specific graders for specialized use cases
 

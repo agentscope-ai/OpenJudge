@@ -79,11 +79,12 @@ Automatically analyze evaluation data to create structured scoring rubrics. Prov
 
 Train neural networks on preference data to learn evaluation criteria automatically. Supports Bradley-Terry (preference pairs), Generative Pointwise (absolute scores), and Generative Pairwise (comparison decisions). Requires 1K-100K examples and 1-3 days but delivers highly consistent evaluation at 10x lower per-query cost—ideal for high-volume scenarios exceeding 1M queries per month.
 
-**Learn more:** [Training Overview →](training/overview.md) | [Bradley-Terry Training →](training/bradley_terry.md)
-
 
 
 ## Next Steps
 
-Start with **[Create Custom Graders](create_custom_graders.md)** for immediate results using LLM or code-based logic, or explore **[Built-in Graders](../built_in_graders/overview.md)** to customize existing evaluators. If you have labeled data, use **[Generate Graders from Data](generate_graders_from_data.md)** to auto-generate rubrics, or review **[Training Overview](training/overview.md)** and **[Bradley-Terry Training](training/bradley_terry.md)** for scalable model training. Deploy at scale with **[Run Grading Tasks](../running_graders/run_tasks.md)** for batch workflows, apply graders to **[Refine Data Quality](../applications/data_refinement.md)**, or use **[Pairwise Model Evaluation](../applications/select_rank.md)** to compare and rank models.
+- [Create Custom Graders](create_custom_graders.md) — Build graders using LLM or code-based logic
+- [Generate Graders from Data](generate_graders_from_data.md) — Auto-generate rubrics from labeled data
+- [Built-in Graders](../built_in_graders/overview.md) — Explore pre-built graders to customize
+- [Run Grading Tasks](../running_graders/run_tasks.md) — Deploy graders at scale with batch workflows
 

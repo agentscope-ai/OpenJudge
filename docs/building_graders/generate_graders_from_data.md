@@ -452,5 +452,6 @@ GraderRank(
 
 ## Next Steps
 
-- [Built-in Graders](../built_in_graders/overview.md) — Explore pre-built graders
+- [Run Grading Tasks](../running_graders/run_tasks.md) — Execute your generated graders at scale
+- [Grader Analysis](../running_graders/grader_analysis.md) — Analyze and validate grader results
 - [Create Custom Graders](create_custom_graders.md) — Build graders manually with custom logic

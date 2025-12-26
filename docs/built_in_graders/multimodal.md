@@ -219,6 +219,7 @@ asyncio.run(main())
 
 ## Next Steps
 
-- [General Graders](general.md) — Evaluate text-based response quality
+- [Code & Math Graders](code_math.md) — Evaluate code generation and mathematical problem-solving
+- [Text Graders](text.md) — Fast, deterministic text comparison using various algorithms
 - [Build Reward for Training](../get_started/build_reward.md) — Combine multiple graders for RLHF rewards
 

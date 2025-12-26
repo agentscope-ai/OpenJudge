@@ -549,3 +549,10 @@ Here's a sentence with a footnote[^1], and another one[^2].
 [^1]: This is the first footnote with additional details.
 [^2]: This is the second footnote. You can include `code` and [links](https://example.com) in footnotes.
 
+
+## Next Steps
+
+- [Contribute to OpenJudge](contributing.md) — Learn how to contribute code and documentation
+- [Quick Start](../get_started/quickstart.md) — Get started with OpenJudge
+- [Built-in Graders](../built_in_graders/overview.md) — Explore available graders
+

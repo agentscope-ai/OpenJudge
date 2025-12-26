@@ -35,7 +35,7 @@ nav:
       - Overview: building_graders/overview.md
       - Create Custom Graders: building_graders/create_custom_graders.md
       - Generate Graders from Data: building_graders/generate_graders_from_data.md
-      - Train Reward Models: building_graders/training/overview.md
+      # - Train Reward Models: building_graders/training/overview.md  # Coming soon
 
   - Running Graders:
       - Run Grading Tasks: running_graders/run_tasks.md
@@ -49,15 +49,11 @@ nav:
       - Refine Data Quality: applications/data_refinement.md
       - Pairwise Model Evaluation: applications/select_rank.md
 
-  - Integrations:
-      - LangSmith: integrations/langsmith.md
-      - Langfuse: integrations/langfuse.md
-      - Phoenix: integrations/arize_phoenix.md
 
   - Community:
       - Contribute to OpenJudge: community/contributing.md
-      - Documentation Style Guide: community/style-guide.md
-      - Animations Demo: community/animations-demo.md
+      # - Documentation Style Guide: community/style-guide.md
+      # - Animations Demo: community/animations-demo.md
 plugins:
   - search:
       lang:

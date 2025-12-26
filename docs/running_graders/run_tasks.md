@@ -201,5 +201,8 @@ Performance optimization is especially important when working with large languag
 Finding the optimal concurrency level depends on your hardware resources, the types of graders you're using, and any external rate limits (like API quotas). Experimentation is often needed to find the sweet spot for your specific use case.
 
 ## Next Steps
-Once you've mastered running grading tasks, you'll want to [validate your graders](../validating_graders/overview.md) to assess the quality of your evaluations or [refine data quality](../applications/data_refinement.md) using your evaluation insights.
+
+- [Grader Analysis](grader_analysis.md) — Analyze results and generate validation reports
+- [Validate Graders](../validating_graders/overview.md) — Assess the quality of your evaluations
+- [Refine Data Quality](../applications/data_refinement.md) — Improve model outputs using grader feedback
 

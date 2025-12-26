@@ -419,9 +419,9 @@ asyncio.run(main())
 
 ## Next Steps
 
-- [General Graders](general.md) — Evaluate response quality and relevance
-- [Text Graders](text.md) — Evaluate text-specific qualities
-- [Build Reward for Training](../get_started/build_reward.md) — Combine graders for RLHF rewards
+- [Building Graders Overview](../building_graders/overview.md) — Learn how to create custom graders
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build domain-specific format validators
+- [Run Grading Tasks](../running_graders/run_tasks.md) — Execute graders at scale with GradingRunner
 
 
 

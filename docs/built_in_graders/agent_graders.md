@@ -1075,6 +1075,6 @@ Build complete evaluation pipelines by combining graders from different categori
 
 ## Next Steps
 
-- [General Graders](general.md) — Evaluate response quality and relevance
 - [Multimodal Graders](multimodal.md) — Evaluate image and vision tasks
+- [Code & Math Graders](code_math.md) — Evaluate code generation and mathematical problem-solving
 - [Build Reward for Training](../get_started/build_reward.md) — Combine multiple graders for RLHF rewards

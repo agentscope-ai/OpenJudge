@@ -107,7 +107,7 @@ Both output types maintain consistency across different grader implementation, m
 
 OpenJudge comes with a rich collection of pre-built graders across various domains including common, agent, code, format, multimodal, math, and text evaluations. These graders are ready to use and cover most common evaluation scenarios.
 
-For a comprehensive list and detailed usage of the predefined graders, please refer to the [Built-in Graders documentation](../building_graders/built_in_graders.md).
+For a comprehensive list and detailed usage of the predefined graders, please refer to the [Built-in Graders documentation](../built_in_graders/overview.md).
 
 ### Creating Custom Graders
 
@@ -222,6 +222,6 @@ These analyzers help you:
 
 ## Next Steps
 
-- [Building custom graders](../building_graders/create_custom_graders.md) for specialized feedback
-- [Validating graders](../validating_graders/validation_workflow.md) to ensure feedback quality
-- [Training reward models](../building_graders/train_a_grader/) to automate feedback generation
+- [Built-in Graders](../built_in_graders/overview.md) — Explore 50+ pre-built graders for various evaluation scenarios
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build specialized graders for your domain
+- [Validate Graders](../validating_graders/overview.md) — Ensure your graders produce reliable results

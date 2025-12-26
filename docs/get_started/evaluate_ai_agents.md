@@ -450,10 +450,11 @@ Trace 0: Score=2.0   # Wrong tool: used search_web instead of calculator
 Trace 1: Score=5.0   # Correct tool: used get_weather for weather query
 ```
 
-For more details on batch evaluation, data mapping, and result aggregation, see [GradingRunner](../core_modules/grading_runner.md).
+For more details on batch evaluation, data mapping, and result aggregation, see [Run Grading Tasks](../running_graders/run_tasks.md).
 
 
 ## Next Steps
-- **[Built-in Graders](../built_in_graders/overview.md)** — Detailed documentation for all available graders
-- **[Agent Graders](../built_in_graders/agent_graders.md)** — Learn about the built-in agent graders
-- **[GradingRunner](../core_modules/grading_runner.md)** — Batch evaluation with concurrency and progress tracking
+
+- [Built-in Graders](../built_in_graders/overview.md) — Detailed documentation for all available graders
+- [Agent Graders](../built_in_graders/agent_graders.md) — Learn about the built-in agent graders
+- [Run Grading Tasks](../running_graders/run_tasks.md) — Batch evaluation with concurrency and progress tracking

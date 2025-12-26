@@ -628,8 +628,7 @@ if result.metadata.get('recall', 0) < 0.5:
 
 ## Next Steps
 
-- [General Graders](general.md) — LLM-powered general-purpose graders
-- [Agent Graders](agent_graders.md) — Agent behavior and tool usage evaluation
-- [Multimodal Graders](multimodal.md) — Image and vision task evaluation
+- [Format Graders](format.md) — Validate structured outputs and formatting
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build specialized text graders
 - [Build Reward for Training](../get_started/build_reward.md) — Combine graders for RLHF rewards
 

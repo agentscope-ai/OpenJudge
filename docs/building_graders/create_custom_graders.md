@@ -300,10 +300,8 @@ Once you've built and validated your custom graders, you can run them using the 
 When running graders, focus on configuring data mappers to connect your dataset fields with grader inputs, setting concurrency levels for optimal performance, combining results with aggregators for comprehensive scoring, and handling errors gracefully to prevent complete task failures.
 
 ## Next Steps
-Now that you understand how to build, validate, and run custom graders for your specific needs:
 
-+ 🚀 [Run grading tasks](../running_graders/run_tasks.md) to evaluate your models at scale
-+ 📈 [Validate your graders](../running_graders/grader_analysis.md) to ensure consistent and reliable results
-+ ⚙️ [Generate graders from data](generate_graders_from_data.md) to automate creation of evaluation criteria
-+ 💪 [Train a grader](training/overview.md) to build a reward model from your custom evaluations
+- [Generate Graders from Data](generate_graders_from_data.md) — Automate grader creation from labeled examples
+- [Run Grading Tasks](../running_graders/run_tasks.md) — Evaluate your models at scale
+- [Grader Analysis](../running_graders/grader_analysis.md) — Validate and analyze grader results
 

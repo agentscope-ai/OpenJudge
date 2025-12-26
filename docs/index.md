@@ -205,7 +205,7 @@ OpenJudge unifies evaluation metrics and reward signals into a single, standardi
     </p>
   </a>
 
-  <a href="applications/pairwise_evaluation/" class="feature-card">
+  <a href="applications/select_rank/" class="feature-card">
     <div class="card-header">
       <img src="https://unpkg.com/lucide-static@latest/icons/scale.svg" class="card-icon card-icon-general">
       <h3>Pairwise Evaluation</h3>

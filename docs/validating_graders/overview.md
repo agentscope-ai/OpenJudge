@@ -87,5 +87,7 @@ Choose metrics based on your evaluation task:
 
 ## Next Steps
 
-Start with [RewardBench2 Validation](rewardbench2.md) to validate on a multi-domain benchmark, or build custom validation pipelines with [Create Custom Graders](../building_graders/create_custom_graders.md). For detailed analysis, see [Grader Analysis](../running_graders/grader_analysis.md) to generate comprehensive validation reports.
+- [RewardBench2 Validation](rewardbench2.md) — Validate on a multi-domain benchmark
+- [Grader Analysis](../running_graders/grader_analysis.md) — Generate comprehensive validation reports
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build custom validation pipelines
 

@@ -250,7 +250,9 @@ For advanced optimization, consider these techniques: Add domain-specific sample
 
 ## Next Steps
 
-Learn validation concepts in [Validation Overview](overview.md), refine your implementation with [Create Custom Graders](../building_graders/create_custom_graders.md), or train models on RewardBench2 data with [Train Reward Models](../building_graders/training/overview.md). For production deployment, see [Running Graders](../running_graders/run_tasks.md) and [Monitor Performance](../running_graders/grader_analysis.md).
+- [Refine Data Quality](../applications/data_refinement.md) — Improve model outputs using grader feedback
+- [Pairwise Evaluation](../applications/select_rank.md) — Compare and rank multiple model outputs
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Refine your grader implementation
 
 
 ## References

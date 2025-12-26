@@ -153,10 +153,8 @@ Data Refinement in OpenJudge centers on using Graders to improve model outputs t
 
 ## Next Steps
 
-To explore more advanced Grader applications, consider:
-
-- [Building custom graders](../building_graders/create_custom_graders.md) for specialized feedback
-- [Validating graders](../validating_graders/overview.md) to ensure feedback quality
-- [Training reward models](../building_graders/training/bradley_terry.md) to automate feedback generation
-- [Running comprehensive evaluations](../running_graders/run_tasks.md) with your improved models
+- [Pairwise Evaluation](select_rank.md) — Compare and rank multiple model outputs
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build specialized graders for feedback
+- [Validate Graders](../validating_graders/overview.md) — Ensure feedback quality
+- [Run Grading Tasks](../running_graders/run_tasks.md) — Run comprehensive evaluations at scale
 
