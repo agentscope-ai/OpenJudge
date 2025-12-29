@@ -519,4 +519,5 @@ class TestLLMGraderQuality:
 
         # Verify analysis results contain necessary metadata
         assert "explanation" in consistency_result.metadata
+        assert consistency_result.name is not None
         assert consistency_result.name == "Consistency Analysis"
