@@ -6,8 +6,10 @@ This module contains core computation functions used by various graders.
 All computation logic is centralized here to avoid code duplication.
 """
 
+# pylint: disable=unused-argument
+
 from collections import Counter
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -18,6 +20,7 @@ def compute_bleu_score(
     max_ngram_order: int = 4,
     smooth_method: str = "exp",
     effective_order: bool = True,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute BLEU score using sacrebleu
@@ -62,6 +65,7 @@ def compute_sentence_bleu(
     response: str,
     weights: tuple = (0.25, 0.25, 0.25, 0.25),
     smoothing_function: int = 1,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute sentence-level BLEU score using NLTK
@@ -102,6 +106,7 @@ def compute_gleu_score(
     response: str,
     min_len: int = 1,
     max_len: int = 4,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute GLEU score using NLTK
@@ -143,6 +148,7 @@ def compute_chrf_score(
     response: str,
     char_order: int = 6,
     beta: float = 2.0,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute ChrF score using sacrebleu
@@ -181,6 +187,7 @@ def compute_meteor_score(
     alpha: float = 0.9,
     beta: float = 3.0,
     gamma: float = 0.5,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute METEOR score using NLTK
@@ -223,6 +230,7 @@ def compute_rouge_scores(
     rouge_types: List[str],
     use_stemmer: bool = True,
     score_key: str = "fmeasure",
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute ROUGE scores using rouge_score library
@@ -268,6 +276,7 @@ def compute_rouge_ngram(
     response: str,
     n: int,
     score_type: str = "fmeasure",
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute ROUGE N-gram score (custom implementation)
@@ -335,6 +344,7 @@ def compute_f1_score(
     reference: str,
     response: str,
     normalize: bool = True,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute token-based F1 score
@@ -385,6 +395,7 @@ def compute_fuzzy_match(
     response: str,
     method: str = "ratio",
     threshold: float = 0.8,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute fuzzy match score using Levenshtein distance
@@ -452,6 +463,7 @@ def compute_edit_distance(
     reference: str,
     response: str,
     normalize_by_length: bool = True,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute edit distance similarity
@@ -491,6 +503,7 @@ def compute_cosine_similarity(
     use_tfidf: bool = True,
     ngram_range: tuple = (1, 2),
     max_features: Optional[int] = None,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute cosine similarity
@@ -528,6 +541,7 @@ def _cosine_tfidf(
     text2: str,
     ngram_range: tuple,
     max_features: Optional[int],
+    **kwargs: Any,
 ) -> float:
     """TF-IDF based cosine similarity"""
     try:
@@ -569,6 +583,7 @@ def compute_jaccard_similarity(
     response: str,
     use_ngrams: bool = False,
     n: int = 2,
+    **kwargs: Any,
 ) -> Tuple[float, dict]:
     """
     Compute Jaccard similarity

@@ -8,8 +8,7 @@ that measure accuracy by comparing predictions with expected outcomes.
 
 from typing import Dict, List
 
-from tutorials.grader_validation.base import GraderValidator
-
+from cookbooks.grader_validation.base import GraderValidator
 from openjudge.analyzer.base_analyzer import AnalysisResult
 from openjudge.analyzer.validation.accuracy_analyzer import AccuracyAnalyzer
 from openjudge.graders.base_grader import BaseGrader
