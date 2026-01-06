@@ -46,6 +46,7 @@ nav:
       - Validate on RewardBench2: validating_graders/rewardbench2.md
 
   - Applications:
+      - Zero-Shot Evaluation: applications/zero_shot_evaluation.md
       - Refine Data Quality: applications/data_refinement.md
       - Pairwise Model Evaluation: applications/select_rank.md
 
