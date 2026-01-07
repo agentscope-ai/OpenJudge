@@ -20,7 +20,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-TOOL_SELECTION_PROMPT_EN = textwrap.dedent("""
+TOOL_SELECTION_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing tool selection decisions. Your task is to evaluate the  of tool selection made by an agent to address the user query.
 
 <Evaluation Dimension: Tool Selection >
@@ -73,10 +74,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-TOOL_SELECTION_PROMPT_ZH = textwrap.dedent("""
+TOOL_SELECTION_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析工具选择决策的专家。你的任务是评估智能体为解决用户查询而做出的工具选择的质量。
 
 <评估维度：工具选择质量>
@@ -129,7 +132,8 @@ TOOL_SELECTION_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_TOOL_SELECTION_TEMPLATE = PromptTemplate(

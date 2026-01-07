@@ -7,7 +7,7 @@ in its reflection.
 """
 
 import textwrap
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -20,7 +20,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-REFLECTION_PROGRESS_AWARENESS_PROMPT_EN = textwrap.dedent("""
+REFLECTION_PROGRESS_AWARENESS_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent demonstrates accurate awareness of progress toward completing the task in its reflection.
 
 <Evaluation Type: Reflection Progress Awareness>
@@ -82,10 +83,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = textwrap.dedent("""
+REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析智能体行为的专家。你的任务是评估智能体是否在其反思中展示了对完成任务进度的准确意识。
 
 <评估类型：反思进度意识>
@@ -147,7 +150,8 @@ REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_REFLECTION_PROGRESS_AWARENESS_TEMPLATE = PromptTemplate(

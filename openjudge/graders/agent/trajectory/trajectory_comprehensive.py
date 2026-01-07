@@ -23,7 +23,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long,too-many-statements
 
 # Chinese Prompt
-TRAJECTORY_COMPREHENSIVE_PROMPT_ZH = textwrap.dedent("""# 任务描述
+TRAJECTORY_COMPREHENSIVE_PROMPT_ZH = textwrap.dedent(
+    """# 任务描述
 
 你是一位专业的评估专家，负责评估智能体轨迹中每个工具调用步骤对问题解决的贡献度。
 
@@ -110,10 +111,12 @@ TRAJECTORY_COMPREHENSIVE_PROMPT_ZH = textwrap.dedent("""# 任务描述
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # English Prompt
-TRAJECTORY_COMPREHENSIVE_PROMPT_EN = textwrap.dedent("""# Task Description
+TRAJECTORY_COMPREHENSIVE_PROMPT_EN = textwrap.dedent(
+    """# Task Description
 
 You are a professional evaluation expert responsible for assessing the contribution of each tool call step in an agent trajectory.
 
@@ -201,7 +204,8 @@ Please output your evaluation in JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_TRAJECTORY_COMPREHENSIVE_TEMPLATE = PromptTemplate(

@@ -6,7 +6,7 @@ Evaluates whether the agent preserves important details when storing information
 """
 
 import textwrap
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -19,7 +19,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-MEMORY_DETAIL_PRESERVATION_PROMPT_EN = textwrap.dedent("""
+MEMORY_DETAIL_PRESERVATION_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent preserves important details when storing information in memory.
 
 <Evaluation Type: Memory Detail Preservation>
@@ -62,10 +63,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-MEMORY_DETAIL_PRESERVATION_PROMPT_ZH = textwrap.dedent("""
+MEMORY_DETAIL_PRESERVATION_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析智能体行为的专家。你的任务是评估智能体在将信息存储到记忆中时是否保留了重要细节。
 
 <评估类型：记忆细节保留>
@@ -108,7 +111,8 @@ MEMORY_DETAIL_PRESERVATION_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE = PromptTemplate(

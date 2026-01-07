@@ -6,7 +6,7 @@ Evaluates whether the agent effectively retrieves relevant information from memo
 """
 
 import textwrap
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -19,7 +19,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_EN = textwrap.dedent("""
+MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent effectively retrieves relevant information from memory when needed.
 
 <Evaluation Type: Memory Retrieval Effectiveness>
@@ -63,10 +64,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH = textwrap.dedent("""
+MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析智能体行为的专家。你的任务是评估智能体在需要时是否有效地从记忆中检索相关信息。
 
 <评估类型：记忆检索有效性>
@@ -110,7 +113,8 @@ MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE = PromptTemplate(

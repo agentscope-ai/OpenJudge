@@ -21,7 +21,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-TOOL_CALL_ACCURACY_PROMPT_EN = textwrap.dedent("""# Instruction
+TOOL_CALL_ACCURACY_PROMPT_EN = textwrap.dedent(
+    """# Instruction
 ## Goal
 Your are an expert in evaluating the accuracy of a tool call considering relevance and \
 potential usefulness including syntactic and semantic correctness of a proposed tool call \
@@ -59,10 +60,12 @@ Your output should be a JSON object with the following format:
     "reason": [Reason for the score],
 }}
 ```
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-TOOL_CALL_ACCURACY_PROMPT_ZH = textwrap.dedent("""# 指令
+TOOL_CALL_ACCURACY_PROMPT_ZH = textwrap.dedent(
+    """# 指令
 ## 目标
 你是评估工具调用准确性的专家，需要考虑相关性和潜在有用性，包括基于提供的定义和数据，对智能系统提出的工具调用的语法和语义正确性进行评估。你的目标是使用提供的信息回答以下问题。
 
@@ -95,7 +98,8 @@ TOOL_CALL_ACCURACY_PROMPT_ZH = textwrap.dedent("""# 指令
     "reason": [分数的原因],
 }}
 ```
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE = PromptTemplate(

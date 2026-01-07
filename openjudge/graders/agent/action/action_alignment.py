@@ -6,7 +6,7 @@ Evaluates whether the agent executes an action that aligns with its stated plan 
 """
 
 import textwrap
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -19,7 +19,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-ACTION_ALIGNMENT_PROMPT_EN = textwrap.dedent("""
+ACTION_ALIGNMENT_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent executes an action that aligns with its stated plan or reasoning.
 
 <Evaluation Type: Action Alignment>
@@ -62,10 +63,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-ACTION_ALIGNMENT_PROMPT_ZH = textwrap.dedent("""
+ACTION_ALIGNMENT_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析智能体行为的专家。你的任务是评估智能体是否执行了与其声明的计划或推理一致的动作。
 
 <评估类型：动作对齐>
@@ -108,7 +111,8 @@ ACTION_ALIGNMENT_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_ACTION_ALIGNMENT_TEMPLATE = PromptTemplate(

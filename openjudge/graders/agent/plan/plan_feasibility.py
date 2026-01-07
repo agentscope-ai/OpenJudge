@@ -6,7 +6,7 @@ Evaluates whether the agent creates a plan that is logically sound and feasible.
 """
 
 import textwrap
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -19,7 +19,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-PLAN_FEASIBILITY_PROMPT_EN = textwrap.dedent("""
+PLAN_FEASIBILITY_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent creates a plan that is logically sound and feasible.
 
 <Evaluation Type: Plan Feasibility>
@@ -63,10 +64,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-PLAN_FEASIBILITY_PROMPT_ZH = textwrap.dedent("""
+PLAN_FEASIBILITY_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析智能体行为的专家。你的任务是评估智能体是否创建了逻辑上合理且可行的计划。
 
 <评估类型：计划可行性>
@@ -110,7 +113,8 @@ PLAN_FEASIBILITY_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_PLAN_FEASIBILITY_TEMPLATE = PromptTemplate(

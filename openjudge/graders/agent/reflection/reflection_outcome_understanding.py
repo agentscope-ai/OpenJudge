@@ -7,7 +7,7 @@ in its reflection module.
 """
 
 import textwrap
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -20,7 +20,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_EN = textwrap.dedent("""
+REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent correctly understands and interprets the outcome or result of an action in its reflection.
 
 <Evaluation Type: Reflection Outcome Understanding>
@@ -124,10 +125,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_ZH = textwrap.dedent("""
+REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析智能体行为的专家。你的任务是评估智能体是否在其反思中正确理解和解释了动作的结果或输出。
 
 <评估类型：反思结果理解>
@@ -231,7 +234,8 @@ REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_REFLECTION_OUTCOME_UNDERSTANDING_TEMPLATE = PromptTemplate(

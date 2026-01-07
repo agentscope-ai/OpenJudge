@@ -20,7 +20,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-TOOL_PARAMETER_CHECK_PROMPT_EN = textwrap.dedent("""
+TOOL_PARAMETER_CHECK_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing tool calls. Your task is to evaluate whether the generated tool call extracts completely correct parameters from the user query.
 
 <Evaluation Type: Tool Parameter Extraction Correctness>
@@ -69,10 +70,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-TOOL_PARAMETER_CHECK_PROMPT_ZH = textwrap.dedent("""
+TOOL_PARAMETER_CHECK_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析工具调用的专家。你的任务是评估生成的工具调用是否从用户查询中提取了完全正确的参数。
 
 <评估类型：工具参数提取正确性>
@@ -121,7 +124,8 @@ TOOL_PARAMETER_CHECK_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE = PromptTemplate(

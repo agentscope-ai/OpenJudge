@@ -6,7 +6,7 @@ Evaluates whether the agent stores accurate and factual information in its memor
 """
 
 import textwrap
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -19,7 +19,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-MEMORY_ACCURACY_PROMPT_EN = textwrap.dedent("""
+MEMORY_ACCURACY_PROMPT_EN = textwrap.dedent(
+    """
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent stores accurate and factual information in its memory module.
 
 <Evaluation Type: Memory Accuracy>
@@ -62,10 +63,12 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Chinese Prompt
-MEMORY_ACCURACY_PROMPT_ZH = textwrap.dedent("""
+MEMORY_ACCURACY_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名分析智能体行为的专家。你的任务是评估智能体是否在其记忆模块中存储了准确且真实的信息。
 
 <评估类型：记忆准确性>
@@ -108,7 +111,8 @@ MEMORY_ACCURACY_PROMPT_ZH = textwrap.dedent("""
 }}
 
 JSON:
-""").strip()
+"""
+).strip()
 
 # Build default template from prompts
 DEFAULT_MEMORY_ACCURACY_TEMPLATE = PromptTemplate(
