@@ -20,7 +20,7 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-TOOL_SELECTION_PROMPT_EN = """
+TOOL_SELECTION_PROMPT_EN = textwrap.dedent("""
 You are an expert in analyzing tool selection decisions. Your task is to evaluate the  of tool selection made by an agent to address the user query.
 
 <Evaluation Dimension: Tool Selection >
@@ -73,10 +73,10 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-"""
+""").strip()
 
 # Chinese Prompt
-TOOL_SELECTION_PROMPT_ZH = """
+TOOL_SELECTION_PROMPT_ZH = textwrap.dedent("""
 你是一名分析工具选择决策的专家。你的任务是评估智能体为解决用户查询而做出的工具选择的质量。
 
 <评估维度：工具选择质量>
@@ -129,7 +129,7 @@ TOOL_SELECTION_PROMPT_ZH = """
 }}
 
 JSON:
-"""
+""").strip()
 
 # Build default template from prompts
 DEFAULT_TOOL_SELECTION_TEMPLATE = PromptTemplate(
@@ -137,13 +137,13 @@ DEFAULT_TOOL_SELECTION_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(TOOL_SELECTION_PROMPT_EN),
+                content=TOOL_SELECTION_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(TOOL_SELECTION_PROMPT_ZH),
+                content=TOOL_SELECTION_PROMPT_ZH,
             ),
         ],
     },
@@ -163,6 +163,7 @@ class ToolSelectionGrader(LLMGrader):
         language: Language for evaluation prompts (default: LanguageEnum.EN)
 
     Example:
+        >>> import asyncio
         >>> from openjudge.model.openai_llm import OpenAIChatModel
         >>> from openjudge.schema.template import LanguageEnum
         >>>
@@ -177,7 +178,7 @@ class ToolSelectionGrader(LLMGrader):
         ...     language=LanguageEnum.EN
         ... )
         >>>
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="Find all Python files modified in the last week",
         ...     tool_definitions=[
         ...         {"name": "search_files", "description": "Search for files"},
@@ -187,7 +188,7 @@ class ToolSelectionGrader(LLMGrader):
         ...         {"name": "search_files", "arguments": {"pattern": "*.py"}},
         ...         {"name": "git_log", "arguments": {"days": 7}}
         ...     ]
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Score from 1 to 5
     """
 

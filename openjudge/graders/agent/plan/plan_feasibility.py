@@ -6,7 +6,7 @@ Evaluates whether the agent creates a plan that is logically sound and feasible.
 """
 
 import textwrap
-from typing import Any, Optional
+from typing import Optional, Any, Dict, List
 
 from loguru import logger
 
@@ -19,7 +19,7 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-PLAN_FEASIBILITY_PROMPT_EN = """
+PLAN_FEASIBILITY_PROMPT_EN = textwrap.dedent("""
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent creates a plan that is logically sound and feasible.
 
 <Evaluation Type: Plan Feasibility>
@@ -63,10 +63,10 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-"""
+""").strip()
 
 # Chinese Prompt
-PLAN_FEASIBILITY_PROMPT_ZH = """
+PLAN_FEASIBILITY_PROMPT_ZH = textwrap.dedent("""
 你是一名分析智能体行为的专家。你的任务是评估智能体是否创建了逻辑上合理且可行的计划。
 
 <评估类型：计划可行性>
@@ -110,7 +110,7 @@ PLAN_FEASIBILITY_PROMPT_ZH = """
 }}
 
 JSON:
-"""
+""").strip()
 
 # Build default template from prompts
 DEFAULT_PLAN_FEASIBILITY_TEMPLATE = PromptTemplate(
@@ -118,13 +118,13 @@ DEFAULT_PLAN_FEASIBILITY_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(PLAN_FEASIBILITY_PROMPT_EN),
+                content=PLAN_FEASIBILITY_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(PLAN_FEASIBILITY_PROMPT_ZH),
+                content=PLAN_FEASIBILITY_PROMPT_ZH,
             ),
         ],
     },
@@ -146,26 +146,25 @@ class PlanFeasibilityGrader(LLMGrader):
         language: Language for evaluation prompts (default: LanguageEnum.EN)
 
     Example:
+        >>> import asyncio
         >>> from openjudge.model.openai_llm import OpenAIChatModel
-        >>> from openjudge.schema.template import LanguageEnum
+        >>> from openjudge.models.schema.prompt_template import LanguageEnum
         >>>
         >>> api = OpenAIChatModel(
-        ...     api_key="your-key",  # pragma: allowlist secret
+        ...     api_key="your-key",
         ...     model="qwen3-max",
         ...     generate_kwargs={"temperature": 0.1}
         ... )
-        >>>
         >>> grader = PlanFeasibilityGrader(
         ...     model=api,
         ...     language=LanguageEnum.EN
         ... )
-        >>>
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     plan="I will first open the drawer to get the key, then use it to unlock the door.",
         ...     observation="The drawer is closed. You don't have any items.",
         ...     memory="The key is inside the drawer."
         ... )
-        >>> print(f"Score: {result.score}")  # 1.0 (feasible plan)
+        >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
     def __init__(
@@ -184,7 +183,7 @@ class PlanFeasibilityGrader(LLMGrader):
         )
         self.template = template if template is not None else DEFAULT_PLAN_FEASIBILITY_TEMPLATE
 
-    def _format_history(self, history: Optional[list] = None) -> str:
+    def _format_history(self, history: Optional[List[Dict[str, Any]]] = None) -> str:
         """Format history steps for evaluation.
 
         Args:
@@ -197,8 +196,8 @@ class PlanFeasibilityGrader(LLMGrader):
             return ""
 
         lines = ["<History Steps>"]
-        for i, hist_step in enumerate(history):
-            lines.append(f"Step {i + 1}:")
+        for i, hist_step in enumerate(history, start=1):
+            lines.append(f"Step {i}:")
             for key, value in hist_step.items():
                 if value:
                     lines.append(f"{key.capitalize()}: {value}")
@@ -212,7 +211,7 @@ class PlanFeasibilityGrader(LLMGrader):
         plan: str,
         observation: str,
         memory: str,
-        history: Optional[list] = None,
+        history: Optional[List[Dict[str, Any]]] = None,
         context: Optional[str] = None,
         **kwargs: Any,
     ) -> GraderScore:
@@ -239,9 +238,7 @@ class PlanFeasibilityGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = ""
-        if context:
-            context_str = f"<context>\n{context}\n</context>"
+        context_str = f"<context>\n{context}\n</context>" if context else ""
 
         # Format history
         history_str = self._format_history(history)

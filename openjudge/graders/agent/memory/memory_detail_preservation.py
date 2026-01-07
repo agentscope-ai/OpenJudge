@@ -6,7 +6,7 @@ Evaluates whether the agent preserves important details when storing information
 """
 
 import textwrap
-from typing import Any, Optional
+from typing import Optional, Any, Dict, List
 
 from loguru import logger
 
@@ -19,7 +19,7 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-MEMORY_DETAIL_PRESERVATION_PROMPT_EN = """
+MEMORY_DETAIL_PRESERVATION_PROMPT_EN = textwrap.dedent("""
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent preserves important details when storing information in memory.
 
 <Evaluation Type: Memory Detail Preservation>
@@ -62,10 +62,10 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-"""
+""").strip()
 
 # Chinese Prompt
-MEMORY_DETAIL_PRESERVATION_PROMPT_ZH = """
+MEMORY_DETAIL_PRESERVATION_PROMPT_ZH = textwrap.dedent("""
 你是一名分析智能体行为的专家。你的任务是评估智能体在将信息存储到记忆中时是否保留了重要细节。
 
 <评估类型：记忆细节保留>
@@ -108,7 +108,7 @@ MEMORY_DETAIL_PRESERVATION_PROMPT_ZH = """
 }}
 
 JSON:
-"""
+""").strip()
 
 # Build default template from prompts
 DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE = PromptTemplate(
@@ -116,13 +116,13 @@ DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(MEMORY_DETAIL_PRESERVATION_PROMPT_EN),
+                content=MEMORY_DETAIL_PRESERVATION_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(MEMORY_DETAIL_PRESERVATION_PROMPT_ZH),
+                content=MEMORY_DETAIL_PRESERVATION_PROMPT_ZH,
             ),
         ],
     },
@@ -144,25 +144,24 @@ class MemoryDetailPreservationGrader(LLMGrader):
         language: Language for evaluation prompts (default: LanguageEnum.EN)
 
     Example:
+        >>> import asyncio
         >>> from openjudge.model.openai_llm import OpenAIChatModel
-        >>> from openjudge.schema.template import LanguageEnum
+        >>> from openjudge.models.schema.prompt_template import LanguageEnum
         >>>
         >>> api = OpenAIChatModel(
-        ...     api_key="your-key",  # pragma: allowlist secret
+        ...     api_key="your-key",
         ...     model="qwen3-max",
         ...     generate_kwargs={"temperature": 0.1}
         ... )
-        >>>
         >>> grader = MemoryDetailPreservationGrader(
         ...     model=api,
         ...     language=LanguageEnum.EN
         ... )
-        >>>
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     observation="Cabinet 1 at coordinates (3.5, 2.1) contains 5 red apples.",
         ...     memory="Cabinet 1 at (3.5, 2.1) has 5 red apples."
         ... )
-        >>> print(f"Score: {result.score}")  # 1.0 (good detail preservation)
+        >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
     def __init__(
@@ -181,7 +180,7 @@ class MemoryDetailPreservationGrader(LLMGrader):
         )
         self.template = template if template is not None else DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE
 
-    def _format_history(self, history: Optional[list] = None) -> str:
+    def _format_history(self, history: Optional[List[Dict[str, Any]]] = None) -> str:
         """Format history steps for evaluation.
 
         Args:
@@ -194,8 +193,8 @@ class MemoryDetailPreservationGrader(LLMGrader):
             return ""
 
         lines = ["<History Steps>"]
-        for i, hist_step in enumerate(history):
-            lines.append(f"Step {i + 1}:")
+        for i, hist_step in enumerate(history, start=1):
+            lines.append(f"Step {i}:")
             for key, value in hist_step.items():
                 if value:
                     lines.append(f"{key.capitalize()}: {value}")
@@ -208,7 +207,7 @@ class MemoryDetailPreservationGrader(LLMGrader):
         self,
         observation: str,
         memory: str,
-        history: Optional[list] = None,
+        history: Optional[List[Dict[str, Any]]] = None,
         context: Optional[str] = None,
         **kwargs: Any,
     ) -> GraderScore:
@@ -233,9 +232,7 @@ class MemoryDetailPreservationGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = ""
-        if context:
-            context_str = f"<context>\n{context}\n</context>"
+        context_str = f"<context>\n{context}\n</context>" if context else ""
 
         # Format history
         history_str = self._format_history(history)

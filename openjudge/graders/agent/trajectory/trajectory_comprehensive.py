@@ -23,7 +23,7 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long,too-many-statements
 
 # Chinese Prompt
-TRAJECTORY_COMPREHENSIVE_PROMPT_ZH = """# 任务描述
+TRAJECTORY_COMPREHENSIVE_PROMPT_ZH = textwrap.dedent("""# 任务描述
 
 你是一位专业的评估专家，负责评估智能体轨迹中每个工具调用步骤对问题解决的贡献度。
 
@@ -110,10 +110,10 @@ TRAJECTORY_COMPREHENSIVE_PROMPT_ZH = """# 任务描述
 }}
 
 JSON:
-"""
+""").strip()
 
 # English Prompt
-TRAJECTORY_COMPREHENSIVE_PROMPT_EN = """# Task Description
+TRAJECTORY_COMPREHENSIVE_PROMPT_EN = textwrap.dedent("""# Task Description
 
 You are a professional evaluation expert responsible for assessing the contribution of each tool call step in an agent trajectory.
 
@@ -201,7 +201,7 @@ Please output your evaluation in JSON format:
 }}
 
 JSON:
-"""
+""").strip()
 
 # Build default template from prompts
 DEFAULT_TRAJECTORY_COMPREHENSIVE_TEMPLATE = PromptTemplate(
@@ -209,13 +209,13 @@ DEFAULT_TRAJECTORY_COMPREHENSIVE_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(TRAJECTORY_COMPREHENSIVE_PROMPT_EN),
+                content=TRAJECTORY_COMPREHENSIVE_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(TRAJECTORY_COMPREHENSIVE_PROMPT_ZH),
+                content=TRAJECTORY_COMPREHENSIVE_PROMPT_ZH,
             ),
         ],
     },
@@ -291,17 +291,18 @@ class TrajectoryComprehensiveGrader(LLMGrader):
         resolution_threshold: Threshold for determining if the trajectory is resolved (default: 0.8, on normalized 0-1 scale)
 
     Example:
+        >>> import asyncio
         >>> from openjudge.models.openai_chat_model import OpenAIChatModel
         >>> api = OpenAIChatModel(api_key="...", model="qwen3-32b")
         >>> grader = TrajectoryComprehensiveGrader(model=api, resolution_threshold=0.75)
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     messages=[
         ...         {"role": "system", "content": "..."},
         ...         {"role": "user", "content": "帮我找投资建议"},
         ...         {"role": "assistant", "content": "...", "tool_calls": [...]},
         ...         ...
         ...     ]
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # computed from step averages
     """
 

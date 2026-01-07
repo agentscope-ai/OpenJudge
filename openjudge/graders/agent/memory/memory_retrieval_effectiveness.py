@@ -6,7 +6,7 @@ Evaluates whether the agent effectively retrieves relevant information from memo
 """
 
 import textwrap
-from typing import Any, Optional
+from typing import Optional, Any, Dict, List
 
 from loguru import logger
 
@@ -19,7 +19,7 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_EN = """
+MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_EN = textwrap.dedent("""
 You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent effectively retrieves relevant information from memory when needed.
 
 <Evaluation Type: Memory Retrieval Effectiveness>
@@ -63,10 +63,10 @@ Provide your evaluation in the following structured JSON format:
 }}
 
 JSON:
-"""
+""").strip()
 
 # Chinese Prompt
-MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH = """
+MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH = textwrap.dedent("""
 你是一名分析智能体行为的专家。你的任务是评估智能体在需要时是否有效地从记忆中检索相关信息。
 
 <评估类型：记忆检索有效性>
@@ -110,7 +110,7 @@ MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH = """
 }}
 
 JSON:
-"""
+""").strip()
 
 # Build default template from prompts
 DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE = PromptTemplate(
@@ -118,13 +118,13 @@ DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_EN),
+                content=MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH),
+                content=MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH,
             ),
         ],
     },
@@ -146,26 +146,24 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
         language: Language for evaluation prompts (default: LanguageEnum.EN)
 
     Example:
+        >>> import asyncio
         >>> from openjudge.model.openai_llm import OpenAIChatModel
-        >>> from openjudge.schema.template import LanguageEnum
+        >>> from openjudge.models.schema.prompt_template import LanguageEnum
         >>>
         >>> api = OpenAIChatModel(
-        ...     api_key="your-key",  # pragma: allowlist secret
+        ...     api_key="your-key",
         ...     model="qwen3-max",
         ...     generate_kwargs={"temperature": 0.1}
         ... )
-        >>>
         >>> grader = MemoryRetrievalEffectivenessGrader(
         ...     model=api,
         ...     language=LanguageEnum.EN
         ... )
-        >>>
-        >>> result = await grader.aevaluate(
-        ...     plan="I will use the key from drawer 1.",
-        ...     observation="You are standing in the room.",
-        ...     memory="The key was found in drawer 1 in step 3."
+        >>> result = asyncio.run(grader.aevaluate(
+        ...     observation="You see a closed cabinet.",
+        ...     memory="The cabinet is closed."
         ... )
-        >>> print(f"Score: {result.score}")  # 1.0 (effective retrieval)
+        >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
     def __init__(
@@ -184,7 +182,7 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
         )
         self.template = template if template is not None else DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE
 
-    def _format_history(self, history: Optional[list] = None) -> str:
+    def _format_history(self, history: Optional[List[Dict[str, Any]]] = None) -> str:
         """Format history steps for evaluation.
 
         Args:
@@ -212,7 +210,7 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
         plan: str,
         observation: str,
         memory: str,
-        history: Optional[list] = None,
+        history: Optional[List[Dict[str, Any]]] = None,
         context: Optional[str] = None,
         **kwargs: Any,
     ) -> GraderScore:
@@ -239,9 +237,7 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = ""
-        if context:
-            context_str = f"<context>\n{context}\n</context>"
+        context_str = f"<context>\n{context}\n</context>" if context else ""
 
         # Format history
         history_str = self._format_history(history)
