@@ -35,7 +35,7 @@ nav:
       - Overview: building_graders/overview.md
       - Create Custom Graders: building_graders/create_custom_graders.md
       - Generate Graders from Data: building_graders/generate_graders_from_data.md
-      # - Train Reward Models: building_graders/training/overview.md  # Coming soon
+      - Train Reward Models: building_graders/training_reward_models.md
 
   - Running Graders:
       - Run Grading Tasks: running_graders/run_tasks.md
@@ -52,6 +52,7 @@ nav:
 
   - Integrations:
       - Langfuse: integrations/langfuse.md
+      - LangSmith: integrations/langsmith.md
 
   - Community:
       - Contribute to OpenJudge: community/contributing.md

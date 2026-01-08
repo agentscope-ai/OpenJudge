@@ -1,10 +1,8 @@
-# Building External Evaluation Pipelines with OpenJudge for Langfuse
+# Langfuse Integration
 
 This tutorial guides you through building powerful external evaluation pipelines for Langfuse using OpenJudge. By integrating these two tools, you can leverage OpenJudge's 50+ built-in graders to perform comprehensive automated quality evaluation of your LLM applications.
 
 ## Overview
-
-### Why Use External Evaluation Pipelines?
 
 While Langfuse provides built-in evaluation features, external evaluation pipelines offer additional advantages:
 
@@ -13,33 +11,31 @@ While Langfuse provides built-in evaluation features, external evaluation pipeli
 - **Extensibility**: Easily add custom evaluation logic to meet specific business requirements
 - **Batch Processing**: Efficiently process large volumes of historical traces with support for scheduled tasks and incremental evaluation
 
-### Integration Architecture
+The integration follows a simple three-step flow:
 
 ```
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
 │    Langfuse     │      │    OpenJudge    │      │    Langfuse     │
 │    (Traces)     │─────▶│  (Evaluation)   │─────▶│    (Scores)     │
 └─────────────────┘      └─────────────────┘      └─────────────────┘
-        │                        │                        ▲
-        │   api.trace.list()     │   graders.aevaluate()  │   create_score()
-        └────────────────────────┴────────────────────────┘
 ```
 
-The entire workflow consists of three steps:
-
-1. **Fetch Traces**: Pull traces that need evaluation from Langfuse
-2. **Run Evaluation**: Use OpenJudge graders to score the traces
-3. **Send Results**: Push evaluation scores back to Langfuse
+1. **Fetch Traces** — Pull traces from Langfuse using `api.trace.list()`
+2. **Run Evaluation** — Score traces with OpenJudge graders via `graders.aevaluate()`
+3. **Send Results** — Push scores back to Langfuse via `create_score()`
 
 ## Prerequisites
 
-### Install Dependencies
+!!! warning "Required Configuration"
+    Make sure to set all required environment variables before running the code.
+
+**Install dependencies:**
 
 ```bash
 pip install py-openjudge langfuse
 ```
 
-### Configure Environment Variables
+**Configure environment variables:**
 
 ```bash
 # Langfuse authentication
@@ -52,7 +48,7 @@ export OPENAI_API_KEY="sk-your-api-key"
 export OPENAI_BASE_URL="https://api.openai.com/v1"  # Optional, defaults to OpenAI
 ```
 
-### Initialize Clients
+**Initialize the Langfuse client:**
 
 ```python
 import os
@@ -69,9 +65,11 @@ langfuse = Langfuse(
 assert langfuse.auth_check(), "Langfuse authentication failed"
 ```
 
-## Step 1: Create Test Traces (Optional)
+## Integration Steps
 
-If you already have traces in Langfuse, you can skip this step. The following code creates synthetic traces for testing:
+### Step 1: Prepare Traces
+
+If you already have traces in Langfuse, you can skip this step and proceed directly to Step 2. The following code creates synthetic traces for testing purposes:
 
 ```python
 from langfuse import Langfuse, observe
@@ -105,9 +103,9 @@ for question in test_questions:
 langfuse.flush()
 ```
 
-## Step 2: Fetch Traces from Langfuse
+### Step 2: Fetch Traces
 
-### Basic Fetch
+Now fetch the traces from Langfuse that you want to evaluate:
 
 ```python
 def fetch_traces_for_evaluation(
@@ -150,55 +148,52 @@ def fetch_traces_for_evaluation(
     return result
 ```
 
-### Advanced Filtering: Fetch by Time Range
+??? tip "Advanced: Fetch by Time Range"
+    In production, you often want to filter traces by time range:
 
-In production, you often want to filter traces by time range:
+    ```python
+    from datetime import datetime, timedelta
 
-```python
-from datetime import datetime, timedelta
+    def fetch_recent_traces(
+        hours_back: int = 24,
+        limit: int = 100,
+        tags: list[str] | None = None,
+    ) -> list[dict]:
+        """
+        Fetch traces from the last N hours.
 
-def fetch_recent_traces(
-    hours_back: int = 24,
-    limit: int = 100,
-    tags: list[str] | None = None,
-) -> list[dict]:
-    """
-    Fetch traces from the last N hours.
+        Args:
+            hours_back: Number of hours to look back
+            limit: Maximum number of traces to fetch
+            tags: Optional tag filter
 
-    Args:
-        hours_back: Number of hours to look back
-        limit: Maximum number of traces to fetch
-        tags: Optional tag filter
+        Returns:
+            List of trace dictionaries
+        """
+        from_timestamp = datetime.now() - timedelta(hours=hours_back)
 
-    Returns:
-        List of trace dictionaries
-    """
-    from_timestamp = datetime.now() - timedelta(hours=hours_back)
+        response = langfuse.api.trace.list(
+            limit=limit,
+            tags=tags,
+            from_timestamp=from_timestamp,
+        )
 
-    response = langfuse.api.trace.list(
-        limit=limit,
-        tags=tags,
-        from_timestamp=from_timestamp,
-    )
+        result = []
+        for trace in response.data:
+            if trace.input and trace.output:
+                result.append({
+                    "id": trace.id,
+                    "input": trace.input,
+                    "output": trace.output,
+                    "metadata": trace.metadata or {},
+                })
 
-    result = []
-    for trace in response.data:
-        if trace.input and trace.output:
-            result.append({
-                "id": trace.id,
-                "input": trace.input,
-                "output": trace.output,
-                "metadata": trace.metadata or {},
-            })
+        return result
+    ```
 
-    return result
-```
+### Step 3: Run Evaluation
 
-## Step 3: Evaluate Traces with OpenJudge
-
-### Choosing the Right Grader
-
-Select the appropriate OpenJudge grader based on your evaluation needs:
+With the traces fetched, you can now evaluate them using OpenJudge graders. First, select the appropriate grader based on your evaluation needs:
 
 | Evaluation Scenario | Recommended Grader | Type | Description |
 |---------------------|-------------------|------|-------------|
@@ -213,179 +208,186 @@ Select the appropriate OpenJudge grader based on your evaluation needs:
 
 For the complete list of 50+ built-in graders, see [Built-in Graders Overview](../built_in_graders/overview.md).
 
-### Option 1: Single Grader (Quick Start)
+=== "Single Grader (Quick Start)"
 
-The simplest approach is to evaluate traces one by one with a single grader:
+    The simplest approach is to evaluate traces one by one with a single grader:
 
-```python
-import asyncio
-from openjudge.models import OpenAIChatModel
-from openjudge.graders.common.relevance import RelevanceGrader
-from openjudge.graders.schema import GraderScore, GraderError
+    ```python
+    import asyncio
+    from openjudge.models import OpenAIChatModel
+    from openjudge.graders.common.relevance import RelevanceGrader
+    from openjudge.graders.schema import GraderScore, GraderError
 
-async def evaluate_single_trace():
-    """Evaluate traces using a single grader"""
+    async def evaluate_single_trace():
+        """Evaluate traces using a single grader"""
 
-    # Initialize model and grader
-    model = OpenAIChatModel(model="qwen3-32b")
-    grader = RelevanceGrader(model=model)
+        # Initialize model and grader
+        model = OpenAIChatModel(model="qwen3-32b")
+        grader = RelevanceGrader(model=model)
 
-    # Fetch traces
-    traces = fetch_traces_for_evaluation(limit=10)
+        # Fetch traces
+        traces = fetch_traces_for_evaluation(limit=10)
 
-    for trace in traces:
-        try:
-            # Run evaluation
-            # Note: RelevanceGrader uses 'query' and 'response' parameters
-            result = await grader.aevaluate(
-                query=trace["input"],
-                response=trace["output"],
-            )
-
-            # Process result and send to Langfuse
-            if isinstance(result, GraderScore):
-                langfuse.create_score(
-                    trace_id=trace["id"],
-                    name="relevance",
-                    value=result.score,
-                    comment=result.reason,
+        for trace in traces:
+            try:
+                # Run evaluation
+                # Note: RelevanceGrader uses 'query' and 'response' parameters
+                result = await grader.aevaluate(
+                    query=trace["input"],
+                    response=trace["output"],
                 )
-                print(f"✓ Trace {trace['id'][:8]}... scored: {result.score}")
-            elif isinstance(result, GraderError):
-                print(f"✗ Trace {trace['id'][:8]}... error: {result.error}")
+
+                # Process result and send to Langfuse
+                if isinstance(result, GraderScore):
+                    langfuse.create_score(
+                        trace_id=trace["id"],
+                        name="relevance",
+                        value=result.score,
+                        comment=result.reason,
+                    )
+                    print(f"✓ Trace {trace['id'][:8]}... scored: {result.score}")
+                elif isinstance(result, GraderError):
+                    print(f"✗ Trace {trace['id'][:8]}... error: {result.error}")
+
+            except Exception as e:
+                print(f"✗ Error evaluating trace {trace['id']}: {e}")
+
+        # Ensure all scores are sent
+        langfuse.flush()
+
+    # Run evaluation
+    asyncio.run(evaluate_single_trace())
+    ```
+
+=== "Batch Evaluation (Recommended)"
+
+    For large numbers of traces, use `GradingRunner` for efficient concurrent batch evaluation. This approach supports multiple graders, field mapping, and score aggregation:
+
+    ```python
+    import asyncio
+    from openjudge.models import OpenAIChatModel
+    from openjudge.graders.common.relevance import RelevanceGrader
+    from openjudge.graders.common.harmfulness import HarmfulnessGrader
+    from openjudge.graders.text.similarity import SimilarityGrader
+    from openjudge.graders.schema import GraderScore, GraderRank, GraderError
+    from openjudge.runner.grading_runner import GradingRunner
+    from openjudge.runner.aggregator.weighted_sum_aggregator import WeightedSumAggregator
+
+    async def batch_evaluate_traces():
+        """Batch evaluate traces using GradingRunner"""
+
+        # Initialize model
+        model = OpenAIChatModel(model="qwen3-32b")
+
+        # Configure multiple graders with field mappers
+        # Map trace fields to grader expected parameters
+        runner = GradingRunner(
+            grader_configs={
+                "relevance": (
+                    RelevanceGrader(model=model),
+                    {"query":"input", "response":"output"}  # Map input->query, output->response
+                ),
+                "harmfulness": (
+                    HarmfulnessGrader(model=model),
+                    {"query":"input", "response":"output"}
+                )
+            },
+            max_concurrency=10,  # Control concurrency to avoid rate limits
+            show_progress=True,  # Show progress bar
+            # Optional: Add aggregators to combine scores into a composite score
+            aggregators=[
+                WeightedSumAggregator(
+                    name="overall_quality",
+                    weights={
+                        "relevance": 0.7,    # 70% weight on relevance
+                        "harmfulness": 0.3,  # 30% weight on safety
+                    }
+                )
+            ],
+        )
+
+        # Fetch traces
+        traces = fetch_traces_for_evaluation(limit=50)
+
+        if not traces:
+            print("No traces to evaluate")
+            return
+
+        # Prepare evaluation data
+        evaluation_data = []
+        trace_id_mapping = {}  # Map index to trace_id
+
+        for i, trace in enumerate(traces):
+            eval_item = {
+                "input": trace["input"],
+                "output": trace["output"],
+            }
+            # Add expected output as reference if available
+            if trace.get("expected"):
+                eval_item["expected"] = trace["expected"]
+
+            evaluation_data.append(eval_item)
+            trace_id_mapping[i] = trace["id"]
+
+        # Run batch evaluation
+        try:
+            results = await runner.arun(evaluation_data)
+
+            # Send results back to Langfuse
+            # results contains individual grader scores + aggregated "overall_quality" score
+            scores_sent = 0
+            for grader_name, grader_results in results.items():
+                for i, result in enumerate(grader_results):
+                    trace_id = trace_id_mapping[i]
+                    print(f"Sending {grader_name} score for trace {trace_id}")
+                    send_result_to_langfuse(trace_id, grader_name, result)
+                    scores_sent += 1
+
+
+            print(f"✓ Successfully sent {scores_sent} scores for {len(traces)} traces")
 
         except Exception as e:
-            print(f"✗ Error evaluating trace {trace['id']}: {e}")
+            print(f"✗ Batch evaluation failed: {e}")
 
-    # Ensure all scores are sent
-    langfuse.flush()
+        # Ensure all scores are sent
+        langfuse.flush()
+    ```
 
-# Run evaluation
-asyncio.run(evaluate_single_trace())
-```
+    The helper function to send results back to Langfuse:
 
-### Option 2: Batch Evaluation with GradingRunner (Recommended)
+    ```python
+    def send_result_to_langfuse(trace_id: str, grader_name: str, result) -> None:
+        """Send evaluation result to Langfuse"""
 
-For large numbers of traces, use `GradingRunner` for efficient concurrent batch evaluation. This approach supports multiple graders, field mapping, and score aggregation.
-
-```python
-import asyncio
-from openjudge.models import OpenAIChatModel
-from openjudge.graders.common.relevance import RelevanceGrader
-from openjudge.graders.common.harmfulness import HarmfulnessGrader
-from openjudge.graders.text.similarity import SimilarityGrader
-from openjudge.graders.schema import GraderScore, GraderRank, GraderError
-from openjudge.runner.grading_runner import GradingRunner
-from openjudge.runner.aggregator.weighted_sum_aggregator import WeightedSumAggregator
-
-async def batch_evaluate_traces():
-    """Batch evaluate traces using GradingRunner"""
-
-    # Initialize model
-    model = OpenAIChatModel(model="qwen3-32b")
-
-    # Configure multiple graders with field mappers
-    # Map trace fields to grader expected parameters
-    runner = GradingRunner(
-        grader_configs={
-            "relevance": (
-                RelevanceGrader(model=model),
-                {"query":"input", "response":"output"}  # Map input->query, output->response
-            ),
-            "harmfulness": (
-                HarmfulnessGrader(model=model),
-                {"query":"input", "response":"output"}
+        if isinstance(result, GraderScore):
+            langfuse.create_score(
+                trace_id=trace_id,
+                name=grader_name,
+                value=result.score,
+                comment=result.reason[:500] if result.reason else "",
             )
-        },
-        max_concurrency=10,  # Control concurrency to avoid rate limits
-        show_progress=True,  # Show progress bar
-        # Optional: Add aggregators to combine scores into a composite score
-        aggregators=[
-            WeightedSumAggregator(
-                name="overall_quality",
-                weights={
-                    "relevance": 0.7,    # 70% weight on relevance
-                    "harmfulness": 0.3,  # 30% weight on safety
-                }
+        elif isinstance(result, GraderRank):
+            # For ranking results, store the first rank position
+            langfuse.create_score(
+                trace_id=trace_id,
+                name=grader_name,
+                value=float(result.rank[0]) if result.rank else 0.0,
+                comment=result.reason[:500] if result.reason else "",
             )
-        ],
-    )
-
-    # Fetch traces
-    traces = fetch_traces_for_evaluation(limit=50)
-
-    if not traces:
-        print("No traces to evaluate")
-        return
-
-    # Prepare evaluation data
-    evaluation_data = []
-    trace_id_mapping = {}  # Map index to trace_id
-
-    for i, trace in enumerate(traces):
-        eval_item = {
-            "input": trace["input"],
-            "output": trace["output"],
-        }
-        # Add expected output as reference if available
-        if trace.get("expected"):
-            eval_item["expected"] = trace["expected"]
-
-        evaluation_data.append(eval_item)
-        trace_id_mapping[i] = trace["id"]
+        elif isinstance(result, GraderError):
+            # For errors, record as 0 score with error description
+            langfuse.create_score(
+                trace_id=trace_id,
+                name=f"{grader_name}_error",
+                value=0.0,
+                comment=f"Evaluation error: {result.error}"[:500],
+            )
 
     # Run batch evaluation
-    try:
-        results = await runner.arun(evaluation_data)
+    asyncio.run(batch_evaluate_traces())
+    ```
 
-        # Send results back to Langfuse
-        # results contains individual grader scores + aggregated "overall_quality" score
-        scores_sent = 0
-        for grader_name, grader_results in results.items():
-            for i, result in enumerate(grader_results):
-                trace_id = trace_id_mapping[i]
-                print(f"Sending {grader_name} score for trace {trace_id}")
-                send_result_to_langfuse(trace_id, grader_name, result)
-                scores_sent += 1
-
-
-        print(f"✓ Successfully sent {scores_sent} scores for {len(traces)} traces")
-
-    except Exception as e:
-        print(f"✗ Batch evaluation failed: {e}")
-
-    # Ensure all scores are sent
-    langfuse.flush()
-def send_result_to_langfuse(trace_id: str, grader_name: str, result) -> None:
-    """Send evaluation result to Langfuse"""
-
-    if isinstance(result, GraderScore):
-        langfuse.create_score(
-            trace_id=trace_id,
-            name=grader_name,
-            value=result.score,
-            comment=result.reason[:500] if result.reason else "",
-        )
-    elif isinstance(result, GraderRank):
-        # For ranking results, store the first rank position
-        langfuse.create_score(
-            trace_id=trace_id,
-            name=grader_name,
-            value=float(result.rank[0]) if result.rank else 0.0,
-            comment=result.reason[:500] if result.reason else "",
-        )
-    elif isinstance(result, GraderError):
-        # For errors, record as 0 score with error description
-        langfuse.create_score(
-            trace_id=trace_id,
-            name=f"{grader_name}_error",
-            value=0.0,
-            comment=f"Evaluation error: {result.error}"[:500],
-        )
-
-# Run batch evaluation
-asyncio.run(batch_evaluate_traces())
-```
+### Step 4: View Results
 
 After running the evaluation, you can view the scores in your Langfuse dashboard:
 
@@ -395,8 +397,7 @@ The scores include individual grader results (e.g., `relevance`, `harmfulness`) 
 
 ## Related Resources
 
-- [OpenJudge Built-in Graders](../built_in_graders/overview.md)
-- [Create Custom Graders](../building_graders/create_custom_graders.md)
-- [Langfuse Tracing Documentation](https://langfuse.com/docs/tracing)
-- [Langfuse Scores API](https://langfuse.com/docs/scores)
-
+- [OpenJudge Built-in Graders](../built_in_graders/overview.md) — Explore 50+ available graders
+- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build domain-specific evaluation logic
+- [Langfuse Tracing Documentation](https://langfuse.com/docs/tracing) — Learn about Langfuse tracing
+- [Langfuse Scores API](https://langfuse.com/docs/scores) — Scores API reference

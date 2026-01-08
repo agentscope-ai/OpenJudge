@@ -12,7 +12,7 @@ SFT training is the **foundation for building judge models**. It works with conv
 
 The model learns to minimize cross-entropy loss:
 
-$$\mathcal{L} = -\sum_{t} \log P(y_t | y_{<t}, x)$$
+$$\mathcal{L} = -\sum_{t} \log P(y_t \mid y_{\lt t}, x)$$
 
 Where $x$ is the input and $y$ is the target response.
 
