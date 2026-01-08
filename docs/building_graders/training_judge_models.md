@@ -2,6 +2,9 @@
 
 Train judge models using three approaches: **SFT** for foundation learning, **Bradley-Terry** for scalar preference scoring, and **GRPO** for generative evaluation with reasoning.
 
+!!! info "Terminology: Judge Model vs Reward Model"
+    In OpenJudge, we use **judge model** to refer to models trained for evaluation. This is the same concept as **reward model** commonly used in RLHF literature. Both terms describe models that assess and score AI outputs—we prefer "judge model" to emphasize the evaluation and assessment role.
+
 
 ## Overview
 

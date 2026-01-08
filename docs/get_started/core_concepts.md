@@ -10,6 +10,9 @@ In the era of advanced AI systems, especially large language models (LLMs), havi
 
 **Reward** mechanisms, on the other hand, provide signals that guide model training through techniques like Reinforcement Learning from Human Feedback (RLHF). These reward signals enable automated optimization, allowing systems to self-improve without constant human intervention by providing feedback on the quality of model outputs.
 
+!!! info "Terminology: Judge Model vs Reward Model"
+    In OpenJudge, we use **judge model** to refer to models trained for evaluation. This is the same concept as **reward model** commonly used in RLHF literature. Both terms describe models that assess and score AI outputs—we prefer "judge model" to emphasize the evaluation and assessment role.
+
 The OpenJudge framework unifies these two critical functions under a single abstraction: the Grader. A Grader is a modular, standardized component that can function as either an evaluator or a reward generator depending on your use case. As an **evaluator**, a Grader assesses model outputs against specific criteria. As a **reward generator**, a Grader provides signals that guide model training. This unified approach provides a consistent interface that simplifies the process of building, managing, and deploying both evaluation and reward systems, transforming raw model outputs into meaningful, quantifiable assessments that serve as the foundation for systematic model evaluation and automated model improvement.
 
 ## Why Graders Matter
