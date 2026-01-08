@@ -106,7 +106,7 @@ class FunctionGrader(BaseGrader):
             >>> # Example for pointwise function grader
             >>> def accuracy_function(query: str, response: str) -> GraderScore:
             ...     # Simple accuracy function - checks if answer contains key facts
-            ...     if "Paris" in answer and "capital" in answer.lower():
+            ...     if "Paris" in response and "capital" in response.lower():
             ...         return GraderScore(name=self.name,
             ...                            score=1.0,
             ...                            reason="Correctly identifies Paris as capital")
