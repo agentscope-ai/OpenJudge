@@ -60,6 +60,11 @@ class CodeExecutionGrader(BaseGrader):
             )
             self.test_framework_available = False
 
+        # Python code pattern in various formats
+        self._python_code_pattern = re.compile(r"```python\n(.*?)\n```", flags=re.DOTALL)
+        # generic code formats
+        self._generic_code_pattern = re.compile(r"```\n(.*?)\n```", flags=re.DOTALL)
+
     def _extract_code(self, content: str) -> str:
         """
         Extract code from content
@@ -71,12 +76,12 @@ class CodeExecutionGrader(BaseGrader):
             Extracted code
         """
         # Try to find Python code in various formats
-        code_match = re.search(r"```python\n(.*?)\n```", content, re.DOTALL)
+        code_match = self._python_code_pattern.search(content)
         if code_match:
             return code_match.group(1)
 
         # Try other formats
-        code_match = re.search(r"```\n(.*?)\n```", content, re.DOTALL)
+        code_match = self._generic_code_pattern.search(content)
         if code_match:
             return code_match.group(1)
 

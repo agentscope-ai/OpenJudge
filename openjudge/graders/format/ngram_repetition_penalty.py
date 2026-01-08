@@ -67,10 +67,11 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
             chinese_only=chinese_only,
         )
 
+        self._think_pattern = re.compile(r"(.*?)", flags=re.DOTALL)
+
     def _extract_thought_process(self, content: str) -> str:
         """Extract thought process"""
-        think_pattern = r"(.*?)"
-        matches = re.findall(think_pattern, content, re.DOTALL)
+        matches = self._think_pattern.findall(content)
         return " ".join(matches) if matches else ""
 
     def _generate_ngrams(self, tokens: List[str]) -> List[tuple]:

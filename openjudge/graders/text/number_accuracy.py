@@ -52,12 +52,12 @@ class NumberAccuracyGrader(BaseGrader):
             **kwargs,
         )
         self.tolerance = tolerance
+        self._number_pattern = re.compile(r"-?\d+\.?\d*")
 
     def _extract_numbers(self, text: str) -> List[float]:
         """Extract numbers from text"""
         # Match integers and floating point numbers
-        number_pattern = r"-?\d+\.?\d*"
-        numbers = re.findall(number_pattern, text)
+        numbers = self._number_pattern.findall(text)
         return [float(n) for n in numbers if n]
 
     async def aevaluate(self, response: str, reference_response: str) -> GraderScore:

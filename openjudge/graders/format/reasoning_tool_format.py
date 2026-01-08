@@ -26,6 +26,19 @@ class ReasoningToolCallFormatGrader(BaseGrader):
             description="Check tool call format including think, answer and tool_call tags with JSON validation.",
         )
 
+        # patterns for identifiying tags
+        self._think_pattern = re.compile(r"<think>(.*?)</think>", re.DOTALL)
+        self._answer_pattern = re.compile(r"<answer>(.*?)</answer>", re.DOTALL)
+        self._tool_call_pattern = re.compile(r"<tool_call>(.*?)</tool_call>", re.DOTALL)
+
+        self._think_answer_pattern = re.compile(r"^\s*<think>.*?</think>\s*<answer>.*?</answer>\s*$", re.DOTALL)
+        self._think_tool_call_pattern = re.compile(
+            r"^\s*<think>.*?</think>\s*(?:<tool_call>.*?</tool_call>\s*)+$", re.DOTALL
+        )
+
+        self._consecutive_start_tool_call_tag_pattern = re.compile(r"<tool_call>\s*<tool_call>")
+        self._consecutive_end_tool_call_tag_pattern = re.compile(r"</tool_call>\s*</tool_call>")
+
     # pylint: disable=too-many-statements
     async def aevaluate(self, response: str, **kwargs: Any) -> GraderScore:
         """
@@ -69,13 +82,9 @@ class ReasoningToolCallFormatGrader(BaseGrader):
         """
 
         # Extract tag contents
-        think_pattern = r"<think>(.*?)</think>"
-        answer_pattern = r"<answer>(.*?)</answer>"
-        tool_call_pattern = r"<tool_call>(.*?)</tool_call>"
-
-        think_matches = re.search(think_pattern, response, re.DOTALL)
-        answer_matches = re.search(answer_pattern, response, re.DOTALL)
-        tool_call_matches = re.findall(tool_call_pattern, response, re.DOTALL)
+        think_matches = self._think_pattern.search(response)
+        answer_matches = self._answer_pattern.search(response)
+        tool_call_matches = self._tool_call_pattern.findall(response)
 
         has_think_tag = think_matches is not None
         has_answer_tag = answer_matches is not None
@@ -89,9 +98,8 @@ class ReasoningToolCallFormatGrader(BaseGrader):
             # Case 1: <think></think> + <answer></answer>
             if has_answer_tag and not has_tool_call_tag:
                 # Check overall format
-                format_pattern = r"^\s*<think>.*?</think>\s*<answer>.*?</answer>\s*$"
                 valid_format = bool(
-                    re.match(format_pattern, response, re.DOTALL),
+                    self._think_answer_pattern.match(response),
                 )
 
                 # Check tag occurrence count
@@ -115,9 +123,8 @@ class ReasoningToolCallFormatGrader(BaseGrader):
             # Case 2: <think></think> + <tool_call></tool_call>
             elif has_tool_call_tag and not has_answer_tag:
                 # Check overall format
-                format_pattern = r"^\s*<think>.*?</think>\s*(?:<tool_call>.*?</tool_call>\s*)+$"
                 valid_format = bool(
-                    re.match(format_pattern, response, re.DOTALL),
+                    self._think_tool_call_pattern.match(response),
                 )
 
                 # Check <think> tag occurrence count
@@ -133,11 +140,9 @@ class ReasoningToolCallFormatGrader(BaseGrader):
 
                 # Check for consecutive duplicate tags
                 if valid_format:
-                    if re.search(
-                        r"</tool_call>\s*</tool_call>",
+                    if self._consecutive_end_tool_call_tag_pattern.search(
                         response,
-                    ) or re.search(
-                        r"<tool_call>\s*<tool_call>",
+                    ) or self._consecutive_start_tool_call_tag_pattern.search(
                         response,
                     ):
                         valid_format = False

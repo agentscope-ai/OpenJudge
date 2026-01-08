@@ -27,6 +27,11 @@ class CodeStyleGrader(BaseGrader):
             description="Basic code style checking including indentation consistency and naming conventions.",
         )
 
+        self._function_pattern = re.compile(r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")
+        self._variable_pattern = re.compile(r"([a-zA-Z_][a-zA-Z0-9_]*)\s*=")
+        self._snake_case_pattern = re.compile(r"^[a-z_][a-z0-9_]*$")
+        self._code_pattern = re.compile(r"```(?:python)?\s*\n(.*?)\n\s*```", re.DOTALL)
+
     def _check_indentation(self, code: str) -> tuple[bool, str]:
         """Check indentation consistency"""
         lines = code.split("\n")
@@ -58,11 +63,8 @@ class CodeStyleGrader(BaseGrader):
     def _check_naming(self, code: str) -> tuple[float, str]:
         """Check naming conventions"""
         # Simple naming check
-        function_pattern = r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\("
-        variable_pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\s*="
-
-        functions = re.findall(function_pattern, code)
-        variables = re.findall(variable_pattern, code)
+        functions = self._function_pattern.findall(code)
+        variables = self._variable_pattern.findall(code)
 
         total_names = len(functions) + len(variables)
         if total_names == 0:
@@ -72,12 +74,12 @@ class CodeStyleGrader(BaseGrader):
 
         # Check function names (should be snake_case)
         for func in functions:
-            if re.match(r"^[a-z_][a-z0-9_]*$", func):
+            if self._snake_case_pattern.match(func):
                 good_names += 1
 
         # Check variable names (should be snake_case)
         for var in variables:
-            if re.match(r"^[a-z_][a-z0-9_]*$", var):
+            if self._snake_case_pattern.match(var):
                 good_names += 1
 
         score = good_names / total_names
@@ -122,8 +124,7 @@ class CodeStyleGrader(BaseGrader):
             0.5 Code style score: 0.500; Consistent indentation; Naming convention: 1/2 names follow snake_case
         """
         # Extract code blocks
-        code_pattern = r"```(?:python)?\s*\n(.*?)\n\s*```"
-        code_blocks = re.findall(code_pattern, response, re.DOTALL)
+        code_blocks = self._code_pattern.findall(response)
 
         if not code_blocks:
             return GraderScore(

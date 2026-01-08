@@ -6,7 +6,6 @@ Evaluates whether tool calls done by an AI agent includes failures or not.
 """
 
 import json
-import re
 import textwrap
 from typing import Any, Dict, List, Optional, Union
 
@@ -243,34 +242,6 @@ class ToolCallSuccessGrader(LLMGrader):
             language=language,
         )
         self.template = template or DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE
-
-    def _parse_tools_from_response(
-        self,
-        response: str,
-    ) -> List[Dict[str, Any]]:
-        """Extract tool calls from the response.
-
-        Args:
-            response: The response string to extract tool calls from.
-
-        Returns:
-            List of parsed tool calls.
-        """
-        tool_calls = []
-
-        # Pattern to match tool calls in JSON format
-        tool_call_pattern = r'\{\s*"name"\s*:\s*"[^"]*"\s*,\s*"arguments"\s*:\s*\{.*?\}\s*\}'
-        matches = re.findall(tool_call_pattern, response, re.DOTALL)
-
-        for match in matches:
-            try:
-                tool_call = json.loads(match)
-                tool_calls.append(tool_call)
-            except json.JSONDecodeError:
-                # Skip invalid JSON
-                continue
-
-        return tool_calls
 
     async def aevaluate(
         self,

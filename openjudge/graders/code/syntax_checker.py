@@ -31,6 +31,8 @@ class SyntaxCheckGrader(BaseGrader):
             description="Check code syntax using Abstract Syntax Tree to validate Python code blocks.",
         )
 
+        self._code_pattern = re.compile(r"```(?:python)?\s*\n(.*?)\n\s*```", re.DOTALL)
+
     async def aevaluate(self, response: str) -> GraderScore:
         """Check code syntax in the provided response.
 
@@ -68,8 +70,7 @@ class SyntaxCheckGrader(BaseGrader):
         """
 
         # Extract code blocks
-        code_pattern = r"```(?:python)?\s*\n(.*?)\n\s*```"
-        code_blocks = re.findall(code_pattern, response, re.DOTALL)
+        code_blocks = self._code_pattern.findall(response)
 
         if not code_blocks:
             # No code blocks, return neutral score

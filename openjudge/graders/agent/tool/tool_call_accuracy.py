@@ -220,6 +220,11 @@ class ToolCallAccuracyGrader(LLMGrader):
             language=language,
         )
 
+        # Pattern to match tool calls in JSON format
+        self._tool_call_pattern = re.compile(
+            r'\{\s*"name"\s*:\s*"[^"]*"\s*,\s*"arguments"\s*:\s*\{.*?\}\s*\}', flags=re.DOTALL
+        )
+
     def _parse_tools_from_response(
         self,
         response: str,
@@ -233,10 +238,7 @@ class ToolCallAccuracyGrader(LLMGrader):
             List of parsed tool calls.
         """
         tool_calls = []
-
-        # Pattern to match tool calls in JSON format
-        tool_call_pattern = r'\{\s*"name"\s*:\s*"[^"]*"\s*,\s*"arguments"\s*:\s*\{.*?\}\s*\}'
-        matches = re.findall(tool_call_pattern, response, re.DOTALL)
+        matches = self._tool_call_pattern.findall(response)
 
         for match in matches:
             try:
