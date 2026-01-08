@@ -9,7 +9,7 @@ This module provides:
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import yaml
 from loguru import logger
@@ -92,6 +92,14 @@ class OutputConfig(BaseModel):
     output_dir: str = Field(default="./evaluation_results", description="Output directory")
 
 
+class ReportConfig(BaseModel):
+    """Report generation configuration."""
+
+    enabled: bool = Field(default=False, description="Whether to generate report")
+    language: Literal["zh", "en"] = Field(default="zh", description="Report language: zh | en")
+    include_examples: int = Field(default=3, ge=1, le=10, description="Examples per section")
+
+
 class ZeroShotConfig(BaseModel):
     """Complete zero-shot evaluation configuration."""
 
@@ -101,6 +109,7 @@ class ZeroShotConfig(BaseModel):
     query_generation: QueryGenerationConfig = Field(default_factory=QueryGenerationConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
+    report: ReportConfig = Field(default_factory=ReportConfig)
 
 
 class GeneratedQuery(BaseModel):
@@ -116,6 +125,20 @@ class QueryGenerationOutput(BaseModel):
 
     queries: List[GeneratedQuery] = Field(..., description="List of generated queries")
     reason: str = Field(default="", description="Generation reasoning")
+
+
+class ComparisonDetail(BaseModel):
+    """Single pairwise comparison detail."""
+
+    query: str = Field(..., description="Original query")
+    model_a: str = Field(..., description="Model A name")
+    model_b: str = Field(..., description="Model B name")
+    response_a: str = Field(..., description="Model A response")
+    response_b: str = Field(..., description="Model B response")
+    winner: str = Field(..., description="Winner: model_a | model_b")
+    score: float = Field(..., description="Score (1.0=A wins, 0.0=B wins)")
+    reason: str = Field(default="", description="Evaluation reason")
+    order: str = Field(default="original", description="Comparison order: original | swapped")
 
 
 # =============================================================================

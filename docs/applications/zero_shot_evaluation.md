@@ -3,31 +3,14 @@
 Automatically evaluate and compare multiple models or AI agents without pre-existing test data. This end-to-end pipeline generates test queries, collects responses, and ranks models through pairwise comparison.
 
 
-## When to Use
+## Overview
 
-Use zero-shot evaluation for:
-
-- **Model Comparison** — Compare different models on a specific task without preparing test data
-- **Agent Pipeline Testing** — Evaluate different agent configurations or workflows
-- **New Domain Evaluation** — Quickly assess model performance in new domains
-- **Rapid Prototyping** — Get quick feedback on model quality during development
-
-
-## How It Works
-
-Zero-shot evaluation automates the entire evaluation pipeline:
-
-1. **Generate Test Queries** — Create diverse, representative queries based on task description
-2. **Collect Responses** — Query all target models/agents to collect responses
-3. **Generate Rubrics** — Create evaluation criteria tailored to the task
-4. **Pairwise Comparison** — Compare all response pairs using a judge model
-5. **Rank Models** — Calculate win rates and produce final rankings
+Zero-shot evaluation is ideal for **model comparison**, **agent pipeline testing**, **new domain evaluation**, and **rapid prototyping**—all without preparing test data upfront.
 
 !!! tip "No Test Data Required"
     Unlike traditional evaluation, zero-shot evaluation generates its own test queries from the task description, eliminating the need for pre-existing test datasets.
 
-
-## Five-Step Pipeline
+The pipeline automates five steps: generate test queries → collect responses → create evaluation rubrics → run pairwise comparisons → produce rankings.
 
 | Step | Component | Description |
 |------|-----------|-------------|
@@ -40,73 +23,69 @@ Zero-shot evaluation automates the entire evaluation pipeline:
 
 ## Quick Start
 
-### Using Configuration File (Recommended)
+Get started with Zero-Shot Evaluation in just a few lines of code. Choose the approach that best fits your workflow:
 
-```python
-import asyncio
-from cookbooks.zero_shot_evaluation.zero_shot_pipeline import ZeroShotPipeline
+=== "Python API"
 
-async def main():
-    pipeline = ZeroShotPipeline.from_config("config.yaml")
-    result = await pipeline.evaluate()
+    The recommended way to run evaluations programmatically:
 
-    print(f"Best Model: {result.best_pipeline}")
-    for rank, (model, win_rate) in enumerate(result.rankings, 1):
-        print(f"{rank}. {model}: {win_rate:.1%}")
+    ```python
+    import asyncio
+    from cookbooks.zero_shot_evaluation.zero_shot_pipeline import ZeroShotPipeline
 
-asyncio.run(main())
-```
+    async def main():
+        pipeline = ZeroShotPipeline.from_config("config.yaml")
+        result = await pipeline.evaluate()
 
-### Using CLI
+        print(f"Best Model: {result.best_pipeline}")
+        for rank, (model, win_rate) in enumerate(result.rankings, 1):
+            print(f"{rank}. {model}: {win_rate:.1%}")
 
-```bash
-# Run evaluation with config file
-python -m cookbooks.zero_shot_evaluation --config config.yaml --save
+    asyncio.run(main())
+    ```
 
-# Resume from checkpoint (default behavior)
-python -m cookbooks.zero_shot_evaluation --config config.yaml --save
+=== "CLI"
 
-# Start fresh, ignore checkpoint
-python -m cookbooks.zero_shot_evaluation --config config.yaml --fresh --save
+    Run evaluations directly from the command line:
 
-# Use pre-generated queries
-python -m cookbooks.zero_shot_evaluation --config config.yaml --queries_file queries.json --save
-```
+    ```bash
+    # Run evaluation with config file
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --save
 
-### Using Pre-defined Queries
+    # Resume from checkpoint (default behavior)
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --save
 
-Skip query generation by providing your own queries file. This is useful when you want to evaluate models on a specific set of questions.
+    # Start fresh, ignore checkpoint
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --fresh --save
 
-**Create a queries file** (`queries.json`):
+    # Use pre-generated queries
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --queries_file queries.json --save
+    ```
 
-```json
-[
-  {"query": "Translate: AI is transforming industries."},
-  {"query": "Translate: The weather is nice today."},
-  {"query": "Translate: How to learn programming effectively?"}
-]
-```
+=== "Custom Queries"
 
-The `category` and `difficulty` fields are optional:
+    Skip query generation by providing your own queries file—useful when you want to evaluate models on a specific set of questions.
 
-```json
-[
-  {"query": "Your question here", "category": "general", "difficulty": "easy"}
-]
-```
+    Create a `queries.json` file with your test cases:
 
-**Run evaluation**:
+    ```json
+    [
+      {"query": "Translate: AI is transforming industries."},
+      {"query": "Translate: The weather is nice today."},
+      {"query": "Translate: How to learn programming effectively?"}
+    ]
+    ```
 
-```bash
-python -m cookbooks.zero_shot_evaluation --config config.yaml --queries_file queries.json --save
-```
+    !!! tip "Optional Fields"
+        The `category` and `difficulty` fields are optional: `{"query": "...", "category": "general", "difficulty": "easy"}`
 
-The pipeline will skip query generation and directly use your queries for model comparison.
+    Then run the evaluation with your queries:
 
+    ```bash
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --queries_file queries.json --save
+    ```
 
-## Configuration
-
-Create a YAML configuration file to define your evaluation:
+All methods require a YAML configuration file. Here's a complete example:
 
 ```yaml
 # Task description
@@ -160,265 +139,205 @@ output:
     Use `${ENV_VAR}` syntax to reference environment variables for sensitive data like API keys.
 
 
-## Step-by-Step Guide
+## Component Guide
 
-For fine-grained control, use individual components directly:
+For fine-grained control, use individual pipeline components directly. The workflow below shows how each component connects:
 
-### Step 1: Generate Test Queries
+<div class="workflow-single">
+<div class="workflow-header">Pipeline Components</div>
 
-```python
-from cookbooks.zero_shot_evaluation.query_generator import QueryGenerator
-from cookbooks.zero_shot_evaluation.schema import TaskConfig, QueryGenerationConfig, OpenAIEndpoint
+<div class="workflow">
+<ol class="workflow-steps">
+<li><strong>Generate Test Queries</strong>
 
-# Configure task and endpoint
-task = TaskConfig(
-    description="Code review assistant for Python",
-    scenario="Review code for bugs, style issues, and improvements"
-)
+Use `QueryGenerator` to create diverse test queries from your task description. Supports parallel generation, automatic deduplication, and optional Evol-Instruct complexity evolution.</li>
+<li><strong>Collect Responses</strong>
 
-judge_endpoint = OpenAIEndpoint(
-    base_url="https://api.openai.com/v1",
-    api_key="your-api-key",
-    model="gpt-4"
-)
+Use `ResponseCollector` to query all target models concurrently and gather their responses for comparison.</li>
+<li><strong>Generate Evaluation Rubrics</strong>
 
-query_config = QueryGenerationConfig(
-    num_queries=20,
-    seed_queries=["Review this Python function for bugs..."],
-    enable_evolution=True,  # Enable Evol-Instruct
-    evolution_rounds=1
-)
+Use `TaskBasedRubricGenerator` to automatically create evaluation criteria (accuracy, completeness, clarity, etc.) tailored to your specific task.</li>
+<li><strong>Run Pairwise Evaluation</strong>
 
-generator = QueryGenerator(judge_endpoint, task, query_config)
-queries = await generator.generate()
-```
+Use `ZeroShotPipeline` to orchestrate the full evaluation, comparing all response pairs and producing final rankings.</li>
+</ol>
+</div>
+</div>
 
-!!! info "Query Generation Features"
-    - **Parallel Batches**: Generates queries in parallel for diversity
-    - **Deduplication**: Automatically removes duplicate/similar queries
-    - **Evol-Instruct**: Optional complexity evolution for harder queries
-    - **Category Balancing**: Balance queries across specified categories
+??? example "Code Examples for Each Step"
 
-### Step 2: Collect Responses
+    **Step 1: Generate Test Queries**
 
-```python
-from cookbooks.zero_shot_evaluation.response_collector import ResponseCollector
-from cookbooks.zero_shot_evaluation.schema import EvaluationConfig
+    ```python
+    from cookbooks.zero_shot_evaluation.query_generator import QueryGenerator
+    from cookbooks.zero_shot_evaluation.schema import TaskConfig, QueryGenerationConfig, OpenAIEndpoint
 
-collector = ResponseCollector(
-    target_endpoints={
-        "model_a": endpoint_a,
-        "model_b": endpoint_b,
-    },
-    evaluation_config=EvaluationConfig(max_concurrency=10)
-)
+    task = TaskConfig(
+        description="Code review assistant for Python",
+        scenario="Review code for bugs, style issues, and improvements"
+    )
 
-responses = await collector.collect(queries)
-```
+    judge_endpoint = OpenAIEndpoint(
+        base_url="https://api.openai.com/v1",
+        api_key="your-api-key",
+        model="gpt-4"
+    )
 
-### Step 3: Generate Evaluation Rubrics
+    query_config = QueryGenerationConfig(
+        num_queries=20,
+        seed_queries=["Review this Python function for bugs..."],
+        enable_evolution=True,
+        evolution_rounds=1
+    )
 
-```python
-from openjudge.generator.simple_rubric import TaskBasedRubricGenerator
-
-rubric_gen = TaskBasedRubricGenerator(
-    model=judge_model,
-    task_description=task.description,
-    scenario=task.scenario,
-)
-rubrics = await rubric_gen.generate(
-    sample_queries=[q.query for q in queries[:5]]
-)
-
-# Example output:
-# - Accuracy: Whether the response is factually correct
-# - Completeness: Whether the response fully addresses the query
-# - Clarity: Whether the response is well-organized
-```
-
-### Step 4: Run Full Evaluation
-
-```python
-from cookbooks.zero_shot_evaluation.zero_shot_pipeline import ZeroShotPipeline
-
-pipeline = ZeroShotPipeline(
-    task_description="Code review assistant",
-    target_endpoints=target_endpoints,
-    judge_endpoint=judge_endpoint,
-    num_queries=20
-)
-
-result = await pipeline.evaluate()
-```
-
-
-## Understanding Results
-
-The `EvaluationResult` provides comprehensive ranking statistics:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `rankings` | `List[Tuple[str, float]]` | Models sorted by win rate (best first) |
-| `win_rates` | `Dict[str, float]` | Win rate for each model (0.0-1.0) |
-| `win_matrix` | `Dict[str, Dict[str, float]]` | Head-to-head win rates between models |
-| `best_pipeline` | `str` | Model with highest win rate |
-| `total_queries` | `int` | Total number of test queries |
-| `total_comparisons` | `int` | Total number of pairwise comparisons |
-
-!!! example "Sample Output"
+    generator = QueryGenerator(judge_endpoint, task, query_config)
+    queries = await generator.generate()
     ```
-    ============================================================
-    ZERO-SHOT EVALUATION RESULTS
-    ============================================================
-    Task: English to Chinese translation assistant...
-    Queries: 20
-    Comparisons: 80
 
-    Rankings:
-      1. qwen_candidate      [################----] 80.0%
-      2. gpt4_baseline       [########------------] 40.0%
+    **Step 2: Collect Responses**
 
-    Win Matrix (row vs column):
-                     qwen_cand  gpt4_base
-      qwen_candidate | --        80.0%
-      gpt4_baseline  | 20.0%     --
+    ```python
+    from cookbooks.zero_shot_evaluation.response_collector import ResponseCollector
+    from cookbooks.zero_shot_evaluation.schema import EvaluationConfig
 
-    Best Pipeline: qwen_candidate
-    ============================================================
+    collector = ResponseCollector(
+        target_endpoints={"model_a": endpoint_a, "model_b": endpoint_b},
+        evaluation_config=EvaluationConfig(max_concurrency=10)
+    )
+    responses = await collector.collect(queries)
+    ```
+
+    **Step 3: Generate Evaluation Rubrics**
+
+    ```python
+    from openjudge.generator.simple_rubric import TaskBasedRubricGenerator
+
+    rubric_gen = TaskBasedRubricGenerator(
+        model=judge_model,
+        task_description=task.description,
+        scenario=task.scenario,
+    )
+    rubrics = await rubric_gen.generate(sample_queries=[q.query for q in queries[:5]])
+    # Output: Accuracy, Completeness, Clarity criteria
+    ```
+
+    **Step 4: Run Full Evaluation**
+
+    ```python
+    from cookbooks.zero_shot_evaluation.zero_shot_pipeline import ZeroShotPipeline
+
+    pipeline = ZeroShotPipeline(
+        task_description="Code review assistant",
+        target_endpoints=target_endpoints,
+        judge_endpoint=judge_endpoint,
+        num_queries=20
+    )
+    result = await pipeline.evaluate()
     ```
 
 
-## Advanced Configuration
+## Advanced Topics
 
-### Query Generation Options
+=== "Understanding Results"
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `num_queries` | 20 | Total number of queries to generate |
-| `queries_per_call` | 10 | Queries per API call (1-50) |
-| `num_parallel_batches` | 3 | Number of parallel generation batches |
-| `temperature` | 0.9 | Sampling temperature for diversity |
-| `max_similarity` | 0.85 | Deduplication similarity threshold |
-| `enable_evolution` | false | Enable Evol-Instruct complexity evolution |
-| `evolution_rounds` | 1 | Number of evolution rounds (0-3) |
+    The `EvaluationResult` provides comprehensive ranking statistics:
 
-### Evol-Instruct Evolution
+    | Field | Type | Description |
+    |-------|------|-------------|
+    | `rankings` | `List[Tuple[str, float]]` | Models sorted by win rate (best first) |
+    | `win_rates` | `Dict[str, float]` | Win rate for each model (0.0-1.0) |
+    | `win_matrix` | `Dict[str, Dict[str, float]]` | Head-to-head win rates between models |
+    | `best_pipeline` | `str` | Model with highest win rate |
+    | `total_queries` | `int` | Total number of test queries |
+    | `total_comparisons` | `int` | Total number of pairwise comparisons |
 
-Enable complexity evolution to generate harder test queries:
+    !!! example "Sample Output"
+        ```
+        ============================================================
+        ZERO-SHOT EVALUATION RESULTS
+        ============================================================
+        Task: English to Chinese translation assistant...
+        Queries: 20 | Comparisons: 80
 
-```yaml
-query_generation:
-  enable_evolution: true
-  evolution_rounds: 2
-  complexity_levels:
-    - "constraints"    # Add specific constraints
-    - "reasoning"      # Require multi-step reasoning
-    - "edge_cases"     # Add edge cases and exceptions
-```
+        Rankings:
+          1. qwen_candidate      [################----] 80.0%
+          2. gpt4_baseline       [########------------] 40.0%
 
-!!! tip "Evolution Strategies"
-    - **constraints**: Add time, scope, or condition constraints
-    - **reasoning**: Require multi-step reasoning or comparison
-    - **edge_cases**: Include edge cases and unusual conditions
+        Best Pipeline: qwen_candidate
+        ============================================================
+        ```
 
+=== "Query Generation Options"
 
-## Evaluation Report
+    Fine-tune query generation behavior:
 
-When enabled, the pipeline generates a comprehensive Markdown report explaining the evaluation results with concrete examples. The report is generated in parallel using the judge model.
+    | Option | Default | Description |
+    |--------|---------|-------------|
+    | `num_queries` | 20 | Total number of queries to generate |
+    | `queries_per_call` | 10 | Queries per API call (1-50) |
+    | `num_parallel_batches` | 3 | Number of parallel generation batches |
+    | `temperature` | 0.9 | Sampling temperature for diversity |
+    | `max_similarity` | 0.85 | Deduplication similarity threshold |
+    | `enable_evolution` | false | Enable Evol-Instruct complexity evolution |
+    | `evolution_rounds` | 1 | Number of evolution rounds (0-3) |
 
-### Enabling Report Generation
+    ??? tip "Enable Evol-Instruct for Harder Queries"
+        Evol-Instruct progressively increases query complexity:
 
-```yaml
-report:
-  enabled: true        # Enable report generation
-  language: "zh"       # Report language: "zh" (Chinese) or "en" (English)
-  include_examples: 3  # Number of examples per section (1-10)
-```
+        ```yaml
+        query_generation:
+          enable_evolution: true
+          evolution_rounds: 2
+          complexity_levels:
+            - "constraints"    # Add time, scope, or condition constraints
+            - "reasoning"      # Require multi-step reasoning
+            - "edge_cases"     # Include edge cases
+        ```
 
-### Report Sections
+=== "Evaluation Report"
 
-The generated report includes four sections, each generated in parallel:
+    Generate a comprehensive Markdown report with concrete examples:
 
-| Section | Description |
-|---------|-------------|
-| **Executive Summary** | Overview of evaluation purpose, methodology, and key findings |
-| **Ranking Explanation** | Detailed analysis of why models are ranked in this order |
-| **Model Analysis** | Per-model strengths, weaknesses, and improvement suggestions |
-| **Representative Cases** | Concrete comparison examples with evaluation reasons |
-
-### Report Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `enabled` | `false` | Enable/disable report generation |
-| `language` | `"zh"` | Report language: `"zh"` (Chinese) or `"en"` (English) |
-| `include_examples` | `3` | Number of examples per section (1-10) |
-
-!!! example "Sample Report Structure"
-    ```markdown
-    # Evaluation Report
-
-    ## Executive Summary
-    This evaluation assessed the performance of mainstream LLMs on translation tasks...
-
-    ## Ranking Explanation
-    qwen-plus ranks first with a 67.9% win rate, primarily because...
-
-    ## Model Analysis
-    ### qwen-plus
-    **Overall Assessment**: Best performer with highest win rate...
-    **Key Strengths**: High terminological accuracy, appropriate writing style...
-    **Improvement Suggestions**: Further optimize sentence variety...
-
-    ## Representative Cases
-    ### Case 1
-    **Query:** Translate the following into English...
-    **Winner:** qwen-plus
-    **Evaluation Reason:** Response A uses more natural phrasing...
+    ```yaml
+    report:
+      enabled: true        # Enable report generation
+      language: "zh"       # "zh" (Chinese) or "en" (English)
+      include_examples: 3  # Examples per section (1-10)
     ```
 
-!!! tip "Complete Example Report"
-    View a real evaluation report example: [Oncology Medical Translation Evaluation Report](sample_reports/oncology_translation_report.md)
+    The report includes **Executive Summary**, **Ranking Explanation**, **Model Analysis**, and **Representative Cases**.
 
-    This example demonstrates a complete report generated by Zero-Shot Evaluation, comparing three models (qwen-plus, qwen3-32b, qwen-turbo) on Chinese-to-English translation in the medical oncology domain.
+    All results are saved to the output directory:
 
-### Output Files
+    ```
+    evaluation_results/
+    ├── evaluation_report.md      # Generated Markdown report
+    ├── comparison_details.json   # All pairwise comparison details
+    ├── evaluation_results.json   # Final rankings and statistics
+    ├── queries.json              # Generated test queries
+    ├── responses.json            # Model responses
+    └── rubrics.json              # Evaluation criteria
+    ```
 
-When report generation is enabled, the following files are saved:
+    !!! tip "Example Report"
+        View a real report: [Oncology Medical Translation Evaluation](sample_reports/oncology_translation_report.md)
 
-```
-evaluation_results/
-├── evaluation_report.md      # Generated Markdown report
-├── comparison_details.json   # All pairwise comparison details
-├── evaluation_results.json   # Final rankings and statistics
-├── queries.json              # Generated test queries
-├── responses.json            # Model responses
-└── rubrics.json              # Evaluation criteria
-```
+=== "Checkpoint & Resume"
 
+    Evaluations automatically save checkpoints for resumption after interruptions:
 
-## Checkpoint & Resume
+    ```bash
+    # First run (interrupted)
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --save
 
-Evaluations automatically save checkpoints, allowing resumption after interruptions:
+    # Resume from checkpoint (automatic)
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --save
 
-```bash
-# First run (interrupted)
-python -m cookbooks.zero_shot_evaluation --config config.yaml --save
-# Progress saved at: ./evaluation_results/checkpoint.json
+    # Start fresh (ignore checkpoint)
+    python -m cookbooks.zero_shot_evaluation --config config.yaml --fresh --save
+    ```
 
-# Resume from checkpoint (automatic)
-python -m cookbooks.zero_shot_evaluation --config config.yaml --save
-# Resumes from last completed step
-
-# Start fresh (ignore checkpoint)
-python -m cookbooks.zero_shot_evaluation --config config.yaml --fresh --save
-```
-
-!!! info "Checkpoint Stages"
-    1. `QUERIES_GENERATED` — Test queries saved
-    2. `RESPONSES_COLLECTED` — All responses saved
-    3. `RUBRICS_GENERATED` — Evaluation rubrics saved
-    4. `EVALUATION_COMPLETE` — Final results saved
+    Checkpoint stages: `QUERIES_GENERATED` → `RESPONSES_COLLECTED` → `RUBRICS_GENERATED` → `EVALUATION_COMPLETE`
 
 
 ## Best Practices
@@ -436,12 +355,6 @@ python -m cookbooks.zero_shot_evaluation --config config.yaml --fresh --save
     - Skip checkpoint resumption for long-running evaluations
     - Compare models with fundamentally different capabilities (e.g., text vs vision)
 
-
-## Next Steps
-
-- [Pairwise Evaluation](select_rank.md) — Compare models with pre-existing test data
-- [Refine Data Quality](data_refinement.md) — Use grader feedback to improve outputs
-- [Create Custom Graders](../building_graders/create_custom_graders.md) — Build specialized evaluation criteria
-- [Run Grading Tasks](../running_graders/run_tasks.md) — Scale evaluations with GradingRunner
+**Related Topics:** [Pairwise Evaluation](select_rank.md) · [Refine Data Quality](data_refinement.md) · [Create Custom Graders](../building_graders/create_custom_graders.md) · [Run Grading Tasks](../running_graders/run_tasks.md)
 
 

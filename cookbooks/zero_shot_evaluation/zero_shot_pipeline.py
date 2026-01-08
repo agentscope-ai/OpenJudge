@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 from cookbooks.zero_shot_evaluation.query_generator import QueryGenerator
 from cookbooks.zero_shot_evaluation.response_collector import ResponseCollector
 from cookbooks.zero_shot_evaluation.schema import (
+    ComparisonDetail,
     GeneratedQuery,
     OpenAIEndpoint,
     ZeroShotConfig,
@@ -36,7 +37,7 @@ from cookbooks.zero_shot_evaluation.schema import (
 from openjudge.analyzer import PairwiseAnalysisResult, PairwiseAnalyzer
 from openjudge.generator.simple_rubric import TaskBasedRubricGenerator
 from openjudge.graders.llm_grader import GraderMode, LLMGrader
-from openjudge.graders.schema import GraderResult
+from openjudge.graders.schema import GraderError, GraderResult
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import PromptTemplate
@@ -83,6 +84,7 @@ class _CheckpointManager:
     QUERIES_FILE = "queries.json"
     RESPONSES_FILE = "responses.json"
     RUBRICS_FILE = "rubrics.json"
+    DETAILS_FILE = "comparison_details.json"
 
     def __init__(self, output_dir: str):
         """Initialize checkpoint manager.
@@ -194,6 +196,23 @@ class _CheckpointManager:
         logger.info(f"Loaded {len(rubrics)} rubrics from {file_path}")
         return rubrics
 
+    def save_comparison_details(self, details: List[ComparisonDetail]) -> str:
+        """Save comparison details."""
+        file_path = self.output_dir / self.DETAILS_FILE
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump([d.model_dump() for d in details], f, indent=2, ensure_ascii=False)
+        logger.info(f"Saved {len(details)} comparison details to {file_path}")
+        return str(file_path)
+
+    def load_comparison_details(self) -> List[ComparisonDetail]:
+        """Load saved comparison details."""
+        file_path = self.output_dir / self.DETAILS_FILE
+        if not file_path.exists():
+            return []
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return [ComparisonDetail(**item) for item in data]
+
     def update_stage(
         self,
         stage: EvaluationStage,
@@ -217,6 +236,7 @@ class _CheckpointManager:
             self.QUERIES_FILE,
             self.RESPONSES_FILE,
             self.RUBRICS_FILE,
+            self.DETAILS_FILE,
         ]:
             file_path = self.output_dir / file_name
             if file_path.exists():
@@ -346,6 +366,7 @@ class ZeroShotPipeline:
         self._queries: List[GeneratedQuery] = []
         self._responses: List[Dict[str, Any]] = []
         self._rubrics: List[str] = []
+        self._comparison_details: List[ComparisonDetail] = []
 
         # Initialize checkpoint manager
         self._checkpoint_mgr = _CheckpointManager(self.config.output.output_dir)
@@ -527,8 +548,8 @@ class ZeroShotPipeline:
         self,
         dataset: List[dict],
         rubrics: List[str],
-    ) -> List[GraderResult]:
-        """Run pairwise evaluation using GradingRunner."""
+    ) -> Tuple[List[GraderResult], List[ComparisonDetail]]:
+        """Run pairwise evaluation and collect comparison details."""
         grader = self._build_pairwise_grader(rubrics)
 
         mapper = {
@@ -546,7 +567,31 @@ class ZeroShotPipeline:
 
         logger.info(f"Running {len(dataset)} pairwise comparisons...")
         results = await runner.arun(dataset)
-        return results["pairwise"]
+        grader_results = results["pairwise"]
+
+        # Collect comparison details (skip GraderError results)
+        details = []
+        for sample, result in zip(dataset, grader_results):
+            if isinstance(result, GraderError):
+                continue
+            score = getattr(result, "score", None)
+            if score is None:
+                continue
+            details.append(
+                ComparisonDetail(
+                    query=sample["evaluation_data"]["instruction"],
+                    model_a=sample["metadata"]["model_a"],
+                    model_b=sample["metadata"]["model_b"],
+                    response_a=sample["evaluation_data"]["response_a"],
+                    response_b=sample["evaluation_data"]["response_b"],
+                    winner="model_a" if score >= 0.5 else "model_b",
+                    score=score,
+                    reason=getattr(result, "reason", ""),
+                    order=sample["metadata"].get("order", "original"),
+                )
+            )
+
+        return grader_results, details
 
     def _analyze_results(
         self,
@@ -635,7 +680,10 @@ class ZeroShotPipeline:
         if not dataset:
             raise ValueError("No valid comparison pairs. Check if responses were collected successfully.")
 
-        grader_results = await self._run_pairwise_evaluation(dataset, self._rubrics)
+        grader_results, self._comparison_details = await self._run_pairwise_evaluation(dataset, self._rubrics)
+
+        # Save comparison details
+        self._checkpoint_mgr.save_comparison_details(self._comparison_details)
 
         # Step 5: Analyze results using OpenJudge's PairwiseAnalyzer
         logger.info("Step 5: Analyzing results...")
@@ -649,7 +697,36 @@ class ZeroShotPipeline:
         )
 
         self._display_results(result)
+
+        # Step 6: Generate report if enabled
+        if self.config.report.enabled:
+            await self._generate_and_save_report(result)
+
         return result
+
+    async def _generate_and_save_report(self, result: EvaluationResult) -> None:
+        """Generate and save evaluation report."""
+        from cookbooks.zero_shot_evaluation.report_generator import ReportGenerator
+
+        logger.info("Step 6: Generating evaluation report...")
+        generator = ReportGenerator(
+            judge_endpoint=self.config.judge_endpoint,
+            language=self.config.report.language,
+            include_examples=self.config.report.include_examples,
+        )
+        report = await generator.generate(
+            task_config=self.config.task,
+            rubrics=self._rubrics,
+            result=result,
+            details=self._comparison_details,
+        )
+
+        # Save report
+        output_dir = Path(self.config.output.output_dir)
+        report_path = output_dir / "evaluation_report.md"
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report)
+        logger.info(f"Report saved to {report_path}")
 
     def _display_results(self, result: EvaluationResult) -> None:
         """Display evaluation results with formatted output."""
