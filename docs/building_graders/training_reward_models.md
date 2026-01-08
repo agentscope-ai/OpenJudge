@@ -194,7 +194,7 @@ $$\mathcal{L} = -\mathbb{E}\left[\sum_{i=1}^{G} A_i \log \pi_\theta(y_i|x)\right
 === "Pointwise (Absolute Scoring)"
 
     Rate individual responses on a 0-4 helpfulness scale.
-    
+
     **Output Format:**
     ```
     <think>Analysis of response quality...</think>
@@ -204,7 +204,7 @@ $$\mathcal{L} = -\mathbb{E}\left[\sum_{i=1}^{G} A_i \log \pi_\theta(y_i|x)\right
 === "Pairwise (Preference Comparison)"
 
     Compare two responses and select the better one.
-    
+
     **Output Format:**
     ```
     <think>Comparison of Response A vs B...</think>
