@@ -238,7 +238,7 @@ class LLMRubricCategorizer:
             >>> categorized_rubrics, info = await categorizer.categorize_rubrics(rubrics)
         """
 
-        if len(rubrics) == 0:
+        if not rubrics:
             logger.error("Input rubrics list is empty")
             return [], {
                 "categorization_successful": False,

@@ -79,12 +79,15 @@ Automatically analyze evaluation data to create structured scoring rubrics. Prov
 
 Train neural networks on preference data to learn evaluation criteria automatically. Supports Bradley-Terry (preference pairs), Generative Pointwise (absolute scores), and Generative Pairwise (comparison decisions). Requires 1K-100K examples and 1-3 days but delivers highly consistent evaluation at 10x lower per-query cost—ideal for high-volume scenarios exceeding 1M queries per month.
 
+**Learn more:** [Train with GRPO →](training_grpo.md) | [Bradley-Terry Training](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/bradley-terry) | [SFT Training](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/sft)
+
 
 
 ## Next Steps
 
 - [Create Custom Graders](create_custom_graders.md) — Build graders using LLM or code-based logic
 - [Generate Graders from Data](generate_graders_from_data.md) — Auto-generate rubrics from labeled data
+- [Train with GRPO](training_grpo.md) — Train generative judge models with reinforcement learning
 - [Built-in Graders](../built_in_graders/overview.md) — Explore pre-built graders to customize
 - [Run Grading Tasks](../running_graders/run_tasks.md) — Deploy graders at scale with batch workflows
 

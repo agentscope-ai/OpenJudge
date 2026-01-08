@@ -81,7 +81,7 @@ def validate_and_sort_rubrics(
         ... ]
         >>> sorted_rubrics = validate_and_sort_rubrics(rubrics)
     """
-    if rubrics is None:
+    if not rubrics:
         return None
 
     # Sort rubrics by start of range
@@ -120,7 +120,7 @@ def format_rubrics(rubrics: Optional[List[Rubric]]) -> Optional[str]:
         0-3: Poor quality
         7-10: High quality
     """
-    if rubrics is None:
+    if not rubrics:
         return None
 
     return "\n".join(
@@ -177,7 +177,7 @@ def get_score_range(rubric: Optional[List[Rubric]]) -> Tuple[int, int]:
         >>> get_score_range(rubrics)
         (0, 10)
     """
-    if rubric is None:
+    if not rubric:
         return (0, 10)
 
     return rubric[0].score_range[0], rubric[-1].score_range[1]

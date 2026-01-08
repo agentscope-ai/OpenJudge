@@ -37,12 +37,12 @@ class BaseAggregator(ABC):
         return self.name
 
     @abstractmethod
-    def __call__(self, results: Dict[str, GraderResult], **kwargs) -> GraderResult:
+    def __call__(self, grader_results: Dict[str, GraderResult], **kwargs) -> GraderResult:
         """
         Aggregate results from multiple graders for a single sample.
 
         Args:
-            results: Dictionary mapping grader names to GraderResult objects for a single sample
+            grader_results: Dictionary mapping grader names to GraderResult objects for a single sample
             **kwargs: Additional arguments for aggregation
 
         Returns:

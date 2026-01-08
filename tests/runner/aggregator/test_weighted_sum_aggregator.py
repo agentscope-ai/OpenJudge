@@ -31,12 +31,12 @@ class TestWeightedSumAggregator:
     def test_empty_results(self):
         """Test aggregation with empty results"""
         aggregator = WeightedSumAggregator(name="test_agg")
-        result = aggregator(results={})
+        result = aggregator(grader_results={})
 
         assert isinstance(result, GraderError)
         assert result.name == "test_agg"
-        assert result.reason == "No results to aggregate"
-        assert result.error == "No results provided for aggregation"
+        assert result.reason == "No grader result to aggregate"
+        assert result.error == "No grader result provided for aggregation"
 
     def test_equal_weight_aggregation(self):
         """Test aggregation with equal weights (default behavior)"""
@@ -48,7 +48,7 @@ class TestWeightedSumAggregator:
             "grader3": GraderScore(name="grader3", score=4.0, reason="Poor response"),
         }
 
-        aggregated_result = aggregator(results=results)
+        aggregated_result = aggregator(grader_results=results)
 
         assert isinstance(aggregated_result, GraderScore)
         assert aggregated_result.name == "test_agg"
@@ -67,7 +67,7 @@ class TestWeightedSumAggregator:
             "grader3": GraderScore(name="grader3", score=0.0, reason="Poor"),
         }
 
-        aggregated_result = aggregator(results=results)
+        aggregated_result = aggregator(grader_results=results)
 
         assert isinstance(aggregated_result, GraderScore)
         assert aggregated_result.name == "test_agg"
@@ -85,7 +85,7 @@ class TestWeightedSumAggregator:
             "rank_grader": GraderRank(name="rank_grader", rank=[1, 2, 3], reason="Ranked"),
         }
 
-        aggregated_result = aggregator(results=results)
+        aggregated_result = aggregator(grader_results=results)
 
         assert isinstance(aggregated_result, GraderScore)
         assert aggregated_result.name == "test_agg"
@@ -105,7 +105,7 @@ class TestWeightedSumAggregator:
             "grader2": GraderScore(name="grader2", score=5.0, reason="Average"),
         }
 
-        aggregated_result = aggregator(results=results)
+        aggregated_result = aggregator(grader_results=results)
 
         assert isinstance(aggregated_result, GraderScore)
         assert aggregated_result.name == "test_agg"
@@ -123,7 +123,7 @@ class TestWeightedSumAggregator:
         }
 
         # grader2 should get default weight of 0.0
-        aggregated_result = aggregator(results=results)
+        aggregated_result = aggregator(grader_results=results)
 
         assert isinstance(aggregated_result, GraderScore)
         assert aggregated_result.name == "test_agg"

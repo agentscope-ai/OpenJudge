@@ -163,7 +163,7 @@ class FSDPBTTrainer:
             verbose=True,
         )
 
-        if self.config.model.external_lib is not None:
+        if self.config.model.external_lib:
             import importlib
 
             importlib.import_module(self.config.model.external_lib)
@@ -538,11 +538,10 @@ class FSDPBTTrainer:
         last_valid_metric = None
         latest_train_metric = {}
 
-        total_training_steps = len(self.train_dataloader) * self.config.trainer.total_epochs
-        if self.config.trainer.total_training_steps is not None:
-            total_training_steps = self.config.trainer.total_training_steps
-
-        self.total_training_steps = total_training_steps
+        if self.config.trainer.total_training_steps:
+            self.total_training_steps = self.config.trainer.total_training_steps
+        else:
+            self.total_training_steps = len(self.train_dataloader) * self.config.trainer.total_epochs
         print(f"Total training steps: {self.total_training_steps}")
 
         # Create a single progress bar for all training steps
@@ -690,7 +689,7 @@ def run_bt_training(config):
     )
 
     # Ensure pad token exists
-    if tokenizer.pad_token is None:
+    if not tokenizer.pad_token:
         tokenizer.pad_token = tokenizer.eos_token
 
     # Create datasets

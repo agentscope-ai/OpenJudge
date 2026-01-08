@@ -177,7 +177,7 @@ class GradingRunner(BaseRunner):
         concurrency_manager.set_max_concurrency(max_concurrency)
 
         # Handle aggregators
-        if aggregators is None:
+        if not aggregators:
             self.aggregators = []
         elif isinstance(aggregators, BaseAggregator):
             self.aggregators = [aggregators]
@@ -345,7 +345,7 @@ class GradingRunner(BaseRunner):
         if self.show_progress:
             all_results = await tqdm_asyncio.gather(
                 *all_coroutines,
-                desc="Grading",
+                desc="Evaluating a dataset",
                 total=len(all_coroutines),
             )
         else:
@@ -472,7 +472,7 @@ class GradingRunner(BaseRunner):
             if original_show_progress:
                 all_results = await tqdm_asyncio.gather(
                     *tasks,
-                    desc="Grading Datasets",
+                    desc=f"Evaluating {len(tasks)} datasets",
                     total=len(tasks),
                 )
             else:

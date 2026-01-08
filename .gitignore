@@ -51,4 +51,7 @@ credentials.json
 
 # Temporary and Backup Files
 _del
-examples/
+/examples/
+
+# Evaluation Results
+/evaluation_results

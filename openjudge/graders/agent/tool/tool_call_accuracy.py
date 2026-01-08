@@ -216,10 +216,9 @@ class ToolCallAccuracyGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluates the accuracy of tool calls made by an agent",
             model=model,
-            template=template,
+            template=template or DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE,
             language=language,
         )
-        self.template = template if template is not None else DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE
 
     def _parse_tools_from_response(
         self,

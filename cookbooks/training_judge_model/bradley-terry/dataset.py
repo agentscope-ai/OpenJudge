@@ -120,7 +120,7 @@ class BTDataset(Dataset):
         # Handle sequence length like SFT dataset
         if sequence_length < self.max_length:
             # Pad sequences
-            pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else 0
+            pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id else 0
             padded_input_ids = (
                 torch.ones(
                     size=(self.max_length - sequence_length,),

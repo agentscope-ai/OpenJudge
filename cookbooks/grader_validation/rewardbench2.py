@@ -307,8 +307,10 @@ class RewardBench2Grader(BaseGrader):
             GraderScore: Result with score=1.0 if predicted best answer matches ground truth
         """
         # Handle None case for mutable arguments
-        answers = answers if answers is not None else []
-        chosen_indices = chosen_indices if chosen_indices is not None else []
+        if not answers:
+            answers = []
+        if not chosen_indices:
+            chosen_indices = []
 
         # Ensure we have exactly 4 answers
         if len(answers) < 4:
@@ -402,8 +404,10 @@ class RewardBench2Grader(BaseGrader):
             GraderScore: Result with score=1.0 if any top-rated answer is in chosen_indices
         """
         # Handle None case for mutable arguments
-        answers = answers if answers is not None else []
-        chosen_indices = chosen_indices if chosen_indices is not None else []
+        if not answers:
+            answers = []
+        if not chosen_indices:
+            chosen_indices = []
 
         correct_indices = set(chosen_indices)
 

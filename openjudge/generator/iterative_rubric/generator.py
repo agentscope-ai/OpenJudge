@@ -265,7 +265,7 @@ class IterativeRubricsGenerator(LLMGraderGenerator):
             grader_kwargs["max_score"] = self.config.max_score
 
         # Add custom template if provided
-        if hasattr(self.config, "custom_evaluation_prompt") and self.config.custom_evaluation_prompt is not None:
+        if hasattr(self.config, "custom_evaluation_prompt") and self.config.custom_evaluation_prompt:
             grader_kwargs["template"] = self.config.custom_evaluation_prompt
 
         return LLMGrader(**grader_kwargs)

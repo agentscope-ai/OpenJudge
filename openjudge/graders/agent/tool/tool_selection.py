@@ -207,10 +207,9 @@ class ToolSelectionGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate tool selection ",
             model=model,
-            template=template,
+            template=template or DEFAULT_TOOL_SELECTION_TEMPLATE,
             language=language,
         )
-        self.template = template if template is not None else DEFAULT_TOOL_SELECTION_TEMPLATE
 
     async def aevaluate(
         self,

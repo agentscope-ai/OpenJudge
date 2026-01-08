@@ -184,7 +184,7 @@ class PromptTemplate(BaseModel):
         if isinstance(self.messages, list):
             messages = self.messages
         elif isinstance(self.messages, dict):
-            if language is None:
+            if not language:
                 language = LanguageEnum.EN
             assert language in self.messages
             messages = self.messages.get(language, [])

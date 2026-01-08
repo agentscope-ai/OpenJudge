@@ -4,7 +4,7 @@ Agent Action Utilities
 This module provides utility functions for analyzing agent action behaviors,
 including action-observation pair extraction and similarity calculations.
 """
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -147,8 +147,33 @@ def calculate_semantic_similarity(text1: str, text2: str) -> float:
         return 0.0
 
 
+def format_history(history: Optional[list] = None) -> str:
+    """Format history steps for evaluation.
+
+    Args:
+        history: Optional list of previous step dictionaries
+
+    Returns:
+        Formatted history string, or empty string if no history
+    """
+    if not history:
+        return ""
+
+    lines = ["<History Steps>"]
+    for i, hist_step in enumerate(history):
+        lines.append(f"Step {i + 1}:")
+        for key, value in hist_step.items():
+            if value:
+                lines.append(f"{key.capitalize()}: {value}")
+        lines.append("")
+    lines.append("</History Steps>")
+
+    return "\n".join(lines)
+
+
 __all__ = [
     "extract_action_observation_pairs",
     "calculate_text_similarity",
     "calculate_semantic_similarity",
+    "format_history",
 ]

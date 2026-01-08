@@ -80,7 +80,7 @@ def init_instance_by_config(
     # If config is already an instance, just check its type
     if not isinstance(config, dict):
         instance = config
-        if accept_type is not None and not isinstance(instance, accept_type):
+        if accept_type and not isinstance(instance, accept_type):
             raise TypeError(
                 f"Provided instance {instance.__class__.__name__} " f"is not an instance of {accept_type.__name__}",
             )
@@ -98,7 +98,7 @@ def init_instance_by_config(
     cls = getattr(module, class_name)
 
     # Check type if accept_type is provided
-    if accept_type is not None and not issubclass(cls, accept_type):
+    if accept_type and not issubclass(cls, accept_type):
         raise TypeError(
             f"Instantiated class {cls.__name__} is not a subclass of {accept_type.__name__}",
         )

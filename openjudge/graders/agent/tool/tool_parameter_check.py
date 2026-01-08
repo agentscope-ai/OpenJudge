@@ -194,10 +194,9 @@ class ToolParameterCheckGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate tool parameter extraction correctness",
             model=model,
-            template=template,
+            template=template or DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE,
             language=language,
         )
-        self.template = template if template is not None else DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE
 
     async def aevaluate(
         self,

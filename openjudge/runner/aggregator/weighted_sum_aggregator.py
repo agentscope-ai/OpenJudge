@@ -28,27 +28,27 @@ class WeightedSumAggregator(BaseAggregator):
         super().__init__(name)
         self.weights = weights or {}
 
-    def __call__(self, results: Dict[str, GraderResult], **kwargs) -> GraderResult:
+    def __call__(self, grader_results: Dict[str, GraderResult], **kwargs) -> GraderResult:
         """
-        Aggregate results using weighted sum for a single sample.
+        Aggregate multiple grader results using weighted sum for a single sample.
 
         Args:
-            results: Dictionary mapping grader names to GraderResult objects for a single sample
+            grader_results: Dictionary mapping grader names to GraderResult objects for a single sample
             **kwargs: Additional arguments (unused)
 
         Returns:
             Aggregated result as a GraderResult object
         """
-        if not results:
+        if not grader_results:
             return GraderError(
                 name=self.name,
-                reason="No results to aggregate",
-                error="No results provided for aggregation",
+                reason="No grader result to aggregate",
+                error="No grader result provided for aggregation",
             )
 
         # Initialize weights if not provided (equal weights)
         if not self.weights:
-            grader_names = list(results.keys())
+            grader_names = list(grader_results.keys())
             equal_weight = 1.0 / len(grader_names) if grader_names else 0.0
             weights = {name: equal_weight for name in grader_names}
         else:
@@ -59,8 +59,8 @@ class WeightedSumAggregator(BaseAggregator):
         component_scores = {}
 
         # Collect scores from all graders for this sample
-        for grader_name, result in results.items():
-            # Only process GraderScore results (skip errors, ranks, etc.)
+        for grader_name, result in grader_results.items():
+            # Only process results of GraderScore type (skip errors, ranks, etc.)
             if isinstance(result, GraderScore):
                 weight = weights.get(grader_name, 0.0)
                 weighted_sum += result.score * weight

@@ -154,6 +154,10 @@ def run_test(in_outs, test=None, timeout=15):
     """
     # Disable functionalities that can make destructive changes to the test.
     reliability_guard()
+
+    if not test:
+        raise AssertionError("should not happen: missing test code input")
+
     method_name = None
     tmp = None
     which_type = None
@@ -169,9 +173,6 @@ def run_test(in_outs, test=None, timeout=15):
             method_name = in_outs["fn_name"]
 
     logger.debug(f"loaded input_output = {datetime.now().time()}")
-
-    if test is None:
-        raise AssertionError("should not happen: test code is none")
 
     results = []
     sol = """from string import *

@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -303,33 +304,9 @@ class ReflectionOutcomeUnderstandingGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate reflection outcome understanding",
             model=model,
-            template=template,
+            template=template or DEFAULT_REFLECTION_OUTCOME_UNDERSTANDING_TEMPLATE,
             language=language,
         )
-        self.template = template if template is not None else DEFAULT_REFLECTION_OUTCOME_UNDERSTANDING_TEMPLATE
-
-    def _format_history(self, history: Optional[List[Dict[str, Any]]] = None) -> str:
-        """Format history steps for evaluation.
-
-        Args:
-            history: Optional list of previous step dictionaries
-
-        Returns:
-            Formatted history string, or empty string if no history
-        """
-        if not history:
-            return ""
-
-        lines = ["<History Steps>"]
-        for i, hist_step in enumerate(history, start=1):
-            lines.append(f"Step {i}:")
-            for key, value in hist_step.items():
-                if value:
-                    lines.append(f"{key.capitalize()}: {value}")
-            lines.append("")
-        lines.append("</History Steps>")
-
-        return "\n".join(lines)
 
     async def aevaluate(
         self,
@@ -363,7 +340,7 @@ class ReflectionOutcomeUnderstandingGrader(LLMGrader):
         context_str = f"<context>\n{context}\n</context>" if context else ""
 
         # Format history
-        history_str = self._format_history(history)
+        history_str = format_history(history)
 
         try:
             result = await super().aevaluate(

@@ -19,7 +19,7 @@ class ConcurrencyManager:
     _instance = None
 
     def __new__(cls):
-        if cls._instance is None:
+        if not cls._instance:
             cls._instance = super(ConcurrencyManager, cls).__new__(cls)
         return cls._instance
 

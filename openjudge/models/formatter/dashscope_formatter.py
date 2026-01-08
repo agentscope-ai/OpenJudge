@@ -75,8 +75,8 @@ class DashScopeFormatter(BaseFormatter):
         Returns:
             Content in OpenAI format.
         """
-        # If content is None, return empty string
-        if content is None:
+        # Return empty string if no content input
+        if not content:
             return ""
 
         # If content is a string, return as is
@@ -135,8 +135,8 @@ class DashScopeFormatter(BaseFormatter):
         Returns:
             Content in DashScope format.
         """
-        # If content is None, return empty string
-        if content is None:
+        # Return empty string if no content input
+        if not content:
             return ""
 
         # If content is a string, return as is

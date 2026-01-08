@@ -265,11 +265,10 @@ class HallucinationGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate whether response contains hallucinations",
             model=model,
-            template=template,
+            template=template or DEFAULT_HALLUCINATION_TEMPLATE,
             language=language,
         )
         self.threshold = threshold
-        self.template = template if template is not None else DEFAULT_HALLUCINATION_TEMPLATE
 
     async def aevaluate(
         self,

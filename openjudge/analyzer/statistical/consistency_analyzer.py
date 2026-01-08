@@ -101,21 +101,24 @@ class ConsistencyAnalyzer(BaseAnalyzer):
             >>> print(f"Consistency: {result.consistency:.2f}")
             Consistency: 0.99
         """
-        # Handle the case where the method is called with the old signature
-        # i.e., analyze(first_run_results, second_run_results)
-        first_run_results = grader_results
-        second_run_results = another_grader_results
-
-        # If the parameters were passed positionally as before, dataset will be first_run_results
-        # and grader_results will be second_run_results
-        if first_run_results is None and second_run_results is None:
-            if dataset is not None and grader_results is not None:
-                first_run_results = dataset
-                second_run_results = grader_results
-            else:
-                # If still not set, use empty lists
-                first_run_results = []
-                second_run_results = []
+        # Need to support old 2-argment call signagure: analyze(first_run_results, second_run_results)
+        # Need to determine which argment is the 1st run result and which is the 2nd run result.
+        if grader_results and another_grader_results:
+            # current call signature
+            first_run_results = grader_results
+            second_run_results = another_grader_results
+        elif dataset and grader_results:
+            # The first two argments contain values but the 3rd does not.
+            # Treat this as a call following the old 2-argument signature.
+            first_run_results = dataset
+            second_run_results = grader_results
+        else:
+            # 1. Insufficient argments for the current call signature:
+            # dataset and another grader result exist,
+            # but the 2nd argment (grader result) does not have value.
+            # Or 2. none of dataset, grader_results, another_grader_results exists.
+            first_run_results = []
+            second_run_results = []
 
         if not first_run_results or not second_run_results:
             logger.warning(
