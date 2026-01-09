@@ -20,7 +20,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # English Prompt
 CORRECTNESS_PROMPT_EN = textwrap.dedent(
     """
-You are a professional data annotator responsible for evaluating whether the model response matches the provided correct response (reference response). Your task is to score according to the following criteria:
+You are a professional data annotator responsible for evaluating whether the model response matches the provided
+correct response (reference response). Your task is to score according to the following criteria:
 
 <Scoring Criteria>
 A response that perfectly matches the reference response should:
@@ -52,7 +53,9 @@ Points should be deducted for:
 </Guidance>
 
 <Reminder>
-The goal is to evaluate correctness against reference response, not general quality. A well-written response that contradicts the reference response should score low. A simple response that accurately reflects and properly uses the reference response should score high. Consider both accuracy and appropriate application of the reference response.
+The goal is to evaluate correctness against reference response, not general quality. A well-written response that
+contradicts the reference response should score low. A simple response that accurately reflects and properly uses the
+reference response should score high. Consider both accuracy and appropriate application of the reference response.
 </Reminder>
 
 <query>
@@ -76,15 +79,21 @@ The following is the correct response for your reference (ignore if empty):
 # Output Instructions
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means perfect match with reference response and 1 means complete deviation from reference response>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning how the response aligns with or deviates from the reference response>"
+    "score": <integer between 1 and 5, where 5 means perfect match with reference response and 1 means complete
+    deviation from reference response>,
+    "reason": "<brief explanation for the assigned score, specifically mentioning how the response aligns with or
+    deviates from the reference response>"
 }}
 
 Scoring Scale:
-- 5: The answer is completely consistent with the reference answer in terms of facts, key details, logic, and conclusions. Different wording is acceptable as long as the meaning is equivalent.
-- 4: The core conclusion of the answer is consistent with the reference answer, but there are non-critical omissions, vague statements, or minor errors that do not affect user understanding and use.
-- 3: The answer contains some correct information, but omits key points, contains verifiable errors, or significantly misinterprets the reference content.
-- 2: The core conclusion or key facts of the answer contradict the reference answer, containing only a few superficially related words, and are generally misleading.
+- 5: The answer is completely consistent with the reference answer in terms of facts, key details, logic, and
+conclusions. Different wording is acceptable as long as the meaning is equivalent.
+- 4: The core conclusion of the answer is consistent with the reference answer, but there are non-critical omissions,
+vague statements, or minor errors that do not affect user understanding and use.
+- 3: The answer contains some correct information, but omits key points, contains verifiable errors, or significantly
+misinterprets the reference content.
+- 2: The core conclusion or key facts of the answer contradict the reference answer, containing only a few superficially
+ related words, and are generally misleading.
 - 1: The answer is completely unrelated to or directly contradicts the reference answer.
 
 JSON:
@@ -126,7 +135,8 @@ CORRECTNESS_PROMPT_ZH = textwrap.dedent(
 </指导>
 
 <提醒>
-目标是评估与参考回答的正确性，而不是一般质量。一个写得很好但与参考回答矛盾的回答应该得分低。一个简单但准确反映并正确使用参考回答的回答应该得分高。同时考虑准确性和参考回答的适当应用。
+目标是评估与参考回答的正确性，而不是一般质量。一个写得很好但与参考回答矛盾的回答应该得分低。一个简单但准确反映并正确使用参考回答的回答应该得分高
+。同时考虑准确性和参考回答的适当应用。
 </提醒>
 
 <查询>

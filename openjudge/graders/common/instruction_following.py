@@ -20,7 +20,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # English Prompt
 INSTRUCTION_FOLLOWING_PROMPT_EN = textwrap.dedent(
     """
-You are a professional data annotator responsible for evaluating whether the model response follows the given instructions. Your task is to score according to the following criteria:
+You are a professional data annotator responsible for evaluating whether the model response follows the given
+instructions. Your task is to score according to the following criteria:
 
 <Scoring Criteria>
 A response that perfectly follows instructions should:
@@ -50,7 +51,9 @@ Points should be deducted for:
 </Guidance>
 
 <Reminder>
-The goal is to evaluate instruction-following capability, not content quality per se. A response can be well-written but score low if it doesn't follow instructions. Conversely, a simple response that perfectly follows all instructions should score high.
+The goal is to evaluate instruction-following capability, not content quality per se. A response can be well-written but
+ score low if it doesn't follow instructions. Conversely, a simple response that perfectly follows all instructions
+ should score high.
 </Reminder>
 
 Evaluate the following:
@@ -70,8 +73,10 @@ Evaluate the following:
 # Output Instructions
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means perfect instruction adherence and 1 means complete failure to follow instructions>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning which instruction requirements were met or violated>"
+    "score": <integer between 1 and 5, where 5 means perfect instruction adherence and 1 means complete failure to
+    follow instructions>,
+    "reason": "<brief explanation for the assigned score, specifically mentioning which instruction requirements were
+    met or violated>"
 }}
 
 Scoring Scale:
