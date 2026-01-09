@@ -1,4 +1,9 @@
 repos:
+  # Detect secrets and prevent committing sensitive data
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -8,6 +13,8 @@ repos:
       - id: check-toml
       - id: check-json
       - id: detect-private-key
+      - id: detect-aws-credentials
+        args: ['--allow-missing-credentials']
       - id: trailing-whitespace
   - repo: https://github.com/PyCQA/autoflake
     rev: v2.2.1
