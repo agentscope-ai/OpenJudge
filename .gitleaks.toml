@@ -15,7 +15,6 @@ description = "Allowlist for false positives"
 paths = [
     '''site/.*''',
     '''docs/.*\.html''',
-    '''\.secrets\.baseline''',
 ]
 
 # Exclude common false positive patterns
@@ -33,52 +32,9 @@ regexes = [
     '''fake[-_]?key''',
 ]
 
-# Custom rules for AI/LLM API keys
+# Custom rule for Dashscope (Qwen) API keys (not in default gitleaks config)
 [[rules]]
 id = "dashscope-api-key"
-description = "Dashscope API Key"
+description = "Dashscope (Qwen) API Key"
 regex = '''(?i)(?:dashscope|qwen)[-_]?(?:api)?[-_]?key\s*[=:]\s*['"]?([a-zA-Z0-9-_]{20,})['"]?'''
 keywords = ["dashscope", "qwen"]
-
-[[rules]]
-id = "openai-api-key"
-description = "OpenAI API Key"
-regex = '''sk-[a-zA-Z0-9]{20,}T3BlbkFJ[a-zA-Z0-9]{20,}'''
-keywords = ["sk-"]
-
-[[rules]]
-id = "openai-project-key"
-description = "OpenAI Project API Key"
-regex = '''sk-proj-[a-zA-Z0-9_-]{80,}'''
-keywords = ["sk-proj-"]
-
-[[rules]]
-id = "anthropic-api-key"
-description = "Anthropic API Key"
-regex = '''sk-ant-[a-zA-Z0-9-_]{80,}'''
-keywords = ["sk-ant-"]
-
-[[rules]]
-id = "alibaba-cloud-access-key"
-description = "Alibaba Cloud Access Key ID"
-regex = '''(?i)(?:alibaba|aliyun|acs)[-_]?(?:access)?[-_]?key[-_]?(?:id)?\s*[=:]\s*['"]?(LTAI[a-zA-Z0-9]{12,})['"]?'''
-keywords = ["LTAI", "alibaba", "aliyun"]
-
-[[rules]]
-id = "alibaba-cloud-secret-key"
-description = "Alibaba Cloud Access Key Secret"
-regex = '''(?i)(?:alibaba|aliyun|acs)[-_]?(?:access)?[-_]?(?:key)?[-_]?secret\s*[=:]\s*['"]?([a-zA-Z0-9]{20,})['"]?'''
-keywords = ["alibaba", "aliyun", "secret"]
-
-[[rules]]
-id = "huggingface-token"
-description = "HuggingFace API Token"
-regex = '''hf_[a-zA-Z0-9]{30,}'''
-keywords = ["hf_"]
-
-[[rules]]
-id = "generic-api-key-assignment"
-description = "Generic API Key Assignment"
-regex = '''(?i)(?:api[-_]?key|apikey|secret[-_]?key|auth[-_]?token|access[-_]?token)\s*[=:]\s*['"]([a-zA-Z0-9_\-]{32,})['"]'''
-keywords = ["api_key", "apikey", "secret_key", "auth_token", "access_token"]
-
