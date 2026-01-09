@@ -31,11 +31,12 @@ class ToolCallSequenceMatchGrader(BaseGrader):
         strict_mode: If True, matches both tool_call name and arguments; if False, only matches tool_call name
         use_jaccard_similarity: If True, use Jaccard similarity for loose mode (ignores step order)
     Example:
+        >>> import asyncio
         >>> grader = ToolCallSequenceMatchGrader(strict_mode=True)
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     messages=[...],  # Model's messages with tool calls
         ...     reference_tool_calls=[...]  # Ground truth reference tool calls
-        ... )
+        ... ))
         >>> print(f"Sequence match score: {result.score}")
     """
 

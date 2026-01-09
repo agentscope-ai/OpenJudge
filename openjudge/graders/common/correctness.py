@@ -18,7 +18,8 @@ from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
-CORRECTNESS_PROMPT_EN = """
+CORRECTNESS_PROMPT_EN = textwrap.dedent(
+    """
 You are a professional data annotator responsible for evaluating whether the model response matches the provided correct response (reference response). Your task is to score according to the following criteria:
 
 <Scoring Criteria>
@@ -88,9 +89,11 @@ Scoring Scale:
 
 JSON:
 """
+).strip()
 
 # Chinese Prompt
-CORRECTNESS_PROMPT_ZH = """
+CORRECTNESS_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名专业的数据标注员，负责评估模型输出是否与提供的参考回答（reference response）一致。你的任务是根据以下标准进行评分：
 
 <评分标准>
@@ -160,6 +163,7 @@ CORRECTNESS_PROMPT_ZH = """
 
 JSON:
 """
+).strip()
 
 # Build default template from prompts
 DEFAULT_CORRECTNESS_TEMPLATE = PromptTemplate(
@@ -167,13 +171,13 @@ DEFAULT_CORRECTNESS_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(CORRECTNESS_PROMPT_EN),
+                content=CORRECTNESS_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(CORRECTNESS_PROMPT_ZH),
+                content=CORRECTNESS_PROMPT_ZH,
             ),
         ],
     },
@@ -225,6 +229,7 @@ class CorrectnessGrader(LLMGrader):
             - metadata: Threshold and evaluation details
 
     Example:
+        >>> import asyncio
         >>> from openjudge.model.openai_llm import OpenAIChatModel
         >>> from openjudge.llm_judge import CorrectnessGrader
         >>>
@@ -233,19 +238,19 @@ class CorrectnessGrader(LLMGrader):
         >>> grader = CorrectnessGrader(model=model, threshold=0.7)
         >>>
         >>> # Good match
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="When was the product launched?",
         ...     response="The product launched in Q1 2023 in Europe, capturing 50% market share.",
         ...     reference_response="Product launched Q1 2023 in Europe with 50% market share."
-        ... )
+        ... ))
         >>> print(result.score)  # 5 - accurate to reference response
         >>>
         >>> # Poor match
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="When and where was the product launched?",
         ...     response="The product was launched in early 2023 in European markets.",
         ...     reference_response="The product was launched in Q1 2023 in Europe."
-        ... )
+        ... ))
         >>> print(result.score)  # 2 - deviates from reference response
     """
 

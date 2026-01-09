@@ -23,10 +23,11 @@ class ObservationInformationGainGrader(BaseGrader):
     Attributes:
         similarity_threshold: Threshold for considering observations as redundant
     Example:
+        >>> import asyncio
         >>> grader = ObservationInformationGainGrader(similarity_threshold=0.5)
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run( grader.aevaluate(
         ...     messages=[...],  # List of message dicts
-        ... )
+        ... ))
         >>> print(f"Info gain score: {result.score}")
     """
 

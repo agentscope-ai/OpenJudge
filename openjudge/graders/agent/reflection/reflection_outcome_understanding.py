@@ -289,7 +289,7 @@ class ReflectionOutcomeUnderstandingGrader(LLMGrader):
         >>> result = asyncio.run(grader.aevaluate(
         ...     observation="The drawer is now open.",
         ...     reflection="I successfully opened the drawer."
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 

@@ -20,7 +20,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-HALLUCINATION_PROMPT_EN = """
+HALLUCINATION_PROMPT_EN = textwrap.dedent(
+    """
 You are a professional data annotator responsible for evaluating whether the model response contains hallucinations. Your task is to score according to the following criteria:
 
 <Scoring Criteria>
@@ -80,9 +81,11 @@ Scoring Scale:
 
 JSON:
 """
+).strip()
 
 # Chinese Prompt
-HALLUCINATION_PROMPT_ZH = """
+HALLUCINATION_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名专业的数据标注员，负责评估模型输出是否包含幻觉（虚构信息）。你的任务是根据以下标准进行评分：
 
 <评分标准>
@@ -141,6 +144,7 @@ HALLUCINATION_PROMPT_ZH = """
 
 JSON:
 """
+).strip()
 
 
 # Build default template from prompts
@@ -149,13 +153,13 @@ DEFAULT_HALLUCINATION_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(HALLUCINATION_PROMPT_EN),
+                content=HALLUCINATION_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(HALLUCINATION_PROMPT_ZH),
+                content=HALLUCINATION_PROMPT_ZH,
             ),
         ],
     },
@@ -205,6 +209,7 @@ class HallucinationGrader(LLMGrader):
             - metadata: Threshold and evaluation details
 
     Example:
+        >>> import asyncio
         >>> from openjudge.model.openai_llm import OpenAIChatModel
         >>> from openjudge.llm_judge import HallucinationGrader
         >>>
@@ -219,28 +224,28 @@ class HallucinationGrader(LLMGrader):
         >>> grader = HallucinationGrader(model=model, threshold=0.7)
         >>>
         >>> # With context: Good output (grounded in context)
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="When was the company founded?",
         ...     response="The company was founded in 2020 in San Francisco.",
         ...     context="The company was founded in 2020 in San Francisco."
-        ... )
+        ... ))
         >>> print(result.score)  # 5 - no hallucinations
         >>> print(result.reason)  # "Output is fully supported by context"
         >>>
         >>> # With context: Bad output (contains hallucination)
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="When was the company founded?",
         ...     response="The company was founded in 2020 with 100 employees.",
         ...     context="The company was founded in 2020 in San Francisco."
-        ... )
+        ... ))
         >>> print(result.score)  # 3 - contains unsupported claim about employees
         >>> print(result.reason)  # "Output contains hallucination: '100 employees' not mentioned"
         >>>
         >>> # Without context: Factual verification
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="What is the capital of France?",
         ...     response="The capital of France is Paris."
-        ... )
+        ... ))
         >>> print(result.score)  # 5 - factually correct
     """
 

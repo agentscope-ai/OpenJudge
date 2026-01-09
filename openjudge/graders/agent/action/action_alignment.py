@@ -165,7 +165,7 @@ class ActionAlignmentGrader(LLMGrader):
         >>> result = asyncio.run(grader.aevaluate(
         ...     plan="I will open drawer 1 to find the key.",
         ...     action="open drawer 1"
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 

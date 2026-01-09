@@ -165,7 +165,7 @@ class MemoryDetailPreservationGrader(LLMGrader):
         >>> result = asyncio.run(grader.aevaluate(
         ...     observation="Cabinet 1 at coordinates (3.5, 2.1) contains 5 red apples.",
         ...     memory="Cabinet 1 at (3.5, 2.1) has 5 red apples."
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 

@@ -165,7 +165,7 @@ class ReflectionAccuracyGrader(LLMGrader):
         >>> result = asyncio.run(grader.aevaluate(
         ...     observation="You see a closed cabinet.",
         ...     reflection="I observed a closed cabinet."
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 

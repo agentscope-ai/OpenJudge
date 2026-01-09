@@ -165,7 +165,7 @@ class MemoryAccuracyGrader(LLMGrader):
         >>> result = asyncio.run(grader.aevaluate(
         ...     observation="You see a closed cabinet.",
         ...     memory="The cabinet is closed."
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 

@@ -19,7 +19,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # pylint: disable=line-too-long
 
 # English Prompt
-RELEVANCE_PROMPT_EN = """
+RELEVANCE_PROMPT_EN = textwrap.dedent(
+    """
 You are a professional data annotator responsible for evaluating how relevant the model response is to the user's query. Your task is to score according to the following criteria:
 
 <Scoring Criteria>
@@ -88,9 +89,11 @@ Scoring Scale:
 
 JSON:
 """
+).strip()
 
 # Chinese Prompt
-RELEVANCE_PROMPT_ZH = """
+RELEVANCE_PROMPT_ZH = textwrap.dedent(
+    """
 你是一名专业的数据标注员，负责评估模型输出与用户查询的相关性。你的任务是根据以下标准进行评分：
 
 <评分标准>
@@ -160,6 +163,7 @@ RELEVANCE_PROMPT_ZH = """
 
 JSON:
 """
+).strip()
 
 
 # Build default template from prompts
@@ -168,13 +172,13 @@ DEFAULT_RELEVANCE_TEMPLATE = PromptTemplate(
         LanguageEnum.EN: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(RELEVANCE_PROMPT_EN),
+                content=RELEVANCE_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
             ChatMessage(
                 role="user",
-                content=textwrap.dedent(RELEVANCE_PROMPT_ZH),
+                content=RELEVANCE_PROMPT_ZH,
             ),
         ],
     },
@@ -223,6 +227,7 @@ class RelevanceGrader(LLMGrader):
             - metadata: Evaluation details
 
     Example:
+        >>> import asyncio
         >>> from openjudge.models.openai_chat_model import OpenAIChatModel
         >>> from openjudge.graders.common.relevance import RelevanceGrader
         >>>
@@ -231,25 +236,25 @@ class RelevanceGrader(LLMGrader):
         >>> grader = RelevanceGrader(model=model)
         >>>
         >>> # Relevant response
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="What are Python decorators?",
         ...     response="Decorators are functions that modify other functions. They use @syntax..."
-        ... )
+        ... ))
         >>> print(result.score)  # 5 - directly answers the question with details
         >>>
         >>> # Irrelevant response
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="What are Python decorators?",
         ...     response="I like programming in various languages.",
-        ... )
+        ... ))
         >>> print(result.score)  # 1 - completely off-topic
         >>>
         >>> # With context
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     query="What's the weather like then?",
         ...     response="July is summer in Europe with warm weather...",
         ...     context="Previous conversation about planning a July vacation to Europe"
-        ... )
+        ... ))
         >>> print(result.score)  # 5 - relevant with conversation context
     """
 

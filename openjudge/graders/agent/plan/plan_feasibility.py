@@ -168,7 +168,7 @@ class PlanFeasibilityGrader(LLMGrader):
         ...     plan="I will first open the drawer to get the key, then use it to unlock the door.",
         ...     observation="The drawer is closed. You don't have any items.",
         ...     memory="The key is inside the drawer."
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 

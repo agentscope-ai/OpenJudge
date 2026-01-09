@@ -206,7 +206,7 @@ class ReflectionProgressAwarenessGrader(LLMGrader):
         ...     observation="Cabinet 1 now has apples. Task complete.",
         ...     reflection="Good progress! I've successfully found the apples.",
         ...     context="Task: Find apples in cabinets"
-        ... )
+        ... ))
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 

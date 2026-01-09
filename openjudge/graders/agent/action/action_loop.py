@@ -21,10 +21,11 @@ class ActionLoopDetectionGrader(BaseGrader):
     all pairs of actions for similarity and penalizing based on the proportion
     of similar action pairs found.
     Example:
+        >>> import asyncio
         >>> grader = ActionLoopDetectionGrader(similarity_threshold=1.0)
-        >>> result = await grader.aevaluate(
+        >>> result = asyncio.run(grader.aevaluate(
         ...     messages=[...],
-        ... )
+        ... ))
         >>> print(f"Loop detection score: {result.score}")
     """
 
