@@ -234,8 +234,8 @@ class ImageCoherenceGrader(LLMGrader):
                 messages=[{"role": "user", "content": content}],
                 structured_model=GraderScoreCallback,
             )
-            score = chat_response.metadata["score"]
-            reason = chat_response.metadata["reason"]
+            score = chat_response.parsed["score"]
+            reason = chat_response.parsed["reason"]
             return score, reason
 
         except Exception as e:

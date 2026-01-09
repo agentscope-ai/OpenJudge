@@ -51,10 +51,10 @@ class FunctionGrader(BaseGrader):
                   pointwise mode) or a GraderRank (for listwise mode).
 
                   For pointwise mode, typical signature:
-                  ```async def my_func(query: str, answer: str, **kwargs) -> GraderScore:```
+                  ```async def my_func(query: str, response: str, **kwargs) -> GraderScore:```
 
                   For listwise mode, typical signature:
-                  ```async def my_func(query: str, answer_1: str, answer_2: str, **kwargs) -> GraderRank:```
+                  ```async def my_func(query: str, responses: List[str], **kwargs) -> GraderRank:```
             name: The name of the grader. Used for identification and logging.
             mode: The grader mode. Either POINTWISE (individual sample evaluation)
                   or LISTWISE (joint evaluation of multiple samples).
@@ -104,9 +104,9 @@ class FunctionGrader(BaseGrader):
 
         Example:
             >>> # Example for pointwise function grader
-            >>> def accuracy_function(query: str, answer: str) -> GraderScore:
+            >>> def accuracy_function(query: str, response: str) -> GraderScore:
             ...     # Simple accuracy function - checks if answer contains key facts
-            ...     if "Paris" in answer and "capital" in answer.lower():
+            ...     if "Paris" in response and "capital" in response.lower():
             ...         return GraderScore(name=self.name,
             ...                            score=1.0,
             ...                            reason="Correctly identifies Paris as capital")
@@ -189,9 +189,9 @@ class FunctionGrader(BaseGrader):
 
         Example:
             >>> @FunctionGrader.wrap
-            >>> def my_accuracy_function(query: str, answer: str) -> GraderScore:
+            >>> def my_accuracy_function(query: str, response: str) -> GraderScore:
             >>>     # Custom accuracy evaluation logic
-            >>>     score = calculate_accuracy(query, answer)
+            >>>     score = calculate_accuracy(query, response)
             >>>     return GraderScore(name="accuracy", score=score, reason="Custom calculation")
             >>>
             >>> # Create the grader instance

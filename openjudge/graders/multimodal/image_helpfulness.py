@@ -234,20 +234,20 @@ class ImageHelpfulnessGrader(LLMGrader):
             if hasattr(chat_response, "__aiter__"):
                 # This is a streaming response, we need to collect it first
                 collected_content = []
-                metadata = {}
+                parsed = {}
                 async for chunk in chat_response:
                     if chunk.content:
                         collected_content.extend(chunk.content)
-                    if chunk.metadata:
-                        metadata.update(chunk.metadata)
+                    if chunk.parsed:
+                        parsed.update(chunk.parsed)
 
                 # Extract score and reason from metadata
-                score = metadata.get("score", 0.0)
-                reason = metadata.get("reason", "")
+                score = parsed.get("score", 0.0)
+                reason = parsed.get("reason", "")
             else:
                 # Non-streaming response
-                score = chat_response.metadata["score"]
-                reason = chat_response.metadata["reason"]
+                score = chat_response.parsed["score"]
+                reason = chat_response.parsed["reason"]
             return score, reason
 
         except Exception as e:

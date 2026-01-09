@@ -119,7 +119,7 @@ class BaseGrader(ABC):
             ...             description="Evaluates factual accuracy of answers"
             ...         )
             ...
-            ...     async def aevaluate(self, query: str, answer: str, **kwargs):
+            ...     async def aevaluate(self, query: str, response: str, **kwargs):
             ...         # Implementation would evaluate accuracy
             ...         return GraderScore(
             ...             name=self.name,

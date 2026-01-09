@@ -197,16 +197,16 @@ class TestRuleBasedGraders:
     async def test_length_evaluator(self):
         """Test pointwise length check from line 294-313"""
 
-        async def length_evaluator(query: str, answer: str) -> GraderScore:
+        async def length_evaluator(query: str, response: str) -> GraderScore:
             """Evaluate response length."""
-            length = len(answer)
+            length = len(response)
             score = min(length / 100.0, 1.0)  # Normalize to 0-1
 
             return GraderScore(name="length_grader", score=score, reason=f"Length: {length} chars (target: 100+)")
 
         grader = FunctionGrader(func=length_evaluator, name="length_check", mode="pointwise")
 
-        result = await grader.aevaluate(query="Test query", answer="Short")
+        result = await grader.aevaluate(query="Test query", response="Short")
         assert 0.0 <= result.score <= 1.0
         assert "Length:" in result.reason
 

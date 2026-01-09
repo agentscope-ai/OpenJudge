@@ -51,7 +51,7 @@ class LengthPenaltyGrader(BaseGrader):
         - Otherwise: penalty = 0.0
 
         Args:
-            answer: The text content to evaluate for length.
+            response: The text content to evaluate for length.
 
         Returns:
             GraderScore: A GraderScore object containing:
