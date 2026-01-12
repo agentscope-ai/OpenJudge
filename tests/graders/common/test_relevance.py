@@ -139,8 +139,8 @@ class TestRelevanceGraderUnit:
                 response="Python is a programming language.",
             )
 
-            # Assertions
-            assert "Evaluation error: API Error" in result.error
+            # Assertions - error message is stored in reason field when exception occurs
+            assert "Evaluation error: API Error" in result.reason
 
 
 # ==================== QUALITY TESTS ====================
