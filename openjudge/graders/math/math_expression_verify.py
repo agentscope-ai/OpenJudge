@@ -21,10 +21,10 @@ class MathExpressionVerifyGrader(BaseGrader):
 
     def __init__(self, timeout_score: float = 1.0, **kwargs: Any):
         """
-        Initialize the MathVerifyGrader.
+        Initialize the MathExpressionVerifyGrader.
 
         Args:
-            timeout_score: Score to assign on timeout
+            timeout_score: Score to assign on timeout or exception.
         """
         super().__init__(
             name="math_verify",
@@ -56,7 +56,7 @@ class MathExpressionVerifyGrader(BaseGrader):
 
         Examples:
             >>> import asyncio
-            >>> grader = MathVerifyGrader()
+            >>> grader = MathExpressionVerifyGrader()
             >>> result = asyncio.run(grader.aevaluate("2+2", "4"))
             >>> print(result.score)
             1.0

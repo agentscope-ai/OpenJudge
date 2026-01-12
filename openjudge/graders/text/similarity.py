@@ -148,7 +148,7 @@ class SimilarityGrader(BaseGrader):
         """
         super().__init__(
             name="similarity",
-            grader_mode=GraderMode.POINTWISE,
+            mode=GraderMode.POINTWISE,
             description="Unified text similarity grader",
         )
         self.normalize = normalize

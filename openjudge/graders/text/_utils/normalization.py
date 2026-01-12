@@ -176,18 +176,18 @@ def remove_punctuation(text: str, keep_chars: Optional[str] = None) -> str:
 
 def normalize_for_comparison(text: str, method: str = "standard") -> str:
     """
-    根据指定方法归一化文本以进行比较
+    Normalize text for comparison using the specified method.
 
     Args:
-        text: 待归一化的文本
-        method: 归一化方法
-            - "standard": 标准归一化（小写 + 去标点 + 去冠词）
-            - "minimal": 最小归一化（仅去多余空格）
-            - "aggressive": 激进归一化（所有选项）
-            - "case_only": 仅大小写归一化
+        text: Text to normalize.
+        method: Normalization method.
+            - "standard": Standard normalization (lowercase + remove punctuation + remove articles).
+            - "minimal": Minimal normalization (only remove extra whitespace).
+            - "aggressive": Aggressive normalization (all options enabled).
+            - "case_only": Case normalization only.
 
     Returns:
-        str: 归一化后的文本
+        str: Normalized text.
 
     Example:
         >>> normalize_for_comparison("The Cat!", "standard")
@@ -214,14 +214,14 @@ def normalize_for_comparison(text: str, method: str = "standard") -> str:
 
 def normalize_numbers(text: str, replace_with: str = " NUMBER ") -> str:
     """
-    将数字替换为占位符
+    Replace numbers with a placeholder.
 
     Args:
-        text: 待处理的文本
-        replace_with: 替换的占位符
+        text: Text to process.
+        replace_with: Placeholder string to replace numbers with.
 
     Returns:
-        str: 替换后的文本
+        str: Text with numbers replaced.
 
     Example:
         >>> normalize_numbers("I have 3 apples and 5 oranges")
@@ -232,14 +232,14 @@ def normalize_numbers(text: str, replace_with: str = " NUMBER ") -> str:
 
 def normalize_urls(text: str, replace_with: str = " URL ") -> str:
     """
-    将 URL 替换为占位符
+    Replace URLs with a placeholder.
 
     Args:
-        text: 待处理的文本
-        replace_with: 替换的占位符
+        text: Text to process.
+        replace_with: Placeholder string to replace URLs with.
 
     Returns:
-        str: 替换后的文本
+        str: Text with URLs replaced.
 
     Example:
         >>> text = "Visit https://example.com for more info"
@@ -252,14 +252,14 @@ def normalize_urls(text: str, replace_with: str = " URL ") -> str:
 
 def normalize_emails(text: str, replace_with: str = " EMAIL ") -> str:
     """
-    将邮箱地址替换为占位符
+    Replace email addresses with a placeholder.
 
     Args:
-        text: 待处理的文本
-        replace_with: 替换的占位符
+        text: Text to process.
+        replace_with: Placeholder string to replace emails with.
 
     Returns:
-        str: 替换后的文本
+        str: Text with email addresses replaced.
 
     Example:
         >>> text = "Contact me at user@example.com"

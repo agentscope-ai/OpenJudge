@@ -26,17 +26,17 @@ class QwenVLModel(BaseChatModel):
     Supports both synchronous and asynchronous calls, structured outputs, and cost tracking.
 
     Example:
-        >>> from openjudge.model.qwen_vlm_api import QwenVLAPI
-        >>> from openjudge.metrics.multimodal.schema import MLLMImage
+        >>> from openjudge.models import QwenVLModel
+        >>> from openjudge.models.schema.qwen.mllmImage import MLLMImage
         >>>
         >>> # Initialize
-        >>> api = QwenVLAPI(
+        >>> model = QwenVLModel(
         ...     api_key=os.getenv("DASHSCOPE_API_KEY"),
         ...     model="qwen-vl-plus"
         ... )
         >>>
         >>> # Generate response
-        >>> response = api.generate(
+        >>> response = model.generate(
         ...     text="Describe this image",
         ...     images=[MLLMImage(url="https://example.com/image.jpg")]
         ... )
@@ -49,8 +49,6 @@ class QwenVLModel(BaseChatModel):
         temperature: float = 0.1,
         top_p: float = 0.9,
         max_tokens: int = 2000,
-        enable_cache: bool = False,
-        cache_ttl: int = 3600,
     ):
         """
         Initialize Qwen VL API client
@@ -61,8 +59,6 @@ class QwenVLModel(BaseChatModel):
             temperature: Sampling temperature
             top_p: Nucleus sampling
             max_tokens: Maximum tokens to generate
-            enable_cache: Enable response caching
-            cache_ttl: Cache TTL in seconds
         """
         super().__init__(model=model, stream=False)
 
@@ -76,19 +72,10 @@ class QwenVLModel(BaseChatModel):
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
-        self.enable_cache = enable_cache
-        self.cache_ttl = cache_ttl
 
         # Cost tracking
         self._total_requests = 0
         self._total_cost = 0.0
-
-        # Simple in-memory cache
-        self._cache: Dict[str, Any] = {}
-
-    def get_model_name(self) -> str:
-        """Get the model name"""
-        return self.model
 
     def _format_messages(
         self,
@@ -234,18 +221,14 @@ class QwenVLModel(BaseChatModel):
 
         # DashScope doesn't have native async support yet
         # Run in executor to avoid blocking
-        loop = asyncio.get_event_loop()
-
-        def _sync_call() -> Union[str, BaseModel, Dict[str, Any]]:
-            return self.generate(
-                text,
-                images,
-                schema,
-                response_format,
-                system_prompt,
-            )
-
-        return await loop.run_in_executor(None, _sync_call)
+        return await asyncio.to_thread(
+            self.generate,
+            text,
+            images,
+            schema,
+            response_format,
+            system_prompt,
+        )
 
     async def achat(
         self,
@@ -287,7 +270,7 @@ class QwenVLModel(BaseChatModel):
 
     def generate_from_parts(
         self,
-        parts: List[Union[str, Dict[str, Any]]],
+        parts: List[Union[str, MLLMImage]],
         response_format: Optional[Type[BaseModel]] = None,
         system_prompt: Optional[str] = None,
     ) -> Union[str, BaseModel, Dict[str, Any]]:

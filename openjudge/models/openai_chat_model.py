@@ -67,8 +67,7 @@ class OpenAIChatModel(BaseChatModel):
             kwargs: The extra keyword arguments used in OpenAI API generation,
                 e.g. `temperature`, `seed`.
         """
-        self.model = model
-        self.stream = stream
+        super().__init__(model=model, stream=stream)
         self.reasoning_effort = reasoning_effort
         self.kwargs = kwargs or {}
 
@@ -206,29 +205,24 @@ class OpenAIChatModel(BaseChatModel):
 
     def _handle_non_streaming_response(
         self,
-        response,
+        response: Any,
         structured_model: Type[BaseModel] | None = None,
         callback: Callable | None = None,
     ) -> ChatResponse:
-        """Given an OpenAI chat completion response object, extract the content
-            blocks and usages from it.
+        """Extract content blocks from an OpenAI chat completion response.
 
         Args:
-            start_datetime (`datetime`):
-                The start datetime of the response generation.
-            response (`ChatCompletion`):
-                OpenAI ChatCompletion object to parse.
-            structured_model (`Type[BaseModel] | None`, default `None`):
-                A Pydantic BaseModel class that defines the expected structure
-                for the model's output.
+            response: OpenAI ChatCompletion object to parse.
+            structured_model: A Pydantic BaseModel class that defines the expected
+                structure for the model's output.
+            callback: Optional callback function to process the response.
 
         Returns:
-            ChatResponse (`ChatResponse`):
-                A ChatResponse object containing the content blocks and usage.
+            A ChatResponse object containing the content blocks.
 
-        .. note::
+        Note:
             If `structured_model` is not `None`, the expected structured output
-            will be stored in the metadata of the `ChatResponse`.
+            will be stored in the `parsed` field of the `ChatResponse`.
         """
 
         if response.choices:
@@ -287,7 +281,7 @@ class OpenAIChatModel(BaseChatModel):
     # pylint: disable=too-many-statements
     async def _handle_streaming_response(
         self,
-        response,
+        response: Any,
         structured_model: Type[BaseModel] | None = None,
         callback: Callable | None = None,
     ) -> AsyncGenerator[ChatResponse, None]:

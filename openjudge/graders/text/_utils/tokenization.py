@@ -2,7 +2,7 @@
 """
 Tokenization Utilities
 
-分词工具，用于将文本分解为词元（tokens）。
+Tokenization tools for breaking text into tokens.
 """
 
 import re
@@ -11,14 +11,14 @@ from typing import List
 
 def simple_tokenize(text: str, lowercase: bool = False) -> List[str]:
     """
-    简单分词（基于空格）
+    Simple tokenization based on whitespace.
 
     Args:
-        text: 待分词的文本
-        lowercase: 是否转换为小写
+        text: Text to tokenize.
+        lowercase: Whether to convert to lowercase.
 
     Returns:
-        List[str]: 词元列表
+        List[str]: List of tokens.
 
     Example:
         >>> simple_tokenize("Hello, world!")
@@ -35,16 +35,14 @@ _word_punctuation_pattern = re.compile(r"\w+|[^\w\s]")
 
 def word_tokenize(text: str, remove_punctuation: bool = True) -> List[str]:
     """
-    单词级分词
-
-    使用正则表达式分词，可选择是否移除标点。
+    Word-level tokenization using regex.
 
     Args:
-        text: 待分词的文本
-        remove_punctuation: 是否移除标点符号
+        text: Text to tokenize.
+        remove_punctuation: Whether to remove punctuation marks.
 
     Returns:
-        List[str]: 词元列表
+        List[str]: List of tokens.
 
     Example:
         >>> word_tokenize("Hello, world!")
@@ -53,11 +51,11 @@ def word_tokenize(text: str, remove_punctuation: bool = True) -> List[str]:
         ['Hello', ',', 'world', '!']
     """
     if remove_punctuation:
-        # 只保留字母、数字和空格
+        # Keep only letters, numbers, and spaces
         text = _non_word_space_pattern.sub(" ", text)
         tokens = text.split()
     else:
-        # 保留标点，但将其作为独立的token
+        # Keep punctuation as separate tokens
         tokens = _word_punctuation_pattern.findall(text)
 
     return [t for t in tokens if t.strip()]
@@ -65,13 +63,13 @@ def word_tokenize(text: str, remove_punctuation: bool = True) -> List[str]:
 
 def character_tokenize(text: str) -> List[str]:
     """
-    字符级分词
+    Character-level tokenization.
 
     Args:
-        text: 待分词的文本
+        text: Text to tokenize.
 
     Returns:
-        List[str]: 字符列表
+        List[str]: List of characters.
 
     Example:
         >>> character_tokenize("hello")
@@ -82,15 +80,15 @@ def character_tokenize(text: str) -> List[str]:
 
 def ngram_tokenize(text: str, n: int = 2, char_level: bool = False) -> List[str]:
     """
-    N-gram 分词
+    N-gram tokenization.
 
     Args:
-        text: 待分词的文本
-        n: N-gram 的大小
-        char_level: 是否为字符级 n-gram（否则为词级）
+        text: Text to tokenize.
+        n: Size of the n-gram.
+        char_level: Whether to use character-level n-grams (otherwise word-level).
 
     Returns:
-        List[str]: N-gram 列表
+        List[str]: List of n-grams.
 
     Example:
         >>> ngram_tokenize("hello world", n=2, char_level=True)
@@ -121,22 +119,19 @@ _sentence_split_pattern = re.compile(r"(?<=[.!?])\s+")
 
 def sentence_tokenize(text: str) -> List[str]:
     """
-    句子分词
-
-    简单的句子分割，基于常见的句子结束符。
+    Sentence tokenization based on common sentence terminators.
 
     Args:
-        text: 待分词的文本
+        text: Text to tokenize.
 
     Returns:
-        List[str]: 句子列表
+        List[str]: List of sentences.
 
     Example:
         >>> text = "Hello world. How are you? I'm fine!"
         >>> sentence_tokenize(text)
         ['Hello world.', 'How are you?', "I'm fine!"]
     """
-    # 简单的句子分割规则
     sentences = _sentence_split_pattern.split(text)
     return [s.strip() for s in sentences if s.strip()]
 
@@ -146,13 +141,13 @@ _word_pattern = re.compile(r"\b\w+\b")
 
 def tokenize_preserving_case(text: str) -> List[str]:
     """
-    保持大小写的分词
+    Tokenization preserving original case.
 
     Args:
-        text: 待分词的文本
+        text: Text to tokenize.
 
     Returns:
-        List[str]: 词元列表
+        List[str]: List of tokens.
 
     Example:
         >>> tokenize_preserving_case("Hello World")
@@ -163,13 +158,13 @@ def tokenize_preserving_case(text: str) -> List[str]:
 
 def whitespace_tokenize(text: str) -> List[str]:
     """
-    基于空白字符的分词
+    Tokenization based on whitespace characters.
 
     Args:
-        text: 待分词的文本
+        text: Text to tokenize.
 
     Returns:
-        List[str]: 词元列表
+        List[str]: List of tokens.
 
     Example:
         >>> whitespace_tokenize("hello\\tworld\\ntest")
@@ -180,13 +175,13 @@ def whitespace_tokenize(text: str) -> List[str]:
 
 def get_word_count(text: str) -> int:
     """
-    获取单词数量
+    Get word count from text.
 
     Args:
-        text: 文本
+        text: Input text.
 
     Returns:
-        int: 单词数量
+        int: Number of words.
 
     Example:
         >>> get_word_count("Hello, world! How are you?")
@@ -197,14 +192,14 @@ def get_word_count(text: str) -> int:
 
 def get_character_count(text: str, include_spaces: bool = False) -> int:
     """
-    获取字符数量
+    Get character count from text.
 
     Args:
-        text: 文本
-        include_spaces: 是否包含空格
+        text: Input text.
+        include_spaces: Whether to include spaces in the count.
 
     Returns:
-        int: 字符数量
+        int: Number of characters.
 
     Example:
         >>> get_character_count("hello world")

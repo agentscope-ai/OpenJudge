@@ -43,7 +43,16 @@ class NumberAccuracyGrader(BaseGrader):
     """
 
     def __init__(self, tolerance: float = 1e-6, **kwargs: Any) -> None:
-        """"""
+        """
+        Initialize NumberAccuracyGrader.
+
+        Args:
+            tolerance: Tolerance for number comparison. Default is 1e-6.
+            **kwargs: Additional keyword arguments passed to BaseGrader.
+
+        Example:
+            >>> grader = NumberAccuracyGrader(tolerance=0.01)
+        """
         super().__init__(
             name="number_accuracy",
             mode=GraderMode.POINTWISE,
@@ -55,8 +64,20 @@ class NumberAccuracyGrader(BaseGrader):
         self._number_pattern = re.compile(r"-?\d+\.?\d*")
 
     def _extract_numbers(self, text: str) -> List[float]:
-        """Extract numbers from text"""
-        # Match integers and floating point numbers
+        """
+        Extract numbers from text.
+
+        Args:
+            text: Input text to extract numbers from.
+
+        Returns:
+            List[float]: List of extracted numbers as floats.
+
+        Example:
+            >>> grader = NumberAccuracyGrader()
+            >>> grader._extract_numbers("The result is 3.14 and 42")
+            [3.14, 42.0]
+        """
         numbers = self._number_pattern.findall(text)
         return [float(n) for n in numbers if n]
 
