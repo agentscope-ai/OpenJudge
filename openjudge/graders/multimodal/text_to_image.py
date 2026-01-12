@@ -241,7 +241,7 @@ class TextToImageGrader(BaseGrader):
         """
         super().__init__(
             name="text_to_image",
-            grader_mode=GraderMode.POINTWISE,
+            mode=GraderMode.POINTWISE,
             description="Evaluate text-to-image generation quality",
         )
         self.model = model if isinstance(model, BaseChatModel) else OpenAIChatModel(**model)

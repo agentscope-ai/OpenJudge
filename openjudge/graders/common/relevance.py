@@ -10,7 +10,7 @@ from typing import Optional
 
 from loguru import logger
 
-from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
+from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
@@ -320,10 +320,8 @@ class RelevanceGrader(LLMGrader):
 
         except Exception as e:
             logger.error(f"Error evaluating relevance: {e}")
-            return GraderError(
-                name=self.name,
-                error=f"Evaluation error: {str(e)}",
-            )
+            score = 0.0
+            reason = f"Evaluation error: {str(e)}"
 
         return GraderScore(
             name=self.name,

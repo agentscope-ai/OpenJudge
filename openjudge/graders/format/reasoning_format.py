@@ -74,6 +74,14 @@ class ReasoningFormatGrader(BaseGrader):
             >>> print(result.score)
             1.0
         """
+        # Input validation
+        if not isinstance(response, str):
+            return GraderScore(
+                name=self.name,
+                score=0.0,
+                reason=f"Invalid input type: expected str, got {type(response).__name__}",
+                metadata={"error": "invalid_input_type"},
+            )
 
         # Check thinking format tags
         has_think_tag = bool(self.think_pattern.search(response))

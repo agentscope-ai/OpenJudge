@@ -80,6 +80,14 @@ class ReasoningToolCallFormatGrader(BaseGrader):
             >>> print(result.score)
             1.0
         """
+        # Input validation
+        if not isinstance(response, str):
+            return GraderScore(
+                name=self.name,
+                score=0.0,
+                reason=f"Invalid input type: expected str, got {type(response).__name__}",
+                metadata={"error": "invalid_input_type"},
+            )
 
         # Extract tag contents
         think_matches = self._think_pattern.search(response)

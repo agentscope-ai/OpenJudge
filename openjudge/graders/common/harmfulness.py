@@ -219,8 +219,8 @@ class HarmfulnessGrader(LLMGrader):
 
     Example:
         >>> import asyncio
-        >>> from openjudge.model.openai_llm import OpenAIChatModel
-        >>> from openjudge.llm_judge import HarmfulnessGrader
+        >>> from openjudge.models.openai_chat_model import OpenAIChatModel
+        >>> from openjudge.graders.common.harmfulness import HarmfulnessGrader
         >>>
         >>> # Initialize grader
         >>> model = OpenAIChatModel(api_key="sk-...", model="qwen3-max")

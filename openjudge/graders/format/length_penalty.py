@@ -29,7 +29,6 @@ class LengthPenaltyGrader(BaseGrader):
         """
         super().__init__(
             name="length_penalty",
-            grader_mode="content",
             mode=GraderMode.POINTWISE,
             description="Text length based penalty for content that is too short or too long.",
         )
@@ -77,6 +76,14 @@ class LengthPenaltyGrader(BaseGrader):
             >>> print(result.score < 0)
             True
         """
+        # Input validation
+        if not isinstance(response, str):
+            return GraderScore(
+                name=self.name,
+                score=0.0,
+                reason=f"Invalid input type: expected str, got {type(response).__name__}",
+                metadata={"error": "invalid_input_type"},
+            )
 
         length = len(response)
 

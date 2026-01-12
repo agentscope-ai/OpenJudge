@@ -195,7 +195,7 @@ class ImageCoherenceGrader(LLMGrader):
         """
         super().__init__(
             name="image_coherence",
-            grader_mode=GraderMode.POINTWISE,
+            mode=GraderMode.POINTWISE,
             description="Evaluate image-text coherence",
             model=model,
             template=template,

@@ -234,8 +234,8 @@ class InstructionFollowingGrader(LLMGrader):
             - metadata: Threshold and evaluation details
 
     Example:
-        >>> from openjudge.model.openai_llm import OpenAIChatModel
-        >>> from openjudge.llm_judge import InstructionFollowingGrader
+        >>> from openjudge.models.openai_chat_model import OpenAIChatModel
+        >>> from openjudge.graders.common.instruction_following import InstructionFollowingGrader
         >>>
         >>> # Initialize grader
         >>> model = OpenAIChatModel(api_key="sk-...", model="qwen3-max")
@@ -244,8 +244,8 @@ class InstructionFollowingGrader(LLMGrader):
         >>> # Good adherence
         >>> result = asyncio.run(grader.aevaluate(
         ...     instruction="Write exactly 3 sentences in formal academic tone.",
-        ...     output="Climate change poses serious risks. Research shows rising temperatures."
-        ...            "Action is urgently needed."
+        ...     response="Climate change poses serious risks. Research shows rising temperatures. "
+        ...              "Action is urgently needed."
         ... ))
         >>> print(result.score)  # 5 - follows all requirements
         >>>

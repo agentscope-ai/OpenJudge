@@ -38,7 +38,7 @@ class JsonValidatorGrader(BaseGrader):
     ):
         super().__init__(
             name=name,
-            grader_mode=GraderMode.POINTWISE,
+            mode=GraderMode.POINTWISE,
             description=description,
         )
 
@@ -49,6 +49,14 @@ class JsonValidatorGrader(BaseGrader):
         Returns:
             tuple[bool, dict]: (is_valid, details)
         """
+        # Input validation
+        if not isinstance(response, str):
+            return False, {
+                "is_valid": False,
+                "error_message": f"Invalid input type: expected str, got {type(response).__name__}",
+                "response_length": 0,
+            }
+
         try:
             json.loads(response)
             return True, {"is_valid": True, "response_length": len(response)}
@@ -56,12 +64,6 @@ class JsonValidatorGrader(BaseGrader):
             return False, {
                 "is_valid": False,
                 "error_message": f"JSON decode error: {str(e)}",
-                "response_length": len(response),
-            }
-        except TypeError as e:
-            return False, {
-                "is_valid": False,
-                "error_message": f"Type error: {str(e)}",
                 "response_length": len(response),
             }
         except Exception as e:

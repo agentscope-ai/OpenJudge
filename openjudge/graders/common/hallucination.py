@@ -210,8 +210,8 @@ class HallucinationGrader(LLMGrader):
 
     Example:
         >>> import asyncio
-        >>> from openjudge.model.openai_llm import OpenAIChatModel
-        >>> from openjudge.llm_judge import HallucinationGrader
+        >>> from openjudge.models.openai_chat_model import OpenAIChatModel
+        >>> from openjudge.graders.common.hallucination import HallucinationGrader
         >>>
         >>> # Initialize model
         >>> model = OpenAIChatModel(
