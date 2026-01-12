@@ -7,50 +7,9 @@ either scores or rankings.
 """
 
 from abc import ABC, abstractmethod
-from functools import wraps
-from typing import Any, Callable, Dict, TypeVar
+from typing import Any, Dict
 
 from openjudge.graders.schema import GraderError, GraderMode, GraderRank, GraderScore
-
-T = TypeVar("T")
-
-
-def require_string_response(func: Callable[..., T]) -> Callable[..., T]:
-    """Decorator to validate that the response parameter is a string.
-
-    This decorator wraps async grader methods to ensure the `response` parameter
-    is a string before executing the actual evaluation logic. If the input is
-    not a string, it returns a GraderScore with score 0.0 and an error message.
-
-    Args:
-        func: The async grader method to wrap. Must have `self` as first parameter
-            and `response` as a keyword or positional argument.
-
-    Returns:
-        The wrapped function that validates input before execution.
-
-    Example:
-        >>> from openjudge.graders.base_grader import BaseGrader, require_string_response
-        >>>
-        >>> class MyGrader(BaseGrader):
-        ...     @require_string_response
-        ...     async def aevaluate(self, response: str, **kwargs) -> GraderScore:
-        ...         # response is guaranteed to be a string here
-        ...         return GraderScore(name=self.name, score=1.0, reason="OK")
-    """
-
-    @wraps(func)
-    async def wrapper(self, response: str, *args, **kwargs) -> T:
-        if not isinstance(response, str):
-            return GraderScore(
-                name=self.name,
-                score=0.0,
-                reason=f"Invalid input type: expected str, got {type(response).__name__}",
-                metadata={"error": "invalid_input_type"},
-            )
-        return await func(self, response, *args, **kwargs)
-
-    return wrapper
 
 
 class BaseGrader(ABC):

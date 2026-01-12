@@ -7,12 +7,7 @@ import re
 from collections import Counter
 from typing import Any, List, Literal
 
-from openjudge.graders.base_grader import (
-    BaseGrader,
-    GraderMode,
-    GraderScore,
-    require_string_response,
-)
+from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.utils.tokenizer import TokenizerEnum, get_tokenizer
 
 
@@ -112,7 +107,6 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
                 return -(repetition_rate - self.penalty_threshold) * self.penalty_rate
             return 0.0
 
-    @require_string_response
     async def aevaluate(self, response: str, **kwargs: Any) -> GraderScore:
         """
         Calculate N-gram repetition penalty for text content.

@@ -9,7 +9,7 @@ class which checks for the presence of thinking and answer tags in the response 
 import re
 from typing import Any
 
-from openjudge.graders.base_grader import BaseGrader, require_string_response
+from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 
 
@@ -40,7 +40,6 @@ class ReasoningFormatGrader(BaseGrader):
         self.answer_pattern = re.compile(f"<{self.answer_token}>.*?</{self.answer_token}>", flags=re.DOTALL)
 
     # pylint: disable=unused-argument
-    @require_string_response
     async def aevaluate(self, response: str, *args: Any, **kwargs: Any) -> GraderScore:
         """
         Check format and calculate reward for reasoning tags.
