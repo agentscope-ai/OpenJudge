@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from cookbooks.zero_shot_evaluation.chart_generator import WinRateChartGenerator
 from cookbooks.zero_shot_evaluation.query_generator import QueryGenerator
 from cookbooks.zero_shot_evaluation.response_collector import ResponseCollector
 from cookbooks.zero_shot_evaluation.schema import (
@@ -56,6 +57,34 @@ class EvaluationStage(str, Enum):
     RESPONSES_COLLECTED = "responses_collected"
     RUBRICS_GENERATED = "rubrics_generated"
     EVALUATION_COMPLETE = "evaluation_complete"
+
+    @classmethod
+    def get_order(cls, stage: "EvaluationStage") -> int:
+        """Get numeric order of a stage for comparison."""
+        order = {
+            cls.NOT_STARTED: 0,
+            cls.QUERIES_GENERATED: 1,
+            cls.RESPONSES_COLLECTED: 2,
+            cls.RUBRICS_GENERATED: 3,
+            cls.EVALUATION_COMPLETE: 4,
+        }
+        return order.get(stage, -1)
+
+    def __ge__(self, other: "EvaluationStage") -> bool:
+        """Compare stages by pipeline order, not string value."""
+        return self.get_order(self) >= self.get_order(other)
+
+    def __gt__(self, other: "EvaluationStage") -> bool:
+        """Compare stages by pipeline order, not string value."""
+        return self.get_order(self) > self.get_order(other)
+
+    def __le__(self, other: "EvaluationStage") -> bool:
+        """Compare stages by pipeline order, not string value."""
+        return self.get_order(self) <= self.get_order(other)
+
+    def __lt__(self, other: "EvaluationStage") -> bool:
+        """Compare stages by pipeline order, not string value."""
+        return self.get_order(self) < self.get_order(other)
 
 
 class _CheckpointData(BaseModel):
@@ -630,7 +659,7 @@ class ZeroShotPipeline:
         if queries:
             self._queries = queries
             logger.info(f"Using {len(queries)} provided queries")
-        elif checkpoint and checkpoint.stage.value >= EvaluationStage.QUERIES_GENERATED.value:
+        elif checkpoint and checkpoint.stage >= EvaluationStage.QUERIES_GENERATED:
             self._queries = self._checkpoint_mgr.load_queries()
             logger.info(f"Resumed {len(self._queries)} queries from checkpoint")
         elif not self._queries:
@@ -644,7 +673,7 @@ class ZeroShotPipeline:
             )
 
         # Step 2: Collect or load responses
-        if checkpoint and checkpoint.stage.value >= EvaluationStage.RESPONSES_COLLECTED.value:
+        if checkpoint and checkpoint.stage >= EvaluationStage.RESPONSES_COLLECTED:
             self._responses = self._checkpoint_mgr.load_responses()
             logger.info(f"Resumed {len(self._responses)} responses from checkpoint")
         elif not self._responses:
@@ -661,7 +690,7 @@ class ZeroShotPipeline:
         if rubrics:
             self._rubrics = rubrics
             logger.info(f"Using {len(rubrics)} provided rubrics")
-        elif checkpoint and checkpoint.stage.value >= EvaluationStage.RUBRICS_GENERATED.value:
+        elif checkpoint and checkpoint.stage >= EvaluationStage.RUBRICS_GENERATED:
             self._rubrics = self._checkpoint_mgr.load_rubrics()
             logger.info(f"Resumed {len(self._rubrics)} rubrics from checkpoint")
         elif not self._rubrics:
@@ -702,6 +731,10 @@ class ZeroShotPipeline:
         if self.config.report.enabled:
             await self._generate_and_save_report(result)
 
+        # Step 7: Generate win rate chart if enabled (requires report.enabled)
+        if self.config.report.enabled and self.config.report.chart.enabled:
+            self._generate_win_rate_chart(result)
+
         return result
 
     async def _generate_and_save_report(self, result: EvaluationResult) -> None:
@@ -727,6 +760,21 @@ class ZeroShotPipeline:
         with open(report_path, "w", encoding="utf-8") as f:
             f.write(report)
         logger.info(f"Report saved to {report_path}")
+
+    def _generate_win_rate_chart(self, result: EvaluationResult) -> None:
+        """Generate and save win rate comparison chart."""
+        logger.info("Step 7: Generating win rate chart...")
+
+        chart_config = self.config.report.chart
+        generator = WinRateChartGenerator(config=chart_config)
+
+        chart_path = generator.generate(
+            rankings=result.rankings,
+            output_dir=self.config.output.output_dir,
+            task_description=self.config.task.description,
+            total_queries=result.total_queries,
+            total_comparisons=result.total_comparisons,
+        )
 
     def _display_results(self, result: EvaluationResult) -> None:
         """Display evaluation results with formatted output."""

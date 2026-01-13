@@ -92,12 +92,25 @@ class OutputConfig(BaseModel):
     output_dir: str = Field(default="./evaluation_results", description="Output directory")
 
 
+class ChartConfig(BaseModel):
+    """Chart generation configuration."""
+
+    enabled: bool = Field(default=True, description="Whether to generate win rate chart")
+    title: Optional[str] = Field(default=None, description="Chart title (auto-generated if not set)")
+    figsize: tuple = Field(default=(12, 7), description="Figure size (width, height) in inches")
+    dpi: int = Field(default=150, ge=72, le=300, description="Image resolution")
+    format: Literal["png", "svg", "pdf"] = Field(default="png", description="Output format")
+    show_values: bool = Field(default=True, description="Show values on top of bars")
+    highlight_best: bool = Field(default=True, description="Highlight the best model with accent color")
+
+
 class ReportConfig(BaseModel):
     """Report generation configuration."""
 
     enabled: bool = Field(default=False, description="Whether to generate report")
     language: Literal["zh", "en"] = Field(default="zh", description="Report language: zh | en")
     include_examples: int = Field(default=3, ge=1, le=10, description="Examples per section")
+    chart: ChartConfig = Field(default_factory=ChartConfig, description="Chart configuration")
 
 
 class ZeroShotConfig(BaseModel):

@@ -10,7 +10,7 @@ Zero-shot evaluation is ideal for **model comparison**, **agent pipeline testing
 !!! tip "No Test Data Required"
     Unlike traditional evaluation, zero-shot evaluation generates its own test queries from the task description, eliminating the need for pre-existing test datasets.
 
-The pipeline automates five steps: generate test queries → collect responses → create evaluation rubrics → run pairwise comparisons → produce rankings.
+The pipeline automates seven steps: generate test queries → collect responses → create evaluation rubrics → run pairwise comparisons → analyze results → generate report → create visualization.
 
 | Step | Component | Description |
 |------|-----------|-------------|
@@ -18,7 +18,9 @@ The pipeline automates five steps: generate test queries → collect responses �
 | 2 | `ResponseCollector` | Collect responses from all target endpoints |
 | 3 | `TaskBasedRubricGenerator` | Generate evaluation criteria for the task |
 | 4 | `GradingRunner` | Run pairwise comparisons with judge model |
-| 5 | `ZeroShotPipeline` | Analyze results and produce rankings |
+| 5 | `PairwiseAnalyzer` | Analyze results and produce rankings |
+| 6 | `ReportGenerator` | Generate detailed Markdown evaluation report |
+| 7 | `WinRateChartGenerator` | Create win rate visualization chart |
 
 
 ## Quick Start
@@ -267,6 +269,15 @@ Use `ZeroShotPipeline` to orchestrate the full evaluation, comparing all respons
         ============================================================
         ```
 
+    **Output Files:**
+
+    | File | Description |
+    |------|-------------|
+    | `evaluation_report.md` | Detailed Markdown report with analysis |
+    | `win_rate_chart.png` | Visual bar chart for presentations |
+    | `comparison_details.json` | Traceable pairwise comparison records |
+    | `evaluation_results.json` | Structured result data (JSON) |
+
 === "Query Generation Options"
 
     Fine-tune query generation behavior:
@@ -312,6 +323,7 @@ Use `ZeroShotPipeline` to orchestrate the full evaluation, comparing all respons
     ```
     evaluation_results/
     ├── evaluation_report.md      # Generated Markdown report
+    ├── win_rate_chart.png        # Win rate visualization chart
     ├── comparison_details.json   # All pairwise comparison details
     ├── evaluation_results.json   # Final rankings and statistics
     ├── queries.json              # Generated test queries
@@ -321,6 +333,33 @@ Use `ZeroShotPipeline` to orchestrate the full evaluation, comparing all respons
 
     !!! tip "Example Report"
         View a real report: [Oncology Medical Translation Evaluation](sample_reports/oncology_translation_report.md)
+
+=== "Win Rate Chart"
+
+    Automatically generate a beautiful bar chart showing model win rates:
+
+    ```yaml
+    report:
+      chart:
+        enabled: true          # Enable chart generation (default: true)
+        title: null            # Custom title (auto-generated if not set)
+        figsize: [12, 7]       # Figure size (width, height) in inches
+        dpi: 150               # Image resolution (72-300)
+        format: "png"          # Output format: png / svg / pdf
+        show_values: true      # Show percentage values on bars
+        highlight_best: true   # Highlight best model with accent color
+    ```
+
+    **Chart Features:**
+
+    - 🥇 **Best model highlighted** with orange diagonal stripes
+    - 📊 **Gray gradient** for other models by rank
+    - 🔢 **Value labels** on top of each bar
+    - 🌏 **CJK font support** for Chinese/Japanese/Korean text
+
+    ![Win Rate Chart Example](../images/win_rate_chart_example.png)
+
+    *Example: Oncology medical translation evaluation with 5 models*
 
 === "Checkpoint & Resume"
 
@@ -348,6 +387,7 @@ Use `ZeroShotPipeline` to orchestrate the full evaluation, comparing all respons
     - Set `num_queries` to at least **20** for statistically meaningful results
     - Choose a **strong judge model** (at least as capable as models being evaluated)
     - Use `--save` flag to persist results for later analysis
+    - Use the generated **win rate chart** for presentations and reports
 
 !!! warning "Don't"
     - Use a judge model weaker than the models being evaluated
