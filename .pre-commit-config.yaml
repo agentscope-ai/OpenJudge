@@ -1,5 +1,4 @@
 repos:
-  # Detect secrets and prevent committing sensitive data
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4
     hooks:

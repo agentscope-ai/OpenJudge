@@ -327,7 +327,7 @@ class TestTrajectoryComprehensiveGraderQuality:
         """Return OpenAIChatModel instance based on environment variables"""
         if OPENAI_API_KEY:
             config = {
-                "model": "qwen3-max",
+                "model": "qwen3-32b",
                 "api_key": OPENAI_API_KEY,
                 "max_tokens": 4096,
             }
@@ -382,9 +382,9 @@ class TestTrajectoryComprehensiveGraderQuality:
         assert isinstance(result.reason, str)
         assert len(result.reason) > 0
 
-        # Verify parsed structure
-        assert "step_evaluations" in result.parsed
-        step_evals = result.parsed["step_evaluations"]
+        # Verify parsed structure - this is in metadata for TrajectoryComprehensiveGrader
+        assert "step_evaluations" in result.metadata
+        step_evals = result.metadata["step_evaluations"]
         assert isinstance(step_evals, list)
 
         # For a simple successful query, expect good score
@@ -394,7 +394,7 @@ class TestTrajectoryComprehensiveGraderQuality:
         print(f"Score: {result.score:.2f}")
         print(f"Reason: {result.reason}")
         print(f"Steps Evaluated: {len(step_evals)}")
-        print(f"Is Resolved: {result.parsed.get('is_resolved')}")
+        print(f"Is Resolved: {result.metadata.get('is_resolved')}")
 
     @pytest.mark.asyncio
     async def test_complex_multiturn_trajectory_quality(self, model):
@@ -607,15 +607,15 @@ class TestTrajectoryComprehensiveGraderQuality:
         assert isinstance(result.reason, str)
         assert len(result.reason) > 0
 
-        # Verify step evaluations exist
-        step_evals = result.parsed.get("step_evaluations", [])
+        # Verify step evaluations exist in metadata
+        step_evals = result.metadata.get("step_evaluations", [])
         assert isinstance(step_evals, list)
 
         # Should have evaluated multiple steps (7 tool calls)
         assert len(step_evals) >= 5, f"Complex trajectory should have >= 5 steps, got {len(step_evals)}"
 
         # Verify parsed
-        assert "is_resolved" in result.parsed
+        assert "is_resolved" in result.metadata
 
         # For a comprehensive research query, expect good score
         assert result.score >= 0.6, f"Comprehensive research should score >= 0.6, got {result.score}"
@@ -624,7 +624,7 @@ class TestTrajectoryComprehensiveGraderQuality:
         print(f"\n=== Complex Multi-turn Trajectory Quality Test ===")
         print(f"Overall Score: {result.score:.2f}")
         print(f"Number of Steps Evaluated: {len(step_evals)}")
-        print(f"Resolution Status: {result.parsed.get('is_resolved')}")
+        print(f"Resolution Status: {result.metadata.get('is_resolved')}")
         print(f"\nStep-by-Step Scores:")
 
         for step in step_evals[:3]:  # Print first 3 steps

@@ -328,6 +328,7 @@ class TestMemoryDetailPreservationGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["memory_detail_preservation_run1"],
             another_grader_results=results["memory_detail_preservation_run2"],
         )

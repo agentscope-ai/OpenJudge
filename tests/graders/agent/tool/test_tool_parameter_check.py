@@ -400,6 +400,7 @@ class TestToolParameterCheckGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["tool_parameter_check_run1"],
             another_grader_results=results["tool_parameter_check_run2"],
         )

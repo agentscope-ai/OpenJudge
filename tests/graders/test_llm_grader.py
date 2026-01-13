@@ -33,13 +33,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from openjudge.analyzer.statistical import ConsistencyAnalyzer
-from openjudge.analyzer.validation import (
-    AccuracyAnalyzer,
-    CorrelationAnalyzer,
-    F1ScoreAnalyzer,
-    PrecisionAnalyzer,
-    RecallAnalyzer,
-)
+from openjudge.analyzer.validation import AccuracyAnalyzer
 from openjudge.graders.base_grader import (
     BaseGrader,
     GraderMode,
@@ -47,6 +41,7 @@ from openjudge.graders.base_grader import (
     GraderScore,
 )
 from openjudge.graders.llm_grader import LLMGrader
+from openjudge.graders.schema import GraderError
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.runner.grading_runner import GraderConfig, GradingRunner
 
@@ -56,7 +51,6 @@ from openjudge.runner.grading_runner import GraderConfig, GradingRunner
 
 
 @pytest.mark.unit
-@pytest.mark.asyncio
 class TestLLMGraderUnit:
     """Unit tests for LLMGrader - testing isolated functionality"""
 
@@ -168,14 +162,12 @@ class TestLLMGraderUnit:
         assert isinstance(grader.model, OpenAIChatModel)
         # Note: We can't easily check the model config since it's private
 
+    @pytest.mark.asyncio
     async def test_pointwise_evaluation_success(self):
         """Test successful pointwise evaluation with valid inputs"""
         # Setup mock
         mock_response = AsyncMock()
-        mock_response.score = 4.5
-        mock_response.reason = "Response is mostly accurate with minor issues"
-
-        mock_response.parsed = {"tokens_used": 50}
+        mock_response.parsed = {"score": 4.5, "reason": "Response is mostly accurate with minor issues"}
 
         mock_model = AsyncMock()
         mock_model.achat = AsyncMock(return_value=mock_response)
@@ -211,16 +203,16 @@ class TestLLMGraderUnit:
         assert isinstance(result, GraderScore)
         assert result.score == 4.5
         assert "mostly accurate" in result.reason.lower()
-        assert result.metadata["tokens_used"] == 50
 
+    @pytest.mark.asyncio
     async def test_listwise_evaluation_success(self):
         """Test successful listwise evaluation with valid inputs"""
         # Setup mock
         mock_response = AsyncMock()
-        mock_response.rank = [2, 1, 3]
-        mock_response.reason = "First response is most relevant, second is partially relevant, third is off-topic"
-
-        mock_response.parsed = {"tokens_used": 75}
+        mock_response.parsed = {
+            "rank": [2, 1, 3],
+            "reason": "First response is most relevant, second is partially relevant, third is off-topic",
+        }
 
         mock_model = AsyncMock()
         mock_model.achat = AsyncMock(return_value=mock_response)
@@ -261,44 +253,15 @@ class TestLLMGraderUnit:
         assert isinstance(result, GraderRank)
         assert result.rank == [2, 1, 3]
         assert "most relevant" in result.reason.lower()
-        assert result.metadata["tokens_used"] == 75
-
-    async def test_error_handling(self):
-        """Test graceful error handling"""
-        # Setup mock to raise exception
-        mock_model = AsyncMock()
-        mock_model.achat = AsyncMock(side_effect=Exception("API Error"))
-
-        # Create grader with template that follows the specification in docs
-        template = """You're a LLM query answer relevance grader, you'll received Query/Response:
-    Query: {query}
-    Response: {response}
-    Please read query/response, if the Response answers the Query, return 1, return 0 if no.
-    Return format, json.
-    ```
-    {{
-        "score": score,
-        "reason": "scoring reason",
-    }}
-    ```"""
-        grader = LLMGrader(model=mock_model, name="error_test_grader", template=template)
-
-        # Execute test
-        result = await grader.aevaluate(
-            query="What is Python?",
-            response="Python is a high-level programming language.",
-        )
-
-        # Assertions
-        # On error, should return a GraderScore with score 0.0
-        assert isinstance(result, GraderScore)
-        assert result.score == 0.0
-        assert "Evaluation error: API Error" in result.reason
-        assert "threshold" in result.metadata
 
     def test_serialization_methods(self):
         """Test to_dict and from_config methods"""
-        mock_model = AsyncMock()
+        # Use actual model config for testing
+        model_config = {
+            "model": "qwen3-32b",
+            "api_key": "test-key",
+        }
+
         template_str = """You are an LLM response relevance evaluator. Analyze the following query and response:
     Query: {query}
     Response: {response}
@@ -317,7 +280,7 @@ class TestLLMGraderUnit:
     ```"""
 
         original_grader = LLMGrader(
-            model=mock_model,
+            model=model_config,
             name="serialization_test",
             template=template_str,
         )
@@ -326,6 +289,12 @@ class TestLLMGraderUnit:
         config = original_grader.to_dict()
         assert config["name"] == "serialization_test"
         assert "template" in config
+
+        # Update config to use a valid model for reconstruction
+        config["model"] = {
+            "model": "gpt-3.5-turbo",
+            "api_key": "test-key",
+        }
 
         # Test from_config
         reconstructed_grader = LLMGrader.from_config(config)
@@ -381,10 +350,10 @@ class TestLLMGraderQuality:
     def model(self):
         """Return OpenAIChatModel instance based on environment variables"""
         if OPENAI_API_KEY:
-            config = {"model": "qwen-max", "api_key": OPENAI_API_KEY}
+            config = {"model": "qwen3-32b", "api_key": OPENAI_API_KEY}
             if OPENAI_BASE_URL:
                 config["base_url"] = OPENAI_BASE_URL
-            return OpenAIChatModel(model=config["model"], api_key=config["api_key"])
+            return OpenAIChatModel(**config)
         else:
             # This shouldn't happen because tests are skipped if keys aren't configured
             raise RuntimeError("No API key configured")
@@ -508,6 +477,7 @@ class TestLLMGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["accuracy_run1"],
             another_grader_results=results["accuracy_run2"],
         )

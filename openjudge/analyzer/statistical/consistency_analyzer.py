@@ -159,6 +159,19 @@ class ConsistencyAnalyzer(BaseAnalyzer):
                 # Calculate Pearson correlation coefficient
                 correlation_matrix = np.corrcoef(first_run_scores, second_run_scores)
                 consistency_score = correlation_matrix[0, 1]
+
+                # Handle NaN case - occurs when one array has zero variance (all values identical)
+                if np.isnan(consistency_score):
+                    # If all values in either array are identical, perfect consistency if both arrays
+                    # have constant values that match each other
+                    first_unique = len(set(first_run_scores)) == 1
+                    second_unique = len(set(second_run_scores)) == 1
+                    if first_unique and second_unique and first_run_scores[0] == second_run_scores[0]:
+                        consistency_score = 1.0
+                    else:
+                        # If one array has variance and the other doesn't, they're inconsistent
+                        consistency_score = 0.0
+
                 explanation = (
                     f"Consistency based on {len(first_run_scores)} paired evaluations: {consistency_score:.4f}"
                 )
