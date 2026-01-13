@@ -98,10 +98,15 @@ class ChartConfig(BaseModel):
     enabled: bool = Field(default=True, description="Whether to generate win rate chart")
     title: Optional[str] = Field(default=None, description="Chart title (auto-generated if not set)")
     figsize: tuple = Field(default=(12, 7), description="Figure size (width, height) in inches")
-    dpi: int = Field(default=150, ge=72, le=300, description="Image resolution")
+    dpi: int = Field(default=300, ge=72, le=300, description="Image resolution (300 for high quality)")
     format: Literal["png", "svg", "pdf"] = Field(default="png", description="Output format")
     show_values: bool = Field(default=True, description="Show values on top of bars")
     highlight_best: bool = Field(default=True, description="Highlight the best model with accent color")
+    orientation: Literal["horizontal", "vertical"] = Field(
+        default="horizontal",
+        description="Chart orientation: horizontal (landscape) or vertical (portrait 3:4 ratio)",
+    )
+    matrix_enabled: bool = Field(default=False, description="Whether to generate win rate matrix heatmap")
 
 
 class ReportConfig(BaseModel):
