@@ -42,7 +42,7 @@ class JsonMatchGrader(BaseGrader):
     ):
         super().__init__(
             name=name,
-            grader_mode=GraderMode.POINTWISE,
+            mode=GraderMode.POINTWISE,
             description=description,
         )
         self.strict_order = strict_order

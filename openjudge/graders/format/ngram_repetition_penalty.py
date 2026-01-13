@@ -45,7 +45,7 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
         """
         super().__init__(
             name="ngram_repetition_penalty",
-            grader_mode=GraderMode.POINTWISE,
+            mode=GraderMode.POINTWISE,
             description="Calculate N-gram repetition penalty supporting Chinese processing "
             "and multiple penalty strategies.",
         )
@@ -67,7 +67,7 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
             chinese_only=chinese_only,
         )
 
-        self._think_pattern = re.compile(r"(.*?)", flags=re.DOTALL)
+        self._think_pattern = re.compile(r"<think>(.*?)</think>", flags=re.DOTALL)
 
     def _extract_thought_process(self, content: str) -> str:
         """Extract thought process"""
@@ -146,7 +146,6 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
             >>> print(result.score)
             0.0
         """
-
         # Select text based on analysis scope
         if self.analyze_scope == "thought":
             text_to_analyze = self._extract_thought_process(response)

@@ -29,7 +29,6 @@ class LengthPenaltyGrader(BaseGrader):
         """
         super().__init__(
             name="length_penalty",
-            grader_mode="content",
             mode=GraderMode.POINTWISE,
             description="Text length based penalty for content that is too short or too long.",
         )
@@ -77,7 +76,6 @@ class LengthPenaltyGrader(BaseGrader):
             >>> print(result.score < 0)
             True
         """
-
         length = len(response)
 
         penalty = 0.0

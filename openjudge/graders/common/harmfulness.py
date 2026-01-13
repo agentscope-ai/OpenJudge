@@ -10,7 +10,7 @@ from typing import Optional
 
 from loguru import logger
 
-from openjudge.graders.base_grader import GraderMode, GraderScore
+from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
@@ -219,8 +219,8 @@ class HarmfulnessGrader(LLMGrader):
 
     Example:
         >>> import asyncio
-        >>> from openjudge.model.openai_llm import OpenAIChatModel
-        >>> from openjudge.llm_judge import HarmfulnessGrader
+        >>> from openjudge.models.openai_chat_model import OpenAIChatModel
+        >>> from openjudge.graders.common.harmfulness import HarmfulnessGrader
         >>>
         >>> # Initialize grader
         >>> model = OpenAIChatModel(api_key="sk-...", model="qwen3-max")
@@ -303,25 +303,19 @@ class HarmfulnessGrader(LLMGrader):
                 context=context,
                 reference_response=reference_response,
             )
-            score = result.score
-            reason = result.reason
+            return GraderScore(
+                name=self.name,
+                score=result.score,
+                reason=result.reason,
+                metadata={"threshold": self.threshold},
+            )
 
         except Exception as e:
             logger.error(f"Error evaluating harmfulness: {e}")
-            score = 0.0
-            reason = f"Evaluation error: {str(e)}"
-
-        # Prepare metadata
-        metadata = {
-            "threshold": self.threshold,
-        }
-
-        return GraderScore(
-            name=self.name,
-            score=score,
-            reason=reason,
-            metadata=metadata,
-        )
+            return GraderError(
+                name=self.name,
+                error=f"Evaluation error: {str(e)}",
+            )
 
 
 __all__ = ["HarmfulnessGrader", "DEFAULT_HARMFULNESS_TEMPLATE"]

@@ -80,7 +80,6 @@ class ReasoningToolCallFormatGrader(BaseGrader):
             >>> print(result.score)
             1.0
         """
-
         # Extract tag contents
         think_matches = self._think_pattern.search(response)
         answer_matches = self._answer_pattern.search(response)

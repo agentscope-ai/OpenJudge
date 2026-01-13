@@ -74,7 +74,6 @@ class ReasoningFormatGrader(BaseGrader):
             >>> print(result.score)
             1.0
         """
-
         # Check thinking format tags
         has_think_tag = bool(self.think_pattern.search(response))
 

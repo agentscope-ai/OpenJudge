@@ -162,9 +162,8 @@ class TestHallucinationGraderUnit:
                 context="Programming",
             )
 
-            # Assertions
-            assert result.score == 0.0
-            assert "Evaluation error: API Error" in result.reason
+            # Assertions - error is returned as GraderError with error field
+            assert "Evaluation error: API Error" in result.error
 
 
 # ==================== QUALITY TESTS ====================

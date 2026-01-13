@@ -217,6 +217,7 @@ class RelevanceGrader(LLMGrader):
 
     Args:
         model: BaseChatModel instance or dict config for OpenAIChatModel
+        threshold: Minimum score [0, 1] to pass (default: 0.7)
         template: Custom evaluation template (default: DEFAULT_RELEVANCE_TEMPLATE)
         language: Prompt language - EN or ZH (default: LanguageEnum.EN)
 
@@ -224,7 +225,7 @@ class RelevanceGrader(LLMGrader):
         GraderScore object with:
             - score: Score [1, 5] where 5 = highly relevant, 1 = irrelevant
             - reason: Explanation of relevance assessment
-            - metadata: Evaluation details
+            - metadata: Threshold and evaluation details
 
     Example:
         >>> import asyncio
@@ -233,7 +234,7 @@ class RelevanceGrader(LLMGrader):
         >>>
         >>> # Initialize grader
         >>> model = OpenAIChatModel(api_key="sk-...", model="qwen3-32b")
-        >>> grader = RelevanceGrader(model=model)
+        >>> grader = RelevanceGrader(model=model, threshold=0.7)
         >>>
         >>> # Relevant response
         >>> result = asyncio.run(grader.aevaluate(
@@ -261,6 +262,7 @@ class RelevanceGrader(LLMGrader):
     def __init__(
         self,
         model: BaseChatModel | dict,
+        threshold: float = 0.7,
         template: Optional[PromptTemplate] = DEFAULT_RELEVANCE_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
     ):
@@ -269,6 +271,7 @@ class RelevanceGrader(LLMGrader):
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
+            threshold: Success threshold [0, 1] (default: 0.7)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_RELEVANCE_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
         """
@@ -280,6 +283,7 @@ class RelevanceGrader(LLMGrader):
             template=template,
             language=language,
         )
+        self.threshold = threshold
 
     async def aevaluate(
         self,
@@ -315,8 +319,12 @@ class RelevanceGrader(LLMGrader):
                 context=context,
                 reference_response=reference_response,
             )
-            score = result.score
-            reason = result.reason
+            return GraderScore(
+                name=self.name,
+                score=result.score,
+                reason=result.reason,
+                metadata={"threshold": self.threshold},
+            )
 
         except Exception as e:
             logger.error(f"Error evaluating relevance: {e}")
@@ -324,12 +332,6 @@ class RelevanceGrader(LLMGrader):
                 name=self.name,
                 error=f"Evaluation error: {str(e)}",
             )
-
-        return GraderScore(
-            name=self.name,
-            score=score,
-            reason=reason,
-        )
 
 
 __all__ = ["RelevanceGrader", "DEFAULT_RELEVANCE_TEMPLATE"]

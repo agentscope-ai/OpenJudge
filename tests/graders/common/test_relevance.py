@@ -139,7 +139,7 @@ class TestRelevanceGraderUnit:
                 response="Python is a programming language.",
             )
 
-            # Assertions
+            # Assertions - error is returned as GraderError with error field
             assert "Evaluation error: API Error" in result.error
 
 
