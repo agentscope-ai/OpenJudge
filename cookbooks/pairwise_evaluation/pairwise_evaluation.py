@@ -31,7 +31,7 @@ from openjudge.graders.schema import GraderResult, GraderScore
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import PromptTemplate
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # Default example data for direct invocation
 DEFAULT_INSTRUCTION = "Write a short poem about artificial intelligence"
@@ -276,23 +276,17 @@ async def run_pairwise_evaluation(
         mode=GraderMode.POINTWISE,  # Use POINTWISE mode for pairwise comparisons
         model=OpenAIChatModel(model="qwen-max", temperature=0.1),
         template=template,
+        mapper={
+            "instruction": "evaluation_data.instruction",
+            "response_a": "evaluation_data.response_a",
+            "response_b": "evaluation_data.response_b",
+        },
     )
 
-    # Define mapper to extract evaluation data fields
-    # Following openjudge design: use dict mapper for simple field extraction
-    mapper = {
-        "instruction": "evaluation_data.instruction",
-        "response_a": "evaluation_data.response_a",
-        "response_b": "evaluation_data.response_b",
-    }
-
-    # Use GradingRunner with parallel execution and mapper
+    # Use GradingRunner with parallel execution
     runner = GradingRunner(
-        grader_configs={
-            "pairwise": GraderConfig(
-                grader=grader,
-                mapper=mapper,  # Dict mapper for field extraction
-            ),
+        graders={
+            "pairwise": grader,
         },
         max_concurrency=max_concurrency,
     )

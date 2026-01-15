@@ -27,7 +27,6 @@ Example:
 """
 
 import os
-from typing import Callable, Dict, Tuple, Union
 from unittest.mock import AsyncMock
 
 import pytest
@@ -43,7 +42,7 @@ from openjudge.graders.base_grader import (
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderError
 from openjudge.models.openai_chat_model import OpenAIChatModel
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -375,6 +374,7 @@ class TestLLMGraderQuality:
     }}
     ```"""
 
+        # Create grader with mapper integrated
         grader = LLMGrader(
             model=model,
             name="accuracy_evaluator",
@@ -382,21 +382,8 @@ class TestLLMGraderQuality:
             mode=GraderMode.POINTWISE,
         )
 
-        # Use mapper to configure data transformation
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
-            "accuracy": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Create runner with the grader
+        runner = GradingRunner(graders={"accuracy": grader})
 
         # Prepare test data
         test_data = dataset
@@ -437,6 +424,7 @@ class TestLLMGraderQuality:
     }}
     ```"""
 
+        # Create grader with mapper integrated
         grader = LLMGrader(
             model=model,
             name="consistency_evaluator",
@@ -444,29 +432,13 @@ class TestLLMGraderQuality:
             mode=GraderMode.POINTWISE,
         )
 
-        # Use duplicate configuration to implement consistency testing
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
-            "accuracy_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                },
-            ),
-            "accuracy_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Create runner with the grader
+        runner = GradingRunner(
+            graders={
+                "accuracy_run1": grader,
+                "accuracy_run2": grader,
+            }
+        )
 
         # Prepare test data
         test_data = dataset

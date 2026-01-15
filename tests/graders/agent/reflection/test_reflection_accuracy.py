@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import ReflectionAccuracyGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -276,16 +276,15 @@ class TestReflectionAccuracyGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between accurate and hallucinated reflections"""
-        # Create grader with real model
-        grader = ReflectionAccuracyGrader(model=model)
-
         # Use mapper to configure data transformation
-        grader_configs = {
-            "reflection_accuracy": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = ReflectionAccuracyGrader(
+            model=model,
+        )
+        runner = GradingRunner(
+            graders={
+                "reflection_accuracy": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -312,15 +311,11 @@ class TestReflectionAccuracyGraderQuality:
         grader = ReflectionAccuracyGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "reflection_accuracy_run1": GraderConfig(
-                grader=grader,
-            ),
-            "reflection_accuracy_run2": GraderConfig(
-                grader=grader,
-            ),
+        graders = {
+            "reflection_accuracy_run1": grader,
+            "reflection_accuracy_run2": grader,
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -407,28 +402,32 @@ class TestReflectionAccuracyGraderAdversarial:
         # Create grader with real model
         grader = ReflectionAccuracyGrader(model=model)
 
-        # Configure GraderConfig to evaluate both accurate and hallucinated reflections
-        grader_configs = {
-            "reflection_accuracy_accurate": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "reflection": "accurate_reflection",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-            "reflection_accuracy_hallucinated": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "reflection": "hallucinated_reflection",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both accurate and hallucinated reflections
+        reflection_accuracy_accurate = ReflectionAccuracyGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "reflection": "accurate_reflection",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+        reflection_accuracy_hallucinated = ReflectionAccuracyGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "reflection": "hallucinated_reflection",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "reflection_accuracy_accurate": reflection_accuracy_accurate,
+                "reflection_accuracy_hallucinated": reflection_accuracy_hallucinated,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

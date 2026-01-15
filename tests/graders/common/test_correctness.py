@@ -37,7 +37,7 @@ from openjudge.analyzer.validation import FalseNegativeAnalyzer, FalsePositiveAn
 from openjudge.graders.common.correctness import CorrectnessGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -218,24 +218,19 @@ class TestCorrectnessGraderQuality:
     @pytest.mark.asyncio
     async def test_basic_evaluation_with_runner(self, dataset, model):
         """Test the grader's basic evaluation capability"""
-        # Create grader with real model
-        grader = CorrectnessGrader(model=model)
-
-        # Use mapper to explicitly map fields (exclude human_score)
-        grader_configs = {
-            "correctness": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Create grader with real model and mapper integrated
+        grader_with_mapper = CorrectnessGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "response",
+                "context": "context",
+                "reference_response": "reference_response",
+            },
+        )
 
         # Use Runner to perform batch evaluation
+        runner = GradingRunner(graders={"correctness": grader_with_mapper})
         results = await runner.arun(dataset)
 
         # Check that all evaluations completed successfully
@@ -253,30 +248,29 @@ class TestCorrectnessGraderQuality:
     async def test_consistency_with_runner(self, dataset, model):
         """Test grader evaluation consistency"""
         # Create grader with real model
-        grader = CorrectnessGrader(model=model)
 
-        # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "correctness_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-            "correctness_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Create separate graders with integrated mappers for consistency testing
+        grader_run1 = CorrectnessGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "response",
+                "context": "context",
+                "reference_response": "reference_response",
+            },
+        )
+        grader_run2 = CorrectnessGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "response",
+                "context": "context",
+                "reference_response": "reference_response",
+            },
+        )
+
+        # Create runner with both graders
+        runner = GradingRunner(graders={"correctness_run1": grader_run1, "correctness_run2": grader_run2})
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -347,31 +341,33 @@ class TestCorrectnessGraderAdversarial:
     @pytest.mark.asyncio
     async def test_adversarial_correctness_with_runner(self, dataset, model):
         """Test the grader's ability to identify adversarial examples"""
-        # Create grader with real model
-        grader = CorrectnessGrader(model=model)
+        # Create graders with real model and integrated mappers
+        correctness_correct_grader = CorrectnessGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "correct_response",
+                "context": "context",
+                "reference_response": "reference_response",
+            },
+        )
 
-        # Configure GraderConfig to evaluate both correct and incorrect responses
-        grader_configs = {
-            "correctness_correct": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "correct_response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-            "correctness_incorrect": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "incorrect_response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        correctness_incorrect_grader = CorrectnessGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "incorrect_response",
+                "context": "context",
+                "reference_response": "reference_response",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "correctness_correct": correctness_correct_grader,
+                "correctness_incorrect": correctness_incorrect_grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import MemoryAccuracyGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -244,16 +244,16 @@ class TestMemoryAccuracyGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between accurate and hallucinated memory"""
-        # Create grader with real model
-        grader = MemoryAccuracyGrader(model=model)
 
         # Use mapper to configure data transformation
-        grader_configs = {
-            "memory_accuracy": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = MemoryAccuracyGrader(
+            model=model,
+        )
+        runner = GradingRunner(
+            graders={
+                "memory_accuracy": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -280,15 +280,11 @@ class TestMemoryAccuracyGraderQuality:
         grader = MemoryAccuracyGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "memory_accuracy_run1": GraderConfig(
-                grader=grader,
-            ),
-            "memory_accuracy_run2": GraderConfig(
-                grader=grader,
-            ),
+        graders = {
+            "memory_accuracy_run1": grader,
+            "memory_accuracy_run2": grader,
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -368,28 +364,32 @@ class TestMemoryAccuracyGraderAdversarial:
         # Create grader with real model
         grader = MemoryAccuracyGrader(model=model)
 
-        # Configure GraderConfig to evaluate both accurate and hallucinated memories
-        grader_configs = {
-            "memory_accuracy_accurate": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "memory": "accurate_memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-            "memory_accuracy_hallucinated": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "memory": "hallucinated_memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both accurate and hallucinated memories
+        memory_accuracy_accurate = MemoryAccuracyGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "memory": "accurate_memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+        memory_accuracy_hallucinated = MemoryAccuracyGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "memory": "hallucinated_memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "memory_accuracy_accurate": memory_accuracy_accurate,
+                "memory_accuracy_hallucinated": memory_accuracy_hallucinated,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

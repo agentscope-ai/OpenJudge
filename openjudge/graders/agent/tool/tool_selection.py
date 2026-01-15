@@ -7,7 +7,7 @@ Evaluates the tool selection made by the agent to address the user query.
 
 import json
 import textwrap
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -16,6 +16,7 @@ from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
+from openjudge.strategy import BaseStrategy
 
 # pylint: disable=line-too-long
 
@@ -201,7 +202,20 @@ class ToolSelectionGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_TOOL_SELECTION_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseStrategy | None = None,
+        mapper: Optional[Union[Dict[str, str], Callable]] = None,
     ):
+        """
+        Initialize ToolSelectionGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_TOOL_SELECTION_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
+        """
         super().__init__(
             name="tool_selection",
             mode=GraderMode.POINTWISE,
@@ -209,9 +223,11 @@ class ToolSelectionGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_TOOL_SELECTION_TEMPLATE,
             language=language,
+            strategy=strategy,
+            mapper=mapper,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: Union[str, List[Dict[str, Any]]],
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
@@ -268,7 +284,7 @@ class ToolSelectionGrader(LLMGrader):
         selected_tools = json.dumps(tool_calls, indent=2, ensure_ascii=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=query,
                 available_tools=available_tools,
                 selected_tools=selected_tools,

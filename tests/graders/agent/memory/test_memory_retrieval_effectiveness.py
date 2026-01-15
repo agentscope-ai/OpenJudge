@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import MemoryRetrievalEffectivenessGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -287,16 +287,15 @@ class TestMemoryRetrievalEffectivenessGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between effective and poor retrieval"""
-        # Create grader with real model
-        grader = MemoryRetrievalEffectivenessGrader(model=model)
-
         # Use mapper to configure data transformation
-        grader_configs = {
-            "memory_retrieval_effectiveness": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = MemoryRetrievalEffectivenessGrader(
+            model=model,
+        )
+        runner = GradingRunner(
+            graders={
+                "memory_retrieval_effectiveness": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -323,15 +322,11 @@ class TestMemoryRetrievalEffectivenessGraderQuality:
         grader = MemoryRetrievalEffectivenessGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "memory_retrieval_effectiveness_run1": GraderConfig(
-                grader=grader,
-            ),
-            "memory_retrieval_effectiveness_run2": GraderConfig(
-                grader=grader,
-            ),
+        graders = {
+            "memory_retrieval_effectiveness_run1": grader,
+            "memory_retrieval_effectiveness_run2": grader,
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -424,30 +419,34 @@ class TestMemoryRetrievalEffectivenessGraderAdversarial:
         # Create grader with real model
         grader = MemoryRetrievalEffectivenessGrader(model=model)
 
-        # Configure GraderConfig to evaluate both effective and poor plans
-        grader_configs = {
-            "memory_retrieval_effectiveness_effective": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "effective_plan",
-                    "observation": "observation",
-                    "memory": "memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-            "memory_retrieval_effectiveness_poor": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "poor_plan",
-                    "observation": "observation",
-                    "memory": "memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both effective and poor plans
+        memory_retrieval_effectiveness_effective = MemoryRetrievalEffectivenessGrader(
+            model=model,
+            mapper={
+                "plan": "effective_plan",
+                "observation": "observation",
+                "memory": "memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+        memory_retrieval_effectiveness_poor = MemoryRetrievalEffectivenessGrader(
+            model=model,
+            mapper={
+                "plan": "poor_plan",
+                "observation": "observation",
+                "memory": "memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "memory_retrieval_effectiveness_effective": memory_retrieval_effectiveness_effective,
+                "memory_retrieval_effectiveness_poor": memory_retrieval_effectiveness_poor,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

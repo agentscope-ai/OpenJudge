@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import ToolCallSuccessGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -342,21 +342,21 @@ class TestToolCallSuccessGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between successful and failed tool calls"""
-        # Create grader with real model
-        grader = ToolCallSuccessGrader(model=model)
+        # Create grader with integrated mapper
+        tool_call_success_grader = ToolCallSuccessGrader(
+            model=model,
+            mapper={
+                "tool_definitions": "tool_definitions",
+                "tool_calls": "tool_calls",
+                "tool_responses": "tool_responses",
+            },
+        )
 
-        # Use mapper to configure data transformation
-        grader_configs = {
-            "tool_call_success": GraderConfig(
-                grader=grader,
-                mapper={
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                    "tool_responses": "tool_responses",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "tool_call_success": tool_call_success_grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -383,25 +383,12 @@ class TestToolCallSuccessGraderQuality:
         grader = ToolCallSuccessGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "tool_call_success_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                    "tool_responses": "tool_responses",
-                },
-            ),
-            "tool_call_success_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                    "tool_responses": "tool_responses",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "tool_call_success_run1": grader,
+                "tool_call_success_run2": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -520,21 +507,18 @@ class TestToolCallSuccessGraderAdversarial:
     @pytest.mark.asyncio
     async def test_adversarial_tool_call_success_with_runner(self, dataset, model):
         """Test the grader's ability to identify adversarial examples"""
-        # Create grader with real model
-        grader = ToolCallSuccessGrader(model=model)
-
-        # Configure GraderConfig to evaluate both successful and failed calls
-        grader_configs = {
-            "tool_call_success_successful": GraderConfig(
-                grader=grader,
+        # Configure graders to evaluate both successful and failed calls
+        graders = {
+            "tool_call_success_successful": ToolCallSuccessGrader(
+                model=model,
                 mapper={
                     "tool_definitions": "tool_definitions",
                     "tool_calls": "successful_tool_calls",
                     "tool_responses": "successful_tool_responses",
                 },
             ),
-            "tool_call_success_failed": GraderConfig(
-                grader=grader,
+            "tool_call_success_failed": ToolCallSuccessGrader(
+                model=model,
                 mapper={
                     "tool_definitions": "tool_definitions",
                     "tool_calls": "failed_tool_calls",
@@ -542,7 +526,7 @@ class TestToolCallSuccessGraderAdversarial:
                 },
             ),
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

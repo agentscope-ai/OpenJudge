@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import ReflectionProgressAwarenessGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -277,16 +277,21 @@ class TestReflectionProgressAwarenessGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between good and poor progress awareness"""
-        # Create grader with real model
-        grader = ReflectionProgressAwarenessGrader(model=model)
-
         # Use mapper to configure data transformation
-        grader_configs = {
-            "reflection_progress_awareness": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = ReflectionProgressAwarenessGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "response",
+                "context": "context",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "reflection_progress_awareness": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -309,19 +314,21 @@ class TestReflectionProgressAwarenessGraderQuality:
     @pytest.mark.asyncio
     async def test_consistency_with_runner(self, dataset, model):
         """Test grader evaluation consistency"""
-        # Create grader with real model
-        grader = ReflectionProgressAwarenessGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "reflection_progress_awareness_run1": GraderConfig(
-                grader=grader,
-            ),
-            "reflection_progress_awareness_run2": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper1 = ReflectionProgressAwarenessGrader(
+            model=model,
+        )
+        grader_with_mapper2 = ReflectionProgressAwarenessGrader(
+            model=model,
+        )
+
+        runner = GradingRunner(
+            graders={
+                "reflection_progress_awareness_run1": grader_with_mapper1,
+                "reflection_progress_awareness_run2": grader_with_mapper2,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -417,28 +424,32 @@ class TestReflectionProgressAwarenessGraderAdversarial:
         # Create grader with real model
         grader = ReflectionProgressAwarenessGrader(model=model)
 
-        # Configure GraderConfig to evaluate both good and poor reflections
-        grader_configs = {
-            "reflection_progress_awareness_good": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "reflection": "good_reflection",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-            "reflection_progress_awareness_poor": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "reflection": "poor_reflection",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both good and poor reflections
+        reflection_progress_awareness_good = ReflectionProgressAwarenessGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "reflection": "good_reflection",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+        reflection_progress_awareness_poor = ReflectionProgressAwarenessGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "reflection": "poor_reflection",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "reflection_progress_awareness_good": reflection_progress_awareness_good,
+                "reflection_progress_awareness_poor": reflection_progress_awareness_poor,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

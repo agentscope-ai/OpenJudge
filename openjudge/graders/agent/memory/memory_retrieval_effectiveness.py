@@ -6,7 +6,7 @@ Evaluates whether the agent effectively retrieves relevant information from memo
 """
 
 import textwrap
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -16,6 +16,7 @@ from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
+from openjudge.strategy import BaseStrategy
 
 # pylint: disable=line-too-long
 
@@ -174,9 +175,22 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseStrategy | None = None,
+        mapper: Optional[Union[Dict[str, str], Callable]] = None,
     ):
+        """
+        Initialize MemoryRetrievalEffectivenessGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
+        """
         super().__init__(
             name="memory_retrieval_effectiveness",
             mode=GraderMode.POINTWISE,
@@ -184,9 +198,11 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE,
             language=language,
+            strategy=strategy,
+            mapper=mapper,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         plan: str,
         observation: str,
@@ -224,7 +240,7 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
         history_str = format_history(history)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 plan=plan,
                 observation=observation,
                 memory=memory,

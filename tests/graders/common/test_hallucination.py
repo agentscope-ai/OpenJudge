@@ -37,7 +37,7 @@ from openjudge.analyzer.validation import FalseNegativeAnalyzer, FalsePositiveAn
 from openjudge.graders.common.hallucination import HallucinationGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -224,22 +224,22 @@ class TestHallucinationGraderQuality:
     @pytest.mark.asyncio
     async def test_basic_evaluation_with_runner(self, dataset, model):
         """Test the grader's basic evaluation capability"""
-        # Create grader with real model
-        grader = HallucinationGrader(model=model)
+        # Create grader with integrated mapper
+        hallucination_grader = HallucinationGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "response",
+                "context": "context",
+                "reference_response": "reference_response",
+            },
+        )
 
-        # Use mapper to explicitly map fields (exclude human_score)
-        grader_configs = {
-            "hallucination": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "hallucination": hallucination_grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -262,27 +262,12 @@ class TestHallucinationGraderQuality:
         grader = HallucinationGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "hallucination_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-            "hallucination_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "hallucination_run1": grader,
+                "hallucination_run2": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -352,21 +337,19 @@ class TestHallucinationGraderAdversarial:
     @pytest.mark.asyncio
     async def test_adversarial_hallucination_with_runner(self, dataset, model):
         """Test the grader's ability to identify adversarial examples"""
-        # Create grader with real model
-        grader = HallucinationGrader(model=model)
 
-        # Configure GraderConfig to evaluate both factual and hallucinated responses
-        grader_configs = {
-            "hallucination_factual": GraderConfig(
-                grader=grader,
+        # Configure graders to evaluate both factual and hallucinated responses
+        graders = {
+            "hallucination_factual": HallucinationGrader(
+                model=model,
                 mapper={
                     "query": "query",
                     "response": "factual_response",
                     "context": "context",
                 },
             ),
-            "hallucination_hallucinated": GraderConfig(
-                grader=grader,
+            "hallucination_hallucinated": HallucinationGrader(
+                model=model,
                 mapper={
                     "query": "query",
                     "response": "hallucinated_response",
@@ -374,7 +357,7 @@ class TestHallucinationGraderAdversarial:
                 },
             ),
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

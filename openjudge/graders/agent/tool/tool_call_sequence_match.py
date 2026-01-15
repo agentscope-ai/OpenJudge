@@ -6,7 +6,7 @@ reference references, supporting both strict and loose matching modes.
 """
 import json
 from collections import Counter
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Callable, Dict, List, Set, Tuple, Union
 
 from loguru import logger
 
@@ -16,6 +16,7 @@ from openjudge.graders.base_grader import (
     GraderMode,
     GraderScore,
 )
+from openjudge.strategy import BaseStrategy
 
 # pylint: disable=line-too-long
 
@@ -44,12 +45,26 @@ class ToolCallSequenceMatchGrader(BaseGrader):
         self,
         strict_mode: bool = True,
         use_jaccard_similarity: bool = True,
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
         **kwargs,
     ):
+        """
+        Initialize the ToolCallSequenceMatchGrader.
+
+        Args:
+            strict_mode: If True, matches both tool_call name and arguments; if False, only matches tool_call name
+            use_jaccard_similarity: If True, use Jaccard similarity for loose mode (ignores step order)
+            strategy: Optional strategy for handling tool call matching
+            mapper: Optional mapper for mapping tool call names
+            kwargs: Additional keyword arguments for the BaseGrader class
+        """
         super().__init__(
             name="tool_call_sequence",
             mode=GraderMode.POINTWISE,
             description="Evaluate tool call sequence matching against reference",
+            strategy=strategy,
+            mapper=mapper,
             **kwargs,
         )
         self.strict_mode = strict_mode
@@ -100,7 +115,7 @@ class ToolCallSequenceMatchGrader(BaseGrader):
 
     def extract_reference_tool_sequence(
         self,
-        reference_tool_calls: List[Dict[str, Any]],
+        reference_tool_calls: List[List[Dict[str, Any]]],
     ) -> Dict[int, List[Dict[str, Any]]]:
         """
         Extract reference tool call sequence from reference tool calls, organized by steps.
@@ -327,7 +342,7 @@ class ToolCallSequenceMatchGrader(BaseGrader):
         score = len(intersection_set) / len(union_set) if union_set else 0.0
         return score, intersection_set, union_set
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
         reference_tool_calls: List[List[Dict[str, Any]]],

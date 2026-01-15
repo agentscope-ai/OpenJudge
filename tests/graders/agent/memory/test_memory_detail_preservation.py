@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import MemoryDetailPreservationGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -276,16 +276,16 @@ class TestMemoryDetailPreservationGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between good and poor detail preservation"""
-        # Create grader with real model
-        grader = MemoryDetailPreservationGrader(model=model)
 
         # Use mapper to configure data transformation
-        grader_configs = {
-            "memory_detail_preservation": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = MemoryDetailPreservationGrader(
+            model=model,
+        )
+        runner = GradingRunner(
+            graders={
+                "memory_detail_preservation": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -312,15 +312,11 @@ class TestMemoryDetailPreservationGraderQuality:
         grader = MemoryDetailPreservationGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "memory_detail_preservation_run1": GraderConfig(
-                grader=grader,
-            ),
-            "memory_detail_preservation_run2": GraderConfig(
-                grader=grader,
-            ),
+        graders = {
+            "memory_detail_preservation_run1": grader,
+            "memory_detail_preservation_run2": grader,
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -407,28 +403,32 @@ class TestMemoryDetailPreservationGraderAdversarial:
         # Create grader with real model
         grader = MemoryDetailPreservationGrader(model=model)
 
-        # Configure GraderConfig to evaluate both good and poor memories
-        grader_configs = {
-            "memory_detail_preservation_good": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "memory": "good_memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-            "memory_detail_preservation_poor": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "memory": "poor_memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both good and poor memories
+        memory_detail_preservation_good = MemoryDetailPreservationGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "memory": "good_memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+        memory_detail_preservation_poor = MemoryDetailPreservationGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "memory": "poor_memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "memory_detail_preservation_good": memory_detail_preservation_good,
+                "memory_detail_preservation_poor": memory_detail_preservation_poor,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

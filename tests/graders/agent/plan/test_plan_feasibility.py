@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import PlanFeasibilityGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -291,12 +291,14 @@ class TestPlanFeasibilityGraderQuality:
         grader = PlanFeasibilityGrader(model=model)
 
         # Use mapper to configure data transformation
-        grader_configs = {
-            "plan_feasibility": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = PlanFeasibilityGrader(
+            model=model,
+        )
+        runner = GradingRunner(
+            graders={
+                "plan_feasibility": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -323,15 +325,11 @@ class TestPlanFeasibilityGraderQuality:
         grader = PlanFeasibilityGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "plan_feasibility_run1": GraderConfig(
-                grader=grader,
-            ),
-            "plan_feasibility_run2": GraderConfig(
-                grader=grader,
-            ),
+        graders = {
+            "plan_feasibility_run1": grader,
+            "plan_feasibility_run2": grader,
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -432,30 +430,34 @@ class TestPlanFeasibilityGraderAdversarial:
         # Create grader with real model
         grader = PlanFeasibilityGrader(model=model)
 
-        # Configure GraderConfig to evaluate both feasible and infeasible plans
-        grader_configs = {
-            "plan_feasibility_feasible": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "feasible_plan",
-                    "observation": "observation",
-                    "memory": "memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-            "plan_feasibility_infeasible": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "infeasible_plan",
-                    "observation": "observation",
-                    "memory": "memory",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both feasible and infeasible plans
+        plan_feasibility_feasible = PlanFeasibilityGrader(
+            model=model,
+            mapper={
+                "plan": "feasible_plan",
+                "observation": "observation",
+                "memory": "memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+        plan_feasibility_infeasible = PlanFeasibilityGrader(
+            model=model,
+            mapper={
+                "plan": "infeasible_plan",
+                "observation": "observation",
+                "memory": "memory",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "plan_feasibility_feasible": plan_feasibility_feasible,
+                "plan_feasibility_infeasible": plan_feasibility_infeasible,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

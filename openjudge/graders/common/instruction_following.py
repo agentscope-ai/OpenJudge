@@ -7,7 +7,7 @@ content requirements, format constraints, style guidelines, and other specified 
 """
 
 import textwrap
-from typing import Optional
+from typing import Callable, Dict, Optional, Union
 
 from loguru import logger
 
@@ -16,6 +16,7 @@ from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
+from openjudge.strategy import BaseStrategy
 
 # English Prompt
 INSTRUCTION_FOLLOWING_PROMPT_EN = textwrap.dedent(
@@ -264,15 +265,20 @@ class InstructionFollowingGrader(LLMGrader):
         threshold: float = 3,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseStrategy | None = None,
+        mapper: Optional[Union[Dict[str, str], Callable]] = None,
     ):
         """
-        Initialize InstructionFollowingGrader
+        Initialize InstructionFollowingGrader.
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
             threshold: Success threshold [1, 5] (default: 3)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
 
         Raises:
             ValueError: If threshold is not in range [1, 5]
@@ -287,10 +293,12 @@ class InstructionFollowingGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE,
             language=language,
+            strategy=strategy,
+            mapper=mapper,
         )
         self.threshold = threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         instruction: str,
         response: str,
@@ -315,7 +323,7 @@ class InstructionFollowingGrader(LLMGrader):
             ... )
         """
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 instruction=instruction,
                 response=response,
                 query=query,

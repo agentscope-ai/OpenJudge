@@ -7,10 +7,11 @@ and returns a positive score if parsing succeeds.
 """
 
 import json
-from typing import Any
+from typing import Any, Callable, Dict, Union
 
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+from openjudge.strategy.base import BaseStrategy
 
 
 class JsonValidatorGrader(BaseGrader):
@@ -34,12 +35,26 @@ class JsonValidatorGrader(BaseGrader):
     def __init__(
         self,
         name: str = "json_validator",
-        description: str = "JSON format validation metric",
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
+        **kwargs: Any,
     ):
+        """
+        Initialize the JsonValidatorGrader.
+
+        Args:
+            name (str, optional): The name of the grader. Defaults to "json_validator".
+            strategy (BaseStrategy, optional): Strategy to use for evaluation. Defaults to None.
+            mapper (Union[Dict[str, str], Callable, None], optional): Mapper to use for input data. Defaults to None.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(
             name=name,
             mode=GraderMode.POINTWISE,
-            description=description,
+            description="JSON format validation metric",
+            strategy=strategy,
+            mapper=mapper,
+            **kwargs,
         )
 
     def _compute(self, response: str) -> tuple[bool, dict]:
@@ -74,7 +89,7 @@ class JsonValidatorGrader(BaseGrader):
             }
 
     # pylint: disable=unused-argument
-    async def aevaluate(
+    async def _aevaluate(
         self,
         response: str = "",
         **kwargs: Any,

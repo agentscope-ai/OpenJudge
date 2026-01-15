@@ -11,9 +11,11 @@ blocks to total code blocks found.
 
 import ast
 import re
+from typing import Callable, Dict, Union
 
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+from openjudge.strategy.base import BaseStrategy
 
 
 class SyntaxCheckGrader(BaseGrader):
@@ -24,16 +26,29 @@ class SyntaxCheckGrader(BaseGrader):
     markdown-style code fences and checks each one for syntax errors.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
+    ):
+        """
+        Initialize the SyntaxCheckGrader.
+        Args:
+            strategy (BaseStrategy | None): The grading strategy to use. Defaults to None.
+            mapper (Dict[str, str] | Callable | None): Optional mapper to transform input data before
+                passing it to the grader.
+        """
         super().__init__(
             name="syntax_check",
             mode=GraderMode.POINTWISE,
             description="Check code syntax using Abstract Syntax Tree to validate Python code blocks.",
+            strategy=strategy,
+            mapper=mapper,
         )
 
         self._code_pattern = re.compile(r"```(?:python)?\s*\n(.*?)\n\s*```", re.DOTALL)
 
-    async def aevaluate(self, response: str) -> GraderScore:
+    async def _aevaluate(self, response: str) -> GraderScore:
         """Check code syntax in the provided response.
 
         Extracts Python code blocks from markdown-style code fences and validates

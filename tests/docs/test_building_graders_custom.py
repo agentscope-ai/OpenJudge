@@ -16,7 +16,7 @@ from openjudge.graders.schema import GraderRank, GraderScore
 from openjudge.models import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import PromptTemplate
-from openjudge.runner import GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 
 class TestCustomGradersBasicLLM:
@@ -242,7 +242,7 @@ class TestComplexLogicGraders:
                 super().__init__(**kwargs)
                 self.pattern = re.compile(pattern, flags)
 
-            async def aevaluate(self, response: str, **kwargs) -> GraderScore:
+            async def _aevaluate(self, response: str, **kwargs) -> GraderScore:
                 """Check if response matches pattern."""
                 match = self.pattern.search(response)
 
@@ -277,7 +277,7 @@ class TestComplexLogicGraders:
                 self.min_length = min_length
                 self.required_keywords = required_keywords or []
 
-            async def aevaluate(self, response: str, **kwargs) -> GraderScore:
+            async def _aevaluate(self, response: str, **kwargs) -> GraderScore:
                 """Check length and keyword requirements."""
                 # Check length
                 length_ok = len(response) >= self.min_length
@@ -320,7 +320,7 @@ class TestBestPractices:
         """Test error handling from line 434-452"""
 
         class RobustGrader(BaseGrader):
-            async def aevaluate(self, **kwargs) -> GraderScore:
+            async def _aevaluate(self, **kwargs) -> GraderScore:
                 try:
                     # Evaluation logic that might fail
                     if "error" in kwargs.get("response", ""):
@@ -383,7 +383,7 @@ class TestGraderTesting:
             return GraderScore(name="simple", score=0.8, reason="Test")
 
         grader = FunctionGrader(func=simple_grader, name="test_grader")
-        runner = GradingRunner(grader_configs={"test": grader})
+        runner = GradingRunner(graders={"test": grader})
 
         results = await runner.arun([{"response": "A1"}, {"response": "A2"}])
 

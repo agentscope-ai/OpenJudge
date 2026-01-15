@@ -35,7 +35,7 @@ from openjudge.analyzer.validation import (
 )
 from openjudge.graders.function_grader import FunctionGrader
 from openjudge.graders.schema import GraderMode, GraderRank, GraderScore
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -270,17 +270,18 @@ class TestFunctionGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, length_based_grader, dataset):
         """Test the grader's ability to distinguish between high and low quality responses (using Runner)"""
-        # Use mapper to configure data transformation
-        grader_configs = {
-            "length_scorer": GraderConfig(
-                grader=length_based_grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+
+        # Create a new grader instance with mapper
+        length_based_grader_with_mapper = FunctionGrader(
+            func=length_based_grader.func,
+            name=length_based_grader.name,
+            mapper={
+                "query": "query",
+                "response": "response",
+            },
+        )
+
+        runner = GradingRunner(graders={"length_scorer": length_based_grader_with_mapper})
 
         # Prepare test data
         test_data = dataset

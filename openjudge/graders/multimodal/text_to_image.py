@@ -9,7 +9,7 @@ Restructured to work with Grader framework.
 import asyncio
 import math
 import textwrap
-from typing import Any, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from loguru import logger
 
@@ -20,6 +20,7 @@ from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
+from openjudge.strategy.base import BaseStrategy
 from openjudge.utils.utils import parse_structured_chat_response
 
 # pylint: disable=line-too-long
@@ -238,6 +239,8 @@ class TextToImageGrader(BaseGrader):
         semantic_template: PromptTemplate = DEFAULT_TEXT_TO_IMAGE_SEMANTIC_TEMPLATE,
         perceptual_template: PromptTemplate = DEFAULT_TEXT_TO_IMAGE_PERCEPTUAL_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable] = None,
     ):
         """
         Initialize TextToImageGrader
@@ -248,11 +251,15 @@ class TextToImageGrader(BaseGrader):
             semantic_template: PromptTemplate for semantic consistency evaluation (default: DEFAULT_TEXT_TO_IMAGE_SEMANTIC_TEMPLATE)
             perceptual_template: PromptTemplate for perceptual quality evaluation (default: DEFAULT_TEXT_TO_IMAGE_PERCEPTUAL_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: BaseStrategy instance or dict config for GraderStrategy (default: None)
+            mapper: Mapper for query and response (default: None)
         """
         super().__init__(
             name="text_to_image",
             mode=GraderMode.POINTWISE,
             description="Evaluate text-to-image generation quality",
+            strategy=strategy,
+            mapper=mapper,
         )
         self.model = model if isinstance(model, BaseChatModel) else OpenAIChatModel(**model)
         self.threshold = threshold
@@ -353,7 +360,7 @@ class TextToImageGrader(BaseGrader):
 
         return final_score, details
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str,
         response: Union[MLLMImage, List[MLLMImage]],

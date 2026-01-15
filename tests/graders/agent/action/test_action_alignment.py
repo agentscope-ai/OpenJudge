@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import ActionAlignmentGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -208,20 +208,16 @@ class TestActionAlignmentGraderQuality:
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between aligned and misaligned actions"""
         # Create grader with real model
-        grader = ActionAlignmentGrader(model=model)
+        grader = ActionAlignmentGrader(
+            model=model,
+            mapper={
+                "plan": "plan",
+                "action": "action",
+                "context": "context",
+            },
+        )
 
-        # Use mapper to configure data transformation
-        grader_configs = {
-            "action_alignment": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "plan",
-                    "action": "action",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders={"action_alignment": grader})
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -247,29 +243,30 @@ class TestActionAlignmentGraderQuality:
     @pytest.mark.asyncio
     async def test_consistency_with_runner(self, dataset, model):
         """Test grader evaluation consistency"""
-        # Create grader with real model
-        grader = ActionAlignmentGrader(model=model)
+        # Create graders with integrated mappers
+        action_alignment_run1 = ActionAlignmentGrader(
+            model=model,
+            mapper={
+                "plan": "plan",
+                "action": "action",
+                "context": "context",
+            },
+        )
+        action_alignment_run2 = ActionAlignmentGrader(
+            model=model,
+            mapper={
+                "plan": "plan",
+                "action": "action",
+                "context": "context",
+            },
+        )
 
-        # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "action_alignment_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "plan",
-                    "action": "action",
-                    "context": "context",
-                },
-            ),
-            "action_alignment_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "plan",
-                    "action": "action",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "action_alignment_run1": action_alignment_run1,
+                "action_alignment_run2": action_alignment_run2,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -344,26 +341,30 @@ class TestActionAlignmentGraderAdversarial:
         # Create grader with real model
         grader = ActionAlignmentGrader(model=model)
 
-        # Configure GraderConfig to evaluate both aligned and misaligned actions
-        grader_configs = {
-            "action_alignment_aligned": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "plan",
-                    "action": "aligned_action",
-                    "context": "context",
-                },
-            ),
-            "action_alignment_misaligned": GraderConfig(
-                grader=grader,
-                mapper={
-                    "plan": "plan",
-                    "action": "misaligned_action",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both aligned and misaligned actions
+        action_alignment_aligned = ActionAlignmentGrader(
+            model=model,
+            mapper={
+                "plan": "plan",
+                "action": "aligned_action",
+                "context": "context",
+            },
+        )
+        action_alignment_misaligned = ActionAlignmentGrader(
+            model=model,
+            mapper={
+                "plan": "plan",
+                "action": "misaligned_action",
+                "context": "context",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "action_alignment_aligned": action_alignment_aligned,
+                "action_alignment_misaligned": action_alignment_misaligned,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

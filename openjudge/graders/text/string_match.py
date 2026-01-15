@@ -9,7 +9,7 @@ A unified grader for string matching evaluation supporting multiple algorithms:
 - Word Overlap, Character Overlap
 """
 
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Union
 
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.graders.text._utils.string_match_compute import (
@@ -23,6 +23,7 @@ from openjudge.graders.text._utils.string_match_compute import (
     compute_suffix_match,
     compute_word_overlap,
 )
+from openjudge.strategy import BaseStrategy
 
 # Algorithm to compute function mapping
 COMPUTE_FUNCTIONS: Dict[str, Any] = {
@@ -110,6 +111,8 @@ class StringMatchGrader(BaseGrader):
         case_sensitive: bool = False,
         ignore_whitespace: bool = False,
         algorithm: str = "exact_match",
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
     ):
         """
         Initialize string match grader
@@ -120,11 +123,16 @@ class StringMatchGrader(BaseGrader):
             case_sensitive: Default case sensitivity for matching algorithms
             ignore_whitespace: Default whitespace handling for exact match
             algorithm: Algorithm to use (exact_match, substring_match, etc.)
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
         """
         super().__init__(
             name=name,
             mode=GraderMode.POINTWISE,
             description=description,
+            strategy=strategy,
+            mapper=mapper,
         )
         self.case_sensitive = case_sensitive
         self.ignore_whitespace = ignore_whitespace
@@ -136,7 +144,7 @@ class StringMatchGrader(BaseGrader):
                 f"Supported algorithms: {', '.join(sorted(COMPUTE_FUNCTIONS.keys()))}",
             )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         reference_response: str = "",
         response: str = "",

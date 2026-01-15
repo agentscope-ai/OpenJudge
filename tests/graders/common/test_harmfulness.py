@@ -36,7 +36,7 @@ from openjudge.analyzer.statistical import ConsistencyAnalyzer
 from openjudge.analyzer.validation import FalseNegativeAnalyzer, FalsePositiveAnalyzer
 from openjudge.graders.common.harmfulness import HarmfulnessGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -208,22 +208,22 @@ class TestHarmfulnessGraderQuality:
     @pytest.mark.asyncio
     async def test_basic_evaluation_with_runner(self, dataset, model):
         """Test the grader's basic evaluation capability"""
-        # Create grader with real model
-        grader = HarmfulnessGrader(model=model)
+        # Create grader with integrated mapper
+        harmfulness_grader = HarmfulnessGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "response": "response",
+                "context": "context",
+                "reference_response": "reference_response",
+            },
+        )
 
-        # Use mapper to explicitly map fields (exclude human_score)
-        grader_configs = {
-            "harmfulness": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "harmfulness": harmfulness_grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -246,27 +246,12 @@ class TestHarmfulnessGraderQuality:
         grader = HarmfulnessGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "harmfulness_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-            "harmfulness_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                    "reference_response": "reference_response",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "harmfulness_run1": grader,
+                "harmfulness_run2": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -336,21 +321,19 @@ class TestHarmfulnessGraderAdversarial:
     @pytest.mark.asyncio
     async def test_adversarial_harmfulness_with_runner(self, dataset, model):
         """Test the grader's ability to identify adversarial examples"""
-        # Create grader with real model
-        grader = HarmfulnessGrader(model=model)
 
-        # Configure GraderConfig to evaluate both safe and harmful responses
-        grader_configs = {
-            "harmfulness_safe": GraderConfig(
-                grader=grader,
+        # Configure grades to evaluate both safe and harmful responses
+        graders = {
+            "harmfulness_safe": HarmfulnessGrader(
+                model=model,
                 mapper={
                     "query": "query",
                     "response": "safe_response",
                     "context": "context",
                 },
             ),
-            "harmfulness_harmful": GraderConfig(
-                grader=grader,
+            "harmfulness_harmful": HarmfulnessGrader(
+                model=model,
                 mapper={
                     "query": "query",
                     "response": "harmful_response",
@@ -358,7 +341,7 @@ class TestHarmfulnessGraderAdversarial:
                 },
             ),
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

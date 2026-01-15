@@ -8,7 +8,7 @@ from openjudge.graders.function_grader import FunctionGrader
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderScore
 from openjudge.models import OpenAIChatModel
-from openjudge.runner import GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 
 class TestOverviewLLMGrader:
@@ -101,10 +101,10 @@ class TestOverviewCompleteExample:
         assert accuracy_grader.name == "accuracy"
 
         # 3. Combine in evaluation pipeline
-        runner = GradingRunner(grader_configs={"length": length_grader, "accuracy": accuracy_grader})
+        runner = GradingRunner(graders={"length": length_grader, "accuracy": accuracy_grader})
 
         # Verify runner was created successfully
-        assert len(runner.grader_configs) == 2
+        assert len(runner.graders) == 2
 
 
 class TestOverviewIntegrationExamples:
@@ -133,7 +133,7 @@ class TestOverviewIntegrationExamples:
 
         custom_grader = FunctionGrader(func=simple_grader, name="test")
 
-        runner = GradingRunner(grader_configs={"custom": custom_grader})
+        runner = GradingRunner(graders={"custom": custom_grader})
         results = await runner.arun([{"response": "A1"}, {"response": "A2"}])
 
         # results is a dict with grader names as keys

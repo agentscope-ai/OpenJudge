@@ -6,14 +6,12 @@ collect their results. It supports concurrent execution of evaluators and
 organizes results by sample for further analysis.
 
 Classes:
-    GraderConfig: Configuration for a grader including the grader instance and data mapper.
     RunnerResult: Result container for grading runs.
     GradingRunner: Main runner class for executing evaluators.
 """
 
 import asyncio
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Union
 
 from loguru import logger
 from tqdm.asyncio import tqdm_asyncio
@@ -22,84 +20,8 @@ from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderError, GraderResult
 from openjudge.runner.aggregator.base_aggregator import BaseAggregator
 from openjudge.runner.base_runner import BaseRunner, RunnerResult
-from openjudge.utils.concurrency import ConcurrencyManager
-from openjudge.utils.mapping import parse_data_with_mapper
-
-
-@dataclass
-class GraderConfig:
-    """Configuration for a grader including the grader instance and data mapper.
-
-    This data class defines the structure for grader configurations used by the
-    GradingRunner. It specifies the grader to use and an optional mapper to
-    transform input data before passing it to the grader.
-
-    Attributes:
-        grader (Grader): The grader instance to use for evaluation.
-        mapper (Dict[str, str] | Callable | None): Optional mapper to transform
-            input data before evaluation. Can be a dictionary mapping or a callable.
-
-    Example:
-        >>> # Simple initialization with just a grader
-        >>> config = GraderConfig(grader=SomeGrader())
-        >>>
-        >>> # Initialization with grader and dictionary mapper
-        >>> config = GraderConfig(
-        ...     grader=SomeGrader(),
-        ...     mapper={"input": "query", "output": "answer"}
-        ... )
-        >>>
-        >>> # Initialization with grader and callable mapper
-        >>> def custom_mapper(data):
-        ...     return {"query": data["question"], "answer": data["response"]}
-        >>> config = GraderConfig(
-        ...     grader=SomeGrader(),
-        ...     mapper=custom_mapper
-        ... )
-        >>>
-        >>> # Using the create classmethod
-        >>> config = GraderConfig.create(SomeGrader())
-        >>> config = GraderConfig.create((SomeGrader(), {"input": "query"}))
-        >>> config = GraderConfig.create({"grader": SomeGrader()})
-    """
-
-    grader: BaseGrader
-    mapper: Dict[str, str] | Callable | None = None
-
-    @classmethod
-    def create(
-        cls,
-        config: dict | Tuple[BaseGrader, Dict[str, str] | Callable | None] | BaseGrader | "GraderConfig",
-    ):
-        """Create a GraderConfig from various input formats.
-
-        This factory method provides flexibility in how a GraderConfig can be created,
-        accepting either a GraderConfig object, BaseGrader instance, tuple of grader and mapper,
-        or a dictionary representation.
-
-        Args:
-            config: Can be one of:
-                - Existing GraderConfig object (returned as-is)
-                - BaseGrader instance (wrapped in new GraderConfig)
-                - Tuple of (grader, mapper) where mapper maps data fields to grader inputs
-                - Dictionary representation of a GraderConfig
-
-        Returns:
-            GraderConfig: A properly configured GraderConfig instance
-
-        Raises:
-            ValueError: If config is not one of the accepted types
-        """
-        if isinstance(config, cls):
-            return config
-        elif isinstance(config, BaseGrader):
-            return GraderConfig(config)
-        elif isinstance(config, tuple):
-            return GraderConfig(*config)
-        elif isinstance(config, dict):
-            return GraderConfig(**config)
-        else:
-            raise ValueError("Invalid config type")
+from openjudge.runner.controller.base import BaseController
+from openjudge.runner.controller.local_controller import LocalController
 
 
 class GradingRunner(BaseRunner):
@@ -110,30 +32,26 @@ class GradingRunner(BaseRunner):
     how each grader scored all samples.
 
     The runner supports data mapping to transform input data before passing it to
-    evaluators, and concurrency control to limit the number of simultaneous operations.
+    evaluators through the mapper functionality integrated directly into the grader,
+    and concurrency control to limit the number of simultaneous operations.
 
     Attributes:
-        grader_configs (List[GraderConfig]): Configurations for the graders to run.
+        graders (Dict[str, BaseGrader]): Graders to run.
         max_concurrency (int): Maximum number of concurrent operations.
 
     Example:
         >>> # Simple usage with just graders
-        >>> grader_configs = [
-        ...     GraderConfig(grader=AccuracyGrader())
-        ... ]
-        >>> runner = GradingRunner(grader_configs=grader_configs, max_concurrency=10)
+        >>> graders = {
+        ...     "accuracy": AccuracyGrader()
+        ... }
+        >>> runner = GradingRunner(graders=graders, max_concurrency=10)
         >>>
-        >>> # Usage with data mappers
-        >>> grader_configs = [
-        ...     GraderConfig(
-        ...         grader=AccuracyGrader(),
-        ...         mapper={"q": "query", "a": "answer"}
-        ...     )
-        ... ]
-        >>> runner = GradingRunner(grader_configs=grader_configs, max_concurrency=5)
+        >>> # Usage with data mappers integrated directly in graders
+        >>> grader_with_mapper = AccuracyGrader(mapper={"q": "query", "a": "response"})
+        >>> runner = GradingRunner(graders={"accuracy": grader_with_mapper}, max_concurrency=5)
         >>>
         >>> # Run evaluation on data
-        >>> data = [{"query": "What is 2+2?", "answer": "4"}]
+        >>> data = [{"query": "What is 2+2?", "response": "4"}]
         >>> result = await runner.arun(data)
         >>>
         >>> # Access results
@@ -145,36 +63,30 @@ class GradingRunner(BaseRunner):
 
     def __init__(
         self,
-        grader_configs: Dict[str, GraderConfig | BaseGrader | Tuple[BaseGrader, Dict[str, str] | Callable | None]],
+        graders: Dict[str, "BaseGrader"],
         max_concurrency: int = 32,
-        aggregators: BaseAggregator | Callable | List[BaseAggregator | Callable] | None = None,
+        aggregators: Union[BaseAggregator, Callable, List[Union[BaseAggregator, Callable]], None] = None,
         show_progress: bool = True,
+        controller: BaseController | None = None,
     ) -> None:
         """Initialize the grading runner.
 
         Args:
-            grader_configs: Dictionary of grader configurations where keys are grader names
-                and values are either GraderConfig instances, BaseGrader instances, tuples of
-                (BaseGrader, mapper) or dictionaries with grader and mapper keys.
+            graders: Dictionary of graders where keys are grader names
+                and values are BaseGrader instances. Each grader can have an integrated
+                mapper for transforming input data.
             max_concurrency: Maximum number of concurrent operations. Defaults to 32.
                 Controls how many evaluations can run simultaneously to manage resource usage.
             aggregators: Optional aggregator or list of aggregators to combine results
                 from multiple graders.
             show_progress: Whether to display a progress bar during execution. Defaults to True.
-
-        Example:
-            >>> # Initialize with multiple graders
-            >>> configs = {
-            ...     "accuracy": AccuracyGrader(),
-            ...     "relevance": (RelevanceGrader(), {"q": "query", "a": "answer"})
-            ... }
-            >>> runner = GradingRunner(grader_configs=configs, max_concurrency=10)
+            controller: Optional execution controller to manage task execution.
+                       Defaults to LocalController if not provided.
         """
-        self.grader_configs = {name: GraderConfig.create(config) for name, config in grader_configs.items()}
+        self.graders = graders
         self.max_concurrency = max_concurrency
         self.show_progress = show_progress
-        concurrency_manager = ConcurrencyManager()
-        concurrency_manager.set_max_concurrency(max_concurrency)
+        self.controller = controller or LocalController(max_concurrency)
 
         # Handle aggregators
         if not aggregators:
@@ -189,23 +101,19 @@ class GradingRunner(BaseRunner):
         cls,
         data: dict,
         grader: BaseGrader,
-        mapper: Dict[str, str] | Callable | None,
+        controller: BaseController,
     ) -> GraderResult:
         """Run a single evaluation asynchronously.
 
-        This internal method runs a single evaluation by applying the mapper to
-        the input data and then passing the result to the grader. It handles exceptions
-        that may occur during evaluation and wraps them in a GraderError.
+        This internal method runs a single evaluation using the grader's built-in mapper.
+        It handles exceptions that may occur during evaluation and wraps them in a GraderError.
 
         Args:
             data: Input data for the evaluation. This is typically a dictionary containing
                 the fields needed by the grader (e.g., 'query', 'answer', 'context').
             grader: Grader instance to use for the evaluation. Must be an instance of
                 a class that inherits from BaseGrader.
-            mapper: Optional mapper to transform the input data. Can be:
-                - A dictionary mapping (e.g., {"input_text": "query"}) that renames fields
-                - A callable function that takes the data dict and returns a transformed dict
-                - None, in which case data is passed to the grader unchanged
+            controller: Execution controller to manage the execution of the task
 
         Returns:
             GraderResult: The result of the evaluation from the grader. This can be:
@@ -216,24 +124,13 @@ class GradingRunner(BaseRunner):
         Example:
             >>> # With a simple data transformation
             >>> data = {"question": "What is 2+2?", "response": "4"}
-            >>> mapper = {"question": "query", "response": "answer"}
-            >>> result = await GradingRunner._arun(data, AccuracyGrader(), mapper)
-            >>>
-            >>> # With a custom mapper function
-            >>> def custom_mapper(item):
-            ...     return {
-            ...         "query": item["question"],
-            ...         "answer": item["answer"],
-            ...         "context": item.get("reference", "")
-            ...     }
-            >>> result = await GradingRunner._arun(data, ContextGrader(), custom_mapper)
+            >>> result = await GradingRunner._arun(data, AccuracyGrader(), controller)
         """
-        concurrency_manager = ConcurrencyManager()
 
         async def _evaluate(data) -> GraderResult:
             try:
-                data = parse_data_with_mapper(data, mapper)
-                return await grader.aevaluate(**data)
+                # The grader itself handles the mapping internally
+                return await grader.aevaluate(controller=controller, **data)
             except Exception as e:
                 error_msg = f"Error in {grader.name} during evaluation: {str(e)}"
                 logger.error(error_msg)
@@ -243,10 +140,8 @@ class GradingRunner(BaseRunner):
                     error=error_msg,
                 )
 
-        # Use the concurrency manager to control execution
-        return await concurrency_manager.run_with_concurrency_control(
-            _evaluate(data),
-        )
+        # Execute the evaluation using the controller
+        return await _evaluate(data)
 
     async def arun(
         self,
@@ -291,14 +186,11 @@ class GradingRunner(BaseRunner):
             >>> accuracy_grader = AccuracyGrader()
             >>> relevance_grader = RelevanceGrader()
             >>>
-            >>> # Create grader configs
-            >>> grader_configs = {
-            ...     "accuracy": GraderConfig(grader=accuracy_grader),
-            ...     "relevance": GraderConfig(grader=relevance_grader)
-            ... }
-            >>>
             >>> # Create runner
-            >>> runner = GradingRunner(grader_configs, max_concurrency=10)
+            >>> runner = GradingRunner(graders={
+            ...     "accuracy": accuracy_grader,
+            ...     "relevance": relevance_grader
+            ... }, max_concurrency=10)
             >>>
             >>> # Data to evaluate
             >>> dataset = [
@@ -321,21 +213,23 @@ class GradingRunner(BaseRunner):
             ...             print(f"  Sample {i}: Error - {result.error}")
         """
         # Create a dictionary to store result lists for each grader
-        grader_results: RunnerResult = {name: [] for name in self.grader_configs.keys()}
+        grader_results: RunnerResult = {name: [] for name in self.graders.keys()}
 
         # Create coroutines for all evaluators and all samples
         all_coroutines = []
         coroutine_info = []  # Track (grader_name, sample_index) for each coroutine
 
-        for name, config in self.grader_configs.items():
-            grader = config.grader
-            mapper = config.mapper
+        # Use the controller from self
+        controller = self.controller
+
+        # Execute controller lifecycle
+        for name, grader in self.graders.items():
             assert grader is not None
 
             # Create coroutines for the current evaluator on all samples
             for i, case in enumerate(dataset):
                 all_coroutines.append(
-                    self._arun(data=case, grader=grader, mapper=mapper),
+                    self._arun(data=case, grader=grader, controller=controller),
                 )
                 coroutine_info.append(
                     (name, i),
@@ -352,7 +246,7 @@ class GradingRunner(BaseRunner):
             all_results = await asyncio.gather(*all_coroutines)
 
         # Initialize lists for all graders
-        for name in self.grader_configs.keys():
+        for name in self.graders.keys():
             grader_results[name] = [None] * len(dataset)
 
         # Organize results by grader
@@ -366,7 +260,7 @@ class GradingRunner(BaseRunner):
                 grader_results[aggregator_name] = [None] * len(dataset)
                 for i in range(len(dataset)):
                     grader_results[aggregator_name][i] = aggregator(
-                        {grader_name: grader_results[grader_name][i] for grader_name in self.grader_configs.keys()},
+                        {grader_name: grader_results[grader_name][i] for grader_name in self.graders.keys()},
                     )
         return grader_results
 
@@ -417,13 +311,13 @@ class GradingRunner(BaseRunner):
             >>> relevance_grader = RelevanceGrader()
             >>>
             >>> # Create grader configs
-            >>> grader_configs = {
-            ...     "accuracy": GraderConfig(grader=accuracy_grader),
-            ...     "relevance": GraderConfig(grader=relevance_grader)
+            >>> graders = {
+            ...     "accuracy": accuracy_grader,
+            ...     "relevance": relevance_grader
             ... }
             >>>
             >>> # Create runner
-            >>> runner = GradingRunner(grader_configs, max_concurrency=10)
+            >>> runner = GradingRunner(graders, max_concurrency=10)
             >>>
             >>> # Multiple datasets to evaluate
             >>> datasets = [

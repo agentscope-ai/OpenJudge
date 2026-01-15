@@ -7,10 +7,11 @@ class which checks for the presence of thinking and answer tags in the response 
 """
 
 import re
-from typing import Any
+from typing import Any, Callable, Dict, Union
 
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+from openjudge.strategy.base import BaseStrategy
 
 
 class ReasoningFormatGrader(BaseGrader):
@@ -21,17 +22,27 @@ class ReasoningFormatGrader(BaseGrader):
     with proper <think> and <answer> tags.
     """
 
-    def __init__(self, think_token: str = "think", answer_token: str = "answer"):
+    def __init__(
+        self,
+        think_token: str = "think",
+        answer_token: str = "answer",
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
+    ):
         """
         Initialize the ReasoningFormatGrader.
         Args:
             think_token: The token used for thinking tags. Defaults to "think".
             answer_token: The token used for answer tags. Defaults to "answer".
+            strategy: The strategy to use for evaluation. Defaults to None.
+            mapper: A mapping function or dictionary to map the response to a different format.
         """
         super().__init__(
             name="format_reward",
             mode=GraderMode.POINTWISE,
             description="Check format reward for thinking format and answer format with proper tags.",
+            strategy=strategy,
+            mapper=mapper,
         )
         self.think_token = think_token
         self.think_pattern = re.compile(f"<{self.think_token}>.*?</{self.think_token}>", flags=re.DOTALL)
@@ -40,7 +51,7 @@ class ReasoningFormatGrader(BaseGrader):
         self.answer_pattern = re.compile(f"<{self.answer_token}>.*?</{self.answer_token}>", flags=re.DOTALL)
 
     # pylint: disable=unused-argument
-    async def aevaluate(self, response: str, *args: Any, **kwargs: Any) -> GraderScore:
+    async def _aevaluate(self, response: str, *args: Any, **kwargs: Any) -> GraderScore:
         """
         Check format and calculate reward for reasoning tags.
 

@@ -5,13 +5,14 @@ This module provides a grader for evaluating information gain and redundancy
 in observation observations.
 """
 import math
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from openjudge.graders.agent.utils import (
     calculate_text_similarity,
     extract_action_observation_pairs,
 )
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
+from openjudge.strategy.base import BaseStrategy
 
 
 class ObservationInformationGainGrader(BaseGrader):
@@ -34,15 +35,30 @@ class ObservationInformationGainGrader(BaseGrader):
     def __init__(
         self,
         similarity_threshold: float = 0.5,
+        strategy: BaseStrategy | None = None,
+        mapper: Optional[Union[Dict[str, str], Callable]] = None,
+        **kwargs: Any,
     ):
+        """
+        Initialize the ObservationInformationGainGrader.
+
+        Args:
+            similarity_threshold: Threshold for considering observations as redundant
+            strategy: Strategy for handling missing or invalid inputs
+            mapper: Mapper for mapping inputs to a common format
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(
             name="observation_information_gain",
             mode=GraderMode.POINTWISE,
             description="Evaluate information gain and redundancy in observation observations",
+            strategy=strategy,
+            mapper=mapper,
+            **kwargs,
         )
         self.similarity_threshold = similarity_threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
     ) -> GraderScore:

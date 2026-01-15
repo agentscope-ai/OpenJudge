@@ -19,13 +19,13 @@ from openjudge.runner.grading_runner import GradingRunner
 class MockGrader(BaseGrader):
     """Mock grader for testing purposes."""
 
-    def __init__(self, name="mock_grader", score_value=1.0, **kwargs):
-        super().__init__(name=name, **kwargs)
+    def __init__(self, name="mock_grader", score_value=1.0, mapper=None, **kwargs):
+        super().__init__(name=name, mapper=mapper, **kwargs)
         self.score_value = score_value
         self.call_args_list = []
         self.call_count = 0
 
-    async def aevaluate(self, **kwargs):
+    async def _aevaluate(self, **kwargs):
         """Mock evaluation that returns a fixed score."""
         self.call_count += 1
         # Store a deep copy of the arguments to prevent reference issues
@@ -49,7 +49,7 @@ class TestGradingRunner:
         mock_grader2 = MockGrader(name="relevance_grader")
 
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "accuracy": mock_grader1,
                 "relevance": mock_grader2,
             },
@@ -57,8 +57,8 @@ class TestGradingRunner:
         )
 
         assert runner.max_concurrency == 2
-        assert "accuracy" in runner.grader_configs
-        assert "relevance" in runner.grader_configs
+        assert "accuracy" in runner.graders
+        assert "relevance" in runner.graders
 
     @pytest.mark.asyncio
     async def test_grading_runner_with_mock_grader(self):
@@ -70,7 +70,7 @@ class TestGradingRunner:
 
         # Create runner with mock graders
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "accuracy": mock_grader1,
                 "relevance": mock_grader2,
             },
@@ -128,23 +128,26 @@ class TestGradingRunner:
 
     @pytest.mark.asyncio
     async def test_grading_runner_with_mappers(self):
-        """Test the grading runner with data mappers."""
+        """Test the grading runner with data mappers integrated in graders."""
 
-        # Create mock grader
-        mock_grader = MockGrader(name="mapped_grader")
+        # Create mock grader with mapper integrated
+        # The mapper format is {target_field: source_field_in_original_data}
+        mock_grader = MockGrader(
+            name="mapped_grader",
+            mapper={"query": "question", "response": "resp"},  # Map from source to expected field names
+        )
 
-        # Create runner with mapper
-        # The mapper format is {new_field_name: path_in_original_data}
+        # Create runner with the grader that has integrated mapper
         runner = GradingRunner(
-            grader_configs={
-                "mapped_test": (mock_grader, {"query": "question", "answer": "response"}),
+            graders={
+                "mapped_test": mock_grader,
             },
         )
 
         # Test data with different field names
         dataset = [
-            {"question": "What is 2+2?", "response": "4"},
-            {"question": "What is the sky color?", "response": "blue"},
+            {"question": "What is 2+2?", "resp": "4"},
+            {"question": "What is the sky color?", "resp": "blue"},
         ]
 
         # Run the evaluation
@@ -161,16 +164,16 @@ class TestGradingRunner:
         # Check that each call has the mapped field names
         for call in all_calls:
             assert "query" in call
-            assert "answer" in call
+            assert "response" in call
 
         # Check that the data was correctly mapped
         queries = [call["query"] for call in all_calls]
-        answers = [call["answer"] for call in all_calls]
+        responses = [call["response"] for call in all_calls]
 
         assert "What is 2+2?" in queries
         assert "What is the sky color?" in queries
-        assert "4" in answers
-        assert "blue" in answers
+        assert "4" in responses
+        assert "blue" in responses
 
     @pytest.mark.asyncio
     async def test_grading_runner_with_aggregators(self):
@@ -188,7 +191,7 @@ class TestGradingRunner:
 
         # Create runner with aggregators
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "accuracy_grader": mock_grader1,
                 "relevance_grader": mock_grader2,
             },
@@ -228,10 +231,10 @@ class TestGradingRunner:
         """Test the grading runner error handling."""
 
         class ErrorGrader(BaseGrader):
-            def __init__(self, name="error_grader"):
-                super().__init__(name=name)
+            def __init__(self, name="error_grader", mapper=None):
+                super().__init__(name=name, mapper=mapper)
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 raise Exception("Test error")
 
         # Create mock graders - one normal, one that raises error
@@ -240,7 +243,7 @@ class TestGradingRunner:
 
         # Create runner
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "normal": mock_grader,
                 "error": error_grader,
             },
@@ -288,7 +291,7 @@ class TestGradingRunner:
 
         # Create runner
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "accuracy": mock_grader1,
                 "relevance": mock_grader2,
             },
@@ -330,7 +333,7 @@ class TestGradingRunner:
 
         # Create runner with mock graders
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "accuracy": mock_grader1,
                 "relevance": mock_grader2,
             },
@@ -407,7 +410,7 @@ class TestGradingRunner:
 
         # Create runner
         runner = GradingRunner(
-            grader_configs={"test": mock_grader},
+            graders={"test": mock_grader},
             show_progress=False,
         )
 
@@ -453,7 +456,7 @@ class TestGradingRunner:
 
         # Create runner with aggregators
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "accuracy_grader": mock_grader1,
                 "relevance_grader": mock_grader2,
             },
@@ -497,12 +500,12 @@ class TestGradingRunner:
         import time
 
         class TimingMockGrader(BaseGrader):
-            def __init__(self, name="timing_grader", delay=0.1):
-                super().__init__(name=name)
+            def __init__(self, name="timing_grader", delay=0.1, mapper=None):
+                super().__init__(name=name, mapper=mapper)
                 self.delay = delay
                 self.execution_times = []
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 start_time = time.time()
                 await asyncio.sleep(self.delay)
                 end_time = time.time()
@@ -518,7 +521,7 @@ class TestGradingRunner:
 
         # Create runner with low concurrency
         runner = GradingRunner(
-            grader_configs={"timing": timing_grader},
+            graders={"timing": timing_grader},
             max_concurrency=2,  # Only 2 concurrent tasks
             show_progress=False,
         )
@@ -561,11 +564,11 @@ class TestGradingRunner:
 
         # Create a mock grader that returns the input data in the score
         class OrderTrackingGrader(BaseGrader):
-            def __init__(self, name="order_grader"):
-                super().__init__(name=name)
+            def __init__(self, name="order_grader", mapper=None):
+                super().__init__(name=name, mapper=mapper)
                 self.call_order = []
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 # Record the order of calls
                 self.call_order.append(kwargs)
                 # Return a score that includes the input data for verification
@@ -582,7 +585,7 @@ class TestGradingRunner:
 
         # Create runner
         runner = GradingRunner(
-            grader_configs={
+            graders={
                 "grader_1": grader1,
                 "grader_2": grader2,
             },
@@ -675,10 +678,10 @@ class TestGradingRunner:
         import random
 
         class RandomDelayGrader(BaseGrader):
-            def __init__(self, name="random_grader"):
-                super().__init__(name=name)
+            def __init__(self, name="random_grader", mapper=None):
+                super().__init__(name=name, mapper=mapper)
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 # Random delay to simulate varying processing times
                 await asyncio.sleep(random.uniform(0.001, 0.01))
                 return GraderScore(
@@ -693,7 +696,7 @@ class TestGradingRunner:
 
         # Create runner with high concurrency
         runner = GradingRunner(
-            grader_configs={"random_grader": grader},
+            graders={"random_grader": grader},
             max_concurrency=20,
             show_progress=False,
         )
@@ -730,11 +733,11 @@ class TestGradingRunner:
         """Test that order is preserved even when some evaluations fail."""
 
         class SelectiveErrorGrader(BaseGrader):
-            def __init__(self, name="error_grader", error_queries=None):
-                super().__init__(name=name)
+            def __init__(self, name="error_grader", error_queries=None, mapper=None):
+                super().__init__(name=name, mapper=mapper)
                 self.error_queries = error_queries or []
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 query = kwargs.get("query", "")
                 if query in self.error_queries:
                     raise ValueError(f"Intentional error for {query}")
@@ -750,7 +753,7 @@ class TestGradingRunner:
 
         # Create runner
         runner = GradingRunner(
-            grader_configs={"selective_grader": grader},
+            graders={"selective_grader": grader},
             max_concurrency=10,
             show_progress=False,
         )

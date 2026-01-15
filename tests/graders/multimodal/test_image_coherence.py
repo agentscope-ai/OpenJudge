@@ -37,7 +37,7 @@ from openjudge.analyzer.validation import FalseNegativeAnalyzer, FalsePositiveAn
 from openjudge.graders.multimodal._internal import MLLMImage
 from openjudge.graders.multimodal.image_coherence import ImageCoherenceGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -203,13 +203,15 @@ class TestImageCoherenceGraderQuality:
             }
 
         # Use custom mapper
-        grader_configs = {
-            "image_coherence": GraderConfig(
-                grader=grader,
-                mapper=map_response_with_image,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = ImageCoherenceGrader(
+            model=grader.model,
+            mapper=map_response_with_image,
+        )
+        runner = GradingRunner(
+            graders={
+                "image_coherence": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -246,17 +248,21 @@ class TestImageCoherenceGraderQuality:
             }
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "image_coherence_run1": GraderConfig(
-                grader=grader,
-                mapper=map_response_with_image,
-            ),
-            "image_coherence_run2": GraderConfig(
-                grader=grader,
-                mapper=map_response_with_image,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper1 = ImageCoherenceGrader(
+            model=model,
+            mapper=map_response_with_image,
+        )
+        grader_with_mapper2 = ImageCoherenceGrader(
+            model=model,
+            mapper=map_response_with_image,
+        )
+
+        runner = GradingRunner(
+            graders={
+                "image_coherence_run1": grader_with_mapper1,
+                "image_coherence_run2": grader_with_mapper2,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -356,18 +362,22 @@ class TestImageCoherenceGraderAdversarial:
             mllm_image = MLLMImage(base64=image_base64, format="png")
             return {"response": [query, mllm_image, incoherent_response]}
 
-        # Configure GraderConfig to evaluate both coherent and incoherent responses
-        grader_configs = {
-            "image_coherence_coherent": GraderConfig(
-                grader=grader,
-                mapper=map_coherent_response,
-            ),
-            "image_coherence_incoherent": GraderConfig(
-                grader=grader,
-                mapper=map_incoherent_response,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both coherent and incoherent responses
+        grader_with_coherent_mapper = ImageCoherenceGrader(
+            model=model,
+            mapper=map_coherent_response,
+        )
+        grader_with_incoherent_mapper = ImageCoherenceGrader(
+            model=model,
+            mapper=map_incoherent_response,
+        )
+
+        runner = GradingRunner(
+            graders={
+                "image_coherence_coherent": grader_with_coherent_mapper,
+                "image_coherence_incoherent": grader_with_incoherent_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

@@ -36,7 +36,7 @@ from openjudge.analyzer.statistical import ConsistencyAnalyzer
 from openjudge.analyzer.validation import FalseNegativeAnalyzer, FalsePositiveAnalyzer
 from openjudge.graders.common.instruction_following import InstructionFollowingGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -203,18 +203,8 @@ class TestInstructionFollowingGraderQuality:
         # Create grader with real model
         grader = InstructionFollowingGrader(model=model)
 
-        # Use mapper to explicitly map fields (exclude human_score)
-        grader_configs = {
-            "instruction_following": GraderConfig(
-                grader=grader,
-                mapper={
-                    "instruction": "instruction",
-                    "response": "response",
-                    "query": "query",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Create runner with the grader
+        runner = GradingRunner(graders={"instruction_following": grader})
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -237,25 +227,12 @@ class TestInstructionFollowingGraderQuality:
         grader = InstructionFollowingGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "instruction_following_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "instruction": "instruction",
-                    "response": "response",
-                    "query": "query",
-                },
-            ),
-            "instruction_following_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "instruction": "instruction",
-                    "response": "response",
-                    "query": "query",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "instruction_following_run1": grader,
+                "instruction_following_run2": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -328,26 +305,13 @@ class TestInstructionFollowingGraderAdversarial:
         # Create grader with real model
         grader = InstructionFollowingGrader(model=model)
 
-        # Configure GraderConfig to evaluate both following and non-following responses
-        grader_configs = {
-            "instruction_following_following": GraderConfig(
-                grader=grader,
-                mapper={
-                    "instruction": "instruction",
-                    "response": "following_response",
-                    "query": "query",
-                },
-            ),
-            "instruction_following_non_following": GraderConfig(
-                grader=grader,
-                mapper={
-                    "instruction": "instruction",
-                    "response": "non_following_response",
-                    "query": "query",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Create runner with the grader configured for different response types
+        runner = GradingRunner(
+            graders={
+                "instruction_following_following": grader,
+                "instruction_following_non_following": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

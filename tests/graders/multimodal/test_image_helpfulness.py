@@ -37,7 +37,7 @@ from openjudge.analyzer.validation import FalseNegativeAnalyzer, FalsePositiveAn
 from openjudge.graders.multimodal._internal import MLLMImage
 from openjudge.graders.multimodal.image_helpfulness import ImageHelpfulnessGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -185,8 +185,6 @@ class TestImageHelpfulnessGraderQuality:
     @pytest.mark.asyncio
     async def test_basic_evaluation_with_runner(self, dataset, model):
         """Test the grader's basic evaluation capability"""
-        # Create grader with real model
-        grader = ImageHelpfulnessGrader(model=model)
 
         # Custom mapper to construct response with image
         def map_response_with_image(sample):
@@ -203,13 +201,10 @@ class TestImageHelpfulnessGraderQuality:
             }
 
         # Use custom mapper
-        grader_configs = {
-            "image_helpfulness": GraderConfig(
-                grader=grader,
-                mapper=map_response_with_image,
-            ),
+        graders = {
+            "image_helpfulness": ImageHelpfulnessGrader(model=model, mapper=map_response_with_image),
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -228,35 +223,38 @@ class TestImageHelpfulnessGraderQuality:
     @pytest.mark.asyncio
     async def test_consistency_with_runner(self, dataset, model):
         """Test grader evaluation consistency"""
-        # Create grader with real model
-        grader = ImageHelpfulnessGrader(model=model)
 
-        # Custom mapper to construct response with image
-        def map_response_with_image(sample):
+        # Custom mappers for helpful and unhelpful responses
+        def map_helpful_response(sample):
             query = sample.get("query", "")
             image_base64 = sample.get("image_base64", "")
             chosen_response = sample.get("chosen_response", "")
-
-            # Create MLLMImage from base64
             mllm_image = MLLMImage(base64=image_base64, format="png")
+            return {"response": [query, mllm_image, chosen_response]}
 
-            # Construct multimodal response
-            return {
-                "response": [query, mllm_image, chosen_response],
+        def map_unhelpful_response(sample):
+            query = sample.get("query", "")
+            image_base64 = sample.get("image_base64", "")
+            rejected_response = sample.get("rejected_response", "")
+            mllm_image = MLLMImage(base64=image_base64, format="png")
+            return {"response": [query, mllm_image, rejected_response]}
+
+        # Configure graders with integrated mappers to evaluate both helpful and unhelpful responses
+        grader_with_helpful_mapper = ImageHelpfulnessGrader(
+            model=model,
+            mapper=map_helpful_response,
+        )
+        grader_with_unhelpful_mapper = ImageHelpfulnessGrader(
+            model=model,
+            mapper=map_unhelpful_response,
+        )
+
+        runner = GradingRunner(
+            graders={
+                "image_helpfulness_helpful": grader_with_helpful_mapper,
+                "image_helpfulness_unhelpful": grader_with_unhelpful_mapper,
             }
-
-        # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "image_helpfulness_run1": GraderConfig(
-                grader=grader,
-                mapper=map_response_with_image,
-            ),
-            "image_helpfulness_run2": GraderConfig(
-                grader=grader,
-                mapper=map_response_with_image,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -264,8 +262,8 @@ class TestImageHelpfulnessGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
-            grader_results=results["image_helpfulness_run1"],
-            another_grader_results=results["image_helpfulness_run2"],
+            grader_results=results["image_helpfulness_helpful"],
+            another_grader_results=results["image_helpfulness_unhelpful"],
         )
 
         # Assert that consistency metrics meet expected thresholds
@@ -356,18 +354,22 @@ class TestImageHelpfulnessGraderAdversarial:
             mllm_image = MLLMImage(base64=image_base64, format="png")
             return {"response": [query, mllm_image, unhelpful_response]}
 
-        # Configure GraderConfig to evaluate both helpful and unhelpful responses
-        grader_configs = {
-            "image_helpfulness_helpful": GraderConfig(
-                grader=grader,
-                mapper=map_helpful_response,
-            ),
-            "image_helpfulness_unhelpful": GraderConfig(
-                grader=grader,
-                mapper=map_unhelpful_response,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both helpful and unhelpful responses
+        grader_with_helpful_mapper = ImageHelpfulnessGrader(
+            model=model,
+            mapper=map_helpful_response,
+        )
+        grader_with_unhelpful_mapper = ImageHelpfulnessGrader(
+            model=model,
+            mapper=map_unhelpful_response,
+        )
+
+        runner = GradingRunner(
+            graders={
+                "image_helpfulness_helpful": grader_with_helpful_mapper,
+                "image_helpfulness_unhelpful": grader_with_unhelpful_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

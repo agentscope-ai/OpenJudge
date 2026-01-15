@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Complete demo test for ReflectionOutcomeUnderstandingGrader showing unit tests and quality tests.
@@ -40,7 +39,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import ReflectionOutcomeUnderstandingGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -276,16 +275,15 @@ class TestReflectionOutcomeUnderstandingGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between good and poor outcome understanding"""
-        # Create grader with real model
-        grader = ReflectionOutcomeUnderstandingGrader(model=model)
-
         # Use mapper to configure data transformation
-        grader_configs = {
-            "reflection_outcome_understanding": GraderConfig(
-                grader=grader,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper = ReflectionOutcomeUnderstandingGrader(
+            model=model,
+        )
+        runner = GradingRunner(
+            graders={
+                "reflection_outcome_understanding": grader_with_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -312,15 +310,11 @@ class TestReflectionOutcomeUnderstandingGraderQuality:
         grader = ReflectionOutcomeUnderstandingGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "reflection_outcome_understanding_run1": GraderConfig(
-                grader=grader,
-            ),
-            "reflection_outcome_understanding_run2": GraderConfig(
-                grader=grader,
-            ),
+        graders = {
+            "reflection_outcome_understanding_run1": grader,
+            "reflection_outcome_understanding_run2": grader,
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -416,28 +410,32 @@ class TestReflectionOutcomeUnderstandingGraderAdversarial:
         # Create grader with real model
         grader = ReflectionOutcomeUnderstandingGrader(model=model)
 
-        # Configure GraderConfig to evaluate both good and poor reflections
-        grader_configs = {
-            "reflection_outcome_understanding_good": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "reflection": "good_reflection",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-            "reflection_outcome_understanding_poor": GraderConfig(
-                grader=grader,
-                mapper={
-                    "observation": "observation",
-                    "reflection": "poor_reflection",
-                    "task_context": "task_context",
-                    "history_steps": "history_steps",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both good and poor reflections
+        reflection_outcome_understanding_good = ReflectionOutcomeUnderstandingGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "reflection": "good_reflection",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+        reflection_outcome_understanding_poor = ReflectionOutcomeUnderstandingGrader(
+            model=model,
+            mapper={
+                "observation": "observation",
+                "reflection": "poor_reflection",
+                "task_context": "task_context",
+                "history_steps": "history_steps",
+            },
+        )
+
+        runner = GradingRunner(
+            graders={
+                "reflection_outcome_understanding_good": reflection_outcome_understanding_good,
+                "reflection_outcome_understanding_poor": reflection_outcome_understanding_poor,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

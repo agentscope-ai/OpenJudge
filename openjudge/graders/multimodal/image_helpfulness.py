@@ -8,7 +8,7 @@ Restructured to work with Grader framework.
 
 import asyncio
 import textwrap
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -24,6 +24,7 @@ from openjudge.graders.schema import GraderScoreCallback
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
+from openjudge.strategy import BaseStrategy
 from openjudge.utils.utils import parse_structured_chat_response
 
 # pylint: disable=line-too-long
@@ -190,9 +191,11 @@ class ImageHelpfulnessGrader(LLMGrader):
         threshold: float = 0.7,
         template: PromptTemplate = DEFAULT_IMAGE_HELPFULNESS_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseStrategy | None = None,
+        mapper: Optional[Union[Dict[str, str], Callable]] = None,
     ):
         """
-        Initialize ImageHelpfulnessGrader
+        Initialize ImageHelpfulnessGrader.
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
@@ -200,6 +203,9 @@ class ImageHelpfulnessGrader(LLMGrader):
             threshold: Success threshold [0, 1] (default: 0.7)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_IMAGE_HELPFULNESS_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
         """
         super().__init__(
             name="image_helpfulness",
@@ -208,6 +214,8 @@ class ImageHelpfulnessGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_IMAGE_HELPFULNESS_TEMPLATE,
             language=language,
+            strategy=strategy,
+            mapper=mapper,
         )
         self.max_context_size = max_context_size
         self.threshold = threshold
@@ -292,7 +300,7 @@ class ImageHelpfulnessGrader(LLMGrader):
 
         return final_score, details
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         response: List[Union[str, MLLMImage]],
         **kwargs: Any,

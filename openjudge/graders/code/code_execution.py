@@ -12,12 +12,13 @@ against predefined test cases, and provide scores based on the pass rate of thos
 import json
 import re
 import traceback
-from typing import Any
+from typing import Any, Callable, Dict, Union
 
 from loguru import logger
 
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+from openjudge.strategy import BaseStrategy
 
 
 class CodeExecutionGrader(BaseGrader):
@@ -34,12 +35,16 @@ class CodeExecutionGrader(BaseGrader):
         timeout: int = 10,
         test_framework_available: bool = True,
         compute_score: Any = None,
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
         **kwargs: Any,
     ):
         super().__init__(
             name="code_execution",
             mode=GraderMode.POINTWISE,
             description="Executes code against test cases and evaluates correctness based on test case results",
+            strategy=strategy,
+            mapper=mapper,
             **kwargs,
         )
 
@@ -88,7 +93,7 @@ class CodeExecutionGrader(BaseGrader):
         # If no code block markers, assume the entire content is code
         return content
 
-    async def aevaluate(self, response: str) -> GraderScore:
+    async def _aevaluate(self, response: str) -> GraderScore:
         """Evaluate code by executing it against test cases.
 
         Tests the functional correctness of generated code by executing it

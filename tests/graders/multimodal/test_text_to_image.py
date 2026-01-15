@@ -38,7 +38,7 @@ from openjudge.graders.multimodal._internal import MLLMImage
 from openjudge.graders.multimodal.text_to_image import TextToImageGrader
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.openai_chat_model import OpenAIChatModel
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -186,8 +186,6 @@ class TestTextToImageGraderQuality:
     @pytest.mark.asyncio
     async def test_basic_evaluation_with_runner(self, dataset, model):
         """Test the grader's basic evaluation capability"""
-        # Create grader with real model
-        grader = TextToImageGrader(model=model)
 
         # Custom mapper to construct query and image response
         def map_text_to_image(sample):
@@ -203,13 +201,10 @@ class TestTextToImageGraderQuality:
             }
 
         # Use custom mapper
-        grader_configs = {
-            "text_to_image": GraderConfig(
-                grader=grader,
-                mapper=map_text_to_image,
-            ),
+        graders = {
+            "text_to_image": TextToImageGrader(model=model, mapper=map_text_to_image),
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -245,17 +240,21 @@ class TestTextToImageGraderQuality:
             }
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "text_to_image_run1": GraderConfig(
-                grader=grader,
-                mapper=map_text_to_image,
-            ),
-            "text_to_image_run2": GraderConfig(
-                grader=grader,
-                mapper=map_text_to_image,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        grader_with_mapper1 = TextToImageGrader(
+            model=model,
+            mapper=map_text_to_image,
+        )
+        grader_with_mapper2 = TextToImageGrader(
+            model=model,
+            mapper=map_text_to_image,
+        )
+
+        runner = GradingRunner(
+            graders={
+                "text_to_image_run1": grader_with_mapper1,
+                "text_to_image_run2": grader_with_mapper2,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -360,18 +359,22 @@ class TestTextToImageGraderAdversarial:
             mllm_image = MLLMImage(base64=rejected_image_base64, format="png")
             return {"query": query, "response": mllm_image}
 
-        # Configure GraderConfig to evaluate both chosen and rejected images
-        grader_configs = {
-            "text_to_image_chosen": GraderConfig(
-                grader=grader,
-                mapper=map_chosen_image,
-            ),
-            "text_to_image_rejected": GraderConfig(
-                grader=grader,
-                mapper=map_rejected_image,
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Configure graders with integrated mappers to evaluate both chosen and rejected images
+        grader_with_chosen_mapper = TextToImageGrader(
+            model=model,
+            mapper=map_chosen_image,
+        )
+        grader_with_rejected_mapper = TextToImageGrader(
+            model=model,
+            mapper=map_rejected_image,
+        )
+
+        runner = GradingRunner(
+            graders={
+                "text_to_image_chosen": grader_with_chosen_mapper,
+                "text_to_image_rejected": grader_with_rejected_mapper,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

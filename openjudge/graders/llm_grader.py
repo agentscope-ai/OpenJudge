@@ -16,7 +16,7 @@ Classes:
 
 import os
 import textwrap
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Dict, Type, Union
 
 from pydantic import BaseModel
 
@@ -31,6 +31,7 @@ from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
+from openjudge.strategy import BaseStrategy
 
 
 class LLMGrader(BaseGrader):
@@ -62,6 +63,8 @@ class LLMGrader(BaseGrader):
         template: str | dict | PromptTemplate | None = None,
         structured_model: Type[BaseModel] | None = None,
         callback: Callable | None = None,
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
         **kwargs: Any,
     ):
         """Initialize an LLMGrader.
@@ -88,10 +91,13 @@ class LLMGrader(BaseGrader):
                       Can be one of the following:
                       1. A Callable that processes the response and populates metadata
                       2. None, in which case no callback processing is performed
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
             **kwargs: Additional keyword arguments passed to the parent Grader class and
                      used in the template rendering.
         """
-        super().__init__(name=name, mode=mode, description=description, **kwargs)
+        super().__init__(name=name, mode=mode, description=description, strategy=strategy, mapper=mapper, **kwargs)
 
         # Handle language parameter
         if not language:
@@ -216,7 +222,7 @@ class LLMGrader(BaseGrader):
             **config,
         )
 
-    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
+    async def _aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
         """Evaluate using LLM.
 
         Performs evaluation using a large language model according to the configured
@@ -335,4 +341,4 @@ class LLMGrader(BaseGrader):
     @staticmethod
     def get_metadata() -> Dict[str, Any]:
         """Return the docstring of the aevaluate method to explain how LLMGrader works with LLM."""
-        return {"aevaluate": LLMGrader.aevaluate.__doc__, "prompt": {}}
+        return {"aevaluate": LLMGrader._aevaluate.__doc__, "prompt": {}}

@@ -7,9 +7,12 @@ either scores or rankings.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Union
 
 from openjudge.graders.schema import GraderError, GraderMode, GraderRank, GraderScore
+from openjudge.runner.controller.base import BaseController
+from openjudge.strategy import BaseStrategy
+from openjudge.utils.mapping import parse_data_with_mapper
 
 
 class BaseGrader(ABC):
@@ -22,6 +25,9 @@ class BaseGrader(ABC):
         name (str): The name of the grader.
         mode (GraderMode): The grader mode (pointwise or listwise).
         description (str): Description of what this grader evaluates.
+        strategy (BaseStrategy): The evaluation strategy to use.
+        mapper (Dict[str, str] | Callable | None): Optional mapper to transform
+            input data before evaluation. Can be a dictionary mapping or a callable.
         kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Example:
@@ -45,6 +51,8 @@ class BaseGrader(ABC):
         name: str = "",
         mode: GraderMode = GraderMode.POINTWISE,
         description: str = "",
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
         **kwargs: Any,
     ):
         """Initialize a Grader.
@@ -55,6 +63,9 @@ class BaseGrader(ABC):
                   or LISTWISE (joint evaluation of multiple samples).
                   Defaults to POINTWISE.
             description: Human-readable description of what this grader evaluates.
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
             **kwargs: Additional keyword arguments that will be stored and
                      accessible to subclasses.
 
@@ -73,10 +84,12 @@ class BaseGrader(ABC):
         self.name = name
         self.mode = mode
         self.description = description
+        self.strategy = strategy
+        self.mapper = mapper
         self.kwargs = kwargs
 
     @abstractmethod
-    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank | GraderError:
+    async def _aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank | GraderError:
         """Abstract method for performing the actual evaluation logic.
 
         This method must be implemented by all Grader subclasses. It performs
@@ -141,6 +154,29 @@ class BaseGrader(ABC):
             >>> # Implementation would rank answers by relevance
         """
 
+    # === [Core Interface] ===
+    async def aevaluate(self, controller: BaseController | None = None, **kwargs: Any) -> Any:
+        """
+        Called by the Runner to inject the controller.
+        """
+        # 1. Apply mapper if available to transform input data
+        data = parse_data_with_mapper(kwargs, self.mapper)
+
+        # 2. Wrap the atomic evaluation task to submit to the controller
+        async def managed_fn(**runtime_kwargs):
+            # Submit to Controller for execution
+            if controller is None:
+                return await self._aevaluate(**runtime_kwargs)
+            else:
+                return await controller.submit(self._aevaluate, **runtime_kwargs)
+
+        # 3. Execute the strategy
+        # The strategy receives a function with resource management capabilities
+        if self.strategy:
+            return await self.strategy.execute(managed_fn, **data)
+        else:
+            return await managed_fn(**data)
+
     @staticmethod
     def get_metadata() -> Dict[str, Any]:
         """Return the information about the grader's evaluation process.
@@ -198,12 +234,14 @@ class BaseGrader(ABC):
         else:
             mode = mode_value
         description = config_copy.pop("description", "")
+        mapper = config_copy.pop("mapper", None)
 
         # Create and return new instance with remaining config items as kwargs
         return cls(
             name=name,
             mode=mode,
             description=description,
+            mapper=mapper,
             **config_copy,
         )
 
@@ -233,5 +271,6 @@ class BaseGrader(ABC):
             "name": self.name,
             "mode": self.mode.value,
             "description": self.description,
+            "mapper": self.mapper,
             "kwargs": self.kwargs,
         }

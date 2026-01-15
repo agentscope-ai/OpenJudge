@@ -36,7 +36,7 @@ from openjudge.analyzer.statistical import ConsistencyAnalyzer
 from openjudge.analyzer.validation import FalseNegativeAnalyzer, FalsePositiveAnalyzer
 from openjudge.graders.common.relevance import RelevanceGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -203,18 +203,8 @@ class TestRelevanceGraderQuality:
         # Create grader with real model
         grader = RelevanceGrader(model=model)
 
-        # Use mapper to explicitly map fields (exclude human_score)
-        grader_configs = {
-            "relevance": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        # Create runner with the grader
+        runner = GradingRunner(graders={"relevance": grader})
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -237,25 +227,12 @@ class TestRelevanceGraderQuality:
         grader = RelevanceGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "relevance_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                },
-            ),
-            "relevance_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "response",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "relevance_run1": grader,
+                "relevance_run2": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -325,29 +302,27 @@ class TestRelevanceGraderAdversarial:
     @pytest.mark.asyncio
     async def test_adversarial_relevance_with_runner(self, dataset, model):
         """Test the grader's ability to identify adversarial examples"""
-        # Create grader with real model
-        grader = RelevanceGrader(model=model)
 
-        # Configure GraderConfig to evaluate both relevant and irrelevant responses
-        grader_configs = {
-            "relevance_relevant": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "relevant_response",
-                    "context": "context",
-                },
-            ),
-            "relevance_irrelevant": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "response": "irrelevant_response",
-                    "context": "context",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "relevance_relevant": RelevanceGrader(
+                    model=model,
+                    mapper={
+                        "query": "query",
+                        "response": "relevant_response",
+                        "context": "context",
+                    },
+                ),
+                "relevance_irrelevant": RelevanceGrader(
+                    model=model,
+                    mapper={
+                        "query": "query",
+                        "response": "irrelevant_response",
+                        "context": "context",
+                    },
+                ),
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

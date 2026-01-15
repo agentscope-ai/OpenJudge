@@ -40,7 +40,7 @@ from openjudge.analyzer.validation import (
 from openjudge.graders.agent import ToolParameterCheckGrader
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -333,21 +333,21 @@ class TestToolParameterCheckGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between correct and incorrect parameters"""
-        # Create grader with real model
-        grader = ToolParameterCheckGrader(model=model)
+        # Create grader with integrated mapper
+        tool_parameter_check_grader = ToolParameterCheckGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "tool_definitions": "tool_definitions",
+                "tool_calls": "tool_calls",
+            },
+        )
 
-        # Use mapper to configure data transformation
-        grader_configs = {
-            "tool_parameter_check": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "tool_parameter_check": tool_parameter_check_grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -374,25 +374,12 @@ class TestToolParameterCheckGraderQuality:
         grader = ToolParameterCheckGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "tool_parameter_check_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                },
-            ),
-            "tool_parameter_check_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "tool_parameter_check_run1": grader,
+                "tool_parameter_check_run2": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)
@@ -499,21 +486,18 @@ class TestToolParameterCheckGraderAdversarial:
     @pytest.mark.asyncio
     async def test_adversarial_tool_parameter_check_with_runner(self, dataset, model):
         """Test the grader's ability to identify adversarial examples"""
-        # Create grader with real model
-        grader = ToolParameterCheckGrader(model=model)
-
-        # Configure GraderConfig to evaluate both correct and incorrect parameters
-        grader_configs = {
-            "tool_parameter_check_correct": GraderConfig(
-                grader=grader,
+        # Configure graders to evaluate both correct and incorrect parameters
+        graders = {
+            "tool_parameter_check_correct": ToolParameterCheckGrader(
+                model=model,
                 mapper={
                     "query": "query",
                     "tool_definitions": "tool_definitions",
                     "tool_calls": "correct_tool_calls",
                 },
             ),
-            "tool_parameter_check_incorrect": GraderConfig(
-                grader=grader,
+            "tool_parameter_check_incorrect": ToolParameterCheckGrader(
+                model=model,
                 mapper={
                     "query": "query",
                     "tool_definitions": "tool_definitions",
@@ -521,7 +505,7 @@ class TestToolParameterCheckGraderAdversarial:
                 },
             ),
         }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(graders=graders)
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset)

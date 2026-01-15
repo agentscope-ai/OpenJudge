@@ -6,12 +6,13 @@ This module provides graders for evaluating mathematical problem solving capabil
 using the math_verify library to parse and verify mathematical expressions.
 """
 
-from typing import Any
+from typing import Any, Callable, Dict, Union
 
 from math_verify import parse, verify
 from math_verify.parser import ExprExtractionConfig, LatexExtractionConfig
 
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
+from openjudge.strategy import BaseStrategy
 
 
 class MathExpressionVerifyGrader(BaseGrader):
@@ -19,22 +20,33 @@ class MathExpressionVerifyGrader(BaseGrader):
     Verifies mathematical expressions using the math_verify library, supporting both LaTeX and plain expressions
     """
 
-    def __init__(self, timeout_score: float = 1.0, **kwargs: Any):
+    def __init__(
+        self,
+        timeout_score: float = 1.0,
+        strategy: BaseStrategy | None = None,
+        mapper: Union[Dict[str, str], Callable, None] = None,
+        **kwargs: Any,
+    ):
         """
         Initialize the MathExpressionVerifyGrader.
 
         Args:
             timeout_score: Score to assign on timeout or exception.
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
+            mapper: Optional mapper to transform input data before evaluation.
+                   Can be a dictionary mapping or a callable.
         """
         super().__init__(
             name="math_verify",
             mode=GraderMode.POINTWISE,
             description="Verifies mathematical expressions using the math_verify library",
+            strategy=strategy,
+            mapper=mapper,
             **kwargs,
         )
         self.timeout_score = timeout_score
 
-    async def aevaluate(self, response: str, reference_response: str) -> GraderScore:
+    async def _aevaluate(self, response: str, reference_response: str) -> GraderScore:
         """
         Verify mathematical expressions for accuracy by parsing and comparing the response answer
         against a reference response using the math_verify library.

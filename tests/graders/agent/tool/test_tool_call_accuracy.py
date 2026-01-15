@@ -36,7 +36,7 @@ from openjudge.graders.agent import ToolCallAccuracyGrader
 from openjudge.graders.base_grader import GraderError
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-from openjudge.runner.grading_runner import GraderConfig, GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 # ==================== UNIT TESTS ====================
 # These tests verify the basic functionality of the grader in isolation
@@ -308,21 +308,21 @@ class TestToolCallAccuracyGraderQuality:
     @pytest.mark.asyncio
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between accurate and inaccurate tool calls"""
-        # Create grader with real model
-        grader = ToolCallAccuracyGrader(model=model)
+        # Create grader with integrated mapper
+        tool_call_accuracy_grader = ToolCallAccuracyGrader(
+            model=model,
+            mapper={
+                "query": "query",
+                "tool_definitions": "tool_definitions",
+                "tool_calls": "tool_calls",
+            },
+        )
 
-        # Use mapper to configure data transformation
-        grader_configs = {
-            "tool_call_accuracy": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "tool_call_accuracy": tool_call_accuracy_grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset=dataset)
@@ -348,25 +348,12 @@ class TestToolCallAccuracyGraderQuality:
         grader = ToolCallAccuracyGrader(model=model)
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs = {
-            "tool_call_accuracy_run1": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                },
-            ),
-            "tool_call_accuracy_run2": GraderConfig(
-                grader=grader,
-                mapper={
-                    "query": "query",
-                    "tool_definitions": "tool_definitions",
-                    "tool_calls": "tool_calls",
-                },
-            ),
-        }
-        runner = GradingRunner(grader_configs=grader_configs)
+        runner = GradingRunner(
+            graders={
+                "tool_call_accuracy_run1": grader,
+                "tool_call_accuracy_run2": grader,
+            }
+        )
 
         # Use Runner to perform batch evaluation
         results = await runner.arun(dataset=dataset)
