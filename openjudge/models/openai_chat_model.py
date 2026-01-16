@@ -187,7 +187,7 @@ class OpenAIChatModel(BaseChatModel):
             kwargs.pop("tool_choice", None)
 
             # Use simple json_object format for models that don't support complex JSON schema
-            if "qwen" in self.model or "gemini" in self.model:
+            if "qwen" in self.model.lower() or "gemini" in self.model.lower():
                 structured_model = {"type": "json_object"}  # type: ignore
 
             kwargs["response_format"] = structured_model

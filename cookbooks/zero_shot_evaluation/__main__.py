@@ -146,21 +146,21 @@ def main(
     loaded_config = load_config(str(config_path))
     effective_output_dir = output_dir or loaded_config.output.output_dir
 
-    # Handle rerun_judge flag
+    # Handle rerun_judge and fresh flags
     if rerun_judge:
         if fresh:
             logger.warning("--rerun-judge and --fresh are mutually exclusive, using --rerun-judge")
         logger.info("Re-running pairwise evaluation with new judge model...")
         if not _clear_judge_results(effective_output_dir):
             logger.info("No previous results found, will run full evaluation")
+    elif fresh:
+        logger.info("Starting fresh (ignoring checkpoint)")
+    else:
+        logger.info("Resume mode enabled (will continue from checkpoint if exists)")
 
     logger.info(f"Starting zero-shot evaluation with config: {config}")
     if queries_file:
         logger.info(f"Using pre-generated queries from: {queries_file}")
-    if fresh and not rerun_judge:
-        logger.info("Starting fresh (ignoring checkpoint)")
-    else:
-        logger.info("Resume mode enabled (will continue from checkpoint if exists)")
 
     asyncio.run(_run_evaluation(str(config_path), output_dir, queries_file, save, resume=not fresh or rerun_judge))
 
