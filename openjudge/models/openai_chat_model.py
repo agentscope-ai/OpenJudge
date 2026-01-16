@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """OpenAI Client."""
+import copy
 import os
 from typing import Any, AsyncGenerator, Callable, Dict, Literal, Type
 
@@ -25,9 +26,9 @@ def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> list
             The list of message dictionaries from OpenAI formatter.
     """
     format_data = []
-    try:
-        for msg in messages:
-            msg_copy = msg.copy()
+    for msg in messages:
+        try:
+            msg_copy = copy.deepcopy(msg)
             msg_dict = msg_copy.to_dict() if isinstance(msg_copy, ChatMessage) else msg_copy
             if isinstance(msg_dict.get("content"), list):
                 for block in msg_dict["content"]:
@@ -39,8 +40,9 @@ def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> list
                     ):
                         block["input_audio"]["data"] = "data:;base64," + block["input_audio"]["data"]
             format_data.append(msg_dict)
-    except Exception as e:
-        logger.error(f"Failed to format audio data: {type(e).__name__}: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"Failed to format audio data: {type(e).__name__}: {e}", exc_info=True)
+            format_data.append(msg.to_dict() if isinstance(msg, ChatMessage) else msg)
     return format_data
 
 
@@ -178,7 +180,7 @@ class OpenAIChatModel(BaseChatModel):
             kwargs["extra_body"]["enable_thinking"] = False
             logger.debug("Set enable_thinking=False in extra_body for qwen model")
 
-        if not tool_choice:
+        if tool_choice:
             self._validate_tool_choice(tool_choice, tools)
 
         if structured_model:
