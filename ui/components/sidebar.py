@@ -20,33 +20,32 @@ LOGO_PATH = Path(__file__).parent.parent / "assets" / "logo.svg"
 
 
 def _render_logo_and_title() -> None:
-    """Render logo and title section."""
-    _, col_center, _ = st.columns([1, 2, 1])
-    with col_center:
+    """Render logo and title section (compact horizontal layout)."""
+    col_logo, col_title = st.columns([1, 3])
+    with col_logo:
         if LOGO_PATH.exists():
-            st.image(str(LOGO_PATH), width=80)
+            st.image(str(LOGO_PATH), width=50)
         else:
             st.markdown(
-                """<div style="width: 48px; height: 48px; margin: 0 auto;
+                """<div style="width: 40px; height: 40px;
                     background: linear-gradient(135deg, #6366F1, #8B5CF6);
-                    border-radius: 12px; display: flex; align-items: center;
-                    justify-content: center; font-size: 1.5rem; color: white;
+                    border-radius: 10px; display: flex; align-items: center;
+                    justify-content: center; font-size: 1.2rem; color: white;
                     font-weight: 700;">OJ</div>""",
                 unsafe_allow_html=True,
             )
-
-    st.markdown(
-        f"""<div style="text-align: center; margin-bottom: 1.5rem;">
-            <div style="font-size: 1.25rem; font-weight: 700; color: #F1F5F9;">
-                {APP_NAME}
-            </div>
-            <div style="font-size: 0.75rem; color: #64748B;">
-                v{APP_VERSION} • Powered by OpenJudge
-            </div>
-        </div>""",
-        unsafe_allow_html=True,
-    )
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+    with col_title:
+        st.markdown(
+            f"""<div style="padding-top: 0.25rem;">
+                <div style="font-size: 1.1rem; font-weight: 700; color: #F1F5F9;">
+                    {APP_NAME}
+                </div>
+                <div style="font-size: 0.7rem; color: #64748B;">
+                    v{APP_VERSION}
+                </div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
 
 
 def _render_api_settings(config: dict[str, Any]) -> None:
@@ -83,7 +82,6 @@ def _render_api_settings(config: dict[str, Any]) -> None:
 
     config["api_endpoint"] = api_endpoint
     config["api_key"] = api_key
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 
 
 def _render_model_settings(config: dict[str, Any]) -> None:
@@ -107,7 +105,6 @@ def _render_model_settings(config: dict[str, Any]) -> None:
         model_name = model_option
 
     config["model_name"] = model_name
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 
 
 def _render_grader_settings(config: dict[str, Any]) -> None:
@@ -158,8 +155,6 @@ def _render_grader_settings(config: dict[str, Any]) -> None:
         st.warning("No graders in this category")
         config["grader_name"] = None
         config["grader_config"] = None
-
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 
 
 def _render_evaluation_settings(config: dict[str, Any]) -> None:

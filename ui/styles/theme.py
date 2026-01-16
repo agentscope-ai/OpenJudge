@@ -588,10 +588,54 @@ CUSTOM_CSS = """
     background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
 }
 
+/* Reduce top padding in sidebar to minimum */
+[data-testid="stSidebar"] > div:first-child {
+    padding-top: 0 !important;
+}
+
+/* Remove extra padding from sidebar content */
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+    padding-top: 0.5rem !important;
+}
+
+/* Move collapse button to the right of the header */
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+    position: absolute !important;
+    top: 0.5rem !important;
+    right: 0.5rem !important;
+    left: auto !important;
+    z-index: 999 !important;
+}
+
+/* Remove default collapse button spacing */
+[data-testid="stSidebar"] > div > div:first-child {
+    min-height: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Remove top margin from first element in sidebar */
+[data-testid="stSidebar"] .block-container {
+    padding-top: 0 !important;
+}
+
+/* Ensure logo section has minimal top spacing */
+[data-testid="stSidebar"] .stImage {
+    margin-top: 0 !important;
+}
+
+[data-testid="stSidebar"] .element-container:first-child {
+    margin-top: 0 !important;
+}
+
 [data-testid="stSidebar"] .stSelectbox label,
 [data-testid="stSidebar"] .stTextInput label {
     color: #94A3B8 !important;
     font-size: 0.85rem !important;
+}
+
+/* Hide "No results" autocomplete dropdown for text inputs */
+.stTextInput [data-baseweb="popover"] {
+    display: none !important;
 }
 
 /* =========================================================================
