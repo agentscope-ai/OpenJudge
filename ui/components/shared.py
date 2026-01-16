@@ -2,8 +2,7 @@
 """Shared UI components for OpenJudge Studio."""
 
 import streamlit as st
-
-from ..config.constants import APP_NAME, APP_VERSION
+from config.constants import APP_NAME, APP_VERSION
 
 
 def render_header() -> None:

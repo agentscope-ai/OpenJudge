@@ -4,10 +4,9 @@
 from typing import Any
 
 import streamlit as st
-
-from ..config.constants import EXAMPLE_DATA
-from .multimodal import render_multimodal_input, render_text_to_image_input
-from .shared import render_section_header
+from components.multimodal import render_multimodal_input, render_text_to_image_input
+from components.shared import render_section_header
+from config.constants import EXAMPLE_DATA
 
 
 def _get_example_data(category: str) -> dict[str, Any]:

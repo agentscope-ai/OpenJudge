@@ -5,13 +5,13 @@ import importlib
 import inspect
 from typing import Any, Optional
 
+from config.grader_registry import GRADER_REGISTRY
+from utils.helpers import run_async
+
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderError, GraderScore
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
-
-from ..config.grader_registry import GRADER_REGISTRY
-from ..utils.helpers import run_async
 
 
 def _import_grader_class(class_path: str) -> type:

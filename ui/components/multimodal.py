@@ -4,8 +4,7 @@
 from typing import Any, Optional
 
 import streamlit as st
-
-from ..utils.helpers import encode_image_to_base64, get_image_format
+from utils.helpers import encode_image_to_base64, get_image_format
 
 
 def render_image_uploader(

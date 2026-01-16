@@ -6,19 +6,29 @@ This is the main entry point for the Streamlit application.
 The application uses the OpenJudge framework's built-in Graders and Models.
 """
 
-import streamlit as st
+import sys
+from pathlib import Path
 
-from .components.input_panel import render_input_panel, render_run_button
-from .components.result_panel import render_result_panel
-from .components.shared import (
+# Add the ui directory to Python path for local imports
+UI_DIR = Path(__file__).parent
+if str(UI_DIR) not in sys.path:
+    sys.path.insert(0, str(UI_DIR))
+
+# pylint: disable=wrong-import-position
+import streamlit as st  # noqa: E402
+from components.input_panel import render_input_panel, render_run_button  # noqa: E402
+from components.result_panel import render_result_panel  # noqa: E402
+from components.shared import (  # noqa: E402
     render_divider,
     render_footer,
     render_header,
     render_quick_guide,
 )
-from .components.sidebar import render_sidebar
-from .config.constants import APP_NAME
-from .styles.theme import inject_css
+from components.sidebar import render_sidebar  # noqa: E402
+from config.constants import APP_NAME  # noqa: E402
+from styles.theme import inject_css  # noqa: E402
+
+# pylint: enable=wrong-import-position
 
 # ============================================================================
 # Page Configuration (must be first Streamlit command)

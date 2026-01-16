@@ -6,20 +6,19 @@ import time
 from typing import Any
 
 import streamlit as st
-
-from openjudge.graders.schema import GraderError
-
-from ..config.grader_registry import GRADER_REGISTRY
-from ..services.grader_factory import (
+from components.shared import render_empty_state, render_section_header
+from config.grader_registry import GRADER_REGISTRY
+from services.grader_factory import (
     create_grader,
     run_agent_evaluation,
     run_evaluation,
     run_multimodal_evaluation,
 )
-from ..services.model_factory import create_model
-from ..styles.theme import get_score_color
-from ..utils.helpers import format_elapsed_time, format_score_display, parse_json_safely
-from .shared import render_empty_state, render_section_header
+from services.model_factory import create_model
+from styles.theme import get_score_color
+from utils.helpers import format_elapsed_time, format_score_display, parse_json_safely
+
+from openjudge.graders.schema import GraderError
 
 
 def _render_score_card(
