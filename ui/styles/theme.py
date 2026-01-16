@@ -49,6 +49,17 @@ CUSTOM_CSS = """
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Reduce top padding in main content area */
+.stMainBlockContainer,
+.block-container {
+    padding-top: 1rem !important;
+}
+
+/* Remove extra top margin from first element */
+.stMain .stVerticalBlock > div:first-child {
+    margin-top: 0 !important;
+}
+
 /* =========================================================================
    Typography
    ========================================================================= */
@@ -63,9 +74,9 @@ CUSTOM_CSS = """
 }
 
 .sub-header {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #94A3B8;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
     font-weight: 400;
 }
 
@@ -588,43 +599,53 @@ CUSTOM_CSS = """
     background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
 }
 
-/* Reduce top padding in sidebar to minimum */
+/* Remove all top padding from sidebar */
 [data-testid="stSidebar"] > div:first-child {
     padding-top: 0 !important;
 }
 
-/* Remove extra padding from sidebar content */
-[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+/* Hide the original header area completely */
+[data-testid="stSidebarHeader"] {
+    position: absolute !important;
+    top: 0.6rem !important;
+    right: 0.5rem !important;
+    left: auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    z-index: 100 !important;
+}
+
+/* Collapse button styling */
+[data-testid="stSidebarCollapseButton"] {
+    margin: 0 !important;
+}
+
+/* Content area - starts from top */
+[data-testid="stSidebarUserContent"],
+[data-testid="stSidebarContent"] {
     padding-top: 0.5rem !important;
 }
 
-/* Move collapse button to the right of the header */
-[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
-    position: absolute !important;
-    top: 0.5rem !important;
-    right: 0.5rem !important;
-    left: auto !important;
-    z-index: 999 !important;
-}
-
-/* Remove default collapse button spacing */
-[data-testid="stSidebar"] > div > div:first-child {
+/* Remove any min-height from sidebar inner containers */
+[data-testid="stSidebar"] section > div {
     min-height: 0 !important;
-    padding-top: 0 !important;
 }
 
-/* Remove top margin from first element in sidebar */
-[data-testid="stSidebar"] .block-container {
-    padding-top: 0 !important;
+/* Sidebar header - logo and title inline with space for button */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.25rem 0;
+    padding-right: 2.5rem; /* Space for collapse button */
 }
 
-/* Ensure logo section has minimal top spacing */
-[data-testid="stSidebar"] .stImage {
-    margin-top: 0 !important;
-}
-
-[data-testid="stSidebar"] .element-container:first-child {
-    margin-top: 0 !important;
+.sidebar-header-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 [data-testid="stSidebar"] .stSelectbox label,

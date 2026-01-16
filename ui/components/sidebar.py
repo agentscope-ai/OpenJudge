@@ -20,32 +20,38 @@ LOGO_PATH = Path(__file__).parent.parent / "assets" / "logo.svg"
 
 
 def _render_logo_and_title() -> None:
-    """Render logo and title section (compact horizontal layout)."""
-    col_logo, col_title = st.columns([1, 3])
-    with col_logo:
-        if LOGO_PATH.exists():
-            st.image(str(LOGO_PATH), width=50)
-        else:
-            st.markdown(
-                """<div style="width: 40px; height: 40px;
-                    background: linear-gradient(135deg, #6366F1, #8B5CF6);
-                    border-radius: 10px; display: flex; align-items: center;
-                    justify-content: center; font-size: 1.2rem; color: white;
-                    font-weight: 700;">OJ</div>""",
-                unsafe_allow_html=True,
-            )
-    with col_title:
-        st.markdown(
-            f"""<div style="padding-top: 0.25rem;">
-                <div style="font-size: 1.1rem; font-weight: 700; color: #F1F5F9;">
+    """Render logo and title section (single line compact layout)."""
+    import base64
+
+    # Read logo as base64 for inline embedding
+    logo_data = ""
+    if LOGO_PATH.exists():
+        with open(LOGO_PATH, "rb") as f:
+            logo_data = base64.b64encode(f.read()).decode()
+
+    if logo_data:
+        logo_html = f'<img src="data:image/svg+xml;base64,{logo_data}" style="width: 36px; height: 36px;" />'
+    else:
+        logo_html = """<div style="width: 36px; height: 36px;
+            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+            border-radius: 8px; display: flex; align-items: center;
+            justify-content: center; font-size: 1rem; color: white;
+            font-weight: 700;">OJ</div>"""
+
+    st.markdown(
+        f"""<div class="sidebar-header">
+            {logo_html}
+            <div class="sidebar-header-text">
+                <div style="font-size: 1rem; font-weight: 700; color: #F1F5F9; line-height: 1.2;">
                     {APP_NAME}
                 </div>
-                <div style="font-size: 0.7rem; color: #64748B;">
+                <div style="font-size: 0.65rem; color: #64748B;">
                     v{APP_VERSION}
                 </div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
+            </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
 
 def _render_api_settings(config: dict[str, Any]) -> None:

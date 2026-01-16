@@ -2,17 +2,13 @@
 """Shared UI components for OpenJudge Studio."""
 
 import streamlit as st
-from config.constants import APP_NAME, APP_VERSION
+from config.constants import APP_VERSION
 
 
 def render_header() -> None:
-    """Render the main header with title and subtitle."""
+    """Render the main header with subtitle only (title is in sidebar)."""
     st.markdown(
-        f'<p class="main-header">{APP_NAME}</p>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<p class="sub-header">Evaluate LLM responses with precision and insight</p>',
+        '<p class="sub-header" style="margin-top: 0;">Evaluate LLM responses with precision and insight</p>',
         unsafe_allow_html=True,
     )
 
