@@ -17,7 +17,7 @@ Get started with OpenJudge in 5 minutes. This guide walks you through installati
 === "From Source"
 
     ```bash
-    git clone https://github.com/modelscope/OpenJudge.git
+    git clone https://github.com/agentscope-ai/OpenJudge.git
     cd OpenJudge
 
     # Install based on your needs:

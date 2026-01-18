@@ -14,9 +14,9 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?logo=python)](https://pypi.org/project/py-openjudge/)
 [![PyPI](https://img.shields.io/badge/pypi-v0.2.0-blue?logo=pypi)](https://pypi.org/project/py-openjudge/)
-[![Documentation](https://img.shields.io/badge/docs-online-blue?logo=readthedocs&logoColor=white)](https://modelscope.github.io/OpenJudge/)
+[![Documentation](https://img.shields.io/badge/docs-online-blue?logo=readthedocs&logoColor=white)](https://agentscope-ai.github.io/OpenJudge/)
 
-[📖 文档](https://modelscope.github.io/OpenJudge/) | [🤝 贡献指南](https://modelscope.github.io/OpenJudge/community/contributing/) | [English](./README.md)
+[📖 文档](https://agentscope-ai.github.io/OpenJudge/) | [🤝 贡献指南](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [English](./README.md)
 
 </div>
 
@@ -90,17 +90,17 @@ OpenJudge 将评估指标和奖励信号统一为标准化的 **Grader** 接口�
 </tr>
 </table>
 
-- 🌐 **多场景覆盖：** 广泛支持包括智能体、文本、代码、数学和多模态任务在内的多种领域。→ [探索支持的场景](https://modelscope.github.io/OpenJudge/built_in_graders/overview/)
-- 🔄 **全面的智能体评估：** 不仅评估最终结果，我们还评估整个生命周期——包括轨迹、记忆、反思和工具使用。→ [智能体生命周期评估](https://modelscope.github.io/OpenJudge/built_in_graders/agent_graders/)
+- 🌐 **多场景覆盖：** 广泛支持包括智能体、文本、代码、数学和多模态任务在内的多种领域。→ [探索支持的场景](https://agentscope-ai.github.io/OpenJudge/built_in_graders/overview/)
+- 🔄 **全面的智能体评估：** 不仅评估最终结果，我们还评估整个生命周期——包括轨迹、记忆、反思和工具使用。→ [智能体生命周期评估](https://agentscope-ai.github.io/OpenJudge/built_in_graders/agent_graders/)
 - ✅ **质量保证：** 每个评分器都配有基准数据集和 pytest 集成用于验证。→ [查看基准数据集](https://huggingface.co/datasets/agentscope-ai/OpenJudge)
 
 
 ### 🛠️ 灵活的评分器构建方法
 选择适合您需求的构建方法：
-* **自定义：** 需求明确但没有现成的评分器？如果您有明确的规则或逻辑，使用我们的 Python 接口或 Prompt 模板快速定义您自己的评分器。👉 [自定义评分器开发指南](https://modelscope.github.io/OpenJudge/building_graders/create_custom_graders/)
-* **零样本评估标准生成：** 不确定使用什么标准，也没有标注数据？只需提供任务描述和可选的示例查询，LLM 将自动为您生成评估标准。非常适合快速原型开发。👉 [零样本评估标准生成指南](https://modelscope.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#simple-rubric-zero-shot-generation)
-* **数据驱动的评估标准生成：** 需求模糊但有少量样例？使用 GraderGenerator 从您的标注数据中自动总结评估标准，并生成基于 LLM 的评分器。👉 [数据驱动评估标准生成指南](https://modelscope.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#iterative-rubric-data-driven-generation)
-* **训练评判模型：** 拥有大量数据且需要极致性能？使用我们的训练流程来训练专用的评判模型。适用于基于 Prompt 的评分无法满足的复杂场景。👉 [训练评判模型](https://modelscope.github.io/OpenJudge/building_graders/training_judge_models/)
+* **自定义：** 需求明确但没有现成的评分器？如果您有明确的规则或逻辑，使用我们的 Python 接口或 Prompt 模板快速定义您自己的评分器。👉 [自定义评分器开发指南](https://agentscope-ai.github.io/OpenJudge/building_graders/create_custom_graders/)
+* **零样本评估标准生成：** 不确定使用什么标准，也没有标注数据？只需提供任务描述和可选的示例查询，LLM 将自动为您生成评估标准。非常适合快速原型开发。👉 [零样本评估标准生成指南](https://agentscope-ai.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#simple-rubric-zero-shot-generation)
+* **数据驱动的评估标准生成：** 需求模糊但有少量样例？使用 GraderGenerator 从您的标注数据中自动总结评估标准，并生成基于 LLM 的评分器。👉 [数据驱动评估标准生成指南](https://agentscope-ai.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#iterative-rubric-data-driven-generation)
+* **训练评判模型：** 拥有大量数据且需要极致性能？使用我们的训练流程来训练专用的评判模型。适用于基于 Prompt 的评分无法满足的复杂场景。👉 [训练评判模型](https://agentscope-ai.github.io/OpenJudge/building_graders/training_judge_models/)
 
 
 ### 🔌 轻松集成
@@ -124,7 +124,7 @@ OpenJudge 将评估指标和奖励信号统一为标准化的 **Grader** 接口�
 pip install py-openjudge
 ```
 
-> 💡 更多安装方法可在 [快速开始指南](https://modelscope.github.io/OpenJudge/get_started/quickstart/) 中找到。
+> 💡 更多安装方法可在 [快速开始指南](https://agentscope-ai.github.io/OpenJudge/get_started/quickstart/) 中找到。
 
 ---
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-> 📚 完整的快速开始内容可在 [快速开始指南](https://modelscope.github.io/OpenJudge/get_started/quickstart/) 中找到。
+> 📚 完整的快速开始内容可在 [快速开始指南](https://agentscope-ai.github.io/OpenJudge/get_started/quickstart/) 中找到。
 
 ---
 
@@ -168,13 +168,13 @@ if __name__ == "__main__":
 
 | 类别 | 平台 | 状态 | 文档 |
 |:---------|:---------|:------:|:--------------|
-| **可观测性** | [LangSmith](https://smith.langchain.com/) | ✅ 可用 | 👉 [LangSmith 集成指南](https://modelscope.github.io/OpenJudge/integrations/langsmith/) |
-| | [Langfuse](https://langfuse.com/) | ✅ 可用 | 👉 [Langfuse 集成指南](https://modelscope.github.io/OpenJudge/integrations/langfuse/) |
+| **可观测性** | [LangSmith](https://smith.langchain.com/) | ✅ 可用 | 👉 [LangSmith 集成指南](https://agentscope-ai.github.io/OpenJudge/integrations/langsmith/) |
+| | [Langfuse](https://langfuse.com/) | ✅ 可用 | 👉 [Langfuse 集成指南](https://agentscope-ai.github.io/OpenJudge/integrations/langfuse/) |
 | | 其他框架 | 🔵 计划中 | — |
 | **训练** | [verl](https://github.com/volcengine/verl) | 🟡 进行中 | — |
 | | [Trinity-RFT](https://github.com/modelscope/Trinity-RFT) | 🔵 计划中 | — |
 
-> 💬 有您希望我们优先支持的框架吗？[提交 Issue](https://github.com/modelscope/OpenJudge/issues)！
+> 💬 有您希望我们优先支持的框架吗？[提交 Issue](https://github.com/agentscope-ai/OpenJudge/issues)！
 
 
 
@@ -185,11 +185,11 @@ if __name__ == "__main__":
 我们欢迎您的贡献！我们希望让参与 OpenJudge 的贡献尽可能简单和透明。
 
 > **🎨 添加新评分器** — 有领域特定的评估逻辑？与社区分享吧！
-> **🐛 报告 Bug** — 发现问题？通过 [提交 issue](https://github.com/modelscope/OpenJudge/issues) 帮助我们修复
+> **🐛 报告 Bug** — 发现问题？通过 [提交 issue](https://github.com/agentscope-ai/OpenJudge/issues) 帮助我们修复
 > **📝 改进文档** — 更清晰的解释或更好的示例总是受欢迎的
 > **💡 提议新功能** — 有新集成的想法？让我们讨论！
 
-📖 查看完整的 [贡献指南](https://modelscope.github.io/OpenJudge/community/contributing/) 了解编码标准和 PR 流程。
+📖 查看完整的 [贡献指南](https://agentscope-ai.github.io/OpenJudge/community/contributing/) 了解编码标准和 PR 流程。
 
 ---
 
@@ -215,11 +215,11 @@ if __name__ == "__main__":
 pip install rm-gallery
 ```
 
-我们在 [`v0.1.7-legacy` 分支](https://github.com/modelscope/OpenJudge/tree/v0.1.7-legacy) 中保留了 **v0.1.7（最新的 v0.1.x 版本）** 的源代码。
+我们在 [`v0.1.7-legacy` 分支](https://github.com/agentscope-ai/OpenJudge/tree/v0.1.7-legacy) 中保留了 **v0.1.7（最新的 v0.1.x 版本）** 的源代码。
 
-- **迁移到 v0.2.0（推荐）**：按照上方的 **[安装](#-安装)** 章节操作，然后浏览 **[快速开始](#-快速开始)**（或完整的 [快速开始指南](https://modelscope.github.io/OpenJudge/get_started/quickstart/)）来更新您的导入/用法。
+- **迁移到 v0.2.0（推荐）**：按照上方的 **[安装](#-安装)** 章节操作，然后浏览 **[快速开始](#-快速开始)**（或完整的 [快速开始指南](https://agentscope-ai.github.io/OpenJudge/get_started/quickstart/)）来更新您的导入/用法。
 
-如果您遇到迁移问题，请 [提交 issue](https://github.com/modelscope/OpenJudge/issues) 并附上您的最小复现代码和当前版本。
+如果您遇到迁移问题，请 [提交 issue](https://github.com/agentscope-ai/OpenJudge/issues) 并附上您的最小复现代码和当前版本。
 
 ---
 
@@ -231,7 +231,7 @@ pip install rm-gallery
 @software{
   title  = {OpenJudge: A Unified Framework for Holistic Evaluation and Quality Rewards},
   author = {The OpenJudge Team},
-  url    = {https://github.com/modelscope/OpenJudge},
+  url    = {https://github.com/agentscope-ai/OpenJudge},
   month  = {07},
   year   = {2025}
 }
@@ -243,7 +243,7 @@ pip install rm-gallery
 
 **由 OpenJudge 团队用 ❤️ 打造**
 
-[⭐ 给我们 Star](https://github.com/modelscope/OpenJudge) · [🐛 报告 Bug](https://github.com/modelscope/OpenJudge/issues) · [💡 提议功能](https://github.com/modelscope/OpenJudge/issues)
+[⭐ 给我们 Star](https://github.com/agentscope-ai/OpenJudge) · [🐛 报告 Bug](https://github.com/agentscope-ai/OpenJudge/issues) · [💡 提议功能](https://github.com/agentscope-ai/OpenJudge/issues)
 
 </div>
 

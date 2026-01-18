@@ -14,9 +14,9 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?logo=python)](https://pypi.org/project/py-openjudge/)
 [![PyPI](https://img.shields.io/badge/pypi-v0.2.0-blue?logo=pypi)](https://pypi.org/project/py-openjudge/)
-[![Documentation](https://img.shields.io/badge/docs-online-blue?logo=readthedocs&logoColor=white)](https://modelscope.github.io/OpenJudge/)
+[![Documentation](https://img.shields.io/badge/docs-online-blue?logo=readthedocs&logoColor=white)](https://agentscope-ai.github.io/OpenJudge/)
 
-[📖 Documentation](https://modelscope.github.io/OpenJudge/) | [🤝 Contributing](https://modelscope.github.io/OpenJudge/community/contributing/) | [中文](./README_zh.md)
+[📖 Documentation](https://agentscope-ai.github.io/OpenJudge/) | [🤝 Contributing](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [中文](./README_zh.md)
 
 </div>
 
@@ -90,18 +90,18 @@ Access **50+ production-ready graders** featuring a comprehensive taxonomy, rigo
 </tr>
 </table>
 
-- 🌐 **Multi-Scenario Coverage:** Extensive support for diverse domains including Agent, text, code, math, and multimodal tasks. 👉  [Explore Supported Scenarios](https://modelscope.github.io/OpenJudge/built_in_graders/overview/)
-- 🔄 **Holistic Agent Evaluation:** Beyond final outcomes, we assess the entire lifecycle—including trajectories, Memory, Reflection, and Tool Use. 👉  [Agent Lifecycle Evaluation](https://modelscope.github.io/OpenJudge/built_in_graders/agent_graders/)
+- 🌐 **Multi-Scenario Coverage:** Extensive support for diverse domains including Agent, text, code, math, and multimodal tasks. 👉  [Explore Supported Scenarios](https://agentscope-ai.github.io/OpenJudge/built_in_graders/overview/)
+- 🔄 **Holistic Agent Evaluation:** Beyond final outcomes, we assess the entire lifecycle—including trajectories, Memory, Reflection, and Tool Use. 👉  [Agent Lifecycle Evaluation](https://agentscope-ai.github.io/OpenJudge/built_in_graders/agent_graders/)
 - ✅ **Quality Assurance:** Every grader comes with benchmark datasets and pytest integration for validation. 👉  [View Benchmark Datasets](https://huggingface.co/datasets/agentscope-ai/OpenJudge)
 
 
 ### 🛠️ Flexible Grader Building Methods
 Choose the build method that fits your requirements:
-* **Customization:** Clear requirements, but no existing grader? If you have explicit rules or logic, use our Python interfaces or Prompt templates to quickly define your own grader.  👉 [Custom Grader Development Guide](https://modelscope.github.io/OpenJudge/building_graders/create_custom_graders/)
-* **Zero-shot Rubrics Generation:** Not sure what criteria to use, and no labeled data yet? Just provide a task description and optional sample queries—the LLM will automatically generate evaluation rubrics for you. Ideal for rapid prototyping when you want to get started immediately. 👉 [Zero-shot Rubrics Generation Guide](https://modelscope.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#simple-rubric-zero-shot-generation)
+* **Customization:** Clear requirements, but no existing grader? If you have explicit rules or logic, use our Python interfaces or Prompt templates to quickly define your own grader.  👉 [Custom Grader Development Guide](https://agentscope-ai.github.io/OpenJudge/building_graders/create_custom_graders/)
+* **Zero-shot Rubrics Generation:** Not sure what criteria to use, and no labeled data yet? Just provide a task description and optional sample queries—the LLM will automatically generate evaluation rubrics for you. Ideal for rapid prototyping when you want to get started immediately. 👉 [Zero-shot Rubrics Generation Guide](https://agentscope-ai.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#simple-rubric-zero-shot-generation)
 * **Data-driven Rubrics Generation:** Ambiguous requirements, but have few examples? Use the GraderGenerator to automatically
-summarize evaluation Rubrics from your annotated data, and generate a llm-based grader. 👉 [Data-driven Rubrics Generation Guide](https://modelscope.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#iterative-rubric-data-driven-generation)
-* **Training Judge Models:** Massive data and need peak performance? Use our training pipeline to train a dedicated Judge Model. This is ideal for complex scenarios where prompt-based grading falls short.👉 [Train Judge Models](https://modelscope.github.io/OpenJudge/building_graders/training_judge_models/)
+summarize evaluation Rubrics from your annotated data, and generate a llm-based grader. 👉 [Data-driven Rubrics Generation Guide](https://agentscope-ai.github.io/OpenJudge/building_graders/generate_rubrics_as_graders/#iterative-rubric-data-driven-generation)
+* **Training Judge Models:** Massive data and need peak performance? Use our training pipeline to train a dedicated Judge Model. This is ideal for complex scenarios where prompt-based grading falls short.👉 [Train Judge Models](https://agentscope-ai.github.io/OpenJudge/building_graders/training_judge_models/)
 
 
 ### 🔌 Easy Integration
@@ -125,7 +125,7 @@ Using mainstream observability platforms like **LangSmith** or **Langfuse**? We 
 pip install py-openjudge
 ```
 
-> 💡 More installation methods can be found in the [Quickstart Guide](https://modelscope.github.io/OpenJudge/get_started/quickstart/#installation).
+> 💡 More installation methods can be found in the [Quickstart Guide](https://agentscope-ai.github.io/OpenJudge/get_started/quickstart/#installation).
 
 ---
 
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-> 📚 Complete Quickstart can be found in the [Quickstart Guide](https://modelscope.github.io/OpenJudge/get_started/quickstart/).
+> 📚 Complete Quickstart can be found in the [Quickstart Guide](https://agentscope-ai.github.io/OpenJudge/get_started/quickstart/).
 
 ---
 
@@ -169,13 +169,13 @@ Seamlessly connect OpenJudge with mainstream observability and training platform
 
 | Category | Platform | Status | Documentation |
 |:---------|:---------|:------:|:--------------|
-| **Observability** | [LangSmith](https://smith.langchain.com/) | ✅ Available | 👉 [LangSmith Integration Guide](https://modelscope.github.io/OpenJudge/integrations/langsmith/) |
-| | [Langfuse](https://langfuse.com/) | ✅ Available | 👉 [Langfuse Integration Guide](https://modelscope.github.io/OpenJudge/integrations/langfuse/) |
+| **Observability** | [LangSmith](https://smith.langchain.com/) | ✅ Available | 👉 [LangSmith Integration Guide](https://agentscope-ai.github.io/OpenJudge/integrations/langsmith/) |
+| | [Langfuse](https://langfuse.com/) | ✅ Available | 👉 [Langfuse Integration Guide](https://agentscope-ai.github.io/OpenJudge/integrations/langfuse/) |
 | | Other frameworks | 🔵 Planned | — |
 | **Training** | [verl](https://github.com/volcengine/verl) | 🟡 In Progress | — |
 | | [Trinity-RFT](https://github.com/modelscope/Trinity-RFT) | 🔵 Planned | — |
 
-> 💬 Have a framework you'd like us to prioritize? [Open an Issue](https://github.com/modelscope/OpenJudge/issues)!
+> 💬 Have a framework you'd like us to prioritize? [Open an Issue](https://github.com/agentscope-ai/OpenJudge/issues)!
 
 ---
 
@@ -184,11 +184,11 @@ Seamlessly connect OpenJudge with mainstream observability and training platform
 We love your input! We want to make contributing to OpenJudge as easy and transparent as possible.
 
 > **🎨 Adding New Graders** — Have domain-specific evaluation logic? Share it with the community!
-> **🐛 Reporting Bugs** — Found a glitch? Help us fix it by [opening an issue](https://github.com/modelscope/OpenJudge/issues)
+> **🐛 Reporting Bugs** — Found a glitch? Help us fix it by [opening an issue](https://github.com/agentscope-ai/OpenJudge/issues)
 > **📝 Improving Docs** — Clearer explanations or better examples are always welcome
 > **💡 Proposing Features** — Have ideas for new integrations? Let's discuss!
 
-📖 See full [Contributing Guidelines](https://modelscope.github.io/OpenJudge/community/contributing/) for coding standards and PR process.
+📖 See full [Contributing Guidelines](https://agentscope-ai.github.io/OpenJudge/community/contributing/) for coding standards and PR process.
 
 ---
 
@@ -214,11 +214,11 @@ If you are currently using v0.1.x, choose one of the following paths:
 pip install rm-gallery
 ```
 
-We preserved the source code of **v0.1.7 (the latest v0.1.x release)** in the [`v0.1.7-legacy` branch](https://github.com/modelscope/OpenJudge/tree/v0.1.7-legacy).
+We preserved the source code of **v0.1.7 (the latest v0.1.x release)** in the [`v0.1.7-legacy` branch](https://github.com/agentscope-ai/OpenJudge/tree/v0.1.7-legacy).
 
-- **Migrate to v0.2.0 (recommended)**: follow the **[Installation](#-installation)** section above, then walk through **[Quickstart](#-quickstart)** (or the full [Quickstart Guide](https://modelscope.github.io/OpenJudge/get_started/quickstart/)) to update your imports / usage.
+- **Migrate to v0.2.0 (recommended)**: follow the **[Installation](#-installation)** section above, then walk through **[Quickstart](#-quickstart)** (or the full [Quickstart Guide](https://agentscope-ai.github.io/OpenJudge/get_started/quickstart/)) to update your imports / usage.
 
-If you run into migration issues, please [open an issue](https://github.com/modelscope/OpenJudge/issues) with your minimal repro and current version.
+If you run into migration issues, please [open an issue](https://github.com/agentscope-ai/OpenJudge/issues) with your minimal repro and current version.
 
 ---
 
@@ -230,7 +230,7 @@ If you use OpenJudge in your research, please cite:
 @software{
   title  = {OpenJudge: A Unified Framework for Holistic Evaluation and Quality Rewards},
   author = {The OpenJudge Team},
-  url    = {https://github.com/modelscope/OpenJudge},
+  url    = {https://github.com/agentscope-ai/OpenJudge},
   month  = {07},
   year   = {2025}
 }
@@ -242,6 +242,6 @@ If you use OpenJudge in your research, please cite:
 
 **Made with ❤️ by the OpenJudge Team**
 
-[⭐ Star Us](https://github.com/modelscope/OpenJudge) · [🐛 Report Bug](https://github.com/modelscope/OpenJudge/issues) · [💡 Request Feature](https://github.com/modelscope/OpenJudge/issues)
+[⭐ Star Us](https://github.com/agentscope-ai/OpenJudge) · [🐛 Report Bug](https://github.com/agentscope-ai/OpenJudge/issues) · [💡 Request Feature](https://github.com/agentscope-ai/OpenJudge/issues)
 
 </div>

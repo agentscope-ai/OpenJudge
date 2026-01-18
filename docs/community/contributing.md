@@ -280,8 +280,8 @@ Need assistance? Here's how to reach us:
 
 | Type | Where to Go |
 |------|-------------|
-| **Report Bugs** | [Open an Issue](https://github.com/modelscope/OpenJudge/issues) |
-| **Propose Features** | [Start a Discussion](https://github.com/modelscope/OpenJudge/discussions) |
+| **Report Bugs** | [Open an Issue](https://github.com/agentscope-ai/OpenJudge/issues) |
+| **Propose Features** | [Start a Discussion](https://github.com/agentscope-ai/OpenJudge/discussions) |
 | **Contact Team** | Check README for communication channels |
 
 !!! warning "Before Starting Major Work"

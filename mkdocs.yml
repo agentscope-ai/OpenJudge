@@ -1,9 +1,9 @@
 site_name: OpenJudge
-site_url: https://modelscope.github.io/OpenJudge/
+site_url: https://agentscope-ai.github.io/OpenJudge/
 site_description: "A One-Stop Reward Model Platform for training, building, and applying reward models. Supports 35+ pre-built models, RLHF training, LLM evaluation, and AI alignment."
 site_author: "The OpenJudge Team"
-repo_url: https://github.com/modelscope/OpenJudge
-repo_name: modelscope/OpenJudge
+repo_url: https://github.com/agentscope-ai/OpenJudge
+repo_name: agentscope-ai/OpenJudge
 copyright: "Copyright &copy; 2025 OpenJudge Team"
 theme:
   name: shadcn
