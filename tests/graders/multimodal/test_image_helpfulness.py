@@ -63,7 +63,7 @@ class TestImageHelpfulnessGraderUnit:
         class MockResponse:
             def __init__(self):
                 self.parsed = {
-                    "score": 8.0,  # Will be normalized to 0.8 (divided by 10)
+                    "score": 4.0,  # Score in 1-5 range
                     "reason": "Image is very helpful for understanding the text",
                 }
 
@@ -75,15 +75,17 @@ class TestImageHelpfulnessGraderUnit:
 
         grader = ImageHelpfulnessGrader(model=mock_model)
 
-        # Create mock image
-        mock_image = MLLMImage(url="test.jpg")
+        # Create mock image with online URL
+        mock_image = MLLMImage(
+            url="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
+        )
 
         result = await grader.aevaluate(
             response=["The system architecture:", mock_image, "shows the component interactions"],
         )
 
         # Assertions
-        assert result.score == 0.8  # Normalized from 8.0
+        assert result.score == 4.0  # Score in 1-5 range
         assert "helpful" in result.reason.lower()
 
         # Verify model was called correctly
@@ -100,8 +102,10 @@ class TestImageHelpfulnessGraderUnit:
 
         grader = ImageHelpfulnessGrader(model=mock_model)
 
-        # Create mock image
-        mock_image = MLLMImage(url="test.jpg")
+        # Create mock image with online URL
+        mock_image = MLLMImage(
+            url="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
+        )
 
         result = await grader.aevaluate(
             response=["Text before", mock_image, "Text after"],
@@ -217,9 +221,9 @@ class TestImageHelpfulnessGraderQuality:
         # Check that all evaluations completed successfully
         assert len(results["image_helpfulness"]) == len(dataset)
 
-        # Check that scores are in valid range (0-1 for image helpfulness)
+        # Check that scores are in valid range (1-5 for image helpfulness)
         for result in results["image_helpfulness"]:
-            assert 0 <= result.score <= 1, f"Score out of range: {result.score}"
+            assert 1 <= result.score <= 5, f"Score out of range: {result.score}"
             assert len(result.reason) > 0, "Reason should not be empty"
 
         # Verify analysis results structure

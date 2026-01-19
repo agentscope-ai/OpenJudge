@@ -63,7 +63,7 @@ class TestImageCoherenceGraderUnit:
         class MockResponse:
             def __init__(self):
                 self.parsed = {
-                    "score": 8.0,  # Will be normalized to 0.8 (divided by 10)
+                    "score": 4.0,  # Score in 1-5 range
                     "reason": "Image is highly coherent with surrounding text",
                 }
 
@@ -75,15 +75,17 @@ class TestImageCoherenceGraderUnit:
 
         grader = ImageCoherenceGrader(model=mock_model)
 
-        # Create mock image
-        mock_image = MLLMImage(url="test.jpg")
+        # Create mock image with online URL
+        mock_image = MLLMImage(
+            url="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
+        )
 
         result = await grader.aevaluate(
             response=["Sales data for Q3:", mock_image, "Shows 20% growth"],
         )
 
         # Assertions
-        assert result.score == 0.8  # Normalized from 8.0
+        assert result.score == 4.0  # Score in 1-5 range
         assert "coherent" in result.reason.lower()
 
         # Verify model was called correctly
@@ -100,8 +102,10 @@ class TestImageCoherenceGraderUnit:
 
         grader = ImageCoherenceGrader(model=mock_model)
 
-        # Create mock image
-        mock_image = MLLMImage(url="test.jpg")
+        # Create mock image with online URL
+        mock_image = MLLMImage(
+            url="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
+        )
 
         result = await grader.aevaluate(
             response=["Text before", mock_image, "Text after"],
@@ -217,9 +221,9 @@ class TestImageCoherenceGraderQuality:
         # Check that all evaluations completed successfully
         assert len(results["image_coherence"]) == len(dataset)
 
-        # Check that scores are in valid range (0-1 for image coherence)
+        # Check that scores are in valid range (1-5 for image coherence)
         for result in results["image_coherence"]:
-            assert 0 <= result.score <= 1, f"Score out of range: {result.score}"
+            assert 1 <= result.score <= 5, f"Score out of range: {result.score}"
             assert len(result.reason) > 0, "Reason should not be empty"
 
         # Verify analysis results structure
