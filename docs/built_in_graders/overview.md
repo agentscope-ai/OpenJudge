@@ -141,10 +141,9 @@ Evaluate vision-language tasks and image quality. [→ Detailed Documentation](m
 
 | Grader | Description | Type | Score Range |
 |--------|-------------|------|-------------|
-| `ImageCoherenceGrader` | Evaluates image-text coherence | LLM-Based | {0, 1} |
-| `ImageHelpfulnessGrader` | Assesses if images help understanding | LLM-Based | {0, 1} |
-| `TextToImageGrader` | Evaluates text-to-image generation quality | LLM-Based | {0, 1} |
-| `ImageEditingGrader` | Evaluates image editing quality | LLM-Based | {0, 1} |
+| `ImageCoherenceGrader` | Evaluates image-text coherence | LLM-Based | 1-5 |
+| `ImageHelpfulnessGrader` | Assesses if images help understanding | LLM-Based | 1-5 |
+| `TextToImageGrader` | Evaluates text-to-image generation quality | LLM-Based | 1-5 |
 
 ## Next Steps
 

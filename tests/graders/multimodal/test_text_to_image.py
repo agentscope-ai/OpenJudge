@@ -67,8 +67,9 @@ class TestTextToImageGraderUnit:
                 self.parsed = {"score": score, "reason": reason}
 
         # TextToImageGrader calls model twice (semantic + perceptual)
-        mock_semantic = MockResponse(8.0, "Good semantic consistency")
-        mock_perceptual = MockResponse(8.0, "Good perceptual quality")
+        # Scores are now in 1-5 range
+        mock_semantic = MockResponse(4.0, "Good semantic consistency")
+        mock_perceptual = MockResponse(4.0, "Good perceptual quality")
 
         # Create mock model
         mock_model = AsyncMock(spec=BaseChatModel)
@@ -77,16 +78,18 @@ class TestTextToImageGraderUnit:
 
         grader = TextToImageGrader(model=mock_model)
 
-        # Create mock image
-        mock_image = MLLMImage(url="test.jpg")
+        # Create mock image with online URL
+        mock_image = MLLMImage(
+            url="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
+        )
 
         result = await grader.aevaluate(
             query="A cat sitting on a blue sofa",
             response=mock_image,
         )
 
-        # Assertions - score is geometric mean of (8*8)/10 = sqrt(64)/10 = 0.8
-        assert 0.7 <= result.score <= 0.9  # Allow some tolerance
+        # Assertions - score is geometric mean sqrt(4*4) = 4.0 (scores in 1-5 range)
+        assert 3.5 <= result.score <= 4.5  # Allow some tolerance
         assert len(result.reason) > 0  # Has a reason
 
         # Verify model was called twice (semantic + perceptual)
@@ -103,8 +106,10 @@ class TestTextToImageGraderUnit:
 
         grader = TextToImageGrader(model=mock_model)
 
-        # Create mock image
-        mock_image = MLLMImage(url="test.jpg")
+        # Create mock image with online URL
+        mock_image = MLLMImage(
+            url="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
+        )
 
         result = await grader.aevaluate(
             query="A dog in a park",
@@ -217,9 +222,9 @@ class TestTextToImageGraderQuality:
         # Check that all evaluations completed successfully
         assert len(results["text_to_image"]) == len(dataset)
 
-        # Check that scores are in valid range (0-1 for text_to_image)
+        # Check that scores are in valid range (1-5 for text_to_image)
         for result in results["text_to_image"]:
-            assert 0 <= result.score <= 1, f"Score out of range: {result.score}"
+            assert 1 <= result.score <= 5, f"Score out of range: {result.score}"
             assert len(result.reason) > 0, "Reason should not be empty"
 
         # Verify analysis results structure

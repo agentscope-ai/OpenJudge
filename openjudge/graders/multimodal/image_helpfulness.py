@@ -45,20 +45,21 @@ Your task is to evaluate the helpfulness of the image in enabling human readers 
 [The image is provided below this section.]
 
 # Scoring Criteria
-Evaluate how well the image helps human readers understand the content of its accompanying text, assigning a score from 0 to 10.
+Evaluate how well the image helps human readers understand the content of its accompanying text, assigning a score from 1 to 5.
 A higher score indicates that the image significantly enhances comprehension of the text. Be precise when assigning the score.
 
-- A score from 0-3 means the image is minimally or not at all helpful for comprehension.
-- A score from 4-6 indicates the image provides some helpful context or information but may contain extraneous or less relevant details.
-- A score from 7-9 indicates the image is highly helpful in enabling comprehension of the text.
-- A score of 10 indicates the image perfectly enhances and clarifies the information provided in the text.
+- A score of 1 means the image is not at all helpful for comprehension.
+- A score of 2 means the image is minimally helpful for comprehension.
+- A score of 3 indicates the image provides some helpful context or information but may contain extraneous or less relevant details.
+- A score of 4 indicates the image is highly helpful in enabling comprehension of the text.
+- A score of 5 indicates the image perfectly enhances and clarifies the information provided in the text.
 
 Be rigorous and discerning when assigning your score.
 
 # Output Instructions
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 0 and 10>,
+    "score": <integer between 1 and 5>,
     "reason": "<brief explanation for the assigned score>"
 }}
 
@@ -84,20 +85,21 @@ IMAGE_HELPFULNESS_PROMPT_ZH = textwrap.dedent(
 [图片将在本节下方提供。]
 
 # 评分标准
-评估图片对于帮助人类读者理解伴随文本内容的有用程度，给出0到10的分数。
+评估图片对于帮助人类读者理解伴随文本内容的有用程度，给出1到5的分数。
 分数越高表示图片越能显著增强对文本的理解。请精确地给出分数。
 
-- 0-3分表示图片对理解文本的帮助极小或完全没有帮助。
-- 4-6分表示图片提供了一些有用的背景或信息，但可能包含多余或关联性较弱的细节。
-- 7-9分表示图片对理解文本非常有帮助。
-- 10分表示图片完美地增强并澄清了文本中提供的信息。
+- 1分表示图片对理解文本完全没有帮助。
+- 2分表示图片对理解文本的帮助极小。
+- 3分表示图片提供了一些有用的背景或信息，但可能包含多余或关联性较弱的细节。
+- 4分表示图片对理解文本非常有帮助。
+- 5分表示图片完美地增强并澄清了文本中提供的信息。
 
 请严格审慎地评分。
 
 # 输出指令
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0到10之间的整数>,
+    "score": <1到5之间的整数>,
     "reason": "<对所给分数的简要解释>"
 }}
 
@@ -149,10 +151,11 @@ class ImageHelpfulnessGrader(LLMGrader):
         - User manual and help documentation review
 
     Scoring:
-        - 10: Extremely helpful, significantly enhances understanding
-        - 7-9: Very helpful, provides clear value
-        - 4-6: Somewhat helpful but limited value
-        - 0-3: Not helpful or redundant with text
+        - 5: Extremely helpful, significantly enhances understanding
+        - 4: Very helpful, provides clear value
+        - 3: Somewhat helpful but limited value
+        - 2: Minimally helpful
+        - 1: Not helpful or redundant with text
         Note: For multiple images, returns average score
 
     Args:
@@ -163,7 +166,7 @@ class ImageHelpfulnessGrader(LLMGrader):
         language: Prompt language - EN or ZH (default: LanguageEnum.EN)
 
     Returns:
-        GraderScore with normalized helpfulness score [0, 1]
+        GraderScore with helpfulness score [1, 5]
 
     Example:
         >>> import asyncio
@@ -180,7 +183,7 @@ class ImageHelpfulnessGrader(LLMGrader):
         ...         "Each layer handles specific functions."
         ...     ]
         ... )
-        >>> print(result.score)  # 0.9 - diagram very helpful for understanding
+        >>> print(result.score)  # 4.5 - diagram very helpful for understanding
     """
 
     def __init__(
@@ -235,9 +238,9 @@ class ImageHelpfulnessGrader(LLMGrader):
             structured_model=GraderScoreCallback,
         )
 
-        # Default to 5.0 (neutral score on 0-10 scale) for missing fields
+        # Default to 3.0 (neutral score on 1-5 scale) for missing fields
         parsed = await parse_structured_chat_response(chat_response)
-        score = parsed.get("score", 5.0)
+        score = parsed.get("score", 3.0)
         reason = parsed.get("reason", "")
         return score, reason
 
@@ -274,11 +277,11 @@ class ImageHelpfulnessGrader(LLMGrader):
 
         results = await asyncio.gather(*tasks)
 
+        # Scores are already in 1-5 range
         scores = []
         reasons = []
         for raw_score, reason in results:
-            normalized_score = raw_score / 10.0
-            scores.append(normalized_score)
+            scores.append(raw_score)
             reasons.append(reason)
 
         final_score = sum(scores) / len(scores) if scores else 0.0
@@ -305,7 +308,7 @@ class ImageHelpfulnessGrader(LLMGrader):
             **kwargs: Additional arguments (ignored)
 
         Returns:
-            GraderScore: Score with normalized helpfulness value [0, 1]
+            GraderScore: Score with helpfulness value [1, 5]
 
         Example:
             >>> result = await grader.aevaluate(
