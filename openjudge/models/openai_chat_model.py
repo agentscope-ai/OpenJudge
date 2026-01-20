@@ -201,7 +201,7 @@ class OpenAIChatModel(BaseChatModel):
                     "Qwen models do not support Pydantic structured output via `response_format`. "
                     "Update the unstructured JSON mode with `response_format={'type': 'json_object'}`."
                 )
-                kwargs["response_format"] = {"type": "json_object"}
+                structured_model = {"type": "json_object"}
 
             kwargs["response_format"] = structured_model
 
