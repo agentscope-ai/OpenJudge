@@ -247,7 +247,7 @@ async def main():
         query="My order is delayed, what should I do?",
         response="I understand your concern. Let me check your order status..."
     )
-    print(f"\nScore: {result.score}/5\nReason: {result.reason}")
+    print(f"\nScore: {result.score}/3\nReason: {result.reason}")
 
 if __name__ == "__main__":
     asyncio.run(main())
