@@ -2,17 +2,19 @@
 
 import ast
 import json
+import os
 import re
 import time
 from copy import deepcopy
 from pathlib import Path
-from queue import Queue
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from loguru import logger
 
 
-class _MethodInfo:
+class MethodInfo:
+    """Store critical information about a method."""
+
     def __init__(self, signature: str = "", docstring: str = ""):
         # covers name, arguments, and maybe return type
         self.signature = signature or ""
@@ -22,22 +24,22 @@ class _MethodInfo:
         return json.dumps(self.__dict__, ensure_ascii=False)
 
 
-class _GraderInfo:
+class GraderInfo:
     """A class that stores core information of a Grader class"""
 
     def __init__(
         self,
-        file_path: str = "",
+        module_path: str = "",
         class_name: str = "",
         parent_class_names: list = None,
-        init_method: _MethodInfo = None,
-        aevaluate_method: _MethodInfo = None,
+        init_method: MethodInfo = None,
+        aevaluate_method: MethodInfo = None,
     ):
-        self.file_path = file_path or ""
+        self.module_path = module_path or ""
         self.class_name = class_name or ""
         self.parent_class_names = parent_class_names or []
-        self.init_method = init_method or _MethodInfo()
-        self.aevaluate_method = aevaluate_method or _MethodInfo()
+        self.init_method = init_method or None
+        self.aevaluate_method = aevaluate_method or None
 
     def __str__(self):
         d = deepcopy(self.__dict__)
@@ -47,7 +49,7 @@ class _GraderInfo:
 
     def __iter__(self):
         """Customize dict(obj) result"""
-        yield "file_path", self.file_path
+        yield "module_path", self.module_path
         yield "class_name", self.class_name
         yield "parent_class_names", self.parent_class_names
         yield "init_method", self.init_method.__dict__
@@ -60,39 +62,45 @@ def get_all_grader_info() -> List[Dict[str, Any]]:
     current_file_abs_path = Path(__file__).resolve()
     logger.info(f"grader_info.py path:{current_file_abs_path}")
 
-    defs_of_classes_having_parent = {}
+    # /path/to/OpenJudgeRepo
+    project_root_folder = Path(current_file_abs_path.parent.parent.parent)
+    logger.info(f"project root folder:{project_root_folder}")
+
     grader_root_folder = Path(current_file_abs_path.parent.parent, "graders")
     logger.info(f"grader root folder:{grader_root_folder}")
-    unprocessed_folders = Queue()
-    unprocessed_folders.put(grader_root_folder)
-    while not unprocessed_folders.empty():
-        folder = unprocessed_folders.get()
-        for item in folder.iterdir():
-            if item.is_dir():
-                unprocessed_folders.put(item)
-            elif item.stem == "__init__" or item.suffix != ".py":
-                # use safe heuristics to reduce candidate count
-                continue
-            else:
-                _get_defs_of_classes_having_parent(item, defs_of_classes_having_parent)
+
+    defs_of_classes_having_parent = {}
+    for f in grader_root_folder.rglob("**/*.py"):
+        if f.stem != "__init__":
+            _get_defs_of_classes_having_parent(f, project_root_folder, defs_of_classes_having_parent)
 
     logger.info(f"classes having parent:{len(defs_of_classes_having_parent)}, {(time.time_ns() - t0)/1000000}ms")
 
     all_grader_class_defs = _get_grader_class_def(defs_of_classes_having_parent)
 
     t0 = time.time_ns()
-    all_grader_info = []
-    for _, (class_def, source_code) in all_grader_class_defs.items():
-        grader_info = _parse_grader_class_def(class_def, source_code)
-        all_grader_info.append(dict(grader_info))
+    all_grader_info = {}
+    for _, (class_def, module_path_and_source_code_tuple) in all_grader_class_defs.items():
+        grader_info = _parse_grader_class_def(class_def, module_path_and_source_code_tuple)
+        all_grader_info[grader_info.class_name] = grader_info
 
     logger.info(f"all grader info:{len(all_grader_info)}, {(time.time_ns() - t0)/1000000}ms")
 
     return all_grader_info
 
 
-def _get_defs_of_classes_having_parent(py_file: Path, defs_of_classes_having_parent: Dict[ast.ClassDef, str]):
-    """Get the definitions and source codes of all classe that have parent class."""
+def _get_defs_of_classes_having_parent(
+    py_file: Path,
+    open_judge_project_root_folder: Path,
+    defs_of_classes_having_parent: Dict[ast.ClassDef, Tuple[str, str]],
+):
+    """Get the definitions, module paths, and source codes of all classe that have parent class."""
+    # /path/to/OpenJudgeRepo/openjudge/graders/foo/my_grader.py ->
+    # openjudge/graders/foo/my_grader.py ->
+    # openjudge/graders/foo/my_grader ->
+    # openjudge.graders.foo.my_grader
+    module_path = str(py_file.relative_to(open_judge_project_root_folder).with_suffix("")).replace(os.sep, ".")
+
     with open(py_file, "r", encoding="utf-8") as file:
         source_code = file.read()
 
@@ -102,10 +110,10 @@ def _get_defs_of_classes_having_parent(py_file: Path, defs_of_classes_having_par
         if isinstance(node, ast.ClassDef) and node.bases:
             parent_count = len(node.bases)
             if parent_count > 1 or node.bases[0].id != "ABC":
-                defs_of_classes_having_parent[node] = source_code
+                defs_of_classes_having_parent[node] = (str(module_path), source_code)
 
 
-def _get_grader_class_def(defs_of_classes_having_parent: Dict[ast.ClassDef, str]):
+def _get_grader_class_def(defs_of_classes_having_parent: Dict[ast.ClassDef, Tuple[str, str]]):
     """Get the definitions of Grader classes"""
     t0 = time.time_ns()
     # the base grader class as seed
@@ -116,7 +124,7 @@ def _get_grader_class_def(defs_of_classes_having_parent: Dict[ast.ClassDef, str]
         known_defs = []
         new_defs = []
 
-        for class_def, source_code in defs_of_classes_having_parent.items():
+        for class_def, module_path_and_source_code_tuple in defs_of_classes_having_parent.items():
             # Skip whose already processed
             if class_def.name in all_grader_class_defs:
                 known_defs.append(class_def)
@@ -124,7 +132,7 @@ def _get_grader_class_def(defs_of_classes_having_parent: Dict[ast.ClassDef, str]
 
             for parent in class_def.bases:
                 if parent.id in all_grader_class_defs:
-                    all_grader_class_defs[class_def.name] = (class_def, source_code)
+                    all_grader_class_defs[class_def.name] = (class_def, module_path_and_source_code_tuple)
                     new_defs.append(class_def)
                     found_grader = True
                 break
@@ -151,12 +159,14 @@ _TARGET_METHODS.add(_AEVALUATE_METHOD)
 _NEWLINE_OR_MULTI_SPACE_PATTERN = re.compile(r"(\n|\s\s+)")
 
 
-def _parse_grader_class_def(class_def: ast.ClassDef, source_code: str) -> _GraderInfo:
+def _parse_grader_class_def(class_def: ast.ClassDef, module_path_and_source_code_tuple: Tuple[str, str]) -> GraderInfo:
     """Use ast util to extract core information from a Grader class,
-    and put the information into a _GraderInfo object."""
+    and put the information into a GraderInfo object."""
 
-    init_method = _MethodInfo()
-    aeval_method = _MethodInfo()
+    module_path = module_path_and_source_code_tuple[0]
+    source_code = module_path_and_source_code_tuple[1]
+    init_method = MethodInfo()
+    aeval_method = MethodInfo()
     # Find target methods within the class body
     for sub_node in class_def.body:
         if isinstance(sub_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -165,32 +175,23 @@ def _parse_grader_class_def(class_def: ast.ClassDef, source_code: str) -> _Grade
                 continue
 
             segment = ast.get_source_segment(source_code, sub_node)
-            segment = _NEWLINE_OR_MULTI_SPACE_PATTERN.sub(" ", segment.strip())
-            segment = segment.replace(") :", "):").replace(") ->", ")->").replace(" :", ":")
+            # Find the colon ':' that ends the function signature by tracking parenthesis depth.
+            open_parenthesis_count = 0
+            end_of_func_signature_idx = -1
+            for i, char in enumerate(segment):
+                if char == "(":
+                    open_parenthesis_count += 1
+                elif char == ")":
+                    open_parenthesis_count -= 1
+                elif char == ":" and open_parenthesis_count == 0:
+                    end_of_func_signature_idx = i
+                    break
 
-            # Method head ends in two ways: w/ or w/o return type annocation.
-            # Figure it out.
-            idx0 = segment.find("):")
-            idx1 = segment.find(")->")
-            if idx1 > 0:
-                idx1 = segment.find(":", idx1)
-
-            if idx0 > 0 and idx1 > 0:
-                if idx0 < idx1:
-                    idx = idx0 + 2
-                else:
-                    idx = idx1 + 1
-            elif idx0 > 0:
-                idx = idx0 + 2
-            elif idx1 > 0:
-                idx = idx1 + 1
-            else:
-                idx = -1
-
-            # def foo(...) -> type:
-            # def foo(...):
-            if idx > 0:
-                signature = segment[0:idx]
+            if end_of_func_signature_idx > 0:
+                # def foo(...): or def foo(...) -> bar:
+                signature = segment[: end_of_func_signature_idx + 1]
+                signature = _NEWLINE_OR_MULTI_SPACE_PATTERN.sub(" ", signature.strip())
+                signature = signature.replace(" :", ":")
             else:
                 signature = "SIGNATURE_NOT_FOUND"
 
@@ -202,7 +203,8 @@ def _parse_grader_class_def(class_def: ast.ClassDef, source_code: str) -> _Grade
                 aeval_method.signature = signature
                 aeval_method.docstring = docstring
 
-    grader_info_obj = _GraderInfo(
+    grader_info_obj = GraderInfo(
+        module_path=module_path,
         class_name=class_def.name,
         parent_class_names=[p.id for p in class_def.bases],
         init_method=init_method,
@@ -216,7 +218,9 @@ if __name__ == "__main__":
     graders = get_all_grader_info()
     print("-------------")
     print(f"{len(graders)} graders")
-    for g_i in graders:
+    for name, g_i in graders.items():
         print("-------------")
+        print(name)
         print(type(g_i))
         print(g_i)
+        print(dict(g_i))

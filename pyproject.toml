@@ -80,9 +80,9 @@ verl = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/modelscope/OpenJudge"
-Repository = "https://github.com/modelscope/OpenJudge"
-Documentation = "https://modelscope.github.io/OpenJudge/"
+Homepage = "https://github.com/agentscope-ai/OpenJudge"
+Repository = "https://github.com/agentscope-ai/OpenJudge"
+Documentation = "https://agentscope-ai.github.io/OpenJudge/"
 
 [tool.setuptools]
 packages = { find = { where = ["."] } }

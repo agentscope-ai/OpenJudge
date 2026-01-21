@@ -105,6 +105,10 @@ class _CheckpointData(BaseModel):
     evaluated_pairs: int = 0
     total_pairs: int = 0
 
+    # Judge model info (for detecting config changes)
+    judge_model: Optional[str] = None
+    judge_base_url: Optional[str] = None
+
 
 class _CheckpointManager:
     """Internal checkpoint manager for evaluation pipeline resume capability."""
@@ -274,6 +278,50 @@ class _CheckpointManager:
         self._checkpoint = None
         logger.info("Checkpoint cleared")
 
+    def clear_comparison_details(self) -> None:
+        """Clear only comparison details to re-run pairwise evaluation.
+
+        Keeps queries, responses, and rubrics intact.
+        Resets checkpoint stage to RUBRICS_GENERATED.
+        """
+        details_path = self.output_dir / self.DETAILS_FILE
+        if details_path.exists():
+            details_path.unlink()
+            logger.info(f"Cleared {details_path}")
+
+        if self._checkpoint:
+            self._checkpoint.stage = EvaluationStage.RUBRICS_GENERATED
+            self._checkpoint.evaluated_pairs = 0
+            self._checkpoint.total_pairs = 0
+            self.save(self._checkpoint)
+
+    def is_judge_changed(self, current_model: str, current_base_url: str) -> bool:
+        """Check if judge model configuration has changed.
+
+        Args:
+            current_model: Current judge model name from config
+            current_base_url: Current judge base URL from config
+
+        Returns:
+            True if judge model has changed, False otherwise
+        """
+        if self._checkpoint is None:
+            return False
+
+        # If no previous judge info stored, assume no change (backward compatibility)
+        if self._checkpoint.judge_model is None:
+            return False
+
+        return self._checkpoint.judge_model != current_model or self._checkpoint.judge_base_url != current_base_url
+
+    def update_judge_info(self, model: str, base_url: str) -> None:
+        """Update stored judge model information."""
+        if self._checkpoint is None:
+            self._checkpoint = _CheckpointData()
+        self._checkpoint.judge_model = model
+        self._checkpoint.judge_base_url = base_url
+        self.save(self._checkpoint)
+
 
 # =============================================================================
 # Evaluation Result
@@ -439,19 +487,99 @@ class ZeroShotPipeline:
     async def collect_responses(
         self,
         queries: Optional[List[GeneratedQuery]] = None,
+        existing_responses: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
-        """Step 2: Collect responses from all target endpoints."""
+        """Step 2: Collect responses from all target endpoints.
+
+        Supports incremental collection: if existing_responses is provided,
+        only collects from endpoints that are missing in the existing data.
+
+        Args:
+            queries: List of queries to collect responses for
+            existing_responses: Optional existing responses to merge with
+
+        Returns:
+            List of response data with all endpoint responses
+        """
         queries = queries or self._queries
         if not queries:
             raise ValueError("No queries available. Run generate_queries() first.")
 
-        logger.info("Step 2: Collecting responses from target endpoints...")
+        # Determine which endpoints need collection
+        endpoints_to_collect = dict(self.config.target_endpoints)
+
+        if existing_responses:
+            # Find endpoints that already have responses
+            existing_endpoints = set()
+            for resp_data in existing_responses:
+                existing_endpoints.update(resp_data.get("responses", {}).keys())
+
+            # Filter to only new endpoints
+            new_endpoints = {k: v for k, v in endpoints_to_collect.items() if k not in existing_endpoints}
+
+            if new_endpoints:
+                logger.info(
+                    f"Incremental collection: existing={existing_endpoints}, " f"new={set(new_endpoints.keys())}"
+                )
+                endpoints_to_collect = new_endpoints
+            else:
+                logger.info("All endpoints already have responses, skipping collection")
+                self._responses = existing_responses
+                return self._responses
+
+        logger.info(f"Step 2: Collecting responses from {len(endpoints_to_collect)} target endpoints...")
         collector = ResponseCollector(
-            target_endpoints=self.config.target_endpoints,
+            target_endpoints=endpoints_to_collect,
             evaluation_config=self.config.evaluation,
         )
-        self._responses = await collector.collect(queries)
+        new_responses = await collector.collect(queries)
+
+        # Merge with existing responses if provided
+        if existing_responses:
+            self._responses = self._merge_responses(existing_responses, new_responses)
+        else:
+            self._responses = new_responses
+
         return self._responses
+
+    def _merge_responses(
+        self,
+        existing: List[Dict[str, Any]],
+        new: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Merge existing and new responses by query.
+
+        Args:
+            existing: Existing response data
+            new: New response data to merge
+
+        Returns:
+            Merged response data
+        """
+        # Create lookup by query
+        existing_by_query = {r["query"]: r for r in existing}
+        new_by_query = {r["query"]: r for r in new}
+
+        merged = []
+        all_queries = set(existing_by_query.keys()) | set(new_by_query.keys())
+
+        for query in all_queries:
+            existing_resp = existing_by_query.get(query, {})
+            new_resp = new_by_query.get(query, {})
+
+            merged_item = {
+                "query": query,
+                "category": existing_resp.get("category") or new_resp.get("category", ""),
+                "difficulty": existing_resp.get("difficulty") or new_resp.get("difficulty", ""),
+                "responses": {
+                    **existing_resp.get("responses", {}),
+                    **new_resp.get("responses", {}),
+                },
+            }
+            merged.append(merged_item)
+
+        logger.info(f"Merged responses: {len(merged)} queries with combined endpoints")
+        return merged
 
     async def generate_rubrics(
         self,
@@ -481,13 +609,43 @@ class ZeroShotPipeline:
         Creates comparison pairs for all model combinations, with both
         original and swapped orders to eliminate position bias.
 
+        Supports incremental updates: if config endpoints don't match saved
+        responses, uses the intersection of endpoints that have actual data.
+
         Args:
             responses: List of response data from collect_responses()
 
         Returns:
             Tuple of (dataset, endpoint_names)
         """
-        endpoint_names = list(self.config.target_endpoints.keys())
+        config_endpoints = set(self.config.target_endpoints.keys())
+
+        # Get endpoints that actually have responses
+        response_endpoints = set()
+        for resp_data in responses:
+            resp_dict = resp_data.get("responses", {})
+            response_endpoints.update(resp_dict.keys())
+
+        # Use intersection if there's a mismatch, otherwise use config endpoints
+        # Always sort to ensure consistent pair ordering across runs
+        if config_endpoints != response_endpoints:
+            available_endpoints = config_endpoints & response_endpoints
+            if available_endpoints:
+                logger.warning(
+                    f"Endpoint mismatch detected. Config: {config_endpoints}, "
+                    f"Responses: {response_endpoints}. Using intersection: {available_endpoints}"
+                )
+                endpoint_names = sorted(available_endpoints)
+            else:
+                # No overlap - use whatever endpoints exist in responses
+                logger.warning(
+                    f"No endpoint overlap between config and responses. "
+                    f"Using response endpoints: {response_endpoints}"
+                )
+                endpoint_names = sorted(response_endpoints)
+        else:
+            endpoint_names = sorted(config_endpoints)
+
         pairs = list(combinations(endpoint_names, 2))
 
         dataset = []
@@ -636,6 +794,150 @@ class ZeroShotPipeline:
         # Convert to EvaluationResult
         return EvaluationResult.from_analysis(analysis, total_queries=len(self._responses))
 
+    def _filter_existing_comparisons(
+        self,
+        dataset: List[dict],
+        existing_details: List[ComparisonDetail],
+    ) -> Tuple[List[dict], List[GraderResult]]:
+        """Filter out comparisons that already exist.
+
+        Args:
+            dataset: Full dataset of comparison pairs to evaluate
+            existing_details: Previously saved comparison details
+
+        Returns:
+            Tuple of (dataset_to_run, existing_grader_results)
+        """
+        from openjudge.graders.schema import GraderScore
+
+        # Build lookup by normalized key for existing comparisons
+        existing_by_key = {}
+        for detail in existing_details:
+            key = self._normalize_comparison_key(detail.query, detail.model_a, detail.model_b, detail.order)
+            existing_by_key[key] = detail  # Later entries overwrite earlier
+
+        dataset_to_run = []
+        existing_results = []
+
+        for sample in dataset:
+            key = self._normalize_comparison_key(
+                sample["evaluation_data"]["instruction"],
+                sample["metadata"]["model_a"],
+                sample["metadata"]["model_b"],
+                sample["metadata"].get("order", "original"),
+            )
+            if key in existing_by_key:
+                # Use lookup dict for O(1) access
+                detail = existing_by_key[key]
+                existing_results.append(
+                    GraderScore(
+                        name="pairwise_comparator",
+                        score=detail.score,
+                        reason=detail.reason,
+                    )
+                )
+            else:
+                dataset_to_run.append(sample)
+
+        return dataset_to_run, existing_results
+
+    def _normalize_comparison_key(
+        self,
+        query: str,
+        model_a: str,
+        model_b: str,
+        order: str,
+    ) -> Tuple[str, str, str, str]:
+        """Normalize comparison key to ensure consistent deduplication.
+
+        Normalizes model ordering for consistent key generation while preserving
+        the order field (original/swapped) to keep both position-bias test
+        comparisons distinct.
+        """
+        if model_a <= model_b:
+            return (query, model_a, model_b, order)
+        # Swap models alphabetically but keep order unchanged
+        # (original, swapped) must remain distinct to test position bias
+        return (query, model_b, model_a, order)
+
+    def _deduplicate_comparison_details(
+        self,
+        details: List[ComparisonDetail],
+    ) -> List[ComparisonDetail]:
+        """Deduplicate comparison details using normalized keys.
+
+        Handles cases where the same comparison was recorded with different
+        model orderings due to inconsistent endpoint list ordering.
+
+        Args:
+            details: List of comparison details (may contain duplicates)
+
+        Returns:
+            Deduplicated list of comparison details
+        """
+        seen = {}
+        for detail in details:
+            # Use normalized key to handle ordering inconsistencies
+            key = self._normalize_comparison_key(detail.query, detail.model_a, detail.model_b, detail.order)
+            # Later entries overwrite earlier ones (keeps most recent)
+            seen[key] = detail
+
+        deduplicated = list(seen.values())
+        if len(deduplicated) < len(details):
+            logger.info(f"Deduplicated comparison details: {len(details)} -> {len(deduplicated)}")
+        return deduplicated
+
+    def _rebuild_grader_results(
+        self,
+        dataset: List[dict],
+        all_details: List[ComparisonDetail],
+    ) -> List[GraderResult]:
+        """Rebuild grader results from comparison details in dataset order.
+
+        Args:
+            dataset: Full dataset (defines the expected order)
+            all_details: All comparison details (existing + new)
+
+        Returns:
+            List of GraderResult in the same order as dataset
+        """
+        from openjudge.graders.schema import GraderScore
+
+        # Build lookup by normalized key
+        details_by_key = {}
+        for detail in all_details:
+            key = self._normalize_comparison_key(detail.query, detail.model_a, detail.model_b, detail.order)
+            details_by_key[key] = detail
+
+        results = []
+        for sample in dataset:
+            key = self._normalize_comparison_key(
+                sample["evaluation_data"]["instruction"],
+                sample["metadata"]["model_a"],
+                sample["metadata"]["model_b"],
+                sample["metadata"].get("order", "original"),
+            )
+            if key in details_by_key:
+                detail = details_by_key[key]
+                results.append(
+                    GraderScore(
+                        name="pairwise_comparator",
+                        score=detail.score,
+                        reason=detail.reason,
+                    )
+                )
+            else:
+                # This shouldn't happen, but handle gracefully
+                logger.warning(f"Missing comparison detail for {key}")
+                results.append(
+                    GraderError(
+                        name="pairwise_comparator",
+                        error="Missing comparison detail",
+                    )
+                )
+
+        return results
+
     async def evaluate(
         self,
         queries: Optional[List[GeneratedQuery]] = None,
@@ -655,6 +957,18 @@ class ZeroShotPipeline:
         if self._resume:
             checkpoint = self._checkpoint_mgr.load()
 
+        # Auto-detect judge model change
+        current_judge_model = self.config.judge_endpoint.model
+        current_judge_base_url = self.config.judge_endpoint.base_url
+        if checkpoint and self._checkpoint_mgr.is_judge_changed(current_judge_model, current_judge_base_url):
+            logger.info(
+                f"Judge model changed (was: {checkpoint.judge_model}, "
+                f"now: {current_judge_model}), re-running pairwise evaluation..."
+            )
+            self._checkpoint_mgr.clear_comparison_details()
+            # Reload checkpoint after clearing
+            checkpoint = self._checkpoint_mgr.load()
+
         # Step 1: Generate or load queries
         if queries:
             self._queries = queries
@@ -672,10 +986,33 @@ class ZeroShotPipeline:
                 queries_file=str(self._checkpoint_mgr.output_dir / "queries.json"),
             )
 
-        # Step 2: Collect or load responses
+        # Step 2: Collect or load responses (supports incremental updates)
+        existing_responses = None
         if checkpoint and checkpoint.stage >= EvaluationStage.RESPONSES_COLLECTED:
-            self._responses = self._checkpoint_mgr.load_responses()
-            logger.info(f"Resumed {len(self._responses)} responses from checkpoint")
+            existing_responses = self._checkpoint_mgr.load_responses()
+            logger.info(f"Resumed {len(existing_responses)} responses from checkpoint")
+
+        if existing_responses:
+            # Check if we need to collect new endpoints
+            existing_endpoints = set()
+            for resp_data in existing_responses:
+                existing_endpoints.update(resp_data.get("responses", {}).keys())
+
+            config_endpoints = set(self.config.target_endpoints.keys())
+            missing_endpoints = config_endpoints - existing_endpoints
+
+            if missing_endpoints:
+                logger.info(f"New endpoints detected: {missing_endpoints}, collecting incrementally...")
+                await self.collect_responses(existing_responses=existing_responses)
+                # Save merged responses
+                self._checkpoint_mgr.save_responses(self._responses)
+                self._checkpoint_mgr.update_stage(
+                    EvaluationStage.RESPONSES_COLLECTED,
+                    collected_responses=len(self._responses),
+                    responses_file=str(self._checkpoint_mgr.output_dir / "responses.json"),
+                )
+            else:
+                self._responses = existing_responses
         elif not self._responses:
             await self.collect_responses()
             # Save checkpoint
@@ -695,34 +1032,55 @@ class ZeroShotPipeline:
             logger.info(f"Resumed {len(self._rubrics)} rubrics from checkpoint")
         elif not self._rubrics:
             await self.generate_rubrics()
-            # Save checkpoint
+            # Save checkpoint with judge model info
             self._checkpoint_mgr.save_rubrics(self._rubrics)
             self._checkpoint_mgr.update_stage(
                 EvaluationStage.RUBRICS_GENERATED,
                 rubrics_file=str(self._checkpoint_mgr.output_dir / "rubrics.json"),
+                judge_model=self.config.judge_endpoint.model,
+                judge_base_url=self.config.judge_endpoint.base_url,
             )
 
-        # Step 4: Run pairwise evaluation
+        # Step 4: Run pairwise evaluation (supports incremental)
         logger.info("Step 4: Running pairwise evaluation...")
         dataset, endpoint_names = self._prepare_pairwise_data(self._responses)
 
         if not dataset:
             raise ValueError("No valid comparison pairs. Check if responses were collected successfully.")
 
-        grader_results, self._comparison_details = await self._run_pairwise_evaluation(dataset, self._rubrics)
+        # Load existing comparison details for incremental evaluation
+        existing_details = self._checkpoint_mgr.load_comparison_details()
+        dataset_to_run, existing_results = self._filter_existing_comparisons(dataset, existing_details)
 
-        # Save comparison details
+        if dataset_to_run:
+            logger.info(
+                f"Incremental evaluation: {len(existing_results)} existing, "
+                f"{len(dataset_to_run)} new comparisons to run"
+            )
+            new_results, new_details = await self._run_pairwise_evaluation(dataset_to_run, self._rubrics)
+            # Merge and deduplicate details
+            self._comparison_details = self._deduplicate_comparison_details(existing_details + new_details)
+            # Rebuild grader_results from all details for analysis
+            grader_results = self._rebuild_grader_results(dataset, self._comparison_details)
+        else:
+            logger.info(f"All {len(existing_details)} comparisons already completed, skipping evaluation")
+            self._comparison_details = self._deduplicate_comparison_details(existing_details)
+            grader_results = existing_results
+
+        # Save deduplicated comparison details
         self._checkpoint_mgr.save_comparison_details(self._comparison_details)
 
         # Step 5: Analyze results using OpenJudge's PairwiseAnalyzer
         logger.info("Step 5: Analyzing results...")
         result = self._analyze_results(dataset, grader_results, endpoint_names)
 
-        # Mark evaluation complete
+        # Mark evaluation complete and save judge model info
         self._checkpoint_mgr.update_stage(
             EvaluationStage.EVALUATION_COMPLETE,
             total_pairs=len(dataset),
             evaluated_pairs=len(grader_results),
+            judge_model=self.config.judge_endpoint.model,
+            judge_base_url=self.config.judge_endpoint.base_url,
         )
 
         self._display_results(result)
@@ -775,6 +1133,19 @@ class ZeroShotPipeline:
             total_queries=result.total_queries,
             total_comparisons=result.total_comparisons,
         )
+
+        # Generate matrix heatmap if enabled
+        if chart_config.matrix_enabled:
+            logger.info("Generating win rate matrix...")
+            model_order = [name for name, _ in result.rankings]
+            generator.generate_matrix(
+                win_matrix=result.win_matrix,
+                model_order=model_order,
+                output_dir=self.config.output.output_dir,
+                task_description=self.config.task.description,
+                total_queries=result.total_queries,
+                total_comparisons=result.total_comparisons,
+            )
 
     def _display_results(self, result: EvaluationResult) -> None:
         """Display evaluation results with formatted output."""

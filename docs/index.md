@@ -1,13 +1,15 @@
 # OpenJudge
 
 ## Why OpenJudge?
-OpenJudge is a unified framework designed to drive **LLM and Agent application excellence** through **Holistic Evaluation** and **Quality Rewards**.
+OpenJudge is an **open-source evaluation framework** for **AI applications** (e.g., AI agents or chatbots) designed to **evaluate quality** and  drive **continuous application optimization**.
 
 <div class="callout-tip" markdown>
-<img src="https://unpkg.com/lucide-static@latest/icons/lightbulb.svg" class="callout-icon"> Evaluation and reward signals are the cornerstones of application excellence. **Holistic evaluation** enables the systematic analysis of shortcomings to drive rapid iteration, while **high-quality** rewards provide the essential foundation for advanced optimization and fine-tuning.
+<img src="https://unpkg.com/lucide-static@latest/icons/lightbulb.svg" class="callout-icon"> In practice, application excellence depends on a trustworthy evaluation workflow: Collect test data → Define graders → Run evaluation at scale → Analyze weaknesses → Iterate quickly.
 </div>
 
-OpenJudge unifies evaluation metrics and reward signals into a single, standardized **Grader** interface, offering pre-built graders, flexible customization, and seamless framework integration.
+OpenJudge provides **ready-to-use graders** and supports generating **scenario-specific rubrics (as graders)**, making this workflow **simpler**, **more professional**, and **easy to integrate** into your workflow.
+
+It can also convert grading results into **reward signals** to help you **fine-tune** and optimize your application.
 
 ### Key Features
 
@@ -24,7 +26,7 @@ OpenJudge unifies evaluation metrics and reward signals into a single, standardi
     - **Data-driven Rubrics Generation:** Ambiguous requirements, but have few examples? Use the GraderGenerator to automatically summarize evaluation Rubrics from your annotated data, and generate a llm-based grader. <a href="building_graders/generate_rubrics_as_graders/#iterative-rubric-data-driven-generation" class="feature-link">Data-driven Rubrics Generation Guide <span class="link-arrow">→</span></a>
     - **Training Judge Models:** Massive data and need peak performance? Use our training pipeline to train a dedicated Judge Model. This is ideal for complex scenarios where prompt-based grading falls short. <a href="building_graders/training_judge_models/" class="feature-link">Train Judge Models <span class="link-arrow">→</span></a>
 
-+ **Easy Integration**: Using mainstream observability platforms like **LangSmith** or **Langfuse**? We offer seamless integration to enhance their evaluators and automated evaluation capabilities. We're also building integrations with training frameworks like **verl**.
++ **Easy Integration**: Using mainstream observability platforms like **LangSmith** or **Langfuse**? We offer seamless integration to enhance their evaluators and automated evaluation capabilities. We also provide integrations with training frameworks like **VERL** for RL training.
 
 </div>
 
@@ -178,7 +180,7 @@ OpenJudge unifies evaluation metrics and reward signals into a single, standardi
 
 <div class="card-grid">
 
-  <a href="integrations/langsmith/" class="feature-card">
+  <a href="integrations/langsmith/" class="feature-card-sm">
     <div class="card-header">
       <img src="https://unpkg.com/lucide-static@latest/icons/telescope.svg" class="card-icon card-icon-integration">
       <h3>LangSmith</h3>
@@ -188,7 +190,7 @@ OpenJudge unifies evaluation metrics and reward signals into a single, standardi
     </p>
   </a>
 
-  <a href="integrations/langfuse/" class="feature-card">
+  <a href="integrations/langfuse/" class="feature-card-sm">
     <div class="card-header">
       <img src="https://unpkg.com/lucide-static@latest/icons/activity.svg" class="card-icon card-icon-data">
       <h3>Langfuse</h3>
@@ -198,16 +200,15 @@ OpenJudge unifies evaluation metrics and reward signals into a single, standardi
     </p>
   </a>
 
-  <div class="feature-card-wip">
+  <a href="integrations/verl/" class="feature-card-sm">
     <div class="card-header">
       <img src="https://unpkg.com/lucide-static@latest/icons/dumbbell.svg" class="card-icon card-icon-tool">
-      <h3>Training Frameworks</h3>
-      <span class="badge-wip">🚧 Work in Progress</span>
+      <h3>VERL</h3>
     </div>
     <p class="card-desc">
-      Directly integrate into training loops such as <strong>VERL</strong>. Use Graders as high-quality reward functions for fine-tuning to align models effectively.
+      Integrate OpenJudge graders as reward functions for VERL RL training. Supports batch processing and async evaluation at scale.
     </p>
-  </div>
+  </a>
 
 </div>
 

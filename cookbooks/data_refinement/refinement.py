@@ -43,7 +43,7 @@ def format_messages(messages: List[ChatMessage]) -> str:
 
 
 GENERATE_RESPONSE_PROMPT = """# Task
-Please generate a respoonse as the conversation required.
+Please generate a response as the conversation required.
 
 # Conversation history
 {history}

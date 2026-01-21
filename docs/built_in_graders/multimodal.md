@@ -7,9 +7,9 @@ Vision-language graders for evaluating AI responses involving images. These grad
 
 | Grader | Purpose | Type | Score Range | Key Use Case |
 |--------|---------|------|-------------|--------------|
-| `ImageCoherenceGrader` | Measures image-text alignment | LLM-Based | [0, 1] | Document generation, content QA |
-| `ImageHelpfulnessGrader` | Evaluates image contribution to understanding | LLM-Based | [0, 1] | Educational content, tutorials |
-| `TextToImageGrader` | Assesses generated image quality | LLM-Based | [0, 1] | Text-to-image model evaluation |
+| `ImageCoherenceGrader` | Measures image-text alignment | LLM-Based | 1-5 | Document generation, content QA |
+| `ImageHelpfulnessGrader` | Evaluates image contribution to understanding | LLM-Based | 1-5 | Educational content, tutorials |
+| `TextToImageGrader` | Assesses generated image quality | LLM-Based | 1-5 | Text-to-image model evaluation |
 
 ## Performance
 
@@ -64,13 +64,14 @@ Evaluates how well images match and relate to their surrounding text context. As
 - Placement appropriateness
 
 **Scoring:**
-- **10**: Perfect coherence, image perfectly illustrates text
-- **7-9**: Strong coherence with clear relationship
-- **4-6**: Some coherence but connection could be clearer
-- **0-3**: Weak or no coherence, image seems misplaced
+- **5**: Perfect coherence, image perfectly illustrates text
+- **4**: Strong coherence with clear relationship
+- **3**: Some coherence but connection could be clearer
+- **2**: Weak coherence, image seems somewhat misplaced
+- **1**: No coherence, image is completely unrelated
 
 !!! note
-    Score is normalized to [0, 1]. For multiple images, returns average score.
+    Score range is 1-5. For multiple images, returns average score.
 
 **Example:**
 
@@ -91,7 +92,7 @@ async def main():
         ]
     )
 
-    print(f"Score: {result.score}")   # 0.95 - image coherent with context
+    print(f"Score: {result.score}")   # 4.8 - image coherent with context
     print(f"Reason: {result.reason}")
 
 asyncio.run(main())
@@ -124,13 +125,14 @@ Evaluates how helpful images are in aiding readers' understanding of text. Goes 
 - Comprehension support
 
 **Scoring:**
-- **10**: Extremely helpful, significantly enhances understanding
-- **7-9**: Very helpful, provides clear value
-- **4-6**: Somewhat helpful but limited value
-- **0-3**: Not helpful or redundant with text
+- **5**: Extremely helpful, significantly enhances understanding
+- **4**: Very helpful, provides clear value
+- **3**: Somewhat helpful but limited value
+- **2**: Minimally helpful
+- **1**: Not helpful or redundant with text
 
 !!! note
-    Score is normalized to [0, 1]. For multiple images, returns average score.
+    Score range is 1-5. For multiple images, returns average score.
 
 **Example:**
 
@@ -151,7 +153,7 @@ async def main():
         ]
     )
 
-    print(f"Score: {result.score}")   # 0.90 - diagram very helpful
+    print(f"Score: {result.score}")   # 4.5 - diagram very helpful
     print(f"Reason: {result.reason}")
 
 asyncio.run(main())
@@ -185,10 +187,10 @@ Evaluates AI-generated images from text prompts by measuring semantic consistenc
 **Scoring:**
 
 The final score combines two dimensions:
-- **Semantic Score (0-10)**: How well the image follows the prompt
-- **Perceptual Score (0-10)**: Naturalness + artifact absence
+- **Semantic Score (1-5)**: How well the image follows the prompt
+- **Perceptual Score (1-5)**: Naturalness + artifact absence
 
-Formula: `sqrt(semantic × min(perceptual)) / 10` → normalized to [0, 1]
+Formula: `sqrt(semantic × min(perceptual))` → score in range [1, 5]
 
 **Example:**
 
@@ -206,12 +208,12 @@ async def main():
         response=MLLMImage(url="https://example.com/generated_cat.jpg"),
     )
 
-    print(f"Score: {result.score}")   # 0.92 - excellent generation
+    print(f"Score: {result.score}")   # 4.6 - excellent generation
     print(f"Reason: {result.reason}")
 
     # Access detailed scores
-    print(f"Semantic: {result.metadata['min_sc']}/10")
-    print(f"Perceptual: {result.metadata['min_pq']}/10")
+    print(f"Semantic: {result.metadata['min_sc']}/5")
+    print(f"Perceptual: {result.metadata['min_pq']}/5")
 
 asyncio.run(main())
 ```

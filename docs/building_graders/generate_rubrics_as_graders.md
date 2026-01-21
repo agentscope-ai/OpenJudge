@@ -236,9 +236,6 @@ from openjudge.generator.iterative_rubric.generator import (
     IterativeRubricsGenerator,
     IterativePointwiseRubricsGeneratorConfig
 )
-from openjudge.generator.iterative_rubric.query_rubric_generator import (
-    POINTWISE_EVALUATION_TEMPLATE
-)
 from openjudge.models import OpenAIChatModel
 
 async def main():
@@ -246,12 +243,13 @@ async def main():
     config = IterativePointwiseRubricsGeneratorConfig(
         grader_name="code_explanation_grader",
         model=OpenAIChatModel(model="qwen3-32b"),
-        custom_evaluation_prompt=POINTWISE_EVALUATION_TEMPLATE,
         min_score=1,
         max_score=5,
         query_specific_generate_number=2,
         enable_categorization=True,
-        categories_number=3
+        categories_number=3,
+        # Optional: provide task context to guide rubric generation
+        task_description="Evaluate the quality of Python code explanations, focusing on accuracy, completeness, and clarity."
     )
 
     # Generate the grader
@@ -429,9 +427,6 @@ from openjudge.generator.iterative_rubric.generator import (
     IterativeRubricsGenerator,
     IterativeListwiseRubricsGeneratorConfig  # Use Listwise config for pairwise
 )
-from openjudge.generator.iterative_rubric.query_rubric_generator import (
-    LISTWISE_EVALUATION_TEMPLATE
-)
 from openjudge.models import OpenAIChatModel
 
 async def main():
@@ -439,10 +434,11 @@ async def main():
     config = IterativeListwiseRubricsGeneratorConfig(
         grader_name="code_solution_comparator",
         model=OpenAIChatModel(model="qwen3-32b"),
-        custom_evaluation_prompt=LISTWISE_EVALUATION_TEMPLATE,
         query_specific_generate_number=2,
         enable_categorization=True,
-        categories_number=3
+        categories_number=3,
+        # Optional: provide task context to guide rubric generation
+        task_description="Compare code solutions based on correctness, efficiency, and code quality."
     )
 
     # Generate the grader
@@ -526,6 +522,7 @@ GraderRank(
 | `enable_categorization` | `bool` | `False` | Group similar rubrics into categories |
 | `categories_number` | `int` | `5` | Target number of categories |
 | `query_specific_generate_number` | `int` | `1` | Rubrics to generate per training sample |
+| `task_description` | `str` | `None` | Optional task context to guide rubric generation |
 
 ### Pointwise-Specific Parameters
 
@@ -538,13 +535,15 @@ GraderRank(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `custom_evaluation_prompt` | `PromptTemplate` | `None` | Evaluation prompt template |
+| `custom_evaluation_prompt` | `PromptTemplate` | `None` | Custom evaluation prompt template (auto-selected if not provided) |
 
-!!! tip "Built-in Templates"
-    Use templates from `openjudge.generator.iterative_rubric.query_rubric_generator`:
+!!! tip "Default Templates"
+    The system automatically selects the appropriate template based on `grader_mode`:
 
-    - `POINTWISE_EVALUATION_TEMPLATE` — for scoring
-    - `LISTWISE_EVALUATION_TEMPLATE` — for ranking
+    - **Pointwise mode** → `POINTWISE_EVALUATION_TEMPLATE`
+    - **Listwise mode** → `LISTWISE_EVALUATION_TEMPLATE`
+
+    You only need to set `custom_evaluation_prompt` if you want to override the default behavior.
 
 
 ---

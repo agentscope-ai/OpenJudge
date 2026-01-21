@@ -102,7 +102,7 @@ data:
 | `train/loss` | Cross-entropy loss |
 | `val/loss` | Validation loss |
 
-→ **[Full Documentation](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/sft)**
+→ **[Full Documentation](https://github.com/agentscope-ai/OpenJudge/tree/main/cookbooks/training_judge_model/sft)**
 
 
 ---
@@ -178,7 +178,7 @@ optim:
 | `val/loss` | Validation loss |
 | `val/accuracy` | Validation accuracy |
 
-→ **[Full Documentation](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/bradley-terry)**
+→ **[Full Documentation](https://github.com/agentscope-ai/OpenJudge/tree/main/cookbooks/training_judge_model/bradley-terry)**
 
 
 ---
@@ -270,7 +270,7 @@ bash pointwise/run_pointwise.sh
 | `train/kl_divergence` | KL from reference model |
 | `train/policy_loss` | Policy gradient loss |
 
-→ **[Full Documentation](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/grpo)**
+→ **[Full Documentation](https://github.com/agentscope-ai/OpenJudge/tree/main/cookbooks/training_judge_model/grpo)**
 
 
 ---

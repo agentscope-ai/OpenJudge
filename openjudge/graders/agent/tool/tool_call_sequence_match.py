@@ -44,16 +44,31 @@ class ToolCallSequenceMatchGrader(BaseGrader):
         self,
         strict_mode: bool = True,
         use_jaccard_similarity: bool = True,
+        metric_type: str = "recall",
         **kwargs,
     ):
+        """
+        Initialize the ToolCallSequenceMatchGrader.
+
+        Args:
+            strict_mode: If True, matches both tool_call name and arguments; if False, only matches tool_call name
+            use_jaccard_similarity: If True, use Jaccard similarity for loose mode (ignores step order)
+            metric_type: Metric type for step matching when use_jaccard_similarity=False and strict_mode=False.
+                - "recall": matched_count / reference_count (default)
+                - "precision": matched_count / predicted_count
+            **kwargs: Additional arguments passed to BaseGrader
+        """
         super().__init__(
             name="tool_call_sequence",
             mode=GraderMode.POINTWISE,
             description="Evaluate tool call sequence matching against reference",
             **kwargs,
         )
+        if metric_type not in ("recall", "precision"):
+            raise ValueError(f"metric_type must be 'recall' or 'precision', got '{metric_type}'")
         self.strict_mode = strict_mode
         self.use_jaccard_similarity = use_jaccard_similarity
+        self.metric_type = metric_type
 
     def extract_predicted_tool_sequence(
         self,
@@ -267,11 +282,19 @@ class ToolCallSequenceMatchGrader(BaseGrader):
                         step_score = sum(tool_scores) / len(tool_scores) if tool_scores else 0.0
                 else:
                     # In loose mode, calculate step score based on the ratio of matched tools
-                    if len(gt_tool_names) > 0:
-                        matched_count = len(gt_tool_names) - len(missing)
-                        step_score = matched_count / len(gt_tool_names)
-                    else:
-                        step_score = 1.0
+                    matched_count = len(gt_tool_names) - len(missing)
+                    if self.metric_type == "recall":
+                        # Recall: matched / reference
+                        if len(gt_tool_names) > 0:
+                            step_score = matched_count / len(gt_tool_names)
+                        else:
+                            step_score = 1.0
+                    else:  # precision
+                        # Precision: matched / predicted
+                        if len(pred_tool_names) > 0:
+                            step_score = matched_count / len(pred_tool_names)
+                        else:
+                            step_score = 0.0 if len(gt_tool_names) > 0 else 1.0
             else:
                 step_score = 0.0  # No matching step in model
             total_score += step_score
@@ -420,7 +443,7 @@ class ToolCallSequenceMatchGrader(BaseGrader):
             score_type = "step_matching"
         # Generate detailed reason
         mode_str = "strict" if self.strict_mode else "loose"
-        method_str = "jaccard" if self.use_jaccard_similarity else "step-by-step"
+        method_str = "jaccard" if self.use_jaccard_similarity else f"step-by-step/{self.metric_type}"
         reason = f"Tool call sequence evaluation ({mode_str} mode, {method_str}): {score_type}={final_score:.3f}"
         # Count tools for metadata
         predicted_tool_count = sum(len(tools) for tools in predicted_tool_steps.values())

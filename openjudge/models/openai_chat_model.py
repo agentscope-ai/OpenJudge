@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """OpenAI Client."""
+import copy
 import os
 from typing import Any, AsyncGenerator, Callable, Dict, Literal, Type
 
@@ -13,28 +14,36 @@ from openjudge.models.schema.oai.response import ChatResponse
 from openjudge.utils.utils import repair_and_load_json
 
 
-def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> None:
+def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> list[dict]:
     """Qwen-omni uses OpenAI-compatible API but requires different audio
     data format than OpenAI with "data:;base64," prefix.
     Refer to `Qwen-omni documentation
-    <https://bailian.console.aliyun.com/?tab=doc#/doc/?type=model&url=2867839>`_
+    <https://bailian.console.aliyun.com/?tab=doc#/doc/?type=model&url=2867839>`
     for more details.
 
     Args:
         messages (`list[dict]`):
             The list of message dictionaries from OpenAI formatter.
     """
+    format_data = []
     for msg in messages:
-        msg_dict = msg.to_dict() if isinstance(msg, ChatMessage) else msg
-        if isinstance(msg_dict.get("content"), list):
-            for block in msg_dict["content"]:
-                if (
-                    isinstance(block, dict)
-                    and "input_audio" in block
-                    and isinstance(block["input_audio"].get("data"), str)
-                ):
-                    if not block["input_audio"]["data"].startswith("http"):
+        try:
+            msg_copy = copy.deepcopy(msg)
+            msg_dict = msg_copy.to_dict() if isinstance(msg_copy, ChatMessage) else msg_copy
+            if isinstance(msg_dict.get("content"), list):
+                for block in msg_dict["content"]:
+                    if (
+                        isinstance(block, dict)
+                        and "input_audio" in block
+                        and isinstance(block["input_audio"].get("data"), str)
+                        and not block["input_audio"]["data"].startswith("http")
+                    ):
                         block["input_audio"]["data"] = "data:;base64," + block["input_audio"]["data"]
+            format_data.append(msg_dict)
+        except Exception as e:
+            logger.error(f"Failed to format audio data: {type(e).__name__}: {e}", exc_info=True)
+            format_data.append(msg.to_dict() if isinstance(msg, ChatMessage) else msg)
+    return format_data
 
 
 class OpenAIChatModel(BaseChatModel):
@@ -150,7 +159,7 @@ class OpenAIChatModel(BaseChatModel):
 
         # Qwen-omni requires different base64 audio format from openai
         if "omni" in self.model.lower():
-            _format_audio_data_for_qwen_omni(messages)
+            messages = _format_audio_data_for_qwen_omni(messages)
 
         kwargs = {
             "model": self.model,
@@ -186,10 +195,16 @@ class OpenAIChatModel(BaseChatModel):
             kwargs.pop("tools", None)
             kwargs.pop("tool_choice", None)
 
-            if "qwen" in self.model:
-                structured_model = {"type": "json_object"}  # type: ignore
+            # Use simple json_object format for models that don't support complex JSON schema
+            if "qwen" in self.model.lower() or "gemini" in self.model.lower():
+                logger.warning(
+                    "Qwen models do not support Pydantic structured output via `response_format`. "
+                    "Update the unstructured JSON mode with `response_format={'type': 'json_object'}`."
+                )
+                structured_model = {"type": "json_object"}
 
             kwargs["response_format"] = structured_model
+
             if not self.stream:
                 response = await self.client.chat.completions.parse(**kwargs)
             else:

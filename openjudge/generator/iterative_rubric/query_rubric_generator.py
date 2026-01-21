@@ -30,8 +30,8 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # ========== Pointwise Generation Prompts ==========
 
 POINTWISE_GENERATION_PROMPT_ZH = """
-请基于以下样本内容和标注信息，生成{generate_number}个针对性的评估rubrics。
-
+请基于以下样本内容和标注信息，生成**恰好 {generate_number} 个**针对性的评估rubrics。
+{task_description_section}
 {sample_content}
 
 ## 任务要求
@@ -40,23 +40,26 @@ POINTWISE_GENERATION_PROMPT_ZH = """
 - 生成能够区分单个回答与评分范围的评估标准
 - 标准应该明确、具体、可操作
 - 评分标准应该能够产生区间内的整数分数
+- **重要：必须严格生成 {generate_number} 个评估标准，不多不少**
 
 ## 输出格式
 请严格按照以下JSON格式输出：
 {{
 "rubrics": [
     "第一个评估标准的详细描述",
-    ...
+    ... (共 {generate_number} 个)
 ],
 "reason": "生成这些评估标准的原因和依据"
 }}
+
+**关键提醒：rubrics数组必须恰好包含 {generate_number} 个元素。**
 
 请生成评估标准
 """
 
 POINTWISE_GENERATION_PROMPT_EN = """
-Based on the following sample content and annotations, generate {generate_number} targeted evaluation rubrics.
-
+Based on the following sample content and annotations, generate **exactly {generate_number}** targeted evaluation rubrics.
+{task_description_section}
 {sample_content}
 
 ## Task Requirements
@@ -65,16 +68,19 @@ Based on the following sample content and annotations, generate {generate_number
 - Generate evaluation criteria that can distinguish single response and score range
 - Criteria should be clear, specific, and actionable
 - Evaluation criteria should be able to produce integer scores within the range
+- **IMPORTANT: You MUST generate exactly {generate_number} evaluation criteria, no more, no less**
 
 ## Output Format
 Please output strictly in the following JSON format:
 {{
 "rubrics": [
     "Detailed description of the first evaluation criterion",
-    ...
+    ... (exactly {generate_number} items)
 ],
 "reason": "Reason and basis for generating these evaluation criteria"
 }}
+
+**CRITICAL: The rubrics array MUST contain exactly {generate_number} elements.**
 
 Please generate evaluation criteria:
 """
@@ -82,8 +88,8 @@ Please generate evaluation criteria:
 # ========== Listwise Generation Prompts ==========
 
 LISTWISE_GENERATION_PROMPT_ZH = """
-请基于以下样本内容和标注信息，生成{generate_number}个针对性的排序rubrics。
-
+请基于以下样本内容和标注信息，生成**恰好 {generate_number} 个**针对性的排序rubrics。
+{task_description_section}
 {sample_content}
 
 ## 任务要求
@@ -92,23 +98,26 @@ LISTWISE_GENERATION_PROMPT_ZH = """
 - 生成能够正确排序回答质量的标准
 - 标准应该能够确定回答的相对质量顺序
 - 注意：rank值越小表示质量越好（rank=1是最好的），按升序排列
+- **重要：必须严格生成 {generate_number} 个排序标准，不多不少**
 
 ## 输出格式
 请严格按照以下JSON格式输出：
 {{
     "rubrics": [
         "第一个排序标准的详细描述",
-        ...
+        ... (共 {generate_number} 个)
     ],
     "reason": "生成这些排序标准的原因和依据"
 }}
+
+**关键提醒：rubrics数组必须恰好包含 {generate_number} 个元素。**
 
 请生成排序标准
 """
 
 LISTWISE_GENERATION_PROMPT_EN = """
-Based on the following sample content and annotations, generate {generate_number} targeted ranking rubrics.
-
+Based on the following sample content and annotations, generate **exactly {generate_number}** targeted ranking rubrics.
+{task_description_section}
 {sample_content}
 
 ## Task Requirements
@@ -117,16 +126,19 @@ Based on the following sample content and annotations, generate {generate_number
 - Generate ranking criteria that can correctly order response quality
 - Criteria should determine the relative quality order of responses
 - Note: Smaller rank values indicate better quality (rank=1 is best), sort in ascending order
+- **IMPORTANT: You MUST generate exactly {generate_number} ranking criteria, no more, no less**
 
 ## Output Format
 Please output strictly in the following JSON format:
 {{
     "rubrics": [
         "Detailed description of the first ranking criterion",
-        ...
+        ... (exactly {generate_number} items)
     ],
     "reason": "Reason and basis for generating these ranking criteria"
 }}
+
+**CRITICAL: The rubrics array MUST contain exactly {generate_number} elements.**
 
 Please generate ranking criteria
 """
@@ -135,7 +147,7 @@ Please generate ranking criteria
 
 POINTWISE_EVALUATION_PROMPT_ZH = """
 请根据评估标准对回答评分。
-
+{task_description_section}
 评估标准:
 {rubrics}
 
@@ -158,7 +170,7 @@ POINTWISE_EVALUATION_PROMPT_ZH = """
 
 POINTWISE_EVALUATION_PROMPT_EN = """
 Please score the response based on the evaluation criteria.
-
+{task_description_section}
 Evaluation Criteria:
 {rubrics}
 
@@ -183,87 +195,91 @@ Please output the scoring result
 
 LISTWISE_EVALUATION_PROMPT_ZH = """
 请根据评估标准对所有回答进行排序。
-
+{task_description_section}
 评估标准:
 {rubrics}
 
 查询: {query}
 
-所有回答:
+所有回答（共 {num_responses} 个回答）:
 {responses}
 
 ## 任务要求
+- 你正在评估 {num_responses} 个回答。你的输出必须包含恰好 {num_responses} 个rank值。
 - 根据评估标准，对所有回答进行质量评估
 - 为每个回答分配一个rank值，数值越小表示质量越好（rank=1是最好的）
 - 保持回答的原始顺序，只输出每个回答对应的rank值
 - 重要：任何两个回答的rank值都不能相同，必须严格区分质量差异，不允许平分
-- 重要：rank值必须是从1开始的连续整数。例如2个回答用[1,2]，3个回答用[1,2,3]
+- 重要：rank值必须是从1到{num_responses}的连续整数
+- 重要：不要有任何位置偏见 - 回答的位置（第一个还是第二个）不应该影响你的判断。只关注内容质量本身。
 
-## 示例
-假设有三个回答：
-- 回答1质量最好 → 应该得rank=1（最小）
-- 回答2质量最差 → 应该得rank=3（最大）
-- 回答3质量中等 → 应该得rank=2（中等）
+## 示例（针对2个回答）
+示例A：如果回答2比回答1更好
+- 回答1得rank=2（较差）
+- 回答2得rank=1（最好）
+输出：[2, 1]
 
-输出格式：[回答1的rank, 回答2的rank, 回答3的rank]
-正确输出：[1, 3, 2] （回答1得rank=1最好，回答2得rank=3最差，回答3得rank=2中等）
+示例B：如果回答1比回答2更好
+- 回答1得rank=1（最好）
+- 回答2得rank=2（较差）
+输出：[1, 2]
 
 ## 输出格式
 请严格按照以下JSON格式输出：
 {{
-    "rank": [回答1的rank, 回答2的rank, 回答3的rank, ...],
+    "rank": [每个回答的rank值，恰好{num_responses}个值],
     "reason": "详细说明每个回答的质量评估和rank分配理由"
 }}
 
-重要提醒：
-1. 数组中第i个位置的数值是第i个回答的rank值，数值越小表示质量越好（rank=1是最好的）
-2. 所有rank值必须是从1到N的连续正整数（N为回答数量），不能跳过任何数字
+关键提醒：你的rank数组必须恰好包含 {num_responses} 个元素，每个回答对应一个。
 """
 
 LISTWISE_EVALUATION_PROMPT_EN = """
 Please rank all responses based on the evaluation criteria.
-
+{task_description_section}
 Evaluation Criteria:
 {rubrics}
 
 Query: {query}
 
-All Responses:
+All Responses (Total: {num_responses} responses):
 {responses}
 
 ## Task Requirements
+- You are evaluating exactly {num_responses} responses. Your output must contain exactly {num_responses} rank values.
 - Evaluate all responses based on the evaluation criteria
 - Assign a rank value to each response, smaller values indicate better quality (rank=1 is best)
 - Keep responses in original order, only output corresponding rank values
 - Important: No two responses can have the same rank value, must strictly distinguish quality differences, no ties allowed
-- Important: Rank values must be consecutive integers starting from 1. For example, use [1,2] for 2 responses, [1,2,3] for 3 responses
+- Important: Rank values must be consecutive integers from 1 to {num_responses}
+- Important: Do NOT have any position bias - the position of a response (first or second) should NOT influence your judgment. Focus ONLY on the content quality.
 
-## Example
-Assume three responses:
-- Response 1 is best → should get rank=1 (smallest)
-- Response 2 is worst → should get rank=3 (largest)
-- Response 3 is medium → should get rank=2 (medium)
+## Examples (for 2 responses)
+Example A: If Response 2 is better than Response 1
+- Response 1 gets rank=2 (worse)
+- Response 2 gets rank=1 (best)
+Output: [2, 1]
 
-Output format: [Response1_rank, Response2_rank, Response3_rank]
-Correct output: [1, 3, 2] (Response 1 gets rank=1 best, Response 2 gets rank=3 worst, Response 3 gets rank=2 medium)
+Example B: If Response 1 is better than Response 2
+- Response 1 gets rank=1 (best)
+- Response 2 gets rank=2 (worse)
+Output: [1, 2]
 
 ## Output Format
 Please output strictly in the following JSON format:
 {{
-    "rank": [Response1_rank, Response2_rank, Response3_rank, ...],
+    "rank": [rank values for each response, exactly {num_responses} values],
     "reason": "Detailed explanation of quality assessment and rank assignment for each response"
 }}
 
-Important reminders:
-1. The value at position i in the array is the rank value for the i-th response, smaller values indicate better quality (rank=1 is best)
-2. All rank values must be consecutive positive integers from 1 to N (where N is the number of responses), no numbers can be skipped
+CRITICAL: Your rank array MUST have exactly {num_responses} elements, one for each response.
 """
 
 # ========== Pointwise Revision Prompts ==========
 
 POINTWISE_REVISION_PROMPT_ZH = """
 之前生成的Pointwise评分标准在验证时失败了，请生成{generate_number}个评分标准，并根据详细反馈进行改进。
-
+{task_description_section}
 {sample_content}
 
 ## 之前的评分标准
@@ -295,17 +311,19 @@ POINTWISE_REVISION_PROMPT_ZH = """
 {{
     "rubrics": [
         "改进后的第一个评分标准的详细描述",
-        ...
+        ... (共 {generate_number} 个)
     ],
     "reason": "改进这些评分标准的原因和依据"
 }}
+
+**关键提醒：rubrics数组必须恰好包含 {generate_number} 个元素。**
 
 请生成改进后的Pointwise评分标准
 """
 
 POINTWISE_REVISION_PROMPT_EN = """
 The previously generated Pointwise scoring criteria failed validation. Please generate {generate_number} improved scoring criteria based on detailed feedback.
-
+{task_description_section}
 {sample_content}
 
 ## Previous Scoring Criteria
@@ -337,10 +355,12 @@ Please output strictly in the following JSON format:
 {{
     "rubrics": [
         "Detailed description of the first improved scoring criterion",
-        ...
+        ... (exactly {generate_number} items)
     ],
     "reason": "Reason and basis for improving these scoring criteria"
 }}
+
+**CRITICAL: The rubrics array MUST contain exactly {generate_number} elements.**
 
 Please generate improved Pointwise scoring criteria:
 """
@@ -349,7 +369,7 @@ Please generate improved Pointwise scoring criteria:
 
 LISTWISE_REVISION_PROMPT_ZH = """
 之前生成的Listwise排序标准在验证时失败了，请生成{generate_number}个改进的排序标准。
-
+{task_description_section}
 {sample_content}
 
 ## 之前的排序标准
@@ -386,17 +406,19 @@ LISTWISE_REVISION_PROMPT_ZH = """
 {{
     "rubrics": [
         "改进后的第一个排序标准的详细描述",
-        ...
+        ... (共 {generate_number} 个)
     ],
     "reason": "改进这些排序标准的原因和依据"
 }}
+
+**关键提醒：rubrics数组必须恰好包含 {generate_number} 个元素。**
 
 请生成改进后的Listwise排序标准：
 """
 
 LISTWISE_REVISION_PROMPT_EN = """
 The previously generated Listwise ranking criteria failed validation. Please generate {generate_number} improved ranking criteria based on detailed feedback.
-
+{task_description_section}
 {sample_content}
 
 ## Previous Ranking Criteria
@@ -433,10 +455,12 @@ Please output strictly in the following JSON format:
 {{
     "rubrics": [
         "Detailed description of the first improved ranking criterion",
-        ...
+        ... (exactly {generate_number} items)
     ],
     "reason": "Reason and basis for improving these ranking criteria"
 }}
+
+**CRITICAL: The rubrics array MUST contain exactly {generate_number} elements.**
 
 Please generate improved Listwise ranking criteria:
 """
@@ -606,6 +630,7 @@ class QuerySpecificRubricGenerator:
         min_score: int = 0,
         max_score: int = 4,
         language: LanguageEnum | str = LanguageEnum.ZH,
+        task_description: str | None = None,
     ):
         """
         Initialize generator.
@@ -628,6 +653,9 @@ class QuerySpecificRubricGenerator:
                       Defines the upper bound of the scoring range.
             language: LanguageEnum or string ("zh" or "en").
                      Determines which language to use for prompts.
+            task_description: Optional task description to guide rubric generation.
+                            Provides context about the evaluation task (e.g.,
+                            "Evaluate summaries focusing on coherence and fluency").
         """
         self.model = model
 
@@ -648,6 +676,7 @@ class QuerySpecificRubricGenerator:
         self.max_epochs = max_epochs
         self.min_score = min_score
         self.max_score = max_score
+        self.task_description = task_description
 
         self.generation_template = (
             POINTWISE_GENERATION_TEMPLATE if self.grader_mode == "pointwise" else LISTWISE_GENERATION_TEMPLATE
@@ -665,7 +694,7 @@ class QuerySpecificRubricGenerator:
 
     async def generate_iterative(self, data: dict) -> Dict[str, Any]:
         """
-        Complete iterative generation and improvement for a single data
+        Complete iterative generation and improvement for a single data.
 
         Returns:
             Dict with:
@@ -674,7 +703,7 @@ class QuerySpecificRubricGenerator:
             - rubric_epoch: str (convergence epoch)
             - evaluation_result: Dict
         """
-        # Initial generation
+        # Step 1: Initial rubric generation
         rubrics = await self.generate(data)
         if not rubrics:
             return {
@@ -684,7 +713,8 @@ class QuerySpecificRubricGenerator:
                 "evaluation_result": {},
             }
 
-        # Iterative improvement
+        # Step 2: Iterative improvement
+        evaluation_result = {}
         for epoch in range(self.max_epochs):
             # Evaluate current rubrics
             evaluation_result = await self.aevaluate(data, rubrics)
@@ -725,6 +755,7 @@ class QuerySpecificRubricGenerator:
     async def generate(self, data: dict) -> List[str]:
         """Generate rubrics for a single data using ChatTemplate"""
         sample_content = self._format_data_context(data)
+        task_description_section = self._format_task_description_section()
 
         @retry(stop=stop_after_attempt(self.max_retries), wait=wait_fixed(1.0))
         async def generate_rubrics():
@@ -736,12 +767,14 @@ class QuerySpecificRubricGenerator:
                     "generate_number": self.generate_number,
                     "min_score": self.min_score,
                     "max_score": self.max_score,
+                    "task_description_section": task_description_section,
                 }
             else:  # listwise
                 params = {
                     "language": self.language,
                     "sample_content": sample_content,
                     "generate_number": self.generate_number,
+                    "task_description_section": task_description_section,
                 }
 
             # Use ChatTemplate with structured output
@@ -818,6 +851,7 @@ class QuerySpecificRubricGenerator:
         """Revise rubrics based on feedback using ChatTemplate"""
         sample_content = self._format_data_context(data)
         rubrics_text = self._format_rubrics_text(rubrics)
+        task_description_section = self._format_task_description_section()
 
         @retry(stop=stop_after_attempt(self.max_retries), wait=wait_fixed(1.0))
         async def revise_rubrics():
@@ -828,6 +862,7 @@ class QuerySpecificRubricGenerator:
                 "rubrics": rubrics_text,
                 "feedback": feedback,
                 "generate_number": self.generate_number,
+                "task_description_section": task_description_section,
             }
 
             chat_response = await self.model.achat(
@@ -889,6 +924,7 @@ class QuerySpecificRubricGenerator:
         rubrics_text = self._format_rubrics_text(rubrics)
         query = data.get("query", "")
         response = data.get("response", "")
+        task_description_section = self._format_task_description_section()
 
         try:
             # Prepare parameters for pointwise evaluation
@@ -899,6 +935,7 @@ class QuerySpecificRubricGenerator:
                 "response": response,
                 "min_score": self.min_score,
                 "max_score": self.max_score,
+                "task_description_section": task_description_section,
             }
 
             # Use ChatTemplate with structured output
@@ -940,6 +977,8 @@ class QuerySpecificRubricGenerator:
             [f"Response {i + 1}:\n{resp}" for i, resp in enumerate(responses)],
         )
 
+        task_description_section = self._format_task_description_section()
+
         try:
             # Prepare parameters for listwise evaluation
             params = {
@@ -947,6 +986,8 @@ class QuerySpecificRubricGenerator:
                 "rubrics": rubrics_text,
                 "query": query,
                 "responses": responses_text,
+                "num_responses": len(responses),  # Explicitly tell LLM how many responses
+                "task_description_section": task_description_section,
             }
 
             # Use ChatTemplate with structured output
@@ -969,7 +1010,8 @@ class QuerySpecificRubricGenerator:
                     return {"rank_values": rank_values}
                 else:
                     logger.warning(
-                        f"Invalid rank values from structured output: {rank_values}",
+                        f"Invalid rank values: got {len(rank_values)} ranks {rank_values} "
+                        f"for {len(responses)} responses. Query: {query[:100]}...",
                     )
 
             return {"rank_values": []}
@@ -1130,3 +1172,17 @@ class QuerySpecificRubricGenerator:
         return "\n".join(
             [f"{i + 1}. {rubric}" for i, rubric in enumerate(rubrics)],
         )
+
+    def _format_task_description_section(self) -> str:
+        """Format task description section for prompts.
+
+        Returns:
+            Formatted task description section, or empty string if not set.
+        """
+        if not self.task_description:
+            return ""
+
+        if self.language == LanguageEnum.ZH:
+            return f"\n## 任务场景描述\n{self.task_description}\n"
+        else:
+            return f"\n## Task Description\n{self.task_description}\n"

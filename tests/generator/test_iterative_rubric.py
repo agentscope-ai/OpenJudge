@@ -43,10 +43,6 @@ from openjudge.generator.iterative_rubric.generator import (
     IterativePointwiseRubricsGeneratorConfig,
     IterativeRubricsGenerator,
 )
-from openjudge.generator.iterative_rubric.query_rubric_generator import (
-    LISTWISE_EVALUATION_TEMPLATE,
-    POINTWISE_EVALUATION_TEMPLATE,
-)
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderRank, GraderScore
 from openjudge.models.openai_chat_model import OpenAIChatModel
@@ -127,12 +123,12 @@ async def test_iterative_grader_pointwise_single_response() -> None:
     config = IterativePointwiseRubricsGeneratorConfig(
         model=model,
         grader_name="Iterative_Pointwise_Grader",
-        custom_evaluation_prompt=POINTWISE_EVALUATION_TEMPLATE,
         min_score=0,
         max_score=1,
         query_specific_generate_number=1,
         enable_categorization=False,
         language=LanguageEnum.EN,
+        task_description="Evaluate the factual accuracy and completeness of geographic knowledge responses.",
     )
 
     generator = IterativeRubricsGenerator(config)
@@ -177,13 +173,13 @@ async def test_iterative_grader_pointwise_multiple_responses() -> None:
     config = IterativePointwiseRubricsGeneratorConfig(
         model=model,
         grader_name="Iterative_Pointwise_Grader_Categorized",
-        custom_evaluation_prompt=POINTWISE_EVALUATION_TEMPLATE,
         min_score=0,
         max_score=1,
         query_specific_generate_number=1,
         enable_categorization=True,
         categories_number=3,
         language=LanguageEnum.EN,
+        task_description="Evaluate the factual accuracy and completeness of geographic knowledge responses.",
     )
 
     generator = IterativeRubricsGenerator(config)
@@ -237,11 +233,11 @@ async def test_iterative_grader_listwise() -> None:
     config = IterativeListwiseRubricsGeneratorConfig(
         model=model,
         grader_name="Iterative_Listwise_Grader",
-        custom_evaluation_prompt=LISTWISE_EVALUATION_TEMPLATE,
         enable_categorization=False,
         language=LanguageEnum.EN,
         categories_number=5,
         query_specific_generate_number=2,
+        task_description="Evaluate creative writing quality including narrative structure, character development, and emotional engagement.",
     )
 
     generator = IterativeRubricsGenerator(config)
@@ -265,7 +261,7 @@ async def test_iterative_grader_listwise() -> None:
     test_responses = LISTWISE_TEST_SAMPLE[0]["responses"]
     responses = "\n\n".join([f"Response {i + 1}:\n{ans}" for i, ans in enumerate(test_responses)])
 
-    result = await grader.aevaluate(query=test_query, responses=responses)
+    result = await grader.aevaluate(query=test_query, responses=responses, num_responses=len(test_responses))
 
     logger.info(f"Listwise mode result: {result}")
 

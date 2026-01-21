@@ -161,6 +161,15 @@ class SimpleRubricsGenerator(LLMGraderGenerator):
             else:
                 grader_kwargs["template"] = LISTWISE_EVALUATION_TEMPLATE
 
+        # Add task_description_section for template formatting
+        if self.config.task_description:
+            if self.config.language == LanguageEnum.ZH:
+                grader_kwargs["task_description_section"] = f"\n## 任务场景描述\n{self.config.task_description}\n"
+            else:
+                grader_kwargs["task_description_section"] = f"\n## Task Description\n{self.config.task_description}\n"
+        else:
+            grader_kwargs["task_description_section"] = ""
+
         return LLMGrader(**grader_kwargs)
 
     async def _generate_rubrics(

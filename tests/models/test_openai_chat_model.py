@@ -311,7 +311,7 @@ class TestOpenAIChatModel:
         ]
 
         # Apply the transformation
-        _format_audio_data_for_qwen_omni(messages)
+        messages = _format_audio_data_for_qwen_omni(messages)
 
         # Check that the data was formatted correctly
         assert messages[0]["content"][0]["input_audio"]["data"].startswith(
