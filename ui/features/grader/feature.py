@@ -5,7 +5,7 @@ from typing import Any
 
 import streamlit as st
 from core.base_feature import BaseFeature
-from features.grader.components.input_panel import render_input_panel, render_run_button
+from features.grader.components.input_panel import render_input_panel_with_button
 from features.grader.components.result_panel import render_result_panel
 from features.grader.components.sidebar import render_grader_sidebar
 from shared.components.common import render_divider
@@ -50,8 +50,7 @@ class GraderFeature(BaseFeature):
 
         # Input Column
         with col_input:
-            input_data = render_input_panel(sidebar_config)
-            run_flag = render_run_button(sidebar_config, input_data)
+            input_data, run_flag = render_input_panel_with_button(sidebar_config)
 
         # Result Column
         with col_result:

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Result panel component for Grader feature."""
 
+import html
 import logging
 import time
 from typing import Any
@@ -120,6 +121,10 @@ def _render_error_state(error: GraderError) -> None:
     Args:
         error: GraderError object
     """
+    # Escape HTML special characters to prevent XSS and HTML structure breaking
+    escaped_error = html.escape(str(error.error))
+    escaped_reason = html.escape(str(error.reason))
+
     st.markdown(
         f"""
         <div style="
@@ -140,7 +145,7 @@ def _render_error_state(error: GraderError) -> None:
                 </span>
             </div>
             <div style="color: #FCA5A5; margin-bottom: 1rem;">
-                {error.error}
+                {escaped_error}
             </div>
             <div style="
                 background: #1E293B;
@@ -152,7 +157,7 @@ def _render_error_state(error: GraderError) -> None:
                 overflow-x: auto;
                 white-space: pre-wrap;
             ">
-                {error.reason}
+                {escaped_reason}
             </div>
             <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(239, 68, 68, 0.2);">
                 <div style="font-weight: 500; color: #F1F5F9; margin-bottom: 0.5rem;">

@@ -131,7 +131,6 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
         max_concurrency = st.number_input(
             "Concurrency",
             min_value=1,
-            max_value=20,
             value=10,
             help="Maximum concurrent API requests",
             key="zs_max_concurrency",
