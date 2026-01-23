@@ -9,7 +9,7 @@ result structures, and error handling.
 from enum import Enum
 from typing import Any, Dict, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class GraderMode(str, Enum):
@@ -55,9 +55,11 @@ class GraderResult(BaseModel):
         ... )
         >>> print(result.name)
         test_grader
+        >>> result.model_dump()
+        {'name': 'test_grader', 'reason': 'Test evaluation completed', 'metadata': {'duration': 0.1}}
     """
 
-    name: str = Field(default=..., description="The name of the grader")
+    name: str = Field(description="The name of the grader")
     reason: str = Field(default="", description="The reason for the result")
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
@@ -86,7 +88,8 @@ class GraderScore(GraderResult):
         0.85
     """
 
-    score: float = Field(default=..., description="score")
+    score: float = Field(description="score")
+    reason: str = Field(description="reason")
 
 
 class GraderScoreCallback(BaseModel):
@@ -109,8 +112,8 @@ class GraderScoreCallback(BaseModel):
         0.9
     """
 
-    score: float = Field(default=..., description="score")
-    reason: str = Field(default=..., description="reason")
+    score: float = Field(description="score")
+    reason: str = Field(description="reason")
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
         description="The metadata of the grader result",
@@ -138,7 +141,55 @@ class GraderRank(GraderResult):
         [1, 3, 2]
     """
 
-    rank: List[int] = Field(default=..., description="rank")
+    rank: List[int] = Field(description="rank")
+    reason: str = Field(description="reason")
+
+    @field_validator("rank")
+    @classmethod
+    def validate_rank(cls, rank: List[int]) -> List[int]:
+        """Validate that the rank list is a valid permutation of consecutive positive integers starting from 1.
+
+        This validator ensures that the rank list meets all requirements for a proper ranking:
+        - Cannot be empty
+        - Contains only positive integers (≥ 1)
+        - All values are unique (no duplicates)
+        - Forms a complete permutation of integers from 1 to n (where n is the list length)
+
+        Args:
+            rank: A list of integers representing ranks to be validated.
+
+        Returns:
+            The validated rank list unchanged if all validation checks pass.
+
+        Raises:
+            ValueError: If any of the following conditions are violated:
+                - The rank list is empty
+                - Any rank value is not a positive integer (≤ 0)
+                - The rank list contains duplicate values
+                - The rank list is not a complete permutation of [1, 2, ..., n]
+
+        Examples:
+            >>> validate_rank([1, 2, 3])  # Valid - sequential ranks
+            [1, 2, 3]
+            >>> validate_rank([3, 1, 2])  # Valid - permuted ranks
+            [3, 1, 2]
+            >>> validate_rank([1, 1, 2])  # Invalid - duplicates
+            ValueError: Ranks should be unique
+            >>> validate_rank([1, 3])     # Invalid - missing rank 2
+            ValueError: Ranks should be a permutation of [1, 2]
+            >>> validate_rank([0, 1])     # Invalid - contains zero
+            ValueError: All ranks should be positive integers
+        """
+        if not rank:
+            raise ValueError("Rank list cannot be empty")
+        if any(x <= 0 for x in rank):
+            raise ValueError("All ranks should be positive integers")
+        if len(rank) != len(set(rank)):
+            raise ValueError("Ranks should be unique")
+        expected = set(range(1, len(rank) + 1))
+        if set(rank) != expected:
+            raise ValueError(f"Ranks should be a permutation of {sorted(expected)}")
+        return rank
 
 
 class GraderRankCallback(BaseModel):
@@ -162,12 +213,59 @@ class GraderRankCallback(BaseModel):
         [2, 1]
     """
 
-    rank: List[int] = Field(default=..., description="rank")
-    reason: str = Field(default=..., description="reason")
+    rank: List[int] = Field(description="rank")
+    reason: str = Field(description="reason")
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
         description="The metadata of the grader result",
     )
+
+    @field_validator("rank")
+    @classmethod
+    def validate_rank(cls, rank: List[int]) -> List[int]:
+        """Validate that the rank list is a valid permutation of consecutive positive integers starting from 1.
+
+        This validator ensures that the rank list meets all requirements for a proper ranking:
+        - Cannot be empty
+        - Contains only positive integers (≥ 1)
+        - All values are unique (no duplicates)
+        - Forms a complete permutation of integers from 1 to n (where n is the list length)
+
+        Args:
+            rank: A list of integers representing ranks to be validated.
+
+        Returns:
+            The validated rank list unchanged if all validation checks pass.
+
+        Raises:
+            ValueError: If any of the following conditions are violated:
+                - The rank list is empty
+                - Any rank value is not a positive integer (≤ 0)
+                - The rank list contains duplicate values
+                - The rank list is not a complete permutation of [1, 2, ..., n]
+
+        Examples:
+            >>> validate_rank([1, 2, 3])  # Valid - sequential ranks
+            [1, 2, 3]
+            >>> validate_rank([3, 1, 2])  # Valid - permuted ranks
+            [3, 1, 2]
+            >>> validate_rank([1, 1, 2])  # Invalid - duplicates
+            ValueError: Ranks should be unique
+            >>> validate_rank([1, 3])     # Invalid - missing rank 2
+            ValueError: Ranks should be a permutation of [1, 2]
+            >>> validate_rank([0, 1])     # Invalid - contains zero
+            ValueError: All ranks should be positive integers
+        """
+        if not rank:
+            raise ValueError("Rank list cannot be empty")
+        if any(x <= 0 for x in rank):
+            raise ValueError("All ranks should be positive integers")
+        if len(rank) != len(set(rank)):
+            raise ValueError("Ranks should be unique")
+        expected = set(range(1, len(rank) + 1))
+        if set(rank) != expected:
+            raise ValueError(f"Ranks should be a permutation of {sorted(expected)}")
+        return rank
 
 
 class GraderError(GraderResult):
@@ -191,4 +289,4 @@ class GraderError(GraderResult):
         Timeout occurred
     """
 
-    error: str = Field(default=..., description="error")
+    error: str = Field(description="error")

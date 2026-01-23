@@ -143,8 +143,10 @@ class LLMGrader(BaseGrader):
 
         # Initialize model
         if isinstance(model, dict):
+            self._model_config = model
             self.model = OpenAIChatModel(**model)
         else:
+            self._model_config = None
             self.model = model
 
         # Store parameters
@@ -158,7 +160,8 @@ class LLMGrader(BaseGrader):
             else:
                 self.structured_model = GraderScoreCallback
 
-        assert self.language and self.template and self.model
+        if not (self.language and self.template and self.model):
+            raise RuntimeError("Missing required attributes: language, template, or model")
 
     def to_dict(self) -> dict:
         """Convert the LLMGrader to a dictionary representation.
@@ -170,13 +173,18 @@ class LLMGrader(BaseGrader):
         Returns:
             A dictionary containing the serialized LLMGrader information.
         """
-        return {
+        d = {
             "name": self.name,
             "mode": self.mode.value,
             "description": self.description,
             "template": (self.template.model_dump() if isinstance(self.template, PromptTemplate) else self.template),
             **self.kwargs,
         }
+
+        # Include model config if the data type is dict
+        if hasattr(self, "_model_config") and self._model_config:
+            d["model"] = self._model_config
+        return d
 
     @classmethod
     def from_config(
