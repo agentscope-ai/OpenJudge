@@ -210,8 +210,26 @@ def _render_vision_warning(config: dict[str, Any]) -> None:
         )
 
 
-def render_grader_sidebar() -> dict[str, Any]:
+def _render_batch_settings(config: dict[str, Any]) -> None:
+    """Render batch evaluation settings section."""
+    st.markdown('<div class="section-header">Batch Settings / 批量设置</div>', unsafe_allow_html=True)
+
+    max_concurrency = st.number_input(
+        "Max Concurrency / 最大并发数",
+        min_value=1,
+        max_value=100,
+        value=10,
+        step=1,
+        help="Maximum number of concurrent evaluations. Higher values may hit API rate limits.",
+    )
+    config["max_concurrency"] = max_concurrency
+
+
+def render_grader_sidebar(batch_mode: bool = False) -> dict[str, Any]:
     """Render the grader sidebar and return configuration.
+
+    Args:
+        batch_mode: Whether to show batch evaluation settings
 
     Returns:
         Dictionary containing all sidebar configuration values
@@ -223,6 +241,10 @@ def render_grader_sidebar() -> dict[str, Any]:
     _render_grader_settings(config)
     _render_evaluation_settings(config)
     _render_extra_params(config)
+
+    if batch_mode:
+        _render_batch_settings(config)
+
     _render_vision_warning(config)
 
     return config
