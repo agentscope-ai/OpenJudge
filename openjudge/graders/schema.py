@@ -120,29 +120,23 @@ class GraderScoreCallback(BaseModel):
     )
 
 
-class GraderRank(GraderResult):
-    """Grader rank result.
+class RankValidation:
+    """This class provides a field validator that can be inherited or mixed into Pydantic models
+    to validate rank-related fields. The validator ensures that rank lists represent proper
+    rankings according to standard ranking conventions:
 
-    Represents a ranking of items assigned by a grader along with a reason.
+    - Ranks must be positive integers starting from 1
+    - All ranks in the list must be unique (no ties/duplicates)
+    - The list must contain exactly all integers from 1 to n (where n is the list length)
+    - Empty rank lists are not allowed
 
-    Attributes:
-        rank (List[int]): The ranking of items.
-        reason (str): Explanation of how the ranking was determined.
-        metadata (Dict[str, Any]): Optional additional information from the evaluation.
+    This validation is particularly useful for listwise evaluation scenarios where
+    LLMs or other systems output rankings of items, ensuring the output conforms to
+    expected ranking formats before further processing.
 
-    Example:
-        >>> rank_result = GraderRank(
-        ...     name="relevance_ranker",
-        ...     rank=[1, 3, 2],
-        ...     reason="First response is most relevant",
-        ...     metadata={"criteria": "relevance"}
-        ... )
-        >>> print(rank_result.rank)
-        [1, 3, 2]
+    The validation will automatically be applied to the "rank" field during model
+    instantiation and validation.
     """
-
-    rank: List[int] = Field(description="rank")
-    reason: str = Field(description="reason")
 
     @field_validator("rank")
     @classmethod
@@ -192,7 +186,32 @@ class GraderRank(GraderResult):
         return rank
 
 
-class GraderRankCallback(BaseModel):
+class GraderRank(GraderResult, RankValidation):
+    """Grader rank result.
+
+    Represents a ranking of items assigned by a grader along with a reason.
+
+    Attributes:
+        rank (List[int]): The ranking of items.
+        reason (str): Explanation of how the ranking was determined.
+        metadata (Dict[str, Any]): Optional additional information from the evaluation.
+
+    Example:
+        >>> rank_result = GraderRank(
+        ...     name="relevance_ranker",
+        ...     rank=[1, 3, 2],
+        ...     reason="First response is most relevant",
+        ...     metadata={"criteria": "relevance"}
+        ... )
+        >>> print(rank_result.rank)
+        [1, 3, 2]
+    """
+
+    rank: List[int] = Field(description="rank")
+    reason: str = Field(description="reason")
+
+
+class GraderRankCallback(BaseModel, RankValidation):
     """Callback schema for LLM structured output in listwise grading.
 
     Used as the structured_model parameter in LLMGrader for LISTWISE mode.
@@ -219,53 +238,6 @@ class GraderRankCallback(BaseModel):
         default_factory=dict,
         description="The metadata of the grader result",
     )
-
-    @field_validator("rank")
-    @classmethod
-    def validate_rank(cls, rank: List[int]) -> List[int]:
-        """Validate that the rank list is a valid permutation of consecutive positive integers starting from 1.
-
-        This validator ensures that the rank list meets all requirements for a proper ranking:
-        - Cannot be empty
-        - Contains only positive integers (≥ 1)
-        - All values are unique (no duplicates)
-        - Forms a complete permutation of integers from 1 to n (where n is the list length)
-
-        Args:
-            rank: A list of integers representing ranks to be validated.
-
-        Returns:
-            The validated rank list unchanged if all validation checks pass.
-
-        Raises:
-            ValueError: If any of the following conditions are violated:
-                - The rank list is empty
-                - Any rank value is not a positive integer (≤ 0)
-                - The rank list contains duplicate values
-                - The rank list is not a complete permutation of [1, 2, ..., n]
-
-        Examples:
-            >>> validate_rank([1, 2, 3])  # Valid - sequential ranks
-            [1, 2, 3]
-            >>> validate_rank([3, 1, 2])  # Valid - permuted ranks
-            [3, 1, 2]
-            >>> validate_rank([1, 1, 2])  # Invalid - duplicates
-            ValueError: Ranks should be unique
-            >>> validate_rank([1, 3])     # Invalid - missing rank 2
-            ValueError: Ranks should be a permutation of [1, 2]
-            >>> validate_rank([0, 1])     # Invalid - contains zero
-            ValueError: All ranks should be positive integers
-        """
-        if not rank:
-            raise ValueError("Rank list cannot be empty")
-        if any(x <= 0 for x in rank):
-            raise ValueError("All ranks should be positive integers")
-        if len(rank) != len(set(rank)):
-            raise ValueError("Ranks should be unique")
-        expected = set(range(1, len(rank) + 1))
-        if set(rank) != expected:
-            raise ValueError(f"Ranks should be a permutation of {sorted(expected)}")
-        return rank
 
 
 class GraderError(GraderResult):
