@@ -10,6 +10,7 @@ from features.grader.components.multimodal import (
 )
 from features.grader.config.constants import EXAMPLE_DATA
 from shared.components.common import render_section_header
+from shared.i18n import t
 
 
 def _get_example_data(category: str) -> dict[str, Any]:
@@ -43,9 +44,9 @@ def _render_action_buttons(category: str) -> dict[str, Any]:
     """
     col_btn1, col_btn2 = st.columns([1, 1])
     with col_btn1:
-        load_example = st.button("Load Example", use_container_width=True)
+        load_example = st.button(t("grader.input.load_example"), use_container_width=True)
     with col_btn2:
-        clear_all = st.button("Clear All", use_container_width=True)
+        clear_all = st.button(t("grader.input.clear_all"), use_container_width=True)
 
     if load_example:
         st.session_state.example_loaded = True
@@ -78,66 +79,72 @@ def _render_agent_input(defaults: dict[str, Any], input_fields: list, form_key: 
         Input data dictionary
     """
     input_data: dict[str, Any] = {}
-    tab_main, tab_tools, tab_context = st.tabs(["Query", "Tools", "Context"])
+    tab_main, tab_tools, tab_context = st.tabs(
+        [
+            t("grader.input.tab_query"),
+            t("grader.input.tab_tools"),
+            t("grader.input.tab_context"),
+        ]
+    )
 
     with tab_main:
         query = st.text_area(
-            "Query",
+            t("grader.input.query"),
             value=defaults.get("query", ""),
             height=100,
-            placeholder="Enter the user's query to the agent...",
-            help="The task or question given to the agent",
+            placeholder=t("grader.input.agent_query_placeholder"),
+            help=t("grader.input.agent_query_help"),
             key=f"{form_key}_query",
         )
         input_data["query"] = query
 
     with tab_tools:
         st.markdown(
-            """<div class="info-card">
+            f"""<div class="info-card">
                 <div style="font-size: 0.85rem; color: #94A3B8;">
-                    Enter tool definitions and calls in JSON format
+                    {t("grader.input.tool_definitions_info")}
                 </div>
             </div>""",
             unsafe_allow_html=True,
         )
         tool_definitions = st.text_area(
-            "Available Tool Definitions (JSON)",
+            t("grader.input.tool_definitions"),
             value=defaults.get("tool_definitions", ""),
             height=200,
-            placeholder='[{"name": "get_weather", "description": "...", "parameters": {...}}]',
-            help="JSON array of available tool definitions",
+            placeholder=t("grader.input.tool_definitions_placeholder"),
+            help=t("grader.input.tool_definitions_help"),
             key=f"{form_key}_tool_defs",
         )
         input_data["tool_definitions"] = tool_definitions
 
         tool_calls = st.text_area(
-            "Agent's Tool Calls (JSON)",
+            t("grader.input.tool_calls"),
             value=defaults.get("tool_calls", ""),
             height=150,
-            placeholder='[{"name": "get_weather", "arguments": {"location": "Beijing"}}]',
-            help="JSON array of tool calls made by the agent",
+            placeholder=t("grader.input.tool_calls_placeholder"),
+            help=t("grader.input.tool_calls_help"),
             key=f"{form_key}_tool_calls",
         )
         input_data["tool_calls"] = tool_calls
 
         if "reference_tool_calls" in input_fields:
             reference_tool_calls = st.text_area(
-                "Expected Tool Calls (JSON)",
+                t("grader.input.reference_tool_calls"),
                 value="",
                 height=150,
-                placeholder='[{"name": "get_weather", "arguments": {"location": "Beijing"}}]',
-                help="JSON array of expected/correct tool calls",
+                placeholder=t("grader.input.tool_calls_placeholder"),
+                help=t("grader.input.reference_tool_calls_help"),
                 key=f"{form_key}_ref_tool_calls",
             )
             input_data["reference_tool_calls"] = reference_tool_calls
 
     with tab_context:
         context = st.text_area(
-            "Additional Context",
+            t("grader.input.context"),
             value="",
             height=200,
-            placeholder="Enter any additional context...",
-            help="Optional background information",
+            placeholder=t("grader.input.context_placeholder"),
+            help=t("grader.input.context_help"),
             key=f"{form_key}_context",
         )
         input_data["context"] = context
@@ -188,51 +195,52 @@ def _render_standard_input(
         Input data dictionary
     """
     input_data: dict[str, Any] = {}
-    tab_main, tab_context = st.tabs(["Main Input", "Context"])
+    tab_main, tab_context = st.tabs([t("grader.input.tab_main"), t("grader.input.tab_context")])
 
     with tab_main:
         if "query" in input_fields:
             query = st.text_area(
-                "Query",
+                t("grader.input.query"),
                 value=defaults.get("query", ""),
                 height=100,
-                placeholder="Enter the user's question or prompt...",
-                help="The original question or prompt from the user",
+                placeholder=t("grader.input.query_placeholder"),
+                help=t("grader.input.query_help"),
                 key=f"{form_key}_query",
             )
             input_data["query"] = query
 
         response = st.text_area(
-            "Response to Evaluate",
+            t("grader.input.response"),
             value=defaults.get("response", ""),
             height=150,
-            placeholder="Enter the response to be evaluated...",
-            help="The model's response that needs to be evaluated",
+            placeholder=t("grader.input.response_placeholder"),
+            help=t("grader.input.response_help"),
             key=f"{form_key}_response",
         )
         input_data["response"] = response
 
         requires_reference = grader_config.get("requires_reference", False)
         if "reference_response" in input_fields or requires_reference:
-            ref_label = "Reference Response *" if requires_reference else "Reference Response (Optional)"
-            placeholder_suffix = " (Required)" if requires_reference else ""
+            ref_label = (
+                t("grader.input.reference_required") if requires_reference else t("grader.input.reference_optional")
+            )
             reference_response = st.text_area(
                 ref_label,
                 value=defaults.get("reference_response", ""),
                 height=120,
-                placeholder=f"Enter the reference/golden answer...{placeholder_suffix}",
-                help="The expected or ideal response for comparison",
+                placeholder=t("grader.input.reference_placeholder"),
+                help=t("grader.input.reference_help"),
                 key=f"{form_key}_ref_response",
             )
             input_data["reference_response"] = reference_response
 
     with tab_context:
         context = st.text_area(
-            "Additional Context",
+            t("grader.input.context"),
             value=defaults.get("context", ""),
             height=200,
-            placeholder="Enter any additional context that might help with evaluation...",
-            help="Optional background information for the evaluation",
+            placeholder=t("grader.input.context_placeholder"),
+            help=t("grader.input.context_help"),
             key=f"{form_key}_context",
         )
         input_data["context"] = context
@@ -264,7 +272,7 @@ def render_input_panel_with_button(sidebar_config: dict[str, Any]) -> tuple[dict
     category = sidebar_config.get("grader_category", "common")
     grader_name = sidebar_config.get("grader_name", "default")
 
-    render_section_header("Input Data")
+    render_section_header(t("grader.input.title"))
 
     # Action buttons (outside form for immediate effect)
     defaults = _render_action_buttons(category)
@@ -272,7 +280,7 @@ def render_input_panel_with_button(sidebar_config: dict[str, Any]) -> tuple[dict
     run_flag = False
 
     if not grader_config:
-        st.warning("Please select a grader from the sidebar")
+        st.warning(t("grader.input.select_grader_first"))
         return input_data, run_flag
 
     input_fields = grader_config.get("input_fields", ["query", "response"])
@@ -306,7 +314,7 @@ def render_input_panel_with_button(sidebar_config: dict[str, Any]) -> tuple[dict
             can_run = can_run and bool(api_key and model_name)
 
         run_flag = st.form_submit_button(
-            "Run Evaluation",
+            t("grader.input.run"),
             type="primary",
             use_container_width=True,
             disabled=not can_run,
@@ -315,15 +323,15 @@ def render_input_panel_with_button(sidebar_config: dict[str, Any]) -> tuple[dict
         if not can_run:
             missing = []
             if requires_model and not api_key:
-                missing.append("API Key")
+                missing.append(t("grader.input.missing_api_key"))
             if requires_model and not model_name:
-                missing.append("Model")
+                missing.append(t("grader.input.missing_model"))
             if not grader_name:
-                missing.append("Grader")
+                missing.append(t("grader.input.missing_grader"))
             if not has_content:
-                missing.append("Required input data")
+                missing.append(t("grader.input.missing_data"))
             if missing:
-                st.caption(f"Missing: {', '.join(missing)}")
+                st.caption(f"{t('grader.input.missing')}: {', '.join(missing)}")
 
     return input_data, run_flag
 
@@ -356,7 +364,7 @@ def _render_run_button_standalone(
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
 
     run_button = st.button(
-        "Run Evaluation",
+        t("grader.input.run"),
         type="primary",
         use_container_width=True,
         disabled=not can_run,
@@ -365,15 +373,15 @@ def _render_run_button_standalone(
     if not can_run:
         missing = []
         if requires_model and not api_key:
-            missing.append("API Key")
+            missing.append(t("grader.input.missing_api_key"))
         if requires_model and not model_name:
-            missing.append("Model")
+            missing.append(t("grader.input.missing_model"))
         if not grader_name:
-            missing.append("Grader")
+            missing.append(t("grader.input.missing_grader"))
         if not has_content:
-            missing.append("Required input data")
+            missing.append(t("grader.input.missing_data"))
         if missing:
-            st.caption(f"Missing: {', '.join(missing)}")
+            st.caption(f"{t('grader.input.missing')}: {', '.join(missing)}")
 
     return run_button
 
@@ -394,14 +402,14 @@ def render_input_panel(sidebar_config: dict[str, Any]) -> dict[str, Any]:
     category = sidebar_config.get("grader_category", "common")
     grader_name = sidebar_config.get("grader_name", "default")
 
-    render_section_header("Input Data")
+    render_section_header(t("grader.input.title"))
 
     # Action buttons and get defaults
     defaults = _render_action_buttons(category)
     input_data: dict[str, Any] = {}
 
     if not grader_config:
-        st.warning("Please select a grader from the sidebar")
+        st.warning(t("grader.input.select_grader_first"))
         return input_data
 
     input_fields = grader_config.get("input_fields", ["query", "response"])

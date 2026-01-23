@@ -1,0 +1,232 @@
+# -*- coding: utf-8 -*-
+"""Common translations for OpenJudge Studio.
+
+Contains translations for:
+- Navigation and app shell
+- Shared components (footer, dividers, etc.)
+- Common UI elements (buttons, status, etc.)
+- API and model settings (used across features)
+
+Key prefix conventions:
+- app.*        : Application-level (title, navigation)
+- common.*     : Shared UI elements
+- api.*        : API settings
+- model.*      : Model settings
+- status.*     : Status indicators
+- action.*     : Action buttons
+- validation.* : Validation messages
+"""
+
+# =============================================================================
+# English Translations
+# =============================================================================
+EN: dict[str, str] = {
+    # Application
+    "app.title": "OpenJudge Studio",
+    "app.features": "Features",
+    "app.footer": "OpenJudge Studio v{version}",
+    "app.no_feature_selected": "No feature module selected. Please select a feature from the sidebar.",
+    # Common UI
+    "common.loading": "Loading...",
+    "common.error": "Error",
+    "common.success": "Success",
+    "common.warning": "Warning",
+    "common.info": "Info",
+    "common.confirm": "Confirm",
+    "common.cancel": "Cancel",
+    "common.save": "Save",
+    "common.delete": "Delete",
+    "common.edit": "Edit",
+    "common.view": "View",
+    "common.back": "Back",
+    "common.next": "Next",
+    "common.previous": "Previous",
+    "common.close": "Close",
+    "common.refresh": "Refresh",
+    "common.download": "Download",
+    "common.upload": "Upload",
+    "common.export": "Export",
+    "common.import": "Import",
+    "common.copy": "Copy",
+    "common.copied": "Copied!",
+    "common.required": "Required",
+    "common.optional": "Optional",
+    "common.none": "None",
+    "common.all": "All",
+    "common.select": "Select",
+    "common.search": "Search",
+    "common.filter": "Filter",
+    "common.sort": "Sort",
+    "common.show_more": "Show more",
+    "common.show_less": "Show less",
+    "common.expand": "Expand",
+    "common.collapse": "Collapse",
+    "common.items_count": "{count} items",
+    "common.showing_count": "Showing {count} of {total}",
+    "common.no_data": "No data",
+    "common.no_results": "No results found",
+    "common.empty_state": "Nothing here yet",
+    # API Settings (shared across features)
+    "api.settings": "API Settings",
+    "api.provider": "Provider",
+    "api.provider_help": "Select API provider or choose Custom",
+    "api.custom_endpoint": "Custom Endpoint",
+    "api.custom_endpoint_placeholder": "https://api.example.com/v1",
+    "api.custom_endpoint_help": "Enter your custom API endpoint URL",
+    "api.key": "API Key",
+    "api.key_placeholder": "Enter your API key...",
+    "api.key_help": "Your API key for the LLM service",
+    "api.key_configured": "API Key configured",
+    "api.key_required": "Enter API Key to continue",
+    # Model Settings (shared across features)
+    "model.settings": "Model",
+    "model.select": "Model",
+    "model.custom": "Custom...",
+    "model.custom_input": "Custom Model",
+    "model.custom_placeholder": "Enter model name",
+    # Status
+    "status.running": "Running",
+    "status.completed": "Completed",
+    "status.failed": "Failed",
+    "status.paused": "Paused",
+    "status.pending": "Pending",
+    "status.cancelled": "Cancelled",
+    "status.success": "Success",
+    "status.error": "Error",
+    # Time
+    "time.just_now": "Just now",
+    "time.minutes_ago": "{minutes}m ago",
+    "time.hours_ago": "{hours}h ago",
+    "time.days_ago": "{days}d ago",
+    # Validation
+    "validation.required_field": "This field is required",
+    "validation.invalid_format": "Invalid format",
+    "validation.min_length": "Minimum {min} characters required",
+    "validation.max_length": "Maximum {max} characters allowed",
+    # Actions
+    "action.run": "Run",
+    "action.start": "Start",
+    "action.stop": "Stop",
+    "action.pause": "Pause",
+    "action.resume": "Resume",
+    "action.retry": "Retry",
+    "action.submit": "Submit",
+    "action.reset": "Reset",
+    "action.clear": "Clear",
+    "action.apply": "Apply",
+    # Tabs (common patterns)
+    "tabs.help": "Help",
+    "tabs.history": "History",
+    "tabs.settings": "Settings",
+    # Confirmations
+    "confirm.delete": "Are you sure you want to delete this?",
+    "confirm.discard": "Discard unsaved changes?",
+    "confirm.action": "Are you sure?",
+}
+
+# =============================================================================
+# Chinese Translations
+# =============================================================================
+ZH: dict[str, str] = {
+    # Application
+    "app.title": "OpenJudge Studio",
+    "app.features": "功能模块",
+    "app.footer": "OpenJudge Studio v{version}",
+    "app.no_feature_selected": "未选择功能模块，请在侧边栏选择一个功能。",
+    # Common UI
+    "common.loading": "加载中...",
+    "common.error": "错误",
+    "common.success": "成功",
+    "common.warning": "警告",
+    "common.info": "提示",
+    "common.confirm": "确认",
+    "common.cancel": "取消",
+    "common.save": "保存",
+    "common.delete": "删除",
+    "common.edit": "编辑",
+    "common.view": "查看",
+    "common.back": "返回",
+    "common.next": "下一步",
+    "common.previous": "上一步",
+    "common.close": "关闭",
+    "common.refresh": "刷新",
+    "common.download": "下载",
+    "common.upload": "上传",
+    "common.export": "导出",
+    "common.import": "导入",
+    "common.copy": "复制",
+    "common.copied": "已复制！",
+    "common.required": "必填",
+    "common.optional": "可选",
+    "common.none": "无",
+    "common.all": "全部",
+    "common.select": "选择",
+    "common.search": "搜索",
+    "common.filter": "筛选",
+    "common.sort": "排序",
+    "common.show_more": "显示更多",
+    "common.show_less": "收起",
+    "common.expand": "展开",
+    "common.collapse": "收起",
+    "common.items_count": "共 {count} 条",
+    "common.showing_count": "显示 {count} / {total} 条",
+    "common.no_data": "暂无数据",
+    "common.no_results": "未找到结果",
+    "common.empty_state": "暂无内容",
+    # API Settings (shared across features)
+    "api.settings": "API 设置",
+    "api.provider": "服务商",
+    "api.provider_help": "选择 API 服务商或自定义",
+    "api.custom_endpoint": "自定义端点",
+    "api.custom_endpoint_placeholder": "https://api.example.com/v1",
+    "api.custom_endpoint_help": "输入自定义 API 端点 URL",
+    "api.key": "API 密钥",
+    "api.key_placeholder": "输入 API 密钥...",
+    "api.key_help": "LLM 服务的 API 密钥",
+    "api.key_configured": "API 密钥已配置",
+    "api.key_required": "请输入 API 密钥以继续",
+    # Model Settings (shared across features)
+    "model.settings": "模型",
+    "model.select": "模型",
+    "model.custom": "自定义...",
+    "model.custom_input": "自定义模型",
+    "model.custom_placeholder": "输入模型名称",
+    # Status
+    "status.running": "运行中",
+    "status.completed": "已完成",
+    "status.failed": "失败",
+    "status.paused": "已暂停",
+    "status.pending": "等待中",
+    "status.cancelled": "已取消",
+    "status.success": "成功",
+    "status.error": "错误",
+    # Time
+    "time.just_now": "刚刚",
+    "time.minutes_ago": "{minutes}分钟前",
+    "time.hours_ago": "{hours}小时前",
+    "time.days_ago": "{days}天前",
+    # Validation
+    "validation.required_field": "此字段为必填项",
+    "validation.invalid_format": "格式无效",
+    "validation.min_length": "至少需要 {min} 个字符",
+    "validation.max_length": "最多允许 {max} 个字符",
+    # Actions
+    "action.run": "运行",
+    "action.start": "开始",
+    "action.stop": "停止",
+    "action.pause": "暂停",
+    "action.resume": "续传",
+    "action.retry": "重试",
+    "action.submit": "提交",
+    "action.reset": "重置",
+    "action.clear": "清空",
+    "action.apply": "应用",
+    # Tabs (common patterns)
+    "tabs.help": "帮助",
+    "tabs.history": "历史记录",
+    "tabs.settings": "设置",
+    # Confirmations
+    "confirm.delete": "确定要删除吗？",
+    "confirm.discard": "放弃未保存的更改？",
+    "confirm.action": "确定执行此操作？",
+}

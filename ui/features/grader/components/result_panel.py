@@ -15,6 +15,7 @@ from features.grader.services.grader_factory import (
     run_multimodal_evaluation,
 )
 from shared.components.common import render_empty_state, render_section_header
+from shared.i18n import t
 from shared.services.model_factory import create_model
 from shared.styles.theme import get_score_color
 from shared.utils.helpers import (
@@ -49,7 +50,7 @@ def _render_score_card(
 
     # Determine pass/fail
     is_pass = score >= threshold
-    status_text = "PASSED" if is_pass else "FAILED"
+    status_text = t("grader.result.passed") if is_pass else t("grader.result.failed_status")
     status_icon = "✓" if is_pass else "✗"
     status_bg = "rgba(34, 197, 94, 0.2)" if is_pass else "rgba(239, 68, 68, 0.2)"
     status_border = "#22C55E" if is_pass else "#EF4444"
@@ -89,7 +90,7 @@ def _render_score_card(
                 ">{status_icon} {status_text}</span>
             </div>
             <div style="margin-top: 1rem; color: #64748B; font-size: 0.8rem;">
-                Threshold: {threshold} | Grader: {grader_name}
+                {t("grader.result.threshold_grader", threshold=threshold, grader=grader_name)}
             </div>
         </div>""",
         unsafe_allow_html=True,

@@ -12,6 +12,7 @@ from features.grader.services.batch_history_manager import (
     BatchHistoryManager,
     BatchTaskSummary,
 )
+from shared.i18n import t
 
 
 def _format_time_ago(dt: datetime) -> str:
@@ -54,31 +55,31 @@ def _get_status_style(status: str) -> dict[str, str]:
             "color": "#10B981",
             "bg": "rgba(16, 185, 129, 0.1)",
             "icon": "✓",
-            "text": "Completed / 已完成",
+            "text": t("status.completed"),
         },
         "failed": {
             "color": "#EF4444",
             "bg": "rgba(239, 68, 68, 0.1)",
             "icon": "✕",
-            "text": "Failed / 失败",
+            "text": t("status.failed"),
         },
         "running": {
             "color": "#6366F1",
             "bg": "rgba(99, 102, 241, 0.1)",
             "icon": "●",
-            "text": "Running / 运行中",
+            "text": t("status.running"),
         },
         "paused": {
             "color": "#F59E0B",
             "bg": "rgba(245, 158, 11, 0.1)",
             "icon": "⏸",
-            "text": "Paused / 已暂停",
+            "text": t("status.paused"),
         },
         "pending": {
             "color": "#64748B",
             "bg": "rgba(100, 116, 139, 0.1)",
             "icon": "○",
-            "text": "Pending / 等待中",
+            "text": t("status.pending"),
         },
     }
     return status_styles.get(status, status_styles["pending"])
@@ -193,14 +194,14 @@ def _render_task_card(
     # Action buttons
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("👁️ View", key=f"batch_view_{task.task_id}", use_container_width=True):
+        if st.button(f"👁️ {t('grader.batch.view')}", key=f"batch_view_{task.task_id}", use_container_width=True):
             if on_view:
                 on_view(task.task_id)
 
     with col2:
         can_resume = task.status in ("paused", "running") and task.completed_count < task.total_count
         if st.button(
-            "▶️ Resume",
+            f"▶️ {t('grader.batch.resume')}",
             key=f"batch_resume_{task.task_id}",
             use_container_width=True,
             disabled=not can_resume,
@@ -209,7 +210,7 @@ def _render_task_card(
                 on_resume(task.task_id)
 
     with col3:
-        if st.button("🗑️ Delete", key=f"batch_delete_{task.task_id}", use_container_width=True):
+        if st.button(f"🗑️ {t('grader.batch.delete')}", key=f"batch_delete_{task.task_id}", use_container_width=True):
             if on_delete:
                 on_delete(task.task_id)
 
@@ -229,8 +230,8 @@ def render_batch_history_panel(
         limit: Maximum number of tasks to show
     """
     st.markdown(
-        """<div class="section-header">
-            <span style="margin-right: 0.5rem;">📜</span>Batch Evaluation History / 批量评估历史
+        f"""<div class="section-header">
+            <span style="margin-right: 0.5rem;">📜</span>{t("grader.batch.history_title")}
         </div>""",
         unsafe_allow_html=True,
     )
@@ -241,7 +242,7 @@ def render_batch_history_panel(
 
     if not tasks:
         st.markdown(
-            """<div style="
+            f"""<div style="
                 text-align: center;
                 padding: 2rem;
                 color: #64748B;
@@ -250,12 +251,10 @@ def render_batch_history_panel(
             ">
                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">📭</div>
                 <div style="font-size: 0.9rem;">
-                    No batch evaluation history yet<br/>
-                    暂无批量评估历史
+                    {t("grader.batch.history_empty")}
                 </div>
                 <div style="font-size: 0.8rem; margin-top: 0.5rem;">
-                    Start a batch evaluation to see it here<br/>
-                    开始批量评估后将显示在此处
+                    {t("grader.batch.history_empty_hint")}
                 </div>
             </div>""",
             unsafe_allow_html=True,
@@ -263,7 +262,7 @@ def render_batch_history_panel(
         return
 
     # Check for incomplete tasks
-    incomplete_tasks = [t for t in tasks if t.status in ("paused", "running")]
+    incomplete_tasks = [task for task in tasks if task.status in ("paused", "running")]
     if incomplete_tasks:
         st.markdown(
             f"""<div style="
@@ -276,8 +275,7 @@ def render_batch_history_panel(
             ">
                 <span style="color: #F59E0B;">⚠️</span>
                 <span style="color: #FCD34D;">
-                    {len(incomplete_tasks)} incomplete task(s) can be resumed
-                    / {len(incomplete_tasks)} 个未完成的任务可以续传
+                    {t("grader.batch.incomplete_tasks", count=len(incomplete_tasks))}
                 </span>
             </div>""",
             unsafe_allow_html=True,
@@ -290,7 +288,7 @@ def render_batch_history_panel(
     # Show count
     st.markdown(
         f"""<div style="text-align: center; font-size: 0.75rem; color: #64748B; margin-top: 0.5rem;">
-            Showing {len(tasks)} evaluation{'s' if len(tasks) != 1 else ''} / 显示 {len(tasks)} 条记录
+            {t("grader.batch.history_count", count=len(tasks))}
         </div>""",
         unsafe_allow_html=True,
     )
@@ -310,15 +308,15 @@ def render_batch_task_detail(
     details = history_manager.get_task_details(task_id)
 
     if not details:
-        st.error(f"Task not found: {task_id}")
+        st.error(f"{t('grader.batch.task_not_found')}: {task_id}")
         if on_back:
-            if st.button("← Back to History"):
+            if st.button(f"← {t('grader.batch.back_to_history')}"):
                 on_back()
         return
 
     # Back button
     if on_back:
-        if st.button("← Back to History / 返回历史"):
+        if st.button(f"← {t('grader.batch.back_to_history')}"):
             on_back()
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)

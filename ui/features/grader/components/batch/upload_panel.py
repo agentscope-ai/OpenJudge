@@ -22,6 +22,7 @@ from features.grader.services.file_parser import (
     validate_data_for_grader,
 )
 from shared.components.common import render_section_header
+from shared.i18n import t
 
 
 def _render_format_instructions(grader_config: dict[str, Any]) -> None:
@@ -31,7 +32,7 @@ def _render_format_instructions(grader_config: dict[str, Any]) -> None:
     category = grader_config.get("category", "common")
 
     st.markdown(
-        """<div style="
+        f"""<div style="
             background: rgba(99, 102, 241, 0.1);
             border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 8px;
@@ -39,7 +40,7 @@ def _render_format_instructions(grader_config: dict[str, Any]) -> None:
             margin-bottom: 1rem;
         ">
             <div style="font-weight: 600; color: #A5B4FC; margin-bottom: 0.5rem;">
-                📋 Data Format Requirements / 数据格式要求
+                📋 {t("grader.batch.format_requirements")}
             </div>
         """,
         unsafe_allow_html=True,
@@ -49,7 +50,7 @@ def _render_format_instructions(grader_config: dict[str, Any]) -> None:
     required_display = ", ".join(required_fields) if required_fields else "response"
     st.markdown(
         f"""<div style="color: #E2E8F0; font-size: 0.85rem; margin-bottom: 0.5rem;">
-            <strong>Required fields / 必需字段:</strong>
+            <strong>{t("grader.batch.required_fields")}:</strong>
             <code style="background: rgba(30, 41, 59, 0.8); padding: 0.15rem 0.4rem;
                 border-radius: 4px; margin-left: 0.5rem;">{required_display}</code>
         </div>""",
@@ -61,7 +62,7 @@ def _render_format_instructions(grader_config: dict[str, Any]) -> None:
         optional_display = ", ".join(optional_fields)
         st.markdown(
             f"""<div style="color: #94A3B8; font-size: 0.85rem; margin-bottom: 0.5rem;">
-                <strong>Optional fields / 可选字段:</strong>
+                <strong>{t("grader.batch.optional_fields")}:</strong>
                 <code style="background: rgba(30, 41, 59, 0.8); padding: 0.15rem 0.4rem;
                     border-radius: 4px; margin-left: 0.5rem;">{optional_display}</code>
             </div>""",
@@ -71,9 +72,8 @@ def _render_format_instructions(grader_config: dict[str, Any]) -> None:
     # Format note for agent graders
     if category == "agent":
         st.markdown(
-            """<div style="color: #FCD34D; font-size: 0.8rem; margin-top: 0.5rem;">
-                ⚠️ Agent graders require JSON format. CSV is not supported for complex fields.
-                <br/>Agent 评估器需要 JSON 格式，CSV 不支持复杂字段。
+            f"""<div style="color: #FCD34D; font-size: 0.8rem; margin-top: 0.5rem;">
+                ⚠️ {t("grader.batch.agent_json_note")}
             </div>""",
             unsafe_allow_html=True,
         )
@@ -88,7 +88,7 @@ def _render_sample_download(grader_config: dict[str, Any]) -> None:
     with col1:
         json_sample = generate_sample_data(grader_config, "json")
         st.download_button(
-            label="📥 Download JSON Sample",
+            label=f"📥 {t('grader.batch.download_json')}",
             data=json_sample,
             file_name="sample_data.json",
             mime="application/json",
@@ -100,7 +100,7 @@ def _render_sample_download(grader_config: dict[str, Any]) -> None:
         if category != "agent":
             csv_sample = generate_sample_data(grader_config, "csv")
             st.download_button(
-                label="📥 Download CSV Sample",
+                label=f"📥 {t('grader.batch.download_csv')}",
                 data=csv_sample,
                 file_name="sample_data.csv",
                 mime="text/csv",
@@ -108,10 +108,10 @@ def _render_sample_download(grader_config: dict[str, Any]) -> None:
             )
         else:
             st.button(
-                "CSV not supported",
+                t("grader.batch.csv_not_supported"),
                 disabled=True,
                 use_container_width=True,
-                help="Agent graders require JSON format",
+                help=t("grader.batch.csv_not_supported_help"),
             )
 
 
@@ -127,7 +127,9 @@ def _render_data_preview(data: list[dict[str, Any]], max_rows: int = 5) -> None:
             font-size: 0.85rem;
             margin-bottom: 0.5rem;
         ">
-            Data Preview / 数据预览 (showing {min(len(data), max_rows)} of {len(data)} records)
+            {t("grader.batch.data_preview")} ({t(
+                "grader.batch.preview_count", shown=min(len(data), max_rows), total=len(data)
+            )})
         </div>""",
         unsafe_allow_html=True,
     )
@@ -166,8 +168,7 @@ def _render_validation_results(
     """Render validation results."""
     if validation_result.valid:
         st.success(
-            f"✅ Data validated successfully! / 数据验证通过！\n\n"
-            f"**{record_count}** records ready for evaluation / **{record_count}** 条数据准备就绪"
+            f"✅ {t('grader.batch.validation_success')}\n\n" f"{t('grader.batch.records_ready', count=record_count)}"
         )
     else:
         for error in validation_result.errors:
@@ -200,11 +201,11 @@ def render_upload_panel(sidebar_config: dict[str, Any]) -> dict[str, Any]:
     grader_config = sidebar_config.get("grader_config")
     grader_name = sidebar_config.get("grader_name")
 
-    render_section_header("Upload Data / 上传数据")
+    render_section_header(t("grader.batch.upload_title"))
 
     # Check if grader is selected
     if not grader_config or not grader_name:
-        st.warning("Please select a grader from the sidebar / 请先在侧边栏选择评估器")
+        st.warning(t("grader.batch.select_grader_first"))
         return result
 
     # Check if grader supports batch evaluation
@@ -217,7 +218,7 @@ def render_upload_panel(sidebar_config: dict[str, Any]) -> dict[str, Any]:
     _render_format_instructions(grader_config)
 
     # Sample download
-    with st.expander("📥 Download Sample Files / 下载示例文件", expanded=False):
+    with st.expander(f"📥 {t('grader.batch.download_samples')}", expanded=False):
         _render_sample_download(grader_config)
 
     # File uploader
@@ -227,17 +228,17 @@ def render_upload_panel(sidebar_config: dict[str, Any]) -> dict[str, Any]:
             font-size: 0.8rem;
             margin-bottom: 0.5rem;
         ">
-            Supported formats: JSON, CSV | Max records: {MAX_BATCH_SIZE:,}
+            {t("grader.batch.supported_formats", max=f"{MAX_BATCH_SIZE:,}")}
         </div>""",
         unsafe_allow_html=True,
     )
 
     uploaded_file = st.file_uploader(
-        "Upload evaluation data",
+        t("grader.batch.upload_label"),
         type=["json", "csv"],
         key="batch_file_uploader",
         label_visibility="collapsed",
-        help=f"Upload JSON or CSV file with up to {MAX_BATCH_SIZE:,} records",
+        help=t("grader.batch.upload_help", max=f"{MAX_BATCH_SIZE:,}"),
     )
 
     # Process uploaded file
@@ -255,7 +256,7 @@ def render_upload_panel(sidebar_config: dict[str, Any]) -> dict[str, Any]:
             # New file or content changed - parse it
             st.session_state.batch_prev_file_key = file_key
 
-            with st.spinner("Parsing file... / 正在解析文件..."):
+            with st.spinner(t("grader.batch.parsing")):
                 # Create a BytesIO object from content since we already read the file
                 import io
 
@@ -306,7 +307,7 @@ def render_upload_panel(sidebar_config: dict[str, Any]) -> dict[str, Any]:
 
         # Empty state
         st.markdown(
-            """<div style="
+            f"""<div style="
                 text-align: center;
                 padding: 2rem;
                 color: #64748B;
@@ -316,8 +317,7 @@ def render_upload_panel(sidebar_config: dict[str, Any]) -> dict[str, Any]:
             ">
                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
                 <div style="font-size: 0.9rem;">
-                    Drag and drop a file here or click to browse<br/>
-                    拖放文件到此处或点击选择文件
+                    {t("grader.batch.drop_file")}
                 </div>
             </div>""",
             unsafe_allow_html=True,

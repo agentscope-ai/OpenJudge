@@ -3,6 +3,7 @@
 
 import streamlit as st
 from shared.constants import APP_VERSION
+from shared.i18n import t
 
 
 def render_footer() -> None:
@@ -15,7 +16,7 @@ def render_footer() -> None:
                 Built with <strong>OpenJudge Framework</strong> and <strong>Streamlit</strong>
             </div>
             <div style="font-size: 0.7rem;">
-                © 2024 OpenJudge • v{APP_VERSION} •
+                {t("app.footer", version=APP_VERSION)} •
                 <a href="https://github.com/modelscope/OpenJudge">GitHub</a>
             </div>
         </div>

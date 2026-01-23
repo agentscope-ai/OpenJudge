@@ -5,6 +5,7 @@ from typing import Any
 
 import streamlit as st
 from shared.constants import DEFAULT_API_ENDPOINTS, DEFAULT_MODELS
+from shared.i18n import t
 
 # Session state key for preset sidebar data
 STATE_PRESET_SIDEBAR = "zs_preset_sidebar"
@@ -56,50 +57,50 @@ def _apply_preset_sidebar_data() -> None:
 
 def _render_judge_settings(config: dict[str, Any]) -> None:
     """Render judge model settings section."""
-    st.markdown('<div class="section-header">Judge Model</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("zeroshot.sidebar.judge_model")}</div>', unsafe_allow_html=True)
 
     endpoint_choice = st.selectbox(
-        "Provider",
+        t("api.provider"),
         options=list(DEFAULT_API_ENDPOINTS.keys()),
         index=0,
-        help="Select API provider for the judge model",
+        help=t("zeroshot.sidebar.judge_provider_help"),
         key="zs_judge_provider",
     )
 
     if endpoint_choice == "Custom":
         api_endpoint = st.text_input(
-            "Custom Endpoint",
-            placeholder="https://api.example.com/v1",
-            help="Enter your custom API endpoint URL",
+            t("api.custom_endpoint"),
+            placeholder=t("api.custom_endpoint_placeholder"),
+            help=t("api.custom_endpoint_help"),
             key="zs_judge_custom_endpoint",
         )
     else:
         api_endpoint = DEFAULT_API_ENDPOINTS[endpoint_choice]
 
     api_key = st.text_input(
-        "API Key",
+        t("api.key"),
         type="password",
-        placeholder="Enter your API key...",
-        help="Your API key for the judge model",
+        placeholder=t("api.key_placeholder"),
+        help=t("zeroshot.sidebar.judge_api_key_help"),
         key="zs_judge_api_key",
     )
 
     if api_key:
-        st.success("API Key configured")
+        st.success(t("api.key_configured"))
     else:
-        st.warning("Enter API Key to continue")
+        st.warning(t("api.key_required"))
 
     model_option = st.selectbox(
-        "Model",
-        options=DEFAULT_MODELS + ["Custom..."],
+        t("model.select"),
+        options=DEFAULT_MODELS + [t("model.custom")],
         index=0,
         key="zs_judge_model",
     )
 
-    if model_option == "Custom...":
+    if model_option == t("model.custom"):
         model_name = st.text_input(
-            "Custom Model",
-            placeholder="Enter model name",
+            t("model.custom_input"),
+            placeholder=t("model.custom_placeholder"),
             key="zs_judge_custom_model",
         )
     else:
@@ -112,27 +113,27 @@ def _render_judge_settings(config: dict[str, Any]) -> None:
 
 def _render_evaluation_settings(config: dict[str, Any]) -> None:
     """Render evaluation settings section."""
-    st.markdown('<div class="section-header">Evaluation Settings</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("zeroshot.sidebar.eval_settings")}</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     with col1:
         num_queries = st.number_input(
-            "Queries",
+            t("zeroshot.sidebar.queries"),
             min_value=5,
             max_value=100,
             value=20,
             step=5,
-            help="Number of test queries to generate",
+            help=t("zeroshot.sidebar.queries_help"),
             key="zs_num_queries",
         )
 
     with col2:
         max_concurrency = st.number_input(
-            "Concurrency",
+            t("zeroshot.sidebar.concurrency"),
             min_value=1,
             value=10,
-            help="Maximum concurrent API requests",
+            help=t("zeroshot.sidebar.concurrency_help"),
             key="zs_max_concurrency",
         )
 
@@ -142,29 +143,29 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
 
 def _render_output_settings(config: dict[str, Any]) -> None:
     """Render output settings section."""
-    with st.expander("Output Settings", expanded=False):
+    with st.expander(t("zeroshot.sidebar.output_settings"), expanded=False):
         save_queries = st.checkbox(
-            "Save generated queries",
+            t("zeroshot.sidebar.save_queries"),
             value=True,
             key="zs_save_queries",
         )
         save_responses = st.checkbox(
-            "Save model responses",
+            t("zeroshot.sidebar.save_responses"),
             value=True,
             key="zs_save_responses",
         )
         save_details = st.checkbox(
-            "Save detailed results",
+            t("zeroshot.sidebar.save_details"),
             value=True,
             key="zs_save_details",
         )
         generate_report = st.checkbox(
-            "Generate evaluation report",
+            t("zeroshot.sidebar.generate_report"),
             value=True,
             key="zs_generate_report",
         )
         generate_chart = st.checkbox(
-            "Generate win rate chart",
+            t("zeroshot.sidebar.generate_chart"),
             value=True,
             key="zs_generate_chart",
         )

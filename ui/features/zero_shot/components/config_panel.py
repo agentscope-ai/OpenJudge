@@ -13,6 +13,7 @@ from typing import Any
 import streamlit as st
 from features.zero_shot.components.preset_panel import render_preset_panel
 from shared.constants import DEFAULT_API_ENDPOINTS, DEFAULT_MODELS
+from shared.i18n import t
 
 # Session state keys for preset loading
 STATE_PRESET_LOAD_TRIGGER = "zs_preset_load_trigger"
@@ -125,26 +126,25 @@ def _get_current_config() -> tuple[dict[str, Any], dict[str, Any]]:
 def _render_task_config(config: dict[str, Any]) -> None:
     """Render task configuration section."""
     st.markdown(
-        """<div class="section-header">
-            <span style="margin-right: 0.5rem;">📋</span>Task Configuration
+        f"""<div class="section-header">
+            <span style="margin-right: 0.5rem;">📋</span>{t("zeroshot.config.task")}
         </div>""",
         unsafe_allow_html=True,
     )
 
     task_description = st.text_area(
-        "Task Description",
-        placeholder="Describe the task that the target models will be evaluated on...\n"
-        "Example: English to Chinese translation assistant",
+        t("zeroshot.config.task_description"),
+        placeholder=t("zeroshot.config.task_description_placeholder"),
         height=100,
         key="zs_task_description",
-        help="A clear description of what the task is about. This helps generate relevant test queries.",
+        help=t("zeroshot.config.task_description_help"),
     )
 
     task_scenario = st.text_input(
-        "Usage Scenario (Optional)",
-        placeholder="Example: Users need to translate articles into Chinese",
+        t("zeroshot.config.task_scenario"),
+        placeholder=t("zeroshot.config.task_scenario_placeholder"),
         key="zs_task_scenario",
-        help="Optional context about when/how the task is used",
+        help=t("zeroshot.config.task_scenario_help"),
     )
 
     config["task_description"] = task_description
@@ -170,19 +170,20 @@ def _render_single_endpoint(
     col_header, col_remove = st.columns([4, 1])
     with col_header:
         st.markdown(
-            f'<div style="font-weight: 600; color: #94A3B8; font-size: 0.9rem;">' f"Target Model {endpoint_num}</div>",
+            f'<div style="font-weight: 600; color: #94A3B8; font-size: 0.9rem;">'
+            f'{t("zeroshot.config.target_model")} {endpoint_num}</div>',
             unsafe_allow_html=True,
         )
     with col_remove:
         if endpoint_num > 1:  # Keep at least one endpoint
-            if st.button("✕", key=f"remove_{endpoint_id}", help="Remove this endpoint"):
+            if st.button("✕", key=f"remove_{endpoint_id}", help=t("zeroshot.config.remove_target")):
                 return None
 
     # Row 1: Provider + Model
     col1, col2 = st.columns(2)
     with col1:
         provider = st.selectbox(
-            "Provider",
+            t("api.provider"),
             options=list(DEFAULT_API_ENDPOINTS.keys()),
             key=f"zs_ep_provider_{endpoint_id}",
         )
@@ -193,21 +194,22 @@ def _render_single_endpoint(
 
         # Build options list - include current model if it's custom
         model_options = list(DEFAULT_MODELS)
-        if current_model and current_model not in model_options and current_model != "Custom...":
+        custom_label = t("model.custom")
+        if current_model and current_model not in model_options and current_model != custom_label:
             model_options.insert(0, current_model)
-        model_options.append("Custom...")
+        model_options.append(custom_label)
 
         model_option = st.selectbox(
-            "Model",
+            t("model.select"),
             options=model_options,
             key=f"zs_ep_model_{endpoint_id}",
         )
 
     # Row 1.5: Custom model input (only if "Custom..." selected)
-    if model_option == "Custom...":
+    if model_option == t("model.custom"):
         model = st.text_input(
-            "Model Name",
-            placeholder="e.g., qwen-max, gpt-4-turbo",
+            t("model.custom_input"),
+            placeholder=t("model.custom_placeholder"),
             key=f"zs_ep_custom_model_{endpoint_id}",
         )
     else:
@@ -215,34 +217,34 @@ def _render_single_endpoint(
 
     # Row 2: API Key (full width)
     api_key = st.text_input(
-        "API Key",
+        t("api.key"),
         type="password",
-        placeholder="Enter API key for this model",
+        placeholder=t("api.key_placeholder"),
         key=f"zs_ep_key_{endpoint_id}",
     )
 
     # Advanced settings (collapsed)
-    with st.expander("⚙️ Advanced Settings", expanded=False):
+    with st.expander(f"⚙️ {t('zeroshot.config.advanced_settings')}", expanded=False):
         # Display name (alias)
         endpoint_name = st.text_input(
-            "Display Name",
+            t("zeroshot.config.display_name"),
             placeholder=model if model else f"model_{endpoint_num}",
             key=f"zs_ep_name_{endpoint_id}",
-            help="Custom display name for reports. Defaults to model name if empty.",
+            help=t("zeroshot.config.display_name_help"),
         )
 
         # Custom Endpoint URL (only for Custom provider)
         if provider == "Custom":
             st.text_input(
-                "Endpoint URL",
-                placeholder="https://api.example.com/v1",
+                t("zeroshot.config.endpoint_url"),
+                placeholder=t("api.custom_endpoint_placeholder"),
                 key=f"zs_ep_url_{endpoint_id}",
             )
 
         # System Prompt
         system_prompt = st.text_area(
-            "System Prompt",
-            placeholder="Optional system prompt for this model...",
+            t("zeroshot.config.system_prompt"),
+            placeholder=t("zeroshot.config.system_prompt_placeholder"),
             height=68,
             key=f"zs_ep_system_{endpoint_id}",
         )
@@ -309,8 +311,8 @@ def _init_endpoints_from_preset() -> None:
 def _render_target_endpoints(config: dict[str, Any]) -> None:
     """Render target endpoints configuration section."""
     st.markdown(
-        """<div class="section-header">
-            <span style="margin-right: 0.5rem;">🎯</span>Target Models to Evaluate
+        f"""<div class="section-header">
+            <span style="margin-right: 0.5rem;">🎯</span>{t("zeroshot.config.targets")}
         </div>""",
         unsafe_allow_html=True,
     )
@@ -347,7 +349,7 @@ def _render_target_endpoints(config: dict[str, Any]) -> None:
         st.rerun()
 
     # Add endpoint button
-    if st.button("➕ Add Target Model", key="zs_add_endpoint"):
+    if st.button(f"➕ {t('zeroshot.config.add_target')}", key="zs_add_endpoint"):
         new_id = f"ep_{len(st.session_state.zs_endpoints) + 1}_{id(st.session_state)}"
         st.session_state.zs_endpoints.append(new_id)
         st.rerun()
@@ -357,16 +359,16 @@ def _render_target_endpoints(config: dict[str, Any]) -> None:
 
 def _render_query_settings(config: dict[str, Any]) -> None:
     """Render query generation settings."""
-    with st.expander("Query Generation Settings", expanded=False):
+    with st.expander(t("zeroshot.config.query_settings"), expanded=False):
         st.markdown(
-            '<div style="font-size: 0.85rem; color: #94A3B8; margin-bottom: 0.5rem;">'
-            "Configure how test queries are generated</div>",
+            f'<div style="font-size: 0.85rem; color: #94A3B8; margin-bottom: 0.5rem;">'
+            f'{t("zeroshot.config.query_settings_desc")}</div>',
             unsafe_allow_html=True,
         )
 
         seed_queries = st.text_area(
-            "Seed Queries (Optional)",
-            placeholder="Enter example queries, one per line...\n" "These help guide the query generation style.",
+            t("zeroshot.config.seed_queries"),
+            placeholder=t("zeroshot.config.seed_queries_placeholder"),
             height=80,
             key="zs_seed_queries",
         )
@@ -374,31 +376,31 @@ def _render_query_settings(config: dict[str, Any]) -> None:
         col1, col2 = st.columns(2)
         with col1:
             temperature = st.slider(
-                "Temperature",
+                t("zeroshot.config.temperature"),
                 min_value=0.0,
                 max_value=1.5,
                 value=0.9,
                 step=0.1,
                 key="zs_query_temp",
-                help="Higher = more diverse queries",
+                help=t("zeroshot.config.temperature_help"),
             )
 
         with col2:
             max_similarity = st.slider(
-                "Dedup Threshold",
+                t("zeroshot.config.dedup_threshold"),
                 min_value=0.5,
                 max_value=1.0,
                 value=0.85,
                 step=0.05,
                 key="zs_max_similarity",
-                help="Lower = stricter deduplication",
+                help=t("zeroshot.config.dedup_threshold_help"),
             )
 
         enable_evolution = st.checkbox(
-            "Enable Complexity Evolution (Evol-Instruct)",
+            t("zeroshot.config.enable_evolution"),
             value=False,
             key="zs_enable_evolution",
-            help="Progressively increase query complexity",
+            help=t("zeroshot.config.enable_evolution_help"),
         )
 
         config["seed_queries"] = [q.strip() for q in seed_queries.split("\n") if q.strip()] if seed_queries else []

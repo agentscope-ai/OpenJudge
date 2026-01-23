@@ -25,6 +25,7 @@ from features.grader import GraderFeature  # noqa: E402
 from features.zero_shot import ZeroShotFeature  # noqa: E402
 from shared.components.common import render_footer  # noqa: E402
 from shared.components.logo import render_logo_and_title  # noqa: E402
+from shared.i18n import render_language_selector, t  # noqa: E402
 from shared.styles.theme import inject_css  # noqa: E402
 
 # pylint: enable=wrong-import-position
@@ -67,10 +68,16 @@ def main() -> None:
         # Divider
         st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
 
+        # Language selector
+        render_language_selector()
+
+        # Divider
+        st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
+
         # Feature navigation
         st.markdown(
-            '<div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; '
-            'letter-spacing: 0.1em; color: #64748B; margin-bottom: 0.5rem;">功能模块</div>',
+            f'<div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; '
+            f'letter-spacing: 0.1em; color: #64748B; margin-bottom: 0.5rem;">{t("app.features")}</div>',
             unsafe_allow_html=True,
         )
         selected_feature_id = Navigation.render_feature_selector()
@@ -116,7 +123,7 @@ def main() -> None:
 
     else:
         # No feature selected (shouldn't happen normally)
-        st.warning("No feature module selected. Please select a feature from the sidebar.")
+        st.warning(t("app.no_feature_selected"))
 
     # ========================================================================
     # Footer

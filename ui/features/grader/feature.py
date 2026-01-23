@@ -30,6 +30,7 @@ from features.grader.services.batch_runner import (
     BatchStatus,
 )
 from shared.components.common import render_divider
+from shared.i18n import t
 from shared.utils.helpers import run_async
 
 
@@ -77,10 +78,10 @@ class GraderFeature(BaseFeature):
         # Tab navigation
         tab_single, tab_batch, tab_history, tab_help = st.tabs(
             [
-                "🔹 Single Evaluation / 单条评估",
-                "📦 Batch Evaluation / 批量评估",
-                "📜 History / 历史记录",
-                "❓ Help / 帮助",
+                f"🔹 {t('grader.tabs.single')}",
+                f"📦 {t('grader.tabs.batch')}",
+                f"📜 {t('grader.tabs.history')}",
+                f"❓ {t('grader.tabs.help')}",
             ]
         )
 
@@ -138,7 +139,7 @@ class GraderFeature(BaseFeature):
             can_start = upload_result.get("is_valid", False) and grader_name and (not requires_model or api_key)
 
             start_clicked = st.button(
-                "🚀 Start Batch Evaluation / 开始批量评估",
+                f"🚀 {t('grader.batch.start')}",
                 type="primary",
                 use_container_width=True,
                 disabled=not can_start,
@@ -147,13 +148,13 @@ class GraderFeature(BaseFeature):
             if not can_start:
                 missing = []
                 if not upload_result.get("is_valid"):
-                    missing.append("Valid data file")
+                    missing.append(t("grader.batch.missing_data"))
                 if requires_model and not api_key:
-                    missing.append("API Key")
+                    missing.append(t("grader.batch.missing_api_key"))
                 if not grader_name:
-                    missing.append("Grader selection")
+                    missing.append(t("grader.batch.missing_grader"))
                 if missing:
-                    st.caption(f"Missing: {', '.join(missing)}")
+                    st.caption(f"{t('grader.input.missing')}: {', '.join(missing)}")
 
         # Right column: Progress and results
         with col_progress:
@@ -202,7 +203,7 @@ class GraderFeature(BaseFeature):
         data = upload_result.get("parsed_data", [])
 
         if not data:
-            st.error("No data to evaluate")
+            st.error(t("grader.error.no_data"))
             return
 
         # Create history manager and generate task ID
@@ -223,12 +224,12 @@ class GraderFeature(BaseFeature):
         max_concurrency = sidebar_config.get("max_concurrency", 10)
 
         with progress_placeholder:
-            with st.status("🔄 Running Batch Evaluation...", expanded=True) as status:
+            with st.status(f"🔄 {t('grader.batch.running')}", expanded=True) as status:
                 try:
-                    st.write(f"**Task ID:** {task_id}")
-                    st.write(f"**Grader:** {grader_name}")
-                    st.write(f"**Data count:** {len(data)}")
-                    st.write(f"**Max concurrency:** {max_concurrency}")
+                    st.write(f"**{t('grader.batch.task_id')}:** {task_id}")
+                    st.write(f"**{t('grader.batch.grader')}:** {grader_name}")
+                    st.write(f"**{t('grader.batch.data_count')}:** {len(data)}")
+                    st.write(f"**{t('grader.batch.max_concurrency')}:** {max_concurrency}")
                     st.write("---")
 
                     # Create a placeholder for progress updates
@@ -243,10 +244,14 @@ class GraderFeature(BaseFeature):
                         if prog.completed_count - last_update_count[0] >= 5 or prog.completed_count == prog.total_count:
                             last_update_count[0] = prog.completed_count
                             pct = (prog.completed_count / prog.total_count * 100) if prog.total_count > 0 else 0
-                            progress_text.write(
-                                f"📊 Progress: **{prog.completed_count}/{prog.total_count}** "
-                                f"(✓ {prog.success_count} success, ✗ {prog.failed_count} failed)"
+                            progress_msg = t(
+                                "grader.batch.progress_text",
+                                completed=prog.completed_count,
+                                total=prog.total_count,
                             )
+                            success_msg = t("grader.batch.progress_success", count=prog.success_count)
+                            failed_msg = t("grader.batch.progress_failed", count=prog.failed_count)
+                            progress_text.write(f"📊 {progress_msg} (✓ {success_msg}, ✗ {failed_msg})")
                             progress_bar.progress(pct / 100, text=f"{pct:.0f}%")
 
                     # Create runner with progress callback
@@ -262,7 +267,7 @@ class GraderFeature(BaseFeature):
                     )
 
                     # Run evaluation
-                    st.write("Starting evaluation...")
+                    st.write(t("grader.batch.starting"))
                     progress = run_async(runner.run())
 
                     # Clear progress placeholders
@@ -278,32 +283,33 @@ class GraderFeature(BaseFeature):
                     # Update status
                     if progress.status == BatchStatus.COMPLETED:
                         complete_label = (
-                            f"✅ Evaluation Complete! "
-                            f"({progress.success_count} success, "
-                            f"{progress.failed_count} failed)"
+                            f"✅ {t('grader.batch.complete')} "
+                            f"({t('grader.batch.progress_success', count=progress.success_count)}, "
+                            f"{t('grader.batch.progress_failed', count=progress.failed_count)})"
                         )
                         status.update(label=complete_label, state="complete")
                         st.write("---")
-                        st.write(f"✅ **Completed:** {progress.completed_count}/{progress.total_count}")
-                        st.write(f"✓ **Success:** {progress.success_count}")
-                        st.write(f"✗ **Failed:** {progress.failed_count}")
+                        completed_label = t("grader.batch.completed_count")
+                        st.write(f"✅ **{completed_label}:** " f"{progress.completed_count}/{progress.total_count}")
+                        st.write(f"✓ **{t('grader.batch.success_count')}:** {progress.success_count}")
+                        st.write(f"✗ **{t('grader.batch.failed_count')}:** {progress.failed_count}")
 
                         summary = runner.get_summary()
                         if summary.get("avg_score") is not None:
-                            st.write(f"📊 **Average Score:** {summary['avg_score']:.2f}")
+                            st.write(f"📊 **{t('grader.batch.avg_score')}:** {summary['avg_score']:.2f}")
                         if summary.get("pass_rate") is not None:
-                            st.write(f"📈 **Pass Rate:** {summary['pass_rate'] * 100:.1f}%")
+                            st.write(f"📈 **{t('grader.batch.pass_rate')}:** {summary['pass_rate'] * 100:.1f}%")
                     else:
                         status.update(
-                            label=f"⚠️ Evaluation {progress.status.value}",
+                            label=f"⚠️ {t('status.error')}: {progress.status.value}",
                             state="error" if progress.status == BatchStatus.FAILED else "complete",
                         )
 
                 except Exception as e:
-                    status.update(label="❌ Evaluation Failed", state="error")
-                    st.error(f"Error: {e}")
+                    status.update(label=f"❌ {t('grader.batch.failed_status')}", state="error")
+                    st.error(t("grader.error.evaluation_failed", error=str(e)))
                     st.write("---")
-                    st.write("💡 **Tip:** Check the History tab to see partial results or resume.")
+                    st.write(f"💡 **{t('grader.batch.resume_tip')}")
 
     def _render_history_view(self, sidebar_config: dict[str, Any]) -> None:
         """Render the history view."""
@@ -319,10 +325,7 @@ class GraderFeature(BaseFeature):
             # Check if API key is configured for resume functionality
             api_key = sidebar_config.get("api_key", "")
             if not api_key:
-                st.warning(
-                    "⚠️ To resume a task, please configure your API Key in the sidebar first.\n\n"
-                    "要续传任务，请先在侧边栏配置 API Key。"
-                )
+                st.warning(f"⚠️ {t('grader.batch.resume_warning')}")
 
             # Show history list with resume callback that has access to sidebar_config
             render_batch_history_panel(
@@ -347,14 +350,10 @@ class GraderFeature(BaseFeature):
         # Validate API key is available
         api_key = sidebar_config.get("api_key", "")
         if not api_key:
-            st.error(
-                "❌ API Key is required to resume evaluation. "
-                "Please configure it in the sidebar.\n\n"
-                "需要 API Key 才能续传评估，请在侧边栏配置。"
-            )
+            st.error(f"❌ {t('grader.batch.resume_api_required')}")
             return
 
-        st.info(f"Resuming task: {task_id}...")
+        st.info(t("grader.batch.resuming", task_id=task_id))
 
         # Build api_config from current sidebar settings
         api_config = {
@@ -373,7 +372,7 @@ class GraderFeature(BaseFeature):
             return
 
         # Run and show progress
-        with st.status("🔄 Resuming Batch Evaluation...", expanded=True) as status:
+        with st.status(f"🔄 {t('grader.batch.resuming_status')}", expanded=True) as status:
             try:
                 progress = run_async(runner.run())
 
@@ -383,22 +382,22 @@ class GraderFeature(BaseFeature):
                 st.session_state["batch_summary"] = runner.get_summary()
 
                 if progress.status == BatchStatus.COMPLETED:
-                    status.update(label="✅ Resume Complete!", state="complete")
+                    status.update(label=f"✅ {t('grader.batch.resume_complete')}", state="complete")
                 else:
                     status.update(label=f"⚠️ {progress.status.value}", state="error")
 
             except Exception as e:
-                status.update(label="❌ Resume Failed", state="error")
-                st.error(f"Error: {e}")
+                status.update(label=f"❌ {t('grader.batch.resume_failed')}", state="error")
+                st.error(t("grader.error.evaluation_failed", error=str(e)))
 
     def _on_delete_task(self, task_id: str) -> None:
         """Handle delete task button click."""
         history_manager = BatchHistoryManager()
         if history_manager.delete_task(task_id):
-            st.success(f"Task {task_id} deleted")
+            st.success(t("grader.batch.task_deleted", task_id=task_id))
             st.rerun()
         else:
-            st.error("Failed to delete task")
+            st.error(t("grader.batch.delete_failed"))
 
     def _on_back_from_detail(self) -> None:
         """Handle back button from task detail."""
@@ -423,76 +422,52 @@ class GraderFeature(BaseFeature):
     def _render_quick_guide(self) -> None:
         """Render the quick start guide."""
         st.markdown(
-            """<div class="feature-card">
+            f"""<div class="feature-card">
 <div style="font-weight: 600; color: #F1F5F9; margin-bottom: 0.75rem;">
-    Quick Start Guide / 快速入门
+    {t("grader.help.title")}
 </div>
 
 <div style="margin-bottom: 1.5rem;">
     <div style="color: #A5B4FC; font-weight: 500; margin-bottom: 0.5rem;">
-        🔹 Single Evaluation / 单条评估
+        🔹 {t("grader.help.single_title")}
     </div>
     <div class="guide-step">
         <div class="guide-number">1</div>
-        <div class="guide-text">
-            Configure API endpoint and key in sidebar
-            <br/><span style="color: #64748B;">在侧边栏配置 API 端点和密钥</span>
-        </div>
+        <div class="guide-text">{t("grader.help.single_step1")}</div>
     </div>
     <div class="guide-step">
         <div class="guide-number">2</div>
-        <div class="guide-text">
-            Select grader category and specific grader
-            <br/><span style="color: #64748B;">选择评估器类别和具体评估器</span>
-        </div>
+        <div class="guide-text">{t("grader.help.single_step2")}</div>
     </div>
     <div class="guide-step">
         <div class="guide-number">3</div>
-        <div class="guide-text">
-            Enter evaluation data (query, response, etc.)
-            <br/><span style="color: #64748B;">输入评估数据（问题、回答等）</span>
-        </div>
+        <div class="guide-text">{t("grader.help.single_step3")}</div>
     </div>
     <div class="guide-step">
         <div class="guide-number">4</div>
-        <div class="guide-text">
-            Click "Run Evaluation" to see results
-            <br/><span style="color: #64748B;">点击"运行评估"查看结果</span>
-        </div>
+        <div class="guide-text">{t("grader.help.single_step4")}</div>
     </div>
 </div>
 
 <div>
     <div style="color: #A5B4FC; font-weight: 500; margin-bottom: 0.5rem;">
-        📦 Batch Evaluation / 批量评估
+        📦 {t("grader.help.batch_title")}
     </div>
     <div class="guide-step">
         <div class="guide-number">1</div>
-        <div class="guide-text">
-            Configure API and select grader (same as single)
-            <br/><span style="color: #64748B;">配置 API 并选择评估器（同上）</span>
-        </div>
+        <div class="guide-text">{t("grader.help.batch_step1")}</div>
     </div>
     <div class="guide-step">
         <div class="guide-number">2</div>
-        <div class="guide-text">
-            Upload JSON or CSV file with evaluation data
-            <br/><span style="color: #64748B;">上传包含评估数据的 JSON 或 CSV 文件</span>
-        </div>
+        <div class="guide-text">{t("grader.help.batch_step2")}</div>
     </div>
     <div class="guide-step">
         <div class="guide-number">3</div>
-        <div class="guide-text">
-            Click "Start Batch Evaluation"
-            <br/><span style="color: #64748B;">点击"开始批量评估"</span>
-        </div>
+        <div class="guide-text">{t("grader.help.batch_step3")}</div>
     </div>
     <div class="guide-step">
         <div class="guide-number">4</div>
-        <div class="guide-text">
-            View results and export (supports resume if interrupted)
-            <br/><span style="color: #64748B;">查看结果并导出（支持断点续传）</span>
-        </div>
+        <div class="guide-text">{t("grader.help.batch_step4")}</div>
     </div>
 </div>
 </div>""",
@@ -504,10 +479,10 @@ class GraderFeature(BaseFeature):
         st.markdown(
             f"""<div class="feature-card" style="margin-top: 1rem;">
 <div style="font-weight: 600; color: #F1F5F9; margin-bottom: 0.75rem;">
-    📋 Data Format Guide / 数据格式说明
+    📋 {t("grader.help.format_title")}
 </div>
 <div style="color: #94A3B8; font-size: 0.85rem;">
-    <p><strong>JSON Format / JSON 格式:</strong></p>
+    <p><strong>{t("grader.help.json_format")}:</strong></p>
     <pre style="{pre_style}">{{
   "data": [
     {{
@@ -517,17 +492,15 @@ class GraderFeature(BaseFeature):
     }}
   ]
 }}</pre>
-    <p style="margin-top: 1rem;"><strong>CSV Format / CSV 格式:</strong></p>
+    <p style="margin-top: 1rem;"><strong>{t("grader.help.csv_format")}:</strong></p>
     <pre style="{pre_style}">query,response,reference_response
 "Question 1","Answer 1","Reference 1"
 "Question 2","Answer 2",""</pre>
     <p style="margin-top: 1rem; color: #FCD34D;">
-        ⚠️ Note: Agent graders require JSON format for complex fields.
-        <br/>注意：Agent 评估器的复杂字段需要使用 JSON 格式。
+        ⚠️ {t("grader.help.agent_note")}
     </p>
     <p style="color: #FCD34D;">
-        ⚠️ Multimodal graders are not supported for batch evaluation.
-        <br/>多模态评估器不支持批量评估。
+        ⚠️ {t("grader.help.multimodal_note")}
     </p>
 </div>
 </div>""",

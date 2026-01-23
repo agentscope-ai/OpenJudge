@@ -13,41 +13,42 @@ from features.grader.config.grader_registry import (
     GRADER_REGISTRY,
     get_graders_by_category,
 )
+from shared.i18n import t
 
 from openjudge.models.schema.prompt_template import LanguageEnum
 
 
 def _render_api_settings(config: dict[str, Any]) -> None:
     """Render API settings section."""
-    st.markdown('<div class="section-header">API Settings</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("api.settings")}</div>', unsafe_allow_html=True)
 
     endpoint_choice = st.selectbox(
-        "Provider",
+        t("api.provider"),
         options=list(DEFAULT_API_ENDPOINTS.keys()),
         index=0,
-        help="Select API provider or choose Custom",
+        help=t("api.provider_help"),
     )
 
     if endpoint_choice == "Custom":
         api_endpoint = st.text_input(
-            "Custom Endpoint",
-            placeholder="https://api.example.com/v1",
-            help="Enter your custom API endpoint URL",
+            t("api.custom_endpoint"),
+            placeholder=t("api.custom_endpoint_placeholder"),
+            help=t("api.custom_endpoint_help"),
         )
     else:
         api_endpoint = DEFAULT_API_ENDPOINTS[endpoint_choice]
 
     api_key = st.text_input(
-        "API Key",
+        t("api.key"),
         type="password",
-        placeholder="Enter your API key...",
-        help="Your API key for the LLM service",
+        placeholder=t("api.key_placeholder"),
+        help=t("api.key_help"),
     )
 
     if api_key:
-        st.success("API Key configured")
+        st.success(t("api.key_configured"))
     else:
-        st.warning("Enter API Key to continue")
+        st.warning(t("api.key_required"))
 
     config["api_endpoint"] = api_endpoint
     config["api_key"] = api_key
@@ -55,19 +56,19 @@ def _render_api_settings(config: dict[str, Any]) -> None:
 
 def _render_model_settings(config: dict[str, Any]) -> None:
     """Render model settings section."""
-    st.markdown('<div class="section-header">Model</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("model.settings")}</div>', unsafe_allow_html=True)
 
     model_option = st.selectbox(
-        "Model",
-        options=DEFAULT_MODELS + ["Custom..."],
+        t("model.select"),
+        options=DEFAULT_MODELS + [t("model.custom")],
         index=0,
         label_visibility="collapsed",
     )
 
-    if model_option == "Custom...":
+    if model_option == t("model.custom"):
         model_name = st.text_input(
-            "Custom Model",
-            placeholder="Enter model name",
+            t("model.custom_input"),
+            placeholder=t("model.custom_placeholder"),
             label_visibility="collapsed",
         )
     else:
@@ -78,17 +79,17 @@ def _render_model_settings(config: dict[str, Any]) -> None:
 
 def _render_grader_settings(config: dict[str, Any]) -> None:
     """Render grader settings section."""
-    st.markdown('<div class="section-header">Grader</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("grader.sidebar.grader")}</div>', unsafe_allow_html=True)
 
     category_options = list(GRADER_CATEGORIES.keys())
     category_labels = [GRADER_CATEGORIES[cat]["name"] for cat in category_options]
 
     selected_category_idx = st.selectbox(
-        "Category",
+        t("grader.sidebar.category"),
         options=range(len(category_options)),
         format_func=lambda x: category_labels[x],
         index=0,
-        help="Select grader category",
+        help=t("grader.sidebar.category_help"),
     )
     selected_category = category_options[selected_category_idx]
     config["grader_category"] = selected_category
@@ -98,7 +99,7 @@ def _render_grader_settings(config: dict[str, Any]) -> None:
 
     if grader_names:
         selected_grader_idx = st.selectbox(
-            "Grader",
+            t("grader.sidebar.grader"),
             options=range(len(grader_names)),
             format_func=lambda x: grader_names[x],
             index=0,
@@ -121,23 +122,23 @@ def _render_grader_settings(config: dict[str, Any]) -> None:
         config["grader_name"] = selected_grader
         config["grader_config"] = grader_config
     else:
-        st.warning("No graders in this category")
+        st.warning(t("grader.sidebar.no_graders"))
         config["grader_name"] = None
         config["grader_config"] = None
 
 
 def _render_evaluation_settings(config: dict[str, Any]) -> None:
     """Render evaluation settings section."""
-    st.markdown('<div class="section-header">Settings</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("grader.sidebar.settings")}</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     with col1:
         language_option = st.selectbox(
-            "Language",
+            t("grader.sidebar.language"),
             options=["EN", "中文"],
             index=0,
-            help="Evaluation language",
+            help=t("grader.sidebar.language_help"),
         )
         config["language"] = LanguageEnum.EN if language_option == "EN" else LanguageEnum.ZH
 
@@ -148,19 +149,19 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
 
             if score_range == (1, 5):
                 threshold = st.selectbox(
-                    "Threshold",
+                    t("grader.sidebar.threshold"),
                     options=[1, 2, 3, 4, 5],
                     index=int(default_threshold) - 1,
-                    help="Pass threshold",
+                    help=t("grader.sidebar.threshold_help"),
                 )
             else:
                 threshold = st.slider(
-                    "Threshold",
+                    t("grader.sidebar.threshold"),
                     min_value=0.0,
                     max_value=1.0,
                     value=float(default_threshold),
                     step=0.1,
-                    help="Pass threshold",
+                    help=t("grader.sidebar.threshold_help"),
                 )
             config["threshold"] = threshold
         else:
@@ -173,7 +174,7 @@ def _render_extra_params(config: dict[str, Any]) -> None:
         config["extra_params"] = {}
         return
 
-    with st.expander("Advanced Options"):
+    with st.expander(t("grader.sidebar.advanced_options")):
         extra_params = config["grader_config"]["extra_params"]
         config["extra_params"] = {}
 
@@ -204,23 +205,20 @@ def _render_extra_params(config: dict[str, Any]) -> None:
 def _render_vision_warning(config: dict[str, Any]) -> None:
     """Render vision model warning if needed."""
     if config.get("grader_config") and config["grader_config"].get("requires_vision_model"):
-        st.info(
-            "This grader requires a vision-capable model (e.g., qwen-vl-max-latest, gpt-4o, gpt-5.2)\n"
-            "此评测器需要视觉模型"
-        )
+        st.info(t("grader.sidebar.vision_warning"))
 
 
 def _render_batch_settings(config: dict[str, Any]) -> None:
     """Render batch evaluation settings section."""
-    st.markdown('<div class="section-header">Batch Settings / 批量设置</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{t("grader.sidebar.batch_settings")}</div>', unsafe_allow_html=True)
 
     max_concurrency = st.number_input(
-        "Max Concurrency / 最大并发数",
+        t("grader.sidebar.max_concurrency"),
         min_value=1,
         max_value=100,
         value=10,
         step=1,
-        help="Maximum number of concurrent evaluations. Higher values may hit API rate limits.",
+        help=t("grader.sidebar.max_concurrency_help"),
     )
     config["max_concurrency"] = max_concurrency
 

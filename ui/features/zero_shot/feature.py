@@ -19,6 +19,7 @@ from features.zero_shot.services.pipeline_runner import (
     PipelineRunner,
     PipelineStage,
 )
+from shared.i18n import t
 from shared.utils.helpers import run_async
 
 
@@ -104,7 +105,13 @@ class ZeroShotFeature(BaseFeature):
         )
 
         # Tab navigation with help as a third tab
-        tab_new, tab_history, tab_help = st.tabs(["🆕 New Evaluation", "📜 History", "❓ Help"])
+        tab_new, tab_history, tab_help = st.tabs(
+            [
+                f"🆕 {t('zeroshot.tabs.new')}",
+                f"📜 {t('zeroshot.tabs.history')}",
+                f"❓ {t('zeroshot.tabs.help')}",
+            ]
+        )
 
         with tab_new:
             self._render_new_evaluation_view(sidebar_config)
@@ -133,7 +140,7 @@ class ZeroShotFeature(BaseFeature):
                 st.error(validation_msg)
 
             start_clicked = st.button(
-                "🚀 Start Evaluation",
+                f"🚀 {t('zeroshot.config.start')}",
                 type="primary",
                 use_container_width=True,
                 disabled=not is_valid,
@@ -198,7 +205,7 @@ class ZeroShotFeature(BaseFeature):
         if details:
             output_dir = details.get("task_dir")
             st.session_state[self.STATE_OUTPUT_DIR] = output_dir
-            st.info(f"Resuming evaluation from checkpoint in {task_id}...")
+            st.info(t("zeroshot.history.resuming", task_id=task_id))
 
             # Use PipelineRunner.resume to continue from checkpoint
             try:
@@ -206,18 +213,18 @@ class ZeroShotFeature(BaseFeature):
                 result = run_async(runner.run())
                 if result:
                     st.session_state[self.STATE_RESULT] = result
-                    st.success("Evaluation resumed and completed!")
+                    st.success(t("zeroshot.history.resume_complete"))
             except Exception as e:
-                st.error(f"Failed to resume: {e}")
+                st.error(t("zeroshot.history.resume_failed", error=str(e)))
 
     def _on_delete_task(self, task_id: str) -> None:
         """Handle delete task button click."""
         history_manager = HistoryManager()
         if history_manager.delete_task(task_id):
-            st.success(f"Task {task_id} deleted")
+            st.success(t("zeroshot.history.task_deleted", task_id=task_id))
             st.rerun()
         else:
-            st.error("Failed to delete task")
+            st.error(t("zeroshot.history.delete_failed"))
 
     def _on_back_from_report(self) -> None:
         """Handle back button from report viewer."""
@@ -245,7 +252,7 @@ class ZeroShotFeature(BaseFeature):
             Tuple of (is_valid, error_message)
         """
         if not config.get("task_description"):
-            return False, "Task description is required / 任务描述为必填项"
+            return False, t("zeroshot.validation.task_required")
 
         endpoints = config.get("target_endpoints", {})
         valid_endpoints = [ep for ep in endpoints.values() if ep.get("api_key") and ep.get("model")]
@@ -254,12 +261,11 @@ class ZeroShotFeature(BaseFeature):
             configured = len(valid_endpoints)
             return (
                 False,
-                f"Need 2+ models with API Key filled ({configured}/{total} configured) "
-                f"/ 至少需要 2 个填写了 API Key 的模型（已配置 {configured}/{total}）",
+                t("zeroshot.validation.min_models", configured=configured, total=total),
             )
 
         if not config.get("judge_api_key"):
-            return False, "Judge model API key is required / Judge 模型 API Key 为必填项"
+            return False, t("zeroshot.validation.judge_api_required")
 
         return True, ""
 
@@ -289,7 +295,7 @@ class ZeroShotFeature(BaseFeature):
 
         # Use st.status in the right panel for real-time progress display
         with progress_placeholder.container():
-            with st.status("🔄 Running Zero-Shot Evaluation...", expanded=True) as status:
+            with st.status(f"🔄 {t('zeroshot.progress.running')}", expanded=True) as status:
                 try:
                     # Build config and create pipeline
                     runner = PipelineRunner(config)
@@ -303,27 +309,27 @@ class ZeroShotFeature(BaseFeature):
                         ZeroShotPipeline,
                     )
 
-                    status.update(label="🔄 Initializing pipeline...")
-                    st.write("**Initializing** Zero-Shot Evaluation Pipeline")
-                    st.write(f"- Task: {config.get('task_description', '')[:50]}...")
-                    st.write(f"- Target models: {len(config.get('target_endpoints', {}))} models")
-                    st.write(f"- Queries to generate: {config.get('num_queries', 20)}")
+                    status.update(label=f"🔄 {t('zeroshot.progress.initializing')}")
+                    st.write(f"**{t('zeroshot.progress.init_desc')}**")
+                    st.write(f"- {t('zeroshot.progress.task')}: {config.get('task_description', '')[:50]}...")
+                    st.write(f"- {t('zeroshot.progress.target_models')}: {len(config.get('target_endpoints', {}))}")
+                    st.write(f"- {t('zeroshot.progress.queries_to_generate')}: {config.get('num_queries', 20)}")
 
                     # Create pipeline with resume support
                     pipeline = ZeroShotPipeline(config=zs_config, resume=True)
 
-                    progress.update_stage(PipelineStage.QUERIES, 0.0, "Starting evaluation...")
+                    progress.update_stage(PipelineStage.QUERIES, 0.0, t("zeroshot.progress.running"))
                     st.session_state[self.STATE_PROGRESS] = progress
 
-                    status.update(label="🔄 Running evaluation pipeline...")
+                    status.update(label=f"🔄 {t('zeroshot.progress.running_pipeline')}")
                     st.write("---")
-                    st.write("**Running evaluation pipeline** (this may take several minutes)")
-                    st.write("The pipeline will:")
-                    st.write("1. Generate test queries")
-                    st.write("2. Collect responses from target models")
-                    st.write("3. Generate evaluation rubrics")
-                    st.write("4. Run pairwise comparisons")
-                    st.write("5. Analyze and rank results")
+                    st.write(f"**{t('zeroshot.progress.running_pipeline')}** {t('zeroshot.progress.running_desc')}")
+                    st.write(f"{t('zeroshot.progress.pipeline_steps')}")
+                    st.write(f"1. {t('zeroshot.progress.step1')}")
+                    st.write(f"2. {t('zeroshot.progress.step2')}")
+                    st.write(f"3. {t('zeroshot.progress.step3')}")
+                    st.write(f"4. {t('zeroshot.progress.step4')}")
+                    st.write(f"5. {t('zeroshot.progress.step5')}")
 
                     # Run the complete evaluation pipeline
                     result = run_async(pipeline.evaluate())
@@ -338,16 +344,16 @@ class ZeroShotFeature(BaseFeature):
                     # Save results
                     pipeline.save_results(result)
 
-                    status.update(label="✅ Evaluation Complete!", state="complete")
+                    status.update(label=f"✅ {t('zeroshot.progress.complete')}", state="complete")
                     st.write("---")
-                    st.write("✅ **Evaluation completed successfully!**")
-                    st.write(f"🏆 **Best model:** {result.best_pipeline}")
-                    st.write(f"📊 **Total queries:** {result.total_queries}")
-                    st.write(f"⚖️ **Total comparisons:** {result.total_comparisons}")
+                    st.write(f"✅ **{t('zeroshot.progress.completed_success')}**")
+                    st.write(f"🏆 **{t('zeroshot.progress.best_model')}:** {result.best_pipeline}")
+                    st.write(f"📊 **{t('zeroshot.progress.total_queries')}:** {result.total_queries}")
+                    st.write(f"⚖️ **{t('zeroshot.progress.total_comparisons')}:** {result.total_comparisons}")
 
                     # Show rankings
                     st.write("---")
-                    st.write("**Rankings:**")
+                    st.write(f"**{t('zeroshot.progress.rankings')}:**")
                     for rank, (name, win_rate) in enumerate(result.rankings, 1):
                         medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}."
                         st.write(f"{medal} {name}: {win_rate:.1%}")
@@ -356,45 +362,41 @@ class ZeroShotFeature(BaseFeature):
                     progress.stage = PipelineStage.FAILED
                     progress.error = str(e)
                     st.session_state[self.STATE_PROGRESS] = progress
-                    status.update(label="❌ Evaluation Failed", state="error")
-                    st.error(f"Evaluation failed: {e}")
+                    status.update(label=f"❌ {t('zeroshot.progress.failed')}", state="error")
+                    st.error(t("zeroshot.progress.failed_msg", error=str(e)))
                     st.write("---")
-                    st.write("💡 **Tip:** Check the History tab to resume from the last checkpoint.")
+                    st.write(f"💡 **{t('zeroshot.progress.resume_tip')}**")
 
     def _render_quick_guide(self) -> None:
         """Render the quick start guide."""
         st.markdown(
-            """
+            f"""
             <div class="feature-card">
                 <div style="font-weight: 600; color: #F1F5F9; margin-bottom: 0.75rem;">
-                    Zero-Shot Evaluation Guide
+                    {t("zeroshot.help.title")}
                 </div>
                 <div class="guide-step">
                     <div class="guide-number">1</div>
                     <div class="guide-text">
-                        <strong>Configure Judge Model:</strong> Set up the judge model in the sidebar
-                        <br/><span style="color: #64748B;">配置评判模型：在侧边栏设置评判模型</span>
+                        <strong>{t("zeroshot.help.step1_title")}:</strong> {t("zeroshot.help.step1_desc")}
                     </div>
                 </div>
                 <div class="guide-step">
                     <div class="guide-number">2</div>
                     <div class="guide-text">
-                        <strong>Define Task:</strong> Describe the task your models will be evaluated on
-                        <br/><span style="color: #64748B;">定义任务：描述待评估模型的任务</span>
+                        <strong>{t("zeroshot.help.step2_title")}:</strong> {t("zeroshot.help.step2_desc")}
                     </div>
                 </div>
                 <div class="guide-step">
                     <div class="guide-number">3</div>
                     <div class="guide-text">
-                        <strong>Add Target Models:</strong> Configure at least 2 models to compare
-                        <br/><span style="color: #64748B;">添加目标模型：配置至少 2 个待比较的模型</span>
+                        <strong>{t("zeroshot.help.step3_title")}:</strong> {t("zeroshot.help.step3_desc")}
                     </div>
                 </div>
                 <div class="guide-step">
                     <div class="guide-number">4</div>
                     <div class="guide-text">
-                        <strong>Start Evaluation:</strong> Click "Start Evaluation" to begin
-                        <br/><span style="color: #64748B;">开始评估：点击"开始评估"按钮</span>
+                        <strong>{t("zeroshot.help.step4_title")}:</strong> {t("zeroshot.help.step4_desc")}
                     </div>
                 </div>
             </div>
