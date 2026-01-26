@@ -1,0 +1,123 @@
+# =============================================================================
+# OpenJudge Training Dockerfile
+# =============================================================================
+# Training image for Judge model SFT/RL with:
+#   - PyTorch + CUDA support
+#   - Inference frameworks: sglang, vllm
+#   - Training frameworks: verl, transformers, accelerate
+#   - FlashAttention, FlashInfer
+#   - OpenJudge
+#
+# For basic installation (evaluation only), use Dockerfile instead
+# =============================================================================
+
+# Base image: PAI PyTorch
+FROM dsw-registry.cn-wulanchabu.cr.aliyuncs.com/pai/pytorch:2.8.0-gpu-py312-cu128-ubuntu24.04-3995b779-1764359181
+
+# Set environment variables
+ENV USE_MEGATRON=0
+ENV USE_SGLANG=1
+ENV MAX_JOBS=32
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set working directory
+WORKDIR /workspace
+
+# =============================================================================
+# 1. Inference Frameworks (sglang, vllm)
+# =============================================================================
+RUN pip install --no-cache-dir "sglang[all]==0.5.2" && \
+    pip install --no-cache-dir torch-memory-saver && \
+    pip install --no-cache-dir "vllm==0.11.0"
+
+# =============================================================================
+# 2. Training & ML Packages
+# =============================================================================
+RUN pip install --no-cache-dir \
+    "transformers[hf_xet]>=4.51.0" \
+    accelerate \
+    datasets \
+    peft \
+    hf-transfer \
+    "numpy<2.0.0" \
+    "pyarrow>=15.0.0" \
+    pandas \
+    "tensordict>=0.8.0,<=0.10.0,!=0.9.0" \
+    torchdata \
+    "ray[default]" \
+    codetiming \
+    hydra-core \
+    pylatexenc \
+    qwen-vl-utils \
+    wandb \
+    swanlab \
+    dill \
+    pybind11 \
+    liger-kernel \
+    mathruler \
+    pytest \
+    py-spy \
+    pre-commit \
+    ruff \
+    tensorboard
+
+# =============================================================================
+# 3. Additional Dependencies
+# =============================================================================
+RUN pip install --no-cache-dir \
+    "nvidia-ml-py>=12.560.30" \
+    "fastapi[standard]>=0.115.0" \
+    "optree>=0.13.0" \
+    "pydantic>=2.9" \
+    "grpcio>=1.62.1"
+
+# =============================================================================
+# 4. FlashAttention & FlashInfer (Python 3.12 + CUDA 12)
+# =============================================================================
+RUN curl -L -O "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.1/flash_attn-2.8.1+cu12torch2.8cxx11abiFALSE-cp312-cp312-linux_x86_64.whl" && \
+    pip install --no-cache-dir flash_attn-2.8.1+cu12torch2.8cxx11abiFALSE-cp312-cp312-linux_x86_64.whl && \
+    rm -f flash_attn-2.8.1+cu12torch2.8cxx11abiFALSE-cp312-cp312-linux_x86_64.whl
+
+RUN pip install --no-cache-dir flashinfer-python==0.3.1
+
+# =============================================================================
+# 5. OpenCV Fix
+# =============================================================================
+RUN pip install --no-cache-dir opencv-python opencv-fixer && \
+    python -c "from opencv_fixer import AutoFix; AutoFix()"
+
+# =============================================================================
+# 6. verl (RL Training Framework)
+# =============================================================================
+RUN pip install --no-cache-dir --no-deps git+https://github.com/volcengine/verl.git@v0.6.1
+
+# =============================================================================
+# 7. OpenJudge Dependencies
+# =============================================================================
+RUN pip install --no-cache-dir \
+    "loguru>=0.7.3,<0.8.0" \
+    "json_repair>=0.54.0,<1.0.0" \
+    "openai>=1.85.0,<2.0.0" \
+    "tenacity>=9.1.0,<10.0.0" \
+    "math-verify>=0.7.0,<0.8.0" \
+    "tqdm>=4.66.0,<5.0.0" \
+    fire \
+    "dashscope>=1.19.0" \
+    "tiktoken>=0.7.0" \
+    "nltk>=3.8.1" \
+    "jieba>=0.42.1" \
+    "sacrebleu>=2.0.0" \
+    "rouge-score>=0.1.2" \
+    "python-Levenshtein>=0.20.0" \
+    "scikit-learn>=1.0.0"
+
+# =============================================================================
+# 8. OpenJudge
+# =============================================================================
+RUN pip install --no-cache-dir --no-deps git+https://github.com/agentscope-ai/OpenJudge.git
+
+# Clean up cache
+RUN pip cache purge
+
+# Set default command
+CMD ["/bin/bash"]

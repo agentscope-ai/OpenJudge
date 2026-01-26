@@ -26,6 +26,22 @@ Get started with OpenJudge in 5 minutes. This guide walks you through installati
     pip install -e .[verl]  # With VerL option for training scenarios
     ```
 
+=== "Docker"
+
+    ```bash
+    git clone https://github.com/agentscope-ai/OpenJudge.git
+    cd OpenJudge
+
+    # Build the Docker image
+    docker build -t openjudge:latest .
+
+    # Run the container
+    docker run -it \
+        -v $(pwd):/workspace/OpenJudge \
+        --name openjudge \
+        openjudge:latest
+    ```
+
 > **Tips:**
 > OpenJudge requires Python version >=3.10 and <3.13. For best compatibility, we recommend using Python 3.10 or 3.11.
 
