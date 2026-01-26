@@ -456,8 +456,8 @@ class AgenticGrader(BaseGrader):
                         break
                 except json.JSONDecodeError:
                     continue
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to parse JSON from LLM output: {e}")
 
         # Strategy 2: Fall back to regex extraction if no valid JSON found
         if not data:
@@ -494,7 +494,7 @@ class AgenticGrader(BaseGrader):
         if self.mode == GraderMode.POINTWISE:
             score = data.get("score")
             if score is None:
-                score = 3  # Default score only if extraction completely failed
+                raise ValueError(f"Failed to extract 'score' from LLM output: {llm_output}")
             reason = data.get("reason", llm_output)
             metadata = {k: v for k, v in data.items() if k not in ("score", "reason")}
 
@@ -502,7 +502,7 @@ class AgenticGrader(BaseGrader):
         else:
             rank = data.get("rank")
             if rank is None:
-                rank = [1]  # Default rank only if extraction completely failed
+                raise ValueError(f"Failed to extract 'rank' from LLM output: {llm_output}")
             reason = data.get("reason", llm_output)
             metadata = {k: v for k, v in data.items() if k not in ("rank", "reason")}
 
