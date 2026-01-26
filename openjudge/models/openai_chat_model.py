@@ -178,7 +178,7 @@ class OpenAIChatModel(BaseChatModel):
             if "extra_body" not in kwargs:
                 kwargs["extra_body"] = {}
             kwargs["extra_body"]["enable_thinking"] = False
-            logger.debug("Set enable_thinking=False in extra_body for qwen model")
+            # logger.debug("Set enable_thinking=False in extra_body for qwen model")
 
         if tool_choice:
             self._validate_tool_choice(tool_choice, tools)
@@ -197,9 +197,9 @@ class OpenAIChatModel(BaseChatModel):
 
             # Use simple json_object format for models that don't support complex JSON schema
             if "qwen" in self.model.lower() or "gemini" in self.model.lower():
-                logger.warning(
-                    "Qwen models do not support Pydantic structured output via `response_format`. "
-                    "Update the unstructured JSON mode with `response_format={'type': 'json_object'}`."
+                logger.info(
+                    f"Model '{self.model}' detected: Automatically switching to "
+                    "'json_object' response_format for compatibility"
                 )
                 structured_model = {"type": "json_object"}
 
