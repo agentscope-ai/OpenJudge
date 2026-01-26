@@ -44,8 +44,8 @@ OpenJudge provides training pipelines for building custom judge models. Each met
 
     ```bash
     # 1. Create conda environment
-    conda create -n openjudeg_train python==3.12
-    conda activate openjudeg_train
+    conda create -n openjudge_train python==3.12
+    conda activate openjudge_train
 
     # 2. Install dependencies (vLLM, SGLang, etc.)
     git clone https://github.com/volcengine/verl && cd verl
