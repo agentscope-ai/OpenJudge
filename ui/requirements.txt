@@ -2,10 +2,13 @@
 # ==============================
 
 # Core Framework
-streamlit>=1.31.0
+streamlit==1.46.1
+
+# Streamlit chart library (pin to ensure consistent chart rendering)
+altair==5.5.0
 
 # For async support in Streamlit
-nest-asyncio>=1.6.0
+nest-asyncio==1.6.0
 
 # OpenJudge framework (install from parent directory)
 # pip install -e ..
