@@ -2,7 +2,7 @@
 # ==============================
 
 # Core Framework
-streamlit>=1.31.0
+streamlit==1.46.1
 
 # For async support in Streamlit
 nest-asyncio>=1.6.0
