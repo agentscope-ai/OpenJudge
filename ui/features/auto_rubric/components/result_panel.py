@@ -11,7 +11,7 @@ import html
 from typing import Any
 
 import streamlit as st
-from features.auto_rubric.components.test_panel import render_test_section_compact
+from features.auto_rubric.components.rubric_tester import render_test_section_compact
 from features.auto_rubric.services.export_service import ExportService
 from shared.i18n import t
 

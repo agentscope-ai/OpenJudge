@@ -11,14 +11,14 @@ from features.auto_rubric.components.iterative_config_panel import (
     validate_iterative_config,
 )
 from features.auto_rubric.components.result_panel import render_result_panel
+from features.auto_rubric.components.rubric_tester import (
+    render_test_panel,
+    render_test_section_compact,
+)
 from features.auto_rubric.components.sidebar import render_rubric_sidebar
 from features.auto_rubric.components.simple_config_panel import (
     render_simple_config_panel,
     validate_simple_config,
-)
-from features.auto_rubric.components.test_panel import (
-    render_test_panel,
-    render_test_section_compact,
 )
 
 __all__ = [
