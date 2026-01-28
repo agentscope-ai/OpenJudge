@@ -42,6 +42,19 @@ It can also convert grading results into **reward signals** to help you **fine-t
 - [Contributing](#-contributing)
 - [Community](#-community)
 - [Citation](#-citation)
+
+---
+
+## News
+
+- **2026-01-27** - 🆕 **Paper Review** - Automatically review academic papers using LLM-powered evaluation. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/paper_review/)
+
+- **2026-01-27** - 🖥️ **OpenJudge UI** - A Streamlit-based visual interface for grader testing and Auto Arena. Run `streamlit run ui/app.py` to get started.
+
+- **2026-01-05** - 🏟️ **Auto Arena** - Automatically evaluate and compare multiple models without pre-existing test data. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/auto_arena/)
+
+- **2025-12-26** - Released OpenJudge v0.2.0 on [PyPI](https://pypi.org/project/py-openjudge/) → [migration-guide](#migration-guide-v01x--v020)
+
 ---
 
 ## ✨ Key Features
@@ -110,15 +123,6 @@ summarize evaluation Rubrics from your annotated data, and generate a llm-based 
 ### 🔌 Easy Integration
 
 Using mainstream observability platforms like **LangSmith** or **Langfuse**? We offer seamless integration to enhance their evaluators and automated evaluation capabilities. We also provide integrations with training frameworks like **VERL** for RL training. 👉 See [Integrations](#-integrations) for details
-
-----
-## News
-
-- **2025-12-26** - Released OpenJudge v0.2.0 on [PyPI](https://pypi.org/project/py-openjudge/) - **Major Update!** This release expands our core capabilities by adding robust support for diverse evaluation scenarios on top of reward construction. By unifying reward and evaluation signals, OpenJudge v0.2.0 provides a more holistic approach to optimizing application performance and excellence. → [migration-guide](#migration-guide-v01x--v020)
-
-- **2025-10-20** - [Auto-Rubric: Learning to Extract Generalizable Criteria for Reward Modeling](https://arxiv.org/abs/2510.17314) - We released a new paper on learning generalizable reward criteria for robust modeling.
-- **2025-10-17** - [Taming the Judge: Deconflicting AI Feedback for Stable Reinforcement Learning](https://arxiv.org/abs/2510.15514) - We introduced techniques to align judge feedback and improve RL stability.
-- **2025-07-09** - Released OpenJudge v0.1.0 on [PyPI](https://pypi.org/project/rm-gallery/)
 
 ---
 
