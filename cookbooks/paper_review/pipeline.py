@@ -25,6 +25,7 @@ from cookbooks.paper_review.schema import (
     TexPackageInfo,
 )
 from cookbooks.paper_review.utils import encode_pdf_base64, load_pdf_bytes
+from openjudge.graders.schema import GraderError
 
 
 @dataclass
@@ -106,29 +107,38 @@ class PaperReviewPipeline:
         if self.config.enable_correctness:
             logger.info("Running correctness detection...")
             correctness = await self.correctness_grader.aevaluate(pdf_data=pdf_data)
-            result.correctness = CorrectnessResult(
-                score=correctness.score,
-                reasoning=correctness.reason,
-                key_issues=correctness.metadata.get("key_issues", []),
-            )
+            if isinstance(correctness, GraderError):
+                logger.error(f"Correctness grader error: {correctness.error}")
+            else:
+                result.correctness = CorrectnessResult(
+                    score=correctness.score,
+                    reasoning=correctness.reason,
+                    key_issues=correctness.metadata.get("key_issues", []),
+                )
 
         if self.config.enable_review:
             logger.info("Running paper review...")
             review = await self.review_grader.aevaluate(pdf_data=pdf_data)
-            result.review = ReviewResult(score=review.score, review=review.reason)
+            if isinstance(review, GraderError):
+                logger.error(f"Review grader error: {review.error}")
+            else:
+                result.review = ReviewResult(score=review.score, review=review.reason)
 
         # Phase 3: Criticality verification
         if self.config.enable_criticality and result.correctness and result.correctness.score > 1:
             logger.info("Running criticality verification...")
             findings = self._format_findings(result.correctness)
             criticality = await self.criticality_grader.aevaluate(pdf_data=pdf_data, findings=findings)
-            from cookbooks.paper_review.schema import CriticalityIssues
+            if isinstance(criticality, GraderError):
+                logger.error(f"Criticality grader error: {criticality.error}")
+            else:
+                from cookbooks.paper_review.schema import CriticalityIssues
 
-            result.criticality = CriticalityResult(
-                score=criticality.score,
-                reasoning=criticality.reason,
-                issues=CriticalityIssues(**criticality.metadata.get("issues", {})),
-            )
+                result.criticality = CriticalityResult(
+                    score=criticality.score,
+                    reasoning=criticality.reason,
+                    issues=CriticalityIssues(**criticality.metadata.get("issues", {})),
+                )
 
         # Phase 4: BibTeX verification
         if self.config.enable_bib_verification and bib_path:
@@ -144,12 +154,16 @@ class PaperReviewPipeline:
 
         # Jailbreaking check
         jailbreak_result = await self.jailbreaking_grader.aevaluate(pdf_data=pdf_data)
-        if jailbreak_result.metadata.get("is_abuse"):
+        if isinstance(jailbreak_result, GraderError):
+            logger.error(f"Jailbreaking grader error: {jailbreak_result.error}")
+        elif jailbreak_result.metadata.get("is_abuse"):
             issues.append(f"Jailbreaking detected: {jailbreak_result.reason}")
 
         # Format check
         format_result = await self.format_grader.aevaluate(pdf_data=pdf_data)
-        if format_result.score == 1:
+        if isinstance(format_result, GraderError):
+            logger.error(f"Format grader error: {format_result.error}")
+        elif format_result.score == 1:
             format_ok = False
             violations = format_result.metadata.get("violations", [])
             if violations:
