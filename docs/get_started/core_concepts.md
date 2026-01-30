@@ -78,6 +78,26 @@ Based on the evaluation purpose, you can choose the appropriate evaluation mode.
 
 - **Listwise evaluation**: Ranks multiple samples relative to each other, comparing several responses to the same query. This approach generates relative rankings rather than absolute scores, producing a [GraderRank](https://github.com/agentscope-ai/OpenJudge/blob/main/openjudge/graders/schema.py) that indicates the relative quality of responses.
 
+### Evaluation Strategy
+
+An [Evaluation Strategy](https://github.com/modelscope/OpenJudge/blob/main/openjudge/evaluation_strategy/base_evaluation_strategy.py) defines how the grader process is executed to enhance reliability and robustness. The main purpose of these strategies is to improve the confidence in grader results by mitigating the effects of randomness, noise, or inconsistencies that can occur in single evaluation runs.
+
+Available strategies include:
+
+- **DirectEvaluationStrategy**: Executes the evaluation once and returns the result directly. This is the default strategy when no strategy is specified.
+- **VotingEvaluationStrategy**: Runs the evaluation multiple times and aggregates results using voting mechanisms (e.g., taking the most frequent score for categorical outputs).
+- **AverageEvaluationStrategy**: Runs the evaluation multiple times and averages the numerical results to reduce noise and improve reliability.
+
+### Evaluation Strategy
+
+An [Evaluation Strategy](https://github.com/modelscope/OpenJudge/blob/main/openjudge/evaluation_strategy/base_evaluation_strategy.py) defines how the grader process is executed to enhance reliability and robustness. The main purpose of these strategies is to improve the confidence in grader results by mitigating the effects of randomness, noise, or inconsistencies that can occur in single evaluation runs.
+
+Available strategies include:
+
+- **DirectEvaluationStrategy**: Executes the evaluation once and returns the result directly. This is the default strategy when no strategy is specified.
+- **VotingEvaluationStrategy**: Runs the evaluation multiple times and aggregates results using voting mechanisms (e.g., taking the most frequent score for categorical outputs).
+- **AverageEvaluationStrategy**: Runs the evaluation multiple times and averages the numerical results to reduce noise and improve reliability.
+
 ### Understanding Results
 
 Graders return different result types depending on their mode:
@@ -90,7 +110,7 @@ For evaluating individual responses, graders return a `GraderScore` object:
 |-------|-------------|
 | `score` | Numerical score (e.g., 0-1 or 1-5 scale) |
 | `reason` | Explanation for the score |
-| `name` | Name of the grader used |
+| [name](file:///mnt3/huangsen.huang/codes/OpenJudge/openjudge/evaluation_strategy/voting_evaluation_strategy.py#L61-L87) | Name of the grader used |
 | `metadata` | Additional details (e.g., threshold settings) |
 
 #### GraderRank (Listwise Mode)
@@ -101,7 +121,7 @@ For ranking multiple responses, graders return a `GraderRank` object:
 |-------|-------------|
 | `rank` | Ranking of responses (e.g., [1, 3, 2] means 1st is best, 3rd is second, 2nd is worst) |
 | `reason` | Explanation for the ranking |
-| `name` | Name of the grader used |
+| [name](file:///mnt3/huangsen.huang/codes/OpenJudge/openjudge/evaluation_strategy/voting_evaluation_strategy.py#L61-L87) | Name of the grader used |
 | `metadata` | Additional ranking details |
 
 Both output types maintain consistency across different grader implementation, making it easy to combine and analyze results.
@@ -128,7 +148,7 @@ The [GradingRunner](https://github.com/agentscope-ai/OpenJudge/blob/main/openjud
 
 To better understand how Runners use Graders, let's look at a complete configuration example:
 
-```python
+```
 from openjudge.runner.grading_runner import GradingRunner
 from openjudge.runner.aggregator.weighted_sum_aggregator import WeightedSumAggregator
 from openjudge.graders.common.helpfulness import HelpfulnessGrader
