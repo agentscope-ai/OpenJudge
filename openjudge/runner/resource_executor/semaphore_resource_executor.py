@@ -20,6 +20,8 @@ class SemaphoreResourceExecutor(BaseResourceExecutor):
     Examples:
         Basic usage:
 
+        >>> async def async_function(arg1: str) -> str:
+        ...     return f"processed {arg1}"
         >>> executor = SemaphoreResourceExecutor(max_concurrency=5)
         >>> result = await executor.submit(async_function, arg1="value1")
     """
@@ -37,12 +39,13 @@ class SemaphoreResourceExecutor(BaseResourceExecutor):
         """Submit a task for local execution with concurrency control.
 
         This method wraps the provided function with concurrency control using
-        the ConcurrencyManager. It ensures that no more than max_concurrency
+        an asyncio.Semaphore. It ensures that no more than max_concurrency
         operations are running simultaneously.
 
         Args:
             fn: The asynchronous function to execute
-            **kwargs: Arguments to pass to the function
+            *args: Positional arguments to pass to the function
+            **kwargs: Keyword arguments to pass to the function
 
         Returns:
             R: The result of the function execution, with type determined by

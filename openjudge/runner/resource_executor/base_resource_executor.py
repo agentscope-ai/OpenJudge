@@ -20,12 +20,6 @@ class BaseResourceExecutor(ABC):
     This is an abstract base class that defines the interface for all execution
     resources. Subclasses must implement the submit method to define how tasks
     are executed in their specific environment.
-
-    Examples:
-        Basic usage with async context manager:
-
-        >>> executor = BaseResourceExecutor(max_concurrency=5)
-        ... result = await executor.submit(my_async_func, param="value")
     """
 
     @abstractmethod
