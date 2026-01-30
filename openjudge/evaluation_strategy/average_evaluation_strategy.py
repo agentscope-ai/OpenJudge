@@ -90,14 +90,25 @@ class AverageEvaluationStrategy(BaseEvaluationStrategy):
                     continue
 
             if valid_results:
+                # Calculate the average rank for each item position
                 avg_rank = np.mean(valid_results, axis=0).tolist()
-                # Round values and convert to integers to satisfy GraderRank validation
-                rounded_rank = [round(x) for x in avg_rank]
+
+                # Create pairs of (item_index, average_rank_value)
+                indexed_avg_ranks = [(i, avg_rank[i]) for i in range(len(avg_rank))]
+
+                # Sort by the average rank value (ascending order - lower rank is better)
+                sorted_by_avg_rank = sorted(indexed_avg_ranks, key=lambda x: x[1])
+
+                # Create the new rank list where rank[i] represents the rank of the i-th item
+                # in the original list. We assign ranks from 1 to n based on the average performance
+                new_rank = [0] * len(avg_rank)
+                for new_rank_idx, (original_idx, _) in enumerate(sorted_by_avg_rank):
+                    new_rank[original_idx] = new_rank_idx + 1
 
                 first_result = results[0]
                 return GraderRank(
                     name=first_result.name,
-                    rank=rounded_rank,
+                    rank=new_rank,
                     reason=f"Averaged from {self.num_evaluations} evaluations.",
                     metadata={
                         "original_results": results,

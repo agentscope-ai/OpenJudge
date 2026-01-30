@@ -26,7 +26,6 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
 
     Attributes:
         num_votes (int): Number of times to execute the evaluation function.
-        aggregation_field (str): Field to aggregate on ('score' for GraderScore, 'rank' for GraderRank).
 
     Examples:
         >>> strategy = VotingEvaluationStrategy(num_votes=5)
@@ -40,7 +39,6 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
         Args:
             num_votes (int): Number of votes/repetitions (default 3).
                              Using odd numbers can help avoid ties.
-            aggregation_field (str): Which field to use for voting ('score', 'rank', or 'auto').
         """
         if num_votes < 2:
             raise ValueError("num_votes must be at least 2")

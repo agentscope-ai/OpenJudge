@@ -84,8 +84,8 @@ class TestAverageEvaluationStrategy:
             return result
 
         result = await strategy.execute(mock_call_fn)
-        # Should return a GraderRank with the averaged rank
         assert result.name == "test"
+        assert result.rank == [1, 2, 3]
         assert "Averaged from 3 evaluations" in result.reason
 
     @pytest.mark.asyncio
