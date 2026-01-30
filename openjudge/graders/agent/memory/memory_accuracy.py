@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -174,7 +175,18 @@ class MemoryAccuracyGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_MEMORY_ACCURACY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize MemoryAccuracyGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_MEMORY_ACCURACY_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
+
         super().__init__(
             name="memory_accuracy",
             mode=GraderMode.POINTWISE,
@@ -182,9 +194,10 @@ class MemoryAccuracyGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_MEMORY_ACCURACY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         observation: str,
         memory: str,
@@ -219,7 +232,7 @@ class MemoryAccuracyGrader(LLMGrader):
         history_str = format_history(history)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 observation=observation,
                 memory=memory,
                 history=history_str,

@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -223,8 +224,10 @@ class ToolCallSuccessGrader(LLMGrader):
         model: Union[BaseChatModel, Dict[str, Any]],
         template: Optional[PromptTemplate] = DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
-        """Initialize the ToolCallSuccessGrader.
+        """
+        Initialize ToolCallSuccessGrader.
 
         Args:
             model: The language model used for evaluation. Can be either a BaseChatModel
@@ -232,6 +235,7 @@ class ToolCallSuccessGrader(LLMGrader):
                    be used to initialize an OpenAIChatModel.
             template: Evaluation template. Defaults to DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE.
             language: Language for evaluation prompts (default: LanguageEnum.EN).
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
         """
         super().__init__(
             name="tool_call_success",
@@ -240,9 +244,10 @@ class ToolCallSuccessGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
         tool_calls: Union[Dict[str, Any], List[Dict[str, Any]]],
@@ -289,7 +294,7 @@ class ToolCallSuccessGrader(LLMGrader):
 
         try:
             # Call parent evaluate method with the structured data
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 tool_calls=json.dumps(tool_calls, indent=2),
                 tool_definitions=json.dumps(tool_definitions, indent=2),
                 tool_responses=json.dumps(tool_responses, indent=2),

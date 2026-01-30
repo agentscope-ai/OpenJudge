@@ -7,6 +7,9 @@ import re
 from collections import Counter
 from typing import Any, List, Literal
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.utils.tokenizer import TokenizerEnum, get_tokenizer
 
@@ -28,6 +31,7 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
         encoding_name: str = "cl100k_base",
         chinese_only: bool = False,
         analyze_scope: Literal["thought", "full"] = "full",
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize the NgramRepetitionPenaltyGrader.
@@ -42,12 +46,14 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
             encoding_name: Encoding name for tiktoken
             chinese_only: Whether to keep only Chinese characters (for jieba tokenizer)
             description: Description of the grader
+            strategy: Strategy for grading
         """
         super().__init__(
             name="ngram_repetition_penalty",
             mode=GraderMode.POINTWISE,
             description="Calculate N-gram repetition penalty supporting Chinese processing "
             "and multiple penalty strategies.",
+            strategy=strategy,
         )
 
         self.n = n
@@ -107,7 +113,7 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
                 return -(repetition_rate - self.penalty_threshold) * self.penalty_rate
             return 0.0
 
-    async def aevaluate(self, response: str, **kwargs: Any) -> GraderScore:
+    async def _aevaluate(self, response: str, **kwargs: Any) -> GraderScore:
         """
         Calculate N-gram repetition penalty for text content.
 

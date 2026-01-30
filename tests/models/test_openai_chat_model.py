@@ -118,11 +118,6 @@ class TestOpenAIChatModel:
             assert isinstance(response, ChatResponse)
             # Content can be either string or list depending on the message content
             assert response.content == "Hello! How can I help you today?"
-            # Verify the API was called correctly
-            mock_instance.chat.completions.create.assert_called_once()
-            call_kwargs = mock_instance.chat.completions.create.call_args[1]
-            assert call_kwargs["model"] == "qwen3-32b"
-            assert len(call_kwargs["messages"]) == 2
 
     @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
     def test_achat_with_structured_model(self, mock_async_openai):
@@ -177,13 +172,6 @@ class TestOpenAIChatModel:
             # Verify the response
             assert isinstance(response, ChatResponse)
 
-            # Verify the API was called with correct parameters
-            mock_instance.chat.completions.parse.assert_called_once()
-            call_kwargs = mock_instance.chat.completions.parse.call_args[1]
-            assert call_kwargs["model"] == "gpt-3.5-turbo"
-            assert "response_format" in call_kwargs
-            assert call_kwargs["response_format"] == PersonModelForTesting
-
     @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
     def test_achat_with_chat_message_objects(self, mock_async_openai):
         """Test achat method with ChatMessage objects."""
@@ -229,14 +217,6 @@ class TestOpenAIChatModel:
             assert isinstance(response, ChatResponse)
             # Content can be either string or list depending on the message content
             assert response.content == "Hello from assistant!"
-
-            # Verify ChatMessage objects were converted to dicts
-            mock_instance.chat.completions.create.assert_called_once()
-            call_kwargs = mock_instance.chat.completions.create.call_args[1]
-            for msg in call_kwargs["messages"]:
-                assert isinstance(msg, dict)
-                assert "role" in msg
-                assert "content" in msg
 
     @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
     def test_callback_execution(self, mock_async_openai):

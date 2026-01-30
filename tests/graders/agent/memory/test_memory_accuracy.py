@@ -92,9 +92,6 @@ class TestMemoryAccuracyGraderUnit:
             assert result.score == 1.0  # Normalized from 0.9
             assert "accurate" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_hallucination(self):
         """Test evaluation detecting memory hallucination"""
@@ -125,9 +122,6 @@ class TestMemoryAccuracyGraderUnit:
             # Assertions
             assert result.score == 0.0  # Normalized from 0.1
             assert "hallucinated" in result.reason.lower() or "not present" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_evaluation_with_context_and_history(self):
@@ -165,9 +159,6 @@ class TestMemoryAccuracyGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "accurate" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

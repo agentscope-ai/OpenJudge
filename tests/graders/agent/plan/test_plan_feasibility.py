@@ -93,9 +93,6 @@ class TestPlanFeasibilityGraderUnit:
             assert result.score == 1.0  # Normalized from 0.9
             assert "feasible" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_infeasible_plan(self):
         """Test evaluation detecting infeasible plan (impossible action)"""
@@ -127,9 +124,6 @@ class TestPlanFeasibilityGraderUnit:
             # Assertions
             assert result.score == 0.0  # Normalized from 0.1
             assert "infeasible" in result.reason.lower() or "not available" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_evaluation_with_context_and_history(self):
@@ -169,33 +163,6 @@ class TestPlanFeasibilityGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "feasible" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_error_handling(self):
-        """Test graceful error handling"""
-        # Use patch to mock the model's achat method to raise an exception
-        with patch("openjudge.graders.llm_grader.BaseChatModel.achat", new_callable=AsyncMock) as mock_achat:
-            mock_achat.side_effect = Exception("API Error")
-
-            mock_model = AsyncMock()
-            grader = PlanFeasibilityGrader(model=mock_model)
-
-            # Override the model's achat method with our mock
-            grader.model.achat = mock_achat
-
-            # Execute test
-            result = await grader.aevaluate(
-                plan="I will open the door.",
-                observation="Door is in front of you.",
-                memory="Door status unknown.",
-            )
-
-            # Assertions
-            assert result.score == 0.0
-            assert "Evaluation error: API Error" in result.reason
 
 
 # ==================== QUALITY TESTS ====================

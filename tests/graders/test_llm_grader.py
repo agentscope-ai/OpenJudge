@@ -27,7 +27,6 @@ Example:
 """
 
 import os
-from typing import Callable, Dict, Tuple, Union
 from unittest.mock import AsyncMock
 
 import pytest
@@ -383,10 +382,7 @@ class TestLLMGraderQuality:
         )
 
         # Use mapper to configure data transformation
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
+        grader_configs = {
             "accuracy": GraderConfig(
                 grader=grader,
                 mapper={
@@ -445,10 +441,7 @@ class TestLLMGraderQuality:
         )
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
+        grader_configs = {
             "accuracy_run1": GraderConfig(
                 grader=grader,
                 mapper={

@@ -13,6 +13,9 @@ from typing import Any, List, Tuple, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.graders.multimodal._internal import MLLMImage, format_image_content
 from openjudge.graders.schema import GraderScoreCallback
@@ -238,6 +241,7 @@ class TextToImageGrader(BaseGrader):
         semantic_template: PromptTemplate = DEFAULT_TEXT_TO_IMAGE_SEMANTIC_TEMPLATE,
         perceptual_template: PromptTemplate = DEFAULT_TEXT_TO_IMAGE_PERCEPTUAL_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize TextToImageGrader
@@ -248,11 +252,13 @@ class TextToImageGrader(BaseGrader):
             semantic_template: PromptTemplate for semantic consistency evaluation (default: DEFAULT_TEXT_TO_IMAGE_SEMANTIC_TEMPLATE)
             perceptual_template: PromptTemplate for perceptual quality evaluation (default: DEFAULT_TEXT_TO_IMAGE_PERCEPTUAL_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: BaseEvaluationStrategy instance or dict config for GraderStrategy (default: None)
         """
         super().__init__(
             name="text_to_image",
             mode=GraderMode.POINTWISE,
             description="Evaluate text-to-image generation quality",
+            strategy=strategy,
         )
         self.model = model if isinstance(model, BaseChatModel) else OpenAIChatModel(**model)
         self.threshold = threshold
@@ -353,7 +359,7 @@ class TextToImageGrader(BaseGrader):
 
         return final_score, details
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str,
         response: Union[MLLMImage, List[MLLMImage]],

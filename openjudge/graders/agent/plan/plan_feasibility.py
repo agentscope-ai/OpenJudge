@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -177,7 +178,18 @@ class PlanFeasibilityGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_PLAN_FEASIBILITY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize PlanFeasibilityGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            threshold: Success threshold [1, 5] (default: 3)
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_PLAN_FEASIBILITY_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="plan_feasibility",
             mode=GraderMode.POINTWISE,
@@ -185,9 +197,10 @@ class PlanFeasibilityGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_PLAN_FEASIBILITY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         plan: str,
         observation: str,
@@ -225,7 +238,7 @@ class PlanFeasibilityGrader(LLMGrader):
         history_str = format_history(history)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 plan=plan,
                 observation=observation,
                 memory=memory,

@@ -12,6 +12,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.multimodal._internal import (
@@ -191,9 +192,10 @@ class ImageCoherenceGrader(LLMGrader):
         threshold: float = 0.7,
         template: PromptTemplate = DEFAULT_IMAGE_COHERENCE_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
-        Initialize ImageCoherenceGrader
+        Initialize ImageCoherenceGrader.
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
@@ -201,6 +203,7 @@ class ImageCoherenceGrader(LLMGrader):
             threshold: Success threshold [0, 1] (default: 0.7)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_IMAGE_COHERENCE_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
         """
         super().__init__(
             name="image_coherence",
@@ -209,6 +212,7 @@ class ImageCoherenceGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_IMAGE_COHERENCE_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
         self.max_context_size = max_context_size
         self.threshold = threshold
@@ -307,7 +311,7 @@ class ImageCoherenceGrader(LLMGrader):
 
         return final_score, details
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         response: List[Union[str, MLLMImage]],
         **kwargs: Any,

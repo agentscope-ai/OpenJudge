@@ -151,7 +151,7 @@ def _get_grader_class_def(defs_of_classes_having_parent: Dict[ast.ClassDef, Tupl
 
 
 _INIT_METHOD = "__init__"
-_AEVALUATE_METHOD = "aevaluate"
+_AEVALUATE_METHOD = "_aevaluate"
 _TARGET_METHODS = set()
 _TARGET_METHODS.add(_INIT_METHOD)
 _TARGET_METHODS.add(_AEVALUATE_METHOD)

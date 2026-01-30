@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -174,7 +175,17 @@ class ReflectionAccuracyGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_REFLECTION_ACCURACY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize ReflectionAccuracyGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_REFLECTION_ACCURACY_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="reflection_accuracy",
             mode=GraderMode.POINTWISE,
@@ -182,9 +193,10 @@ class ReflectionAccuracyGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_REFLECTION_ACCURACY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         observation: str,
         reflection: str,
@@ -219,7 +231,7 @@ class ReflectionAccuracyGrader(LLMGrader):
         history_str = format_history(history)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 observation=observation,
                 reflection=reflection,
                 history=history_str,

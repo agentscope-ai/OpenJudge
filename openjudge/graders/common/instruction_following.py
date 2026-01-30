@@ -11,6 +11,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -264,15 +265,17 @@ class InstructionFollowingGrader(LLMGrader):
         threshold: float = 3,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
-        Initialize InstructionFollowingGrader
+        Initialize InstructionFollowingGrader.
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
             threshold: Success threshold [1, 5] (default: 3)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
 
         Raises:
             ValueError: If threshold is not in range [1, 5]
@@ -287,10 +290,11 @@ class InstructionFollowingGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
         self.threshold = threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         instruction: str,
         response: str,
@@ -315,7 +319,7 @@ class InstructionFollowingGrader(LLMGrader):
             ... )
         """
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 instruction=instruction,
                 response=response,
                 query=query,

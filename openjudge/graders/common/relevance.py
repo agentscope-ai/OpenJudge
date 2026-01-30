@@ -10,6 +10,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -265,6 +266,7 @@ class RelevanceGrader(LLMGrader):
         threshold: float = 3,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize RelevanceGrader
@@ -274,6 +276,7 @@ class RelevanceGrader(LLMGrader):
             threshold: Success threshold [1, 5] (default: 3)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_RELEVANCE_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
 
         Raises:
             ValueError: If threshold is not in range [1, 5]
@@ -288,16 +291,18 @@ class RelevanceGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_RELEVANCE_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
         self.threshold = threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str,
         response: str,
         context: str = "",
         reference_response: str = "",
-    ) -> GraderScore:
+        **kwargs,
+    ) -> GraderScore | GraderError:
         """
         Evaluate relevance of response to query
 
@@ -305,7 +310,8 @@ class RelevanceGrader(LLMGrader):
             query: Input query or conversation history
             response: Model response to evaluate
             context: Additional context or background information. Defaults to empty string.
-            reference: Reference response for comparison. Defaults to empty string.
+            reference_response: Reference response for comparison. Defaults to empty string.
+            **kwargs: Additional keyword arguments passed to the model
 
         Returns:
             GraderScore: Score with relevance value [1, 5]
@@ -319,18 +325,33 @@ class RelevanceGrader(LLMGrader):
             ... )
         """
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=query,
                 response=response,
                 context=context,
                 reference_response=reference_response,
             )
-            return GraderScore(
-                name=self.name,
-                score=result.score,
-                reason=result.reason,
-                metadata={**result.metadata, "threshold": self.threshold},
-            )
+
+            # Check if the result is an error
+            if isinstance(result, GraderError):
+                return result
+
+            # Check if result is GraderScore type specifically
+            if isinstance(result, GraderScore):
+                return GraderScore(
+                    name=self.name,
+                    score=result.score,
+                    reason=result.reason,
+                    metadata={**result.metadata, "threshold": self.threshold},
+                )
+            else:
+                # This shouldn't happen since we expect GraderScore, but just in case
+                return GraderScore(
+                    name=self.name,
+                    score=0.0,
+                    reason="Unexpected result type received",
+                    metadata={"original_result": result, "threshold": self.threshold},
+                )
 
         except Exception as e:
             logger.exception(f"Error evaluating relevance: {e}")

@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -402,6 +403,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
         template: Optional[PromptTemplate] = DEFAULT_TRAJECTORY_COMPREHENSIVE_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
         resolution_threshold: float = 0.8,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize the TrajectoryComprehensiveGrader.
@@ -416,6 +418,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
             resolution_threshold (float): Threshold for determining if the trajectory is resolved.
                 Scores greater than or equal to this value are considered resolved.
                 Defaults to 0.8 (80%).
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
 
         Example:
             >>> from openjudge.models.openai_chat_model import OpenAIChatModel
@@ -431,6 +434,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
             language=language,
             structured_model=TrajectoryEvaluationOutput,
             callback=self._create_trajectory_callback(language=language),
+            strategy=strategy,
         )
         self.resolution_threshold = resolution_threshold
 
@@ -532,7 +536,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
 
         return user_query, trajectory_messages, final_answer
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
         query: Optional[str] = None,
@@ -606,7 +610,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
         try:
             # Call parent evaluation with formatted parameters
             # The callback handles step-level to final score/reason conversion
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=user_query,
                 messages=trajectory_messages,
                 response=final_answer,

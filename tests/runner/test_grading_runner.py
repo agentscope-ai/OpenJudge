@@ -25,7 +25,7 @@ class MockGrader(BaseGrader):
         self.call_args_list = []
         self.call_count = 0
 
-    async def aevaluate(self, **kwargs):
+    async def _aevaluate(self, **kwargs):
         """Mock evaluation that returns a fixed score."""
         self.call_count += 1
         # Store a deep copy of the arguments to prevent reference issues
@@ -231,7 +231,7 @@ class TestGradingRunner:
             def __init__(self, name="error_grader"):
                 super().__init__(name=name)
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 raise Exception("Test error")
 
         # Create mock graders - one normal, one that raises error
@@ -502,7 +502,7 @@ class TestGradingRunner:
                 self.delay = delay
                 self.execution_times = []
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 start_time = time.time()
                 await asyncio.sleep(self.delay)
                 end_time = time.time()
@@ -565,7 +565,7 @@ class TestGradingRunner:
                 super().__init__(name=name)
                 self.call_order = []
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 # Record the order of calls
                 self.call_order.append(kwargs)
                 # Return a score that includes the input data for verification
@@ -678,7 +678,7 @@ class TestGradingRunner:
             def __init__(self, name="random_grader"):
                 super().__init__(name=name)
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 # Random delay to simulate varying processing times
                 await asyncio.sleep(random.uniform(0.001, 0.01))
                 return GraderScore(
@@ -734,7 +734,7 @@ class TestGradingRunner:
                 super().__init__(name=name)
                 self.error_queries = error_queries or []
 
-            async def aevaluate(self, **kwargs):
+            async def _aevaluate(self, **kwargs):
                 query = kwargs.get("query", "")
                 if query in self.error_queries:
                     raise ValueError(f"Intentional error for {query}")

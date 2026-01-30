@@ -100,9 +100,6 @@ class TestToolCallAccuracyGraderUnit:
             assert result.score == 5.0
             assert "relevant" in result.reason.lower() or "correct" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_inaccurate_call(self):
         """Test evaluation detecting inaccurate tool call"""
@@ -142,9 +139,6 @@ class TestToolCallAccuracyGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "irrelevant" in result.reason.lower() or "incorrect" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

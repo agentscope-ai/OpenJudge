@@ -224,7 +224,7 @@ class RewardBench2Grader(BaseGrader):
             ],
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str,
         answers: List[Any],

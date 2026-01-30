@@ -11,6 +11,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -270,15 +271,17 @@ class CorrectnessGrader(LLMGrader):
         threshold: float = 3,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
-        Initialize CorrectnessGrader
+        Initialize CorrectnessGrader.
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
             threshold: Success threshold [1, 5] (default: 3)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_CORRECTNESS_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
 
         Raises:
             ValueError: If threshold is not in range [1, 5]
@@ -293,15 +296,12 @@ class CorrectnessGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_CORRECTNESS_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
         self.threshold = threshold
 
-    async def aevaluate(
-        self,
-        query: str,
-        response: str,
-        context: str = "",
-        reference_response: str = "",
+    async def _aevaluate(
+        self, query: str, response: str, context: str = "", reference_response: str = "", **kwargs
     ) -> GraderScore:
         """
         Evaluate correctness of response against reference response
@@ -311,6 +311,7 @@ class CorrectnessGrader(LLMGrader):
             response: Model response to evaluate
             context: Additional context or background information. Defaults to empty string.
             reference_response: Correct response to compare against. Defaults to empty string.
+            **kwargs: Additional keyword arguments passed to the model
 
         Returns:
             GraderScore: Score with correctness value [1, 5]
@@ -326,7 +327,7 @@ class CorrectnessGrader(LLMGrader):
             ... )
         """
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=query,
                 response=response,
                 context=context,
