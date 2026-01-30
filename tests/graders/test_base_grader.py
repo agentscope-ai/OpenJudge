@@ -74,7 +74,7 @@ class TestBaseGrader:
             await grader.aevaluate(query="test query", response="test response")
 
     @pytest.mark.asyncio
-    async def test_aevaluate_deepcopy_isolation(self):
+    async def test_aevaluate_copy_isolation(self):
         """Test that deepcopy isolates runtime instance from original"""
         grader = MockGrader(name="isolation_test")
 
