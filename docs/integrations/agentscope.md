@@ -153,7 +153,7 @@ import os
 QA_DATA = [
     {
         "id": "qa_task_1",
-        "question": "What are the health benefits of regular exercise?",
+        "input": "What are the health benefits of regular exercise?",
         "reference_output": "Regular exercise improves cardiovascular health, strengthens muscles and bones, helps maintain a healthy weight, and can improve mental health by reducing anxiety and depression.",
         "ground_truth": "Answers should cover physical and mental health benefits",
         "difficulty": "medium",
@@ -204,7 +204,7 @@ class QABenchmark(BenchmarkBase):
             # 4. Create Task
             task = Task(
                 id=item["id"],
-                input=item["question"],
+                input=item["input"],
                 ground_truth=item["ground_truth"],
                 metrics=[relevance_metric, correctness_metric]
             )
@@ -253,5 +253,5 @@ You can analyze these results by reading the JSON output directly or by loading 
 ## Related Resources
 
 * [OpenJudge Built-in Graders](../built_in_graders/overview.md) — Explore 50+ available graders for immediate use
-* [AgentScope Evaluation Docs](doc.agentscope.io/tutorial/task_eval.html) — Learn more about the underlying AgentScope evaluation architectur
+* [AgentScope Evaluation Docs](https://doc.agentscope.io/tutorial/task_eval.html) — Learn more about the underlying AgentScope evaluation architectur
 * [Create Custom Graders](../building_graders/create_custom_graders.md) — Build domain-specific evaluation logic

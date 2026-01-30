@@ -181,7 +181,7 @@ asyncio.run(main())
 
 **Output:**
 
-```
+```python
 GraderScore(
     name='relevance',
     score=5.0,
