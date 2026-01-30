@@ -178,7 +178,6 @@ class OpenAIChatModel(BaseChatModel):
             if "extra_body" not in kwargs:
                 kwargs["extra_body"] = {}
             kwargs["extra_body"]["enable_thinking"] = False
-            # logger.debug("Set enable_thinking=False in extra_body for qwen model")
 
         if tool_choice:
             self._validate_tool_choice(tool_choice, tools)
