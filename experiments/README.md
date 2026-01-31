@@ -66,7 +66,13 @@ Tip: The script includes commented-out export lines—uncomment and fill in your
 
 The script automatically:
 - Installs Python dependencies: py-openjudge, datasets, huggingface_hub
+```bash
+  pip install py-openjudge datasets huggingface_hub
+```
 - Downloads the dataset to: agentscope-ai/OpenJudge
+```bash
+hf download agentscope-ai/OpenJudge --repo-type dataset --local-dir agentscope-ai/OpenJudge
+```
 - Copies run_grader_evaluations.py into the dataset directory and executes it
 - Ensure that run_grader_evaluations.py exists in the same directory as the script.
 
