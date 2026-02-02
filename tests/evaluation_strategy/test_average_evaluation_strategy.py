@@ -51,7 +51,7 @@ class TestAverageEvaluationStrategy:
         expected_average = (0.5 + 0.7 + 0.9) / 3
         assert abs(result.score - expected_average) < 0.0001  # Account for floating point precision
         assert result.name == "test"
-        assert "Averaged from 3 evaluations" in result.reason
+        assert "Averaged from 3 valid evaluations out of 3 total" in result.reason
 
     @pytest.mark.asyncio
     async def test_execute_with_single_evaluation(self):
@@ -64,31 +64,6 @@ class TestAverageEvaluationStrategy:
             AverageEvaluationStrategy(num_evaluations=1)
 
     @pytest.mark.asyncio
-    async def test_execute_with_grader_ranks(self):
-        """Test average strategy with GraderRank objects."""
-        strategy = AverageEvaluationStrategy(num_evaluations=3)
-
-        # Create ranks
-        ranks = [
-            GraderRank(name="test", rank=[1, 2, 3], reason="First"),
-            GraderRank(name="test", rank=[2, 1, 3], reason="Second"),
-            GraderRank(name="test", rank=[1, 3, 2], reason="Third"),
-        ]
-
-        call_count = 0
-
-        async def mock_call_fn():
-            nonlocal call_count
-            result = ranks[call_count]
-            call_count += 1
-            return result
-
-        result = await strategy.execute(mock_call_fn)
-        assert result.name == "test"
-        assert result.rank == [1, 2, 3]
-        assert "Averaged from 3 evaluations" in result.reason
-
-    @pytest.mark.asyncio
     async def test_execute_with_non_grader_objects_raises_error(self):
         """Test that executing with non-Grader objects raises an error."""
         strategy = AverageEvaluationStrategy(num_evaluations=3)
@@ -96,7 +71,5 @@ class TestAverageEvaluationStrategy:
         async def mock_call_fn():
             return "not_a_grader_object"
 
-        with pytest.raises(
-            ValueError, match="AverageEvaluationStrategy can only handle GraderScore or GraderRank results."
-        ):
+        with pytest.raises(ValueError, match="No valid GraderScore results were returned from evaluation function."):
             await strategy.execute(mock_call_fn)
