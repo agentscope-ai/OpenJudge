@@ -7,6 +7,8 @@ Provides functionality to:
 - Resume incomplete tasks
 - Delete old tasks
 - Export results
+
+Note: This manager now uses workspace-based paths for multi-user isolation.
 """
 
 import csv
@@ -39,14 +41,30 @@ class BatchTaskSummary:
     pass_rate: float | None = None
 
 
+def _get_workspace_batch_dir() -> Path:
+    """Get the batch evaluations directory for the current workspace.
+
+    Returns:
+        Path to workspace-specific batch evaluations directory
+    """
+    try:
+        from shared.services.workspace_manager import get_current_workspace_path
+
+        workspace_path = get_current_workspace_path()
+        return workspace_path / "batch_evaluations"
+    except Exception:
+        # Fallback to default if workspace not available
+        return Path.home() / ".openjudge_studio" / "batch_evaluations"
+
+
 class BatchHistoryManager:
     """Manager for batch evaluation task history.
 
     Scans the batch evaluation output directory for past tasks and
     provides access to their results and details.
-    """
 
-    DEFAULT_BASE_DIR = Path.home() / ".openjudge_studio" / "batch_evaluations"
+    Uses workspace-based paths for multi-user isolation.
+    """
 
     # File names
     CONFIG_FILE = "config.json"
@@ -59,9 +77,12 @@ class BatchHistoryManager:
         """Initialize history manager.
 
         Args:
-            base_dir: Base directory for batch evaluations
+            base_dir: Base directory for batch evaluations. If None, uses workspace directory.
         """
-        self.base_dir = Path(base_dir) if base_dir else self.DEFAULT_BASE_DIR
+        if base_dir:
+            self.base_dir = Path(base_dir)
+        else:
+            self.base_dir = _get_workspace_batch_dir()
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def generate_task_id(self) -> str:

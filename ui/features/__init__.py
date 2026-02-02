@@ -9,5 +9,6 @@ navigation system.
 from features.auto_arena import AutoArenaFeature
 from features.auto_rubric import AutoRubricFeature
 from features.grader import GraderFeature
+from features.paper_review import PaperReviewFeature
 
-__all__ = ["GraderFeature", "AutoArenaFeature", "AutoRubricFeature"]
+__all__ = ["GraderFeature", "AutoArenaFeature", "PaperReviewFeature", "AutoRubricFeature"]

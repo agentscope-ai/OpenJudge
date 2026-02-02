@@ -130,6 +130,12 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
     """Render evaluation settings section."""
     st.markdown(f'<div class="section-header">{t("arena.sidebar.eval_settings")}</div>', unsafe_allow_html=True)
 
+    # Initialize default values in session state if not exists
+    if "arena_num_queries" not in st.session_state:
+        st.session_state["arena_num_queries"] = 20
+    if "arena_max_concurrency" not in st.session_state:
+        st.session_state["arena_max_concurrency"] = 10
+
     col1, col2 = st.columns(2)
 
     with col1:
@@ -137,7 +143,6 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
             t("arena.sidebar.queries"),
             min_value=5,
             max_value=100,
-            value=20,
             step=5,
             help=t("arena.sidebar.queries_help"),
             key="arena_num_queries",
@@ -147,7 +152,6 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
         max_concurrency = st.number_input(
             t("arena.sidebar.concurrency"),
             min_value=1,
-            value=10,
             help=t("arena.sidebar.concurrency_help"),
             key="arena_max_concurrency",
         )
@@ -158,30 +162,36 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
 
 def _render_output_settings(config: dict[str, Any]) -> None:
     """Render output settings section."""
+    # Initialize default values in session state if not exists
+    for key in [
+        "arena_save_queries",
+        "arena_save_responses",
+        "arena_save_details",
+        "arena_generate_report",
+        "arena_generate_chart",
+    ]:
+        if key not in st.session_state:
+            st.session_state[key] = True
+
     with st.expander(t("arena.sidebar.output_settings"), expanded=False):
         save_queries = st.checkbox(
             t("arena.sidebar.save_queries"),
-            value=True,
             key="arena_save_queries",
         )
         save_responses = st.checkbox(
             t("arena.sidebar.save_responses"),
-            value=True,
             key="arena_save_responses",
         )
         save_details = st.checkbox(
             t("arena.sidebar.save_details"),
-            value=True,
             key="arena_save_details",
         )
         generate_report = st.checkbox(
             t("arena.sidebar.generate_report"),
-            value=True,
             key="arena_generate_report",
         )
         generate_chart = st.checkbox(
             t("arena.sidebar.generate_chart"),
-            value=True,
             key="arena_generate_chart",
         )
 

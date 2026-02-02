@@ -16,7 +16,10 @@ from cookbooks.paper_review.schema import (
     CorrectnessResult,
     CriticalityResult,
     PaperReviewResult,
+    ProgressCallback,
+    ReviewProgress,
     ReviewResult,
+    ReviewStage,
 )
 
 __all__ = [
@@ -40,4 +43,8 @@ __all__ = [
     "ReviewResult",
     "CriticalityResult",
     "BibVerificationSummary",
+    # Progress
+    "ReviewStage",
+    "ReviewProgress",
+    "ProgressCallback",
 ]

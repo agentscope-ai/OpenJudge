@@ -2,6 +2,8 @@
 """History manager for Auto Rubric feature.
 
 Manages the storage and retrieval of generated graders and their configurations.
+
+Note: This manager now uses workspace-based paths for multi-user isolation.
 """
 
 import json
@@ -13,14 +15,30 @@ from typing import Any
 from loguru import logger
 
 
+def _get_workspace_rubrics_dir() -> Path:
+    """Get the rubrics directory for the current workspace.
+
+    Returns:
+        Path to workspace-specific rubrics directory
+    """
+    try:
+        from shared.services.workspace_manager import get_current_workspace_path
+
+        workspace_path = get_current_workspace_path()
+        return workspace_path / "rubrics"
+    except Exception:
+        # Fallback to default if workspace not available
+        return Path.home() / ".openjudge_studio" / "rubrics"
+
+
 class HistoryManager:
     """Manager for Auto Rubric generation history.
 
-    Stores generated graders and configurations in a local directory
+    Stores generated graders and configurations in the workspace directory
     for later retrieval, export, and management.
 
-    Directory structure:
-        ~/.openjudge_studio/rubrics/
+    Directory structure (within workspace):
+        {workspace}/rubrics/
         ├── rubric_20240115_143000/
         │   ├── config.json       # Generation configuration
         │   ├── rubrics.txt       # Generated rubrics text
@@ -34,12 +52,12 @@ class HistoryManager:
 
         Args:
             base_dir: Base directory for storing history.
-                      Defaults to ~/.openjudge_studio/rubrics/
+                      If None, uses workspace directory.
         """
         if base_dir:
             self.base_dir = Path(base_dir)
         else:
-            self.base_dir = Path.home() / ".openjudge_studio" / "rubrics"
+            self.base_dir = _get_workspace_rubrics_dir()
 
         # Ensure directory exists
         self.base_dir.mkdir(parents=True, exist_ok=True)

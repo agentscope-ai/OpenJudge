@@ -5,6 +5,8 @@ Provides functionality to:
 - List past evaluation tasks
 - Load task details and results
 - Delete old tasks
+
+Note: This manager now uses workspace-based paths for multi-user isolation.
 """
 
 import json
@@ -31,14 +33,31 @@ class TaskSummary:
     win_rates: dict[str, float] | None = None
 
 
+def _get_workspace_evaluations_dir() -> Path:
+    """Get the evaluations directory for the current workspace.
+
+    Returns:
+        Path to workspace-specific evaluations directory
+    """
+    try:
+        from shared.services.workspace_manager import get_current_workspace_path
+
+        workspace_path = get_current_workspace_path()
+        return workspace_path / "evaluations"
+    except Exception:
+        # Fallback to default if workspace not available
+        return Path.home() / ".openjudge_studio" / "evaluations"
+
+
 class HistoryManager:
     """Manager for evaluation task history.
 
     Scans the evaluation output directory for past tasks and
     provides access to their results and details.
+
+    Uses workspace-based paths for multi-user isolation.
     """
 
-    DEFAULT_BASE_DIR = Path.home() / ".openjudge_studio" / "evaluations"
     CHECKPOINT_FILE = "checkpoint.json"
     RESULTS_FILE = "evaluation_results.json"
     REPORT_FILE = "evaluation_report.md"
@@ -48,9 +67,12 @@ class HistoryManager:
         """Initialize history manager.
 
         Args:
-            base_dir: Base directory for evaluations
+            base_dir: Base directory for evaluations. If None, uses workspace directory.
         """
-        self.base_dir = Path(base_dir) if base_dir else self.DEFAULT_BASE_DIR
+        if base_dir:
+            self.base_dir = Path(base_dir)
+        else:
+            self.base_dir = _get_workspace_evaluations_dir()
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def list_tasks(self, limit: int = 20) -> list[TaskSummary]:

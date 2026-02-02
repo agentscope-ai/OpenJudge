@@ -10,6 +10,7 @@ Directory structure:
     ├── common.py        # Common UI translations (navigation, shared components)
     ├── grader.py        # Grader feature translations
     ├── auto_arena.py    # Auto Arena feature translations
+    ├── paper_review.py  # Paper Review feature translations
     └── auto_rubric.py   # Auto Rubric feature translations
 
 To add translations for a new feature:
@@ -28,6 +29,8 @@ from shared.i18n.translations.common import EN as COMMON_EN
 from shared.i18n.translations.common import ZH as COMMON_ZH
 from shared.i18n.translations.grader import EN as GRADER_EN
 from shared.i18n.translations.grader import ZH as GRADER_ZH
+from shared.i18n.translations.paper_review import EN as PAPER_REVIEW_EN
+from shared.i18n.translations.paper_review import ZH as PAPER_REVIEW_ZH
 
 
 def _merge_dicts(*dicts: dict[str, Any]) -> dict[str, Any]:
@@ -55,8 +58,8 @@ def get_all_translations() -> dict[str, dict[str, str]]:
         Example: {"en": {...}, "zh": {...}}
     """
     return {
-        "en": _merge_dicts(COMMON_EN, GRADER_EN, AUTO_ARENA_EN, AUTO_RUBRIC_EN),
-        "zh": _merge_dicts(COMMON_ZH, GRADER_ZH, AUTO_ARENA_ZH, AUTO_RUBRIC_ZH),
+        "en": _merge_dicts(COMMON_EN, GRADER_EN, AUTO_ARENA_EN, PAPER_REVIEW_EN, AUTO_RUBRIC_EN),
+        "zh": _merge_dicts(COMMON_ZH, GRADER_ZH, AUTO_ARENA_ZH, PAPER_REVIEW_ZH, AUTO_RUBRIC_ZH),
     }
 
 
