@@ -19,8 +19,8 @@ from openjudge.runner.grading_runner import GradingRunner
 class MockGrader(BaseGrader):
     """Mock grader for testing purposes."""
 
-    def __init__(self, name="mock_grader", score_value=1.0, mapper=None, **kwargs):
-        super().__init__(name=name, mapper=mapper, **kwargs)
+    def __init__(self, name="mock_grader", score_value=1.0, **kwargs):
+        super().__init__(name=name, **kwargs)
         self.score_value = score_value
         self.call_args_list = []
         self.call_count = 0
@@ -114,7 +114,6 @@ class TestGradingRunner:
         # The mapper format is {target_field: source_field_in_original_data}
         mock_grader = MockGrader(
             name="mapped_grader",
-            mapper={"query": "question", "response": "resp"},  # Map from source to expected field names
         )
 
         # Create runner with the grader that has integrated mapper

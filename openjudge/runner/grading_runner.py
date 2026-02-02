@@ -200,7 +200,7 @@ class GradingRunner(BaseRunner):
     ) -> GraderResult:
         """Run a single evaluation asynchronously.
 
-        This internal method runs a single evaluation using the grader's built-in mapper.
+        This internal method runs a single evaluation.
         It handles exceptions that may occur during evaluation and wraps them in a GraderError.
 
         Args:
