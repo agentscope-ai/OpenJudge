@@ -21,14 +21,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 MEMORY_ACCURACY_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent stores accurate and factual information in its memory module.
+    """You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent stores accurate and factual information in its memory module. This includes recording only information that was actually observed, storing correct interpretations as facts, and maintaining accurate details about objects or states.
 
-<Evaluation Type: Memory Accuracy>
-The agent should store accurate and factual information in its memory module. This includes recording only information that was actually observed, storing correct interpretations as facts, and maintaining accurate details about objects or states.
-</Evaluation Type>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. The agent stores information in memory that accurately reflects what was present in the observation
 2. The agent records only factual details (colors, quantities, locations) that were mentioned in observation
 3. The agent saves correct interpretations of observations as factual memories
@@ -36,81 +31,86 @@ The agent should store accurate and factual information in its memory module. Th
 5. The agent's memory contains information that is consistent with and grounded in what was observed
 </Rubrics>
 
-<Evaluation Criteria>
-For your analysis:
+<Steps>
 1. Apply each rubric: Check if the step demonstrates good accuracy patterns described in each rubric
 2. Focus on relevant modules: Only consider observation and memory modules
 3. Provide evidence-based reasoning: Explain how the memory demonstrates accuracy and why
 4. Assess confidence: Rate your confidence based on how clearly the accuracy is exhibited
-</Evaluation Criteria>
+</Steps>
 
+<Scale>
+- **Score 1.0**: The memory is accurate and factual (good accuracy)
+- **Score 0.0**: The memory contains inaccuracies or fabrications (poor accuracy)
+</Scale>
+
+<Context (Optional)>
 {context}
+</Context>
 
+<History (Optional)>
 {history}
+</History>
 
 <Current Step>
 Observation: {observation}
 Memory: {memory}
 </Current Step>
 
-# Scoring Instructions
-- If the memory is accurate and factual: score = 1.0 (good accuracy)
-- If the memory contains inaccuracies or fabrications: score = 0.0 (poor accuracy)
-
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
     "score": <0.0 or 1.0>,
     "reason": "<detailed explanation of memory accuracy and confidence level>"
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 MEMORY_ACCURACY_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析智能体行为的专家。你的任务是评估智能体是否在其记忆模块中存储了准确且真实的信息。
+    """你是一名分析智能体行为的专家。你的任务是评估智能体是否在其记忆模块中存储了准确且真实的信息。这包括只记录实际观察到的信息、将正确的解释存储为事实，以及维护关于对象或状态的准确细节。
 
-<评估类型：记忆准确性>
-智能体应该在其记忆模块中存储准确且真实的信息。这包括只记录实际观察到的信息、将正确的解释存储为事实，以及维护关于对象或状态的准确细节。
-</评估类型>
-
-<评估准则>
+<评分标准>
 1. 智能体在记忆中存储的信息准确反映了观察中存在的内容
 2. 智能体只记录了观察中提及的事实细节（颜色、数量、位置）
 3. 智能体将对观察的正确解释保存为事实记忆
 4. 智能体创建了观察支持的准确关联或关系
 5. 智能体的记忆包含了与观察一致且基于观察的信息
-</评估准则>
+</评分标准>
 
-<评估标准>
-进行分析时：
+<评估步骤>
 1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好准确性模式
 2. 关注相关模块：仅考虑观察和记忆模块
 3. 提供基于证据的推理：解释记忆如何展示准确性以及原因
 4. 评估置信度：根据准确性表现的清晰程度评估你的置信度
-</评估标准>
+</评估步骤>
 
+<评分量表>
+- **分数 1.0**：记忆准确且真实（良好准确性）
+- **分数 0.0**：记忆包含不准确或捏造的内容（准确性不佳）
+</评分量表>
+
+<上下文（可选）>
 {context}
+</上下文>
 
+<历史记录（可选）>
 {history}
+</历史记录>
 
 <当前步骤>
 观察：{observation}
 记忆：{memory}
 </当前步骤>
 
-# 评分指令
-- 如果记忆准确且真实：score = 1.0（良好准确性）
-- 如果记忆包含不准确或捏造的内容：score = 0.0（准确性不佳）
-
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
     "score": <0.0 或 1.0>,
     "reason": "<关于记忆准确性的详细解释和置信度水平>"
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -213,10 +213,10 @@ class MemoryAccuracyGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = f"<context>\n{context}\n</context>" if context else ""
+        context_str = context if context else ""
 
         # Format history
-        history_str = format_history(history)
+        history_str = format_history(history, include_tags=False)
 
         try:
             result = await super().aevaluate(
