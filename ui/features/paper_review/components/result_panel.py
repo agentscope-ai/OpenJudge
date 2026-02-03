@@ -45,23 +45,26 @@ def _render_score_card(
             f'margin-top: 0.75rem; line-height: 1.5;">{desc_text}</div>'
         )
 
-    st.markdown(
-        f"""<div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
-<div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
-<span style="font-size: 1.5rem;">{icon}</span>
-<span style="font-weight: 600; color: #F1F5F9;">{title}</span>
-</div>
-<div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-<span style="font-size: 2rem; font-weight: 700; color: {color};">{score}</span>
-<span style="color: #64748B;">/ {max_score}</span>
-</div>
-<div style="height: 6px; background: #1E293B; border-radius: 3px; overflow: hidden;">
-<div style="width: {pct}%; height: 100%; background: {color}; border-radius: 3px;"></div>
-</div>
-{desc_html}</div>""",
-        unsafe_allow_html=True,
-    )
+    # fmt: off
+    html_content = f"""
+    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+                border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+            <span style="font-size: 1.5rem;">{icon}</span>
+            <span style="font-weight: 600; color: #F1F5F9;">{title}</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 2rem; font-weight: 700; color: {color};">{score}</span>
+            <span style="color: #64748B;">/ {max_score}</span>
+        </div>
+        <div style="height: 6px; background: #1E293B; border-radius: 3px; overflow: hidden;">
+            <div style="width: {pct}%; height: 100%; background: {color}; border-radius: 3px;"></div>
+        </div>
+        {desc_html}
+    </div>
+    """
+    # fmt: on
+    st.markdown(html_content, unsafe_allow_html=True)
 
 
 def _render_safety_result(result: PaperReviewResult) -> None:
