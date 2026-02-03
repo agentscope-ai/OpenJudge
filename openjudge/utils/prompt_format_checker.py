@@ -187,11 +187,17 @@ class PromptFormatChecker:
         """
         Check if a tag is properly opened and closed.
 
+        Handles tags with (Optional) suffix: <Context (Optional)> pairs with </Context>
+
         Returns:
             Tuple of (has_open, has_close, is_valid)
         """
         open_tag = f"<{tag_name}>"
-        close_tag = f"</{tag_name}>"
+
+        # Remove (Optional) or （可选） suffix for closing tag
+        base_tag_name = re.sub(r"\s*\(Optional\)\s*$", "", tag_name, flags=re.IGNORECASE)
+        base_tag_name = re.sub(r"\s*（可选）\s*$", "", base_tag_name).strip()
+        close_tag = f"</{base_tag_name}>"
 
         has_open = open_tag in prompt
         has_close = close_tag in prompt
