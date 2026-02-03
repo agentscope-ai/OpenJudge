@@ -1,5 +1,11 @@
 # OpenJudge Studio Dependencies
 # ==============================
+# These are additional dependencies required by the UI that are NOT
+# included in the main pyproject.toml dependencies.
+#
+# Installation:
+#   1. Install main package: pip install -e ..  (from ui/ directory)
+#   2. Install UI deps: pip install -r requirements.txt
 
 # Core Framework
 streamlit==1.46.1
@@ -10,5 +16,11 @@ altair==5.5.0
 # For async support in Streamlit
 nest-asyncio==1.6.0
 
-# OpenJudge framework (install from parent directory)
-# pip install -e ..
+# YAML support (used by Auto Arena feature for config files)
+PyYAML>=6.0
+
+# Chart generation for Auto Arena reports (optional but recommended)
+matplotlib>=3.7.0
+
+# LiteLLM for Paper Review feature (PDF native support)
+litellm>=1.40.0
