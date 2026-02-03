@@ -27,8 +27,11 @@ from features.grader import GraderFeature  # noqa: E402
 from features.paper_review import PaperReviewFeature  # noqa: E402
 from shared.components.common import render_footer  # noqa: E402
 from shared.components.logo import render_logo_and_title  # noqa: E402
-from shared.components.workspace_selector import render_workspace_selector  # noqa: E402
-from shared.i18n import inject_language_loader, t  # noqa: E402
+from shared.components.workspace_selector import (  # noqa: E402
+    ENABLE_SHARED_WORKSPACES,
+    render_workspace_selector,
+)
+from shared.i18n import inject_language_loader, render_language_selector, t  # noqa: E402
 from shared.services.workspace_manager import (  # noqa: E402
     get_storage_manager,
     initialize_workspace_from_url,
@@ -99,11 +102,7 @@ def main() -> None:
     # Inject custom CSS
     inject_css()
 
-    # Load language preference from browser localStorage
-    inject_language_loader()
-
-    # Initialize workspace from browser ID
-    inject_browser_id_loader()
+    # Initialize workspace from URL (doesn't render anything)
     initialize_workspace_from_url()
 
     # Periodic storage cleanup check (runs once per session)
@@ -113,17 +112,27 @@ def main() -> None:
     # Sidebar Configuration
     # ========================================================================
     with st.sidebar:
+        # Initialize browser ID (inside sidebar to avoid main area spacing)
+        inject_browser_id_loader()
+
+        # Load language preference
+        inject_language_loader()
+
         # Logo and title
         render_logo_and_title()
 
         # Divider
         st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
 
-        # Workspace selector + Language selector in one row
-        render_workspace_selector(show_language_selector=True)
-
-        # Divider
-        st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
+        # Workspace selector (only if shared workspaces are enabled)
+        if ENABLE_SHARED_WORKSPACES:
+            # Workspace selector with language selector in the same row
+            render_workspace_selector(show_language_selector=True)
+            # Divider
+            st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
+        else:
+            # Just show language selector when workspace selector is hidden
+            render_language_selector(position="sidebar")
 
         # Feature navigation
         st.markdown(

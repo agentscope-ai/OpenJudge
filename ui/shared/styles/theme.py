@@ -52,12 +52,57 @@ CUSTOM_CSS = """
 /* Reduce top padding in main content area */
 .stMainBlockContainer,
 .block-container {
-    padding-top: 1rem !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
 }
 
 /* Remove extra top margin from first element */
 .stMain .stVerticalBlock > div:first-child {
     margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Hide the header completely to save space */
+[data-testid="stHeader"] {
+    display: none !important;
+}
+
+/* Reduce space between header and main content */
+.stAppViewContainer {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Make the main area start at the very top */
+.stMain {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Reduce top space in the main block container */
+[data-testid="stAppViewBlockContainer"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Remove padding from vertical blocks */
+.stVerticalBlock {
+    gap: 0.5rem !important;
+}
+
+/* Compact the entire app view */
+[data-testid="stAppViewContainer"] {
+    padding-top: 0 !important;
+}
+
+/* Remove top margin from markdown elements */
+.stMarkdown {
+    margin-top: 0 !important;
+}
+
+/* First element in main content should have no top spacing */
+.stMain > div > div > div:first-child {
+    padding-top: 0.5rem !important;
 }
 
 /* =========================================================================

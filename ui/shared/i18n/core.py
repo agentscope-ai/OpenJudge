@@ -33,14 +33,14 @@ def get_available_languages() -> dict[str, str]:
 
 
 def _init_language_from_storage() -> None:
-    """Initialize language from localStorage on first load."""
-    if UI_LANGUAGE_INITIALIZED not in st.session_state:
-        st.session_state[UI_LANGUAGE_INITIALIZED] = True
-        # Check query params for language (set by JavaScript from localStorage)
-        params = st.query_params
-        if "lang" in params:
-            lang = params.get("lang")
-            if lang in SUPPORTED_LANGUAGES:
+    """Initialize language from URL query parameters."""
+    # Always check query params for language changes
+    params = st.query_params
+    if "lang" in params:
+        lang = params.get("lang")
+        if lang in SUPPORTED_LANGUAGES:
+            current = st.session_state.get(UI_LANGUAGE_KEY)
+            if current != lang:
                 st.session_state[UI_LANGUAGE_KEY] = lang
 
 
@@ -166,32 +166,43 @@ def render_language_selector(position: str = "sidebar") -> None:
 
 
 def inject_language_loader() -> None:
-    """Inject JavaScript to load language from localStorage on page load.
+    """Initialize language from URL query parameters.
 
-    Call this once at the start of the app to restore language preference.
+    This is a lightweight function that doesn't inject any HTML.
+    Language loading is handled by _init_language_from_storage().
     """
-    # Only inject once per session to avoid repeated reloads
-    if "_lang_loader_injected" in st.session_state:
-        return
-    st.session_state["_lang_loader_injected"] = True
+    # Language is already initialized via _init_language_from_storage()
+    # which is called by get_ui_language()
+    pass
 
-    js_code = """
-    <script>
-        (function() {
-            const savedLang = localStorage.getItem('openjudge_ui_language');
-            if (savedLang && (savedLang === 'zh' || savedLang === 'en')) {
-                const url = new URL(window.location.href);
-                const currentLang = url.searchParams.get('lang');
-                if (currentLang !== savedLang) {
-                    url.searchParams.set('lang', savedLang);
-                    window.history.replaceState({}, '', url);
-                    // Only reload if this is the first load (no lang param was set)
-                    if (!currentLang) {
-                        window.location.reload();
-                    }
-                }
-            }
-        })();
-    </script>
+
+def render_header_language_selector() -> None:
+    """Placeholder for header language selector.
+
+    Actual rendering is done via render_sidebar_language_selector.
     """
-    st.markdown(js_code, unsafe_allow_html=True)
+    pass
+
+
+def render_sidebar_language_selector() -> None:
+    """Render a compact language selector in the sidebar.
+
+    Uses Streamlit native selectbox for reliability.
+    """
+    current_lang = get_ui_language()
+    lang_options = list(SUPPORTED_LANGUAGES.keys())
+
+    selected_lang = st.selectbox(
+        "🌐",
+        options=lang_options,
+        index=lang_options.index(current_lang) if current_lang in lang_options else 0,
+        format_func=lambda x: SUPPORTED_LANGUAGES[x],
+        key="_sidebar_lang_selector",
+        label_visibility="collapsed",
+    )
+
+    # Handle language change
+    if selected_lang != current_lang:
+        set_ui_language(selected_lang)
+        _save_language_to_storage(selected_lang)
+        st.rerun()

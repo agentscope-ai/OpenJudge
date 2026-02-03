@@ -22,7 +22,9 @@ from shared.i18n.core import (
     get_available_languages,
     get_ui_language,
     inject_language_loader,
+    render_header_language_selector,
     render_language_selector,
+    render_sidebar_language_selector,
     set_ui_language,
     t,
 )
@@ -34,4 +36,6 @@ __all__ = [
     "render_language_selector",
     "get_available_languages",
     "inject_language_loader",
+    "render_header_language_selector",
+    "render_sidebar_language_selector",
 ]

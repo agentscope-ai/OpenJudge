@@ -36,31 +36,26 @@ def _render_score_card(
     color = _get_score_color(score, max_score)
     pct = (score / max_score) * 100
 
+    # Build description HTML separately to avoid f-string issues
+    desc_html = ""
+    if description:
+        desc_text = f"{description[:200]}..." if len(description) > 200 else description
+        desc_html = f'<div style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.75rem; line-height: 1.5;">{desc_text}</div>'
+
     st.markdown(
-        f"""<div style="
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 1rem;
-        ">
-            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
-                <span style="font-size: 1.5rem;">{icon}</span>
-                <span style="font-weight: 600; color: #F1F5F9;">{title}</span>
-            </div>
-            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <span style="font-size: 2rem; font-weight: 700; color: {color};">{score}</span>
-                <span style="color: #64748B;">/ {max_score}</span>
-            </div>
-            <div style="height: 6px; background: #1E293B; border-radius: 3px; overflow: hidden;">
-                <div style="width: {pct}%; height: 100%; background: {color}; border-radius: 3px;"></div>
-            </div>
-            {f'<div style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.75rem; '
-             f'line-height: 1.5;">{description[:200]}...</div>'
-             if description and len(description) > 200
-             else (f'<div style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.75rem; '
-                   f'line-height: 1.5;">{description}</div>' if description else '')}
-        </div>""",
+        f"""<div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+<div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+<span style="font-size: 1.5rem;">{icon}</span>
+<span style="font-weight: 600; color: #F1F5F9;">{title}</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+<span style="font-size: 2rem; font-weight: 700; color: {color};">{score}</span>
+<span style="color: #64748B;">/ {max_score}</span>
+</div>
+<div style="height: 6px; background: #1E293B; border-radius: 3px; overflow: hidden;">
+<div style="width: {pct}%; height: 100%; background: {color}; border-radius: 3px;"></div>
+</div>
+{desc_html}</div>""",
         unsafe_allow_html=True,
     )
 
