@@ -125,9 +125,6 @@ def main() -> None:
         # Logo and title
         render_logo_and_title()
 
-        # Divider
-        st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
-
         # Workspace selector (only if shared workspaces are enabled)
         if ENABLE_SHARED_WORKSPACES:
             # Workspace selector with language selector in the same row
