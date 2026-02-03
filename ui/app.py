@@ -132,11 +132,12 @@ def main() -> None:
         if ENABLE_SHARED_WORKSPACES:
             # Workspace selector with language selector in the same row
             render_workspace_selector(show_language_selector=True)
-            # Divider
-            st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
         else:
             # Just show language selector when workspace selector is hidden
             render_language_selector(position="sidebar")
+
+        # Divider after workspace/language selector
+        st.markdown('<div class="custom-divider" style="margin: 0.75rem 0;"></div>', unsafe_allow_html=True)
 
         # Feature navigation
         st.markdown(
