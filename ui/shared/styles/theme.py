@@ -52,60 +52,12 @@ CUSTOM_CSS = """
 /* Reduce top padding in main content area */
 .stMainBlockContainer,
 .block-container {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
+    padding-top: 1rem !important;
 }
 
 /* Remove extra top margin from first element */
 .stMain .stVerticalBlock > div:first-child {
     margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Hide the header completely to save space */
-[data-testid="stHeader"] {
-    display: none !important;
-}
-
-/* Reduce space between header and main content */
-.stAppViewContainer {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-/* Make the main area start at the very top */
-.stMain {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-/* Reduce top space in the main block container */
-[data-testid="stAppViewBlockContainer"] {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-/* Remove padding from vertical blocks */
-.stVerticalBlock {
-    gap: 0.5rem !important;
-}
-
-/* Compact the entire app view */
-[data-testid="stAppViewContainer"] {
-    padding-top: 0 !important;
-}
-
-/* Remove top margin from markdown elements */
-.stMarkdown {
-    margin-top: 0 !important;
-}
-
-/* First element in main content should have no top spacing */
-/* WARNING: This selector depends on Streamlit's internal DOM structure and may
-   break with future Streamlit updates. Unfortunately, Streamlit doesn't provide
-   a stable data-testid for this specific element. Monitor after Streamlit upgrades. */
-.stMain > div > div > div:first-child {
-    padding-top: 0.5rem !important;
 }
 
 /* =========================================================================
@@ -652,10 +604,10 @@ CUSTOM_CSS = """
     padding-top: 0 !important;
 }
 
-/* Hide the original header area completely */
+/* Position the sidebar header area (contains collapse button) */
 [data-testid="stSidebarHeader"] {
     position: absolute !important;
-    top: 0.6rem !important;
+    top: 1.5rem !important;  /* Align with logo/title center after hiding empty container */
     right: 0.5rem !important;
     left: auto !important;
     width: auto !important;
@@ -668,6 +620,12 @@ CUSTOM_CSS = """
 /* Collapse button styling */
 [data-testid="stSidebarCollapseButton"] {
     margin: 0 !important;
+    opacity: 0.6 !important;
+    transition: opacity 0.2s ease !important;
+}
+
+[data-testid="stSidebarCollapseButton"]:hover {
+    opacity: 1 !important;
 }
 
 /* Content area - starts from top */
@@ -681,13 +639,19 @@ CUSTOM_CSS = """
     min-height: 0 !important;
 }
 
+/* Hide empty script injection containers at the top of sidebar */
+[data-testid="stSidebar"] .stVerticalBlock > .stElementContainer:first-child {
+    display: none !important;
+}
+
 /* Sidebar header - logo and title inline with space for button */
 .sidebar-header {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.25rem 0;
+    padding: 0.5rem 0;
     padding-right: 2.5rem; /* Space for collapse button */
+    min-height: 44px; /* Ensure consistent height for alignment */
 }
 
 .sidebar-header-text {
@@ -733,9 +697,17 @@ hr {
     outline: none !important;
 }
 
-/* Remove default Streamlit decoration lines */
+/* Remove default Streamlit decoration lines and Deploy button */
 .stDeployButton,
+.stAppDeployButton,
 [data-testid="stDecoration"] {
+    display: none !important;
+}
+
+/* Hide theme selector in Settings modal (stDialog) */
+.stDialog .stSelectbox,
+.stDialog label.e19d0zmo4,
+.stDialog .e19d0zmo2:has(.stSelectbox) {
     display: none !important;
 }
 
