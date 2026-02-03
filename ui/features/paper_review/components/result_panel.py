@@ -40,10 +40,14 @@ def _render_score_card(
     desc_html = ""
     if description:
         desc_text = f"{description[:200]}..." if len(description) > 200 else description
-        desc_html = f'<div style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.75rem; line-height: 1.5;">{desc_text}</div>'
+        desc_html = (
+            '<div style="color: #94A3B8; font-size: 0.85rem; '
+            f'margin-top: 0.75rem; line-height: 1.5;">{desc_text}</div>'
+        )
 
     st.markdown(
-        f"""<div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+        f"""<div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
 <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
 <span style="font-size: 1.5rem;">{icon}</span>
 <span style="font-weight: 600; color: #F1F5F9;">{title}</span>

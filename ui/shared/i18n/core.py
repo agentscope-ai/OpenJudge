@@ -173,7 +173,6 @@ def inject_language_loader() -> None:
     """
     # Language is already initialized via _init_language_from_storage()
     # which is called by get_ui_language()
-    pass
 
 
 def render_header_language_selector() -> None:
@@ -181,7 +180,6 @@ def render_header_language_selector() -> None:
 
     Actual rendering is done via render_sidebar_language_selector.
     """
-    pass
 
 
 def render_sidebar_language_selector() -> None:

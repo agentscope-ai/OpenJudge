@@ -31,7 +31,11 @@ from shared.components.workspace_selector import (  # noqa: E402
     ENABLE_SHARED_WORKSPACES,
     render_workspace_selector,
 )
-from shared.i18n import inject_language_loader, render_language_selector, t  # noqa: E402
+from shared.i18n import (  # noqa: E402
+    inject_language_loader,
+    render_language_selector,
+    t,
+)
 from shared.services.workspace_manager import (  # noqa: E402
     get_storage_manager,
     initialize_workspace_from_url,
