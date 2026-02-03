@@ -175,10 +175,11 @@ def inject_language_loader() -> None:
     # which is called by get_ui_language()
 
 
-def render_header_language_selector() -> None:
-    """Placeholder for header language selector.
+def _render_header_language_selector() -> None:
+    """Placeholder for header language selector (not implemented).
 
     Actual rendering is done via render_sidebar_language_selector.
+    This is kept as a private function for potential future implementation.
     """
 
 
