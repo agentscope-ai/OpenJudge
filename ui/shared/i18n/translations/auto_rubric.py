@@ -29,8 +29,8 @@ Key prefix conventions:
 # =============================================================================
 EN: dict[str, str] = {
     # Feature Info
-    "rubric.name": "Auto Rubric",
-    "rubric.description": "Automatically generate evaluation rubrics without manual design",
+    "rubric.name": "Grader Generator",
+    "rubric.description": "Automatically generate evaluation graders without manual design",
     # Tabs
     "rubric.tabs.new": "New",
     "rubric.tabs.history": "History",
@@ -65,6 +65,8 @@ EN: dict[str, str] = {
     "rubric.config.grader_name": "Grader Name",
     "rubric.config.grader_name_placeholder": "e.g., medical_qa_grader",
     "rubric.config.grader_name_help": "A unique name for the generated grader",
+    "rubric.config.required": "Required",
+    "rubric.config.optional": "Optional",
     "rubric.config.task_description": "Task Description",
     "rubric.config.task_description_placeholder": (
         "Describe your task clearly, e.g.:\n"
@@ -146,6 +148,13 @@ EN: dict[str, str] = {
     "rubric.iterative.query_specific_number_help": "Number of rubrics to generate from each training sample",
     "rubric.iterative.generating_rubrics": "Generating rubrics from training data...",
     "rubric.iterative.data_count": "Training samples",
+    "rubric.iterative.time_estimate": "Estimated time: {count} samples × ~2-5 seconds each",
+    "rubric.iterative.time_estimate_mins": "Estimated time: ~{minutes} min (please be patient)",
+    "rubric.iterative.please_wait": "This may take a few minutes, please wait...",
+    "rubric.iterative.total_time": "Total time",
+    "rubric.iterative.elapsed": "Elapsed",
+    "rubric.iterative.remaining": "Remaining",
+    "rubric.iterative.no_cancel_warning": "Once started, the task cannot be cancelled. Please wait for completion.",
     # Data Upload
     "rubric.upload.title": "Training Data",
     "rubric.upload.label": "Upload Data File",
@@ -155,11 +164,21 @@ EN: dict[str, str] = {
     "rubric.upload.supported_formats": "Supported: .json, .jsonl, .csv",
     "rubric.upload.parsing": "Parsing data...",
     "rubric.upload.success": "Successfully loaded {count} records",
+    "rubric.upload.success_short": "Data loaded successfully",
+    "rubric.upload.records": "records",
+    "rubric.upload.score_range_label": "Score range",
     "rubric.upload.error": "Failed to parse data",
     "rubric.upload.warnings": "Warnings",
     "rubric.upload.details": "Details",
     "rubric.upload.preview": "Data Preview",
     "rubric.upload.drop_hint": "Drag and drop or click to upload",
+    "rubric.upload.sample_title": "Select data amount for rubric generation",
+    "rubric.upload.sample_count": "Records to use",
+    "rubric.upload.sample_help": "Select how many records to use. Fewer records = faster generation.",
+    "rubric.upload.quick_select": "Quick select",
+    "rubric.upload.use_all": "Use all",
+    "rubric.upload.sampled_info": "Using {selected} randomly sampled records from {total} total records",
+    "rubric.upload.detected_score_range": "Detected score range",
     # History
     "rubric.history.title": "Generation History",
     "rubric.history.empty": "No history yet",
@@ -209,8 +228,8 @@ EN: dict[str, str] = {
 # =============================================================================
 ZH: dict[str, str] = {
     # Feature Info
-    "rubric.name": "Auto Rubric",
-    "rubric.description": "自动生成评估标准，无需手动设计",
+    "rubric.name": "Grader 生成",
+    "rubric.description": "自动生成评估器，无需手动设计",
     # Tabs
     "rubric.tabs.new": "新建",
     "rubric.tabs.history": "历史",
@@ -245,6 +264,8 @@ ZH: dict[str, str] = {
     "rubric.config.grader_name": "Grader 名称",
     "rubric.config.grader_name_placeholder": "例如：medical_qa_grader",
     "rubric.config.grader_name_help": "为生成的 Grader 指定一个唯一名称",
+    "rubric.config.required": "必填",
+    "rubric.config.optional": "可选",
     "rubric.config.task_description": "任务描述",
     "rubric.config.task_description_placeholder": (
         "清晰描述您的任务，例如：\n"
@@ -324,6 +345,13 @@ ZH: dict[str, str] = {
     "rubric.iterative.query_specific_number_help": "从每个训练样本生成的 Rubric 数量",
     "rubric.iterative.generating_rubrics": "正在从训练数据生成 Rubrics...",
     "rubric.iterative.data_count": "训练样本数",
+    "rubric.iterative.time_estimate": "预计耗时：{count} 条样本 × 每条约 2-5 秒",
+    "rubric.iterative.time_estimate_mins": "预计耗时：约 {minutes} 分钟（请耐心等待）",
+    "rubric.iterative.please_wait": "可能需要几分钟，请耐心等待...",
+    "rubric.iterative.total_time": "总耗时",
+    "rubric.iterative.elapsed": "已用时",
+    "rubric.iterative.remaining": "预计剩余",
+    "rubric.iterative.no_cancel_warning": "任务开始后无法取消，请耐心等待完成",
     # Data Upload
     "rubric.upload.title": "训练数据",
     "rubric.upload.label": "上传数据文件",
@@ -333,11 +361,21 @@ ZH: dict[str, str] = {
     "rubric.upload.supported_formats": "支持：.json、.jsonl、.csv",
     "rubric.upload.parsing": "正在解析数据...",
     "rubric.upload.success": "成功加载 {count} 条记录",
+    "rubric.upload.success_short": "数据加载成功",
+    "rubric.upload.records": "条记录",
+    "rubric.upload.score_range_label": "分数范围",
     "rubric.upload.error": "数据解析失败",
     "rubric.upload.warnings": "警告",
     "rubric.upload.details": "详情",
     "rubric.upload.preview": "数据预览",
     "rubric.upload.drop_hint": "拖放或点击上传",
+    "rubric.upload.sample_title": "选择用于生成 Rubric 的数据量",
+    "rubric.upload.sample_count": "使用记录数",
+    "rubric.upload.sample_help": "选择使用多少条记录。使用较少记录更快，但可能生成的 Rubric 覆盖面较窄。",
+    "rubric.upload.quick_select": "快速选择",
+    "rubric.upload.use_all": "全部使用",
+    "rubric.upload.sampled_info": "从 {total} 条记录中随机采样 {selected} 条使用",
+    "rubric.upload.detected_score_range": "检测到的分数范围",
     # History
     "rubric.history.title": "生成历史",
     "rubric.history.empty": "暂无历史记录",

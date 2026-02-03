@@ -78,6 +78,25 @@ def render_grader_info(config: dict[str, Any]) -> None:
     min_score = config.get("min_score", 0)
     max_score = config.get("max_score", 5)
 
+    # Build the info items list
+    info_items = [
+        f'<div><span style="color: #94A3B8;">{t("rubric.result.name_label")}:</span> '
+        f'<span style="color: #F1F5F9;">{grader_name}</span></div>',
+        f'<div><span style="color: #94A3B8;">{t("rubric.result.mode_label")}:</span> '
+        f'<span style="color: #F1F5F9;">{grader_mode.capitalize()}</span></div>',
+        f'<div><span style="color: #94A3B8;">{t("rubric.result.language_label")}:</span> '
+        f'<span style="color: #F1F5F9;">{language}</span></div>',
+    ]
+
+    # Add score range only for pointwise mode
+    if grader_mode.lower() == "pointwise":
+        info_items.append(
+            f'<div><span style="color: #94A3B8;">{t("rubric.result.score_range_label")}:</span> '
+            f'<span style="color: #F1F5F9;">{min_score} - {max_score}</span></div>'
+        )
+
+    info_html = "\n".join(info_items)
+
     st.markdown(
         f"""
         <div style="
@@ -91,15 +110,7 @@ def render_grader_info(config: dict[str, Any]) -> None:
                 {t('rubric.result.grader_info')}
             </div>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.9rem;">
-                <div><span style="color: #94A3B8;">{t('rubric.result.name_label')}:</span>
-                    <span style="color: #F1F5F9;">{grader_name}</span></div>
-                <div><span style="color: #94A3B8;">{t('rubric.result.mode_label')}:</span>
-                    <span style="color: #F1F5F9;">{grader_mode.capitalize()}</span></div>
-                <div><span style="color: #94A3B8;">{t('rubric.result.language_label')}:</span>
-                    <span style="color: #F1F5F9;">{language}</span></div>
-                {'<div><span style="color: #94A3B8;">' + t('rubric.result.score_range_label') + ':</span>'
-                 f'<span style="color: #F1F5F9;">{min_score} - {max_score}</span></div>'
-                 if grader_mode == 'pointwise' else ''}
+                {info_html}
             </div>
         </div>
         """,

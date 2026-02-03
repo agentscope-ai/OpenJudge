@@ -49,9 +49,9 @@ class AutoRubricFeature(BaseFeature):
     """
 
     feature_id = "auto_rubric"
-    feature_name = "Auto Rubric"
+    feature_name = "Grader Generator"  # Fallback name, actual name from i18n
     feature_icon = "🔧"
-    feature_description = "Automatically generate evaluation rubrics"
+    feature_description = "Automatically generate evaluation graders"
     order = 3
 
     # Session state keys
@@ -360,13 +360,48 @@ class AutoRubricFeature(BaseFeature):
                         model_name=config["model_name"],
                     )
 
-                    st.write(f"**{t('rubric.iterative.generating_rubrics')}**")
-                    st.write(f"{t('rubric.iterative.data_count')}: {config.get('data_count', 0)}")
+                    data_count = config.get("data_count", 0)
+
+                    # Estimate time based on data count
+                    # Rough estimate: ~3 seconds per sample for generation
+                    estimated_minutes = max(1, (data_count * 3) // 60)
+
+                    # Show detailed progress info with spinner
+                    st.markdown(
+                        f"""
+                        <div style="
+                            background: rgba(99, 102, 241, 0.1);
+                            border: 1px solid rgba(99, 102, 241, 0.3);
+                            border-radius: 8px;
+                            padding: 1rem;
+                            margin: 0.5rem 0;
+                        ">
+                            <div style="color: #A5B4FC; font-weight: 600; margin-bottom: 0.5rem;">
+                                📊 {t('rubric.iterative.generating_rubrics')}
+                            </div>
+                            <div style="color: #94A3B8; font-size: 0.9rem;">
+                                • {t('rubric.iterative.data_count')}: \
+<strong style="color: #F1F5F9;">{data_count}</strong>
+                            </div>
+                            <div style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.5rem;">
+                                💡 {t('rubric.iterative.time_estimate_mins', minutes=estimated_minutes)}
+                            </div>
+                            <div style="color: #F59E0B; font-size: 0.8rem; margin-top: 0.75rem; \
+padding-top: 0.5rem; border-top: 1px solid rgba(99, 102, 241, 0.2);">
+                                ⚠️ {t('rubric.iterative.no_cancel_warning')}
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
                     service = RubricGeneratorService()
 
-                    # Progress callback
-                    progress_placeholder = st.empty()
+                    # Use spinner with dynamic text for better UX
+                    import time
+
+                    start_time = time.time()
+                    current_stage = {"name": t("rubric.result.init_model"), "pct": 0}
 
                     def on_progress(stage: str, pct: float) -> None:
                         stage_names = {
@@ -375,13 +410,19 @@ class AutoRubricFeature(BaseFeature):
                             "processing": t("rubric.result.processing"),
                             "complete": t("rubric.result.success"),
                         }
-                        stage_name = stage_names.get(stage, stage)
-                        progress_placeholder.progress(pct, text=f"{stage_name} ({int(pct * 100)}%)")
+                        current_stage["name"] = stage_names.get(stage, stage)
+                        current_stage["pct"] = pct
 
-                    result = run_async(service.generate_iterative(service_config, on_progress))
+                    # Show animated spinner during generation
+                    with st.spinner(
+                        f"🔄 {t('rubric.iterative.generating_rubrics')} {t('rubric.iterative.please_wait')}"
+                    ):
+                        result = run_async(service.generate_iterative(service_config, on_progress))
 
-                    progress_placeholder.empty()
-                    st.write(f"**{t('rubric.result.processing')}**")
+                    # Show elapsed time after completion
+                    elapsed = time.time() - start_time
+                    elapsed_str = f"{int(elapsed // 60)}:{int(elapsed % 60):02d}"
+                    st.caption(f"⏱️ {t('rubric.iterative.total_time')}: {elapsed_str}")
 
                     if result.success:
                         st.session_state[self.STATE_RESULT] = {

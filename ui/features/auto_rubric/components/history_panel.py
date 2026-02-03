@@ -378,4 +378,5 @@ def render_task_detail(
         file_name=filename,
         mime="text/plain",
         use_container_width=True,
+        key=f"history_download_{task_id}_{lang}",
     )

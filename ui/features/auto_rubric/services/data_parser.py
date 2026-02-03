@@ -24,6 +24,8 @@ class ParseResult:
         total_count: Total number of records.
         error: Error message if parsing failed.
         warnings: List of warning messages.
+        min_score: Minimum score found in data (for pointwise mode).
+        max_score: Maximum score found in data (for pointwise mode).
     """
 
     success: bool
@@ -31,6 +33,8 @@ class ParseResult:
     total_count: int = 0
     error: str | None = None
     warnings: list[str] | None = None
+    min_score: int | None = None
+    max_score: int | None = None
 
 
 class DataParser:
@@ -52,8 +56,8 @@ class DataParser:
     - label_rank: Expected ranking (required for training)
     """
 
-    # Maximum records allowed
-    MAX_RECORDS = 500
+    # Maximum records allowed (no hard limit, user can select sample size in UI)
+    MAX_RECORDS = 100000
 
     # Required fields for different modes
     POINTWISE_REQUIRED = {"query", "response", "label_score"}
@@ -243,11 +247,29 @@ class DataParser:
                 warnings=warnings if warnings else None,
             )
 
+        # Extract score range for pointwise mode
+        min_score = None
+        max_score = None
+        if mode == "pointwise":
+            scores = []
+            for item in valid_data:
+                score = item.get("label_score")
+                if score is not None:
+                    try:
+                        scores.append(int(float(score)))
+                    except (ValueError, TypeError):
+                        pass
+            if scores:
+                min_score = min(scores)
+                max_score = max(scores)
+
         return ParseResult(
             success=True,
             data=valid_data,
             total_count=len(valid_data),
             warnings=warnings if warnings else None,
+            min_score=min_score,
+            max_score=max_score,
         )
 
     def get_preview(

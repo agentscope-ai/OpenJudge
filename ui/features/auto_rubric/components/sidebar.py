@@ -133,40 +133,11 @@ def _render_generation_settings(config: dict[str, Any]) -> None:
         key="rubric_eval_mode_value",
     )
 
-    # Score range (only for pointwise mode)
-    if grader_mode == "pointwise":
-        st.markdown(
-            f'<div style="font-size: 0.85rem; color: #94A3B8; margin-bottom: 0.25rem;">'
-            f'{t("rubric.sidebar.score_range")}</div>',
-            unsafe_allow_html=True,
-        )
-        col1, col2 = st.columns(2)
-        with col1:
-            min_score = st.number_input(
-                t("rubric.sidebar.min_score"),
-                min_value=0,
-                max_value=100,
-                value=0,
-                step=1,
-                key="rubric_min_score",
-            )
-        with col2:
-            max_score = st.number_input(
-                t("rubric.sidebar.max_score"),
-                min_value=1,
-                max_value=100,
-                value=5,
-                step=1,
-                key="rubric_max_score",
-            )
-    else:
-        min_score = 0
-        max_score = 1  # Not used for listwise
+    # Note: Score range for pointwise mode is now automatically extracted from uploaded data
+    # No manual input needed here
 
     config["language"] = language
     config["grader_mode"] = grader_mode
-    config["min_score"] = min_score
-    config["max_score"] = max_score
 
 
 def _render_advanced_settings(config: dict[str, Any]) -> None:

@@ -38,14 +38,14 @@ class ExportService:
             Python code string.
         """
         grader_name = config.get("grader_name", "my_grader")
-        task_description = config.get("task_description", "")
-        rubrics = config.get("rubrics", "")
+        task_description = config.get("task_description") or ""
+        rubrics = config.get("rubrics") or ""
         grader_mode = config.get("grader_mode", "pointwise")
         language = config.get("language", "EN")
         min_score = config.get("min_score", 0)
         max_score = config.get("max_score", 5)
         model_name = config.get("model_name", "gpt-4o-mini")
-        api_endpoint = config.get("api_endpoint", "")
+        api_endpoint = config.get("api_endpoint") or ""
 
         # Escape special characters in strings
         rubrics_escaped = rubrics.replace('"""', r"\"\"\"").replace("\\", "\\\\")
