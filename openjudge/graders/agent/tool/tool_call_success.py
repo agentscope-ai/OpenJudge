@@ -21,29 +21,17 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 TOOL_CALL_SUCCESS_PROMPT_EN = textwrap.dedent(
-    """You are an expert evaluator with strong software \
-development background. You are required to extract the tool result for every tool call \
-then decide for each tool result whether it indicates that the tool call succeeded or failed.
-
-ROLE
-====
-You are a judge on tool call success who assesses **each tool call made by an AI agent and \
-decide if the result of the tool call indicates a success or failure**. You only care about \
-technical errors , failures and exceptions , not the business correctness of the tool \
-implementation.
+    """You are an expert evaluator with strong software development background. You are a judge on tool call success who assesses **each tool call made by an AI agent and decide if the result of the tool call indicates a success or failure**. You only care about technical errors, failures and exceptions, not the business correctness of the tool implementation.
 
 You are NOT evaluating:
 - The parameters passed to the tool
 - The rationale behind choosing this tool
-- Whether the successfully returned result from the tool is correct or not business-wise \
-given the tool name and definition
+- Whether the successfully returned result from the tool is correct or not business-wise given the tool name and definition
 
 You **ARE ONLY** evaluating:
--Whether tool results indicate the presence of a technical error
+- Whether tool results indicate the presence of a technical error
 
-EVALUATION FRAMEWORK
-====================
-
+<Rubrics>
 A tool call is considered successful if:
 1. The tool executed without technical errors
 2. The tool returned a non-empty result
@@ -54,40 +42,45 @@ A tool call is considered failed if any of the following occurs:
 2. The tool result contains explicit error messages
 3. The tool result indicates timeout or exception
 4. The tool result is an empty object when a populated object is expected
+</Rubrics>
 
-INPUT
-=====
+<Scale>
+- **Score 1.0**: All tool calls were successful
+- **Score 0.0**: At least one tool call failed
+</Scale>
 
-TOOL_DEFINITIONS: {tool_definitions}
-TOOL_CALLS: {tool_calls}
-TOOL_RESPONSES: {tool_responses}
-TOOL_CALLS is a list of tool calls that were produced by the AI agent. It includes calls \
-together with the result of every tool call.
-TOOL_DEFINITIONS is a list of definitions for the tools that were called. This definition \
-can contain a description of functionality provided by the tool, the parameters that the \
-tool accepts and the expected return of the tool. This definition can contribute to the \
-assessment of whether a tool call succeeded or failed.
+<Tool Definitions>
+{tool_definitions}
+</Tool Definitions>
+
+<Tool Calls>
+{tool_calls}
+</Tool Calls>
+
+<Tool Responses>
+{tool_responses}
+</Tool Responses>
+
+<Constraints>
+TOOL_CALLS is a list of tool calls that were produced by the AI agent. It includes calls together with the result of every tool call.
+TOOL_DEFINITIONS is a list of definitions for the tools that were called. This definition can contain a description of functionality provided by the tool, the parameters that the tool accepts and the expected return of the tool. This definition can contribute to the assessment of whether a tool call succeeded or failed.
 TOOL_RESPONSES is a list of responses to the tool calls. Each response should be a string.
+</Constraints>
 
-EXPECTED OUTPUT
-===============
+<Output Schema>
 Generate a JSON object with the following structure:
-```json
 {{
   "reason": "Brief explanation of why the tool calls succeeded or failed",
   "score": 1.0 for success or 0.0 for failure
 }}
-```
+</Output Schema>
+JSON:
 """
 ).strip()
 
 # Chinese Prompt
 TOOL_CALL_SUCCESS_PROMPT_ZH = textwrap.dedent(
-    """你是一位具有强大软件开发背景的专家评估员。你需要为每个工具调用提取工具结果，然后判断每个工具结果是否表明工具调用成功或失败。
-
-角色
-====
-你是工具调用成功性的评判者，负责**评估 AI 智能体进行的每个工具调用，并判断工具调用的结果是否表明成功或失败**。你只关心技术错误、失败和异常，而不关心工具实现的业务正确性。
+    """你是一位具有强大软件开发背景的专家评估员。你是工具调用成功性的评判者，负责**评估 AI 智能体进行的每个工具调用，并判断工具调用的结果是否表明成功或失败**。你只关心技术错误、失败和异常，而不关心工具实现的业务正确性。
 
 你不需要评估：
 - 传递给工具的参数
@@ -97,9 +90,7 @@ TOOL_CALL_SUCCESS_PROMPT_ZH = textwrap.dedent(
 你**仅需**评估：
 - 工具结果是否表明存在技术错误
 
-评估框架
-====================
-
+<评分标准>
 如果满足以下条件，则认为工具调用成功：
 1. 工具执行时没有技术错误
 2. 工具返回了非空结果
@@ -110,27 +101,39 @@ TOOL_CALL_SUCCESS_PROMPT_ZH = textwrap.dedent(
 2. 工具结果包含明确的错误消息
 3. 工具结果表明超时或异常
 4. 当期望返回填充对象时，工具结果是空对象
+</评分标准>
 
-输入
-=====
+<评分量表>
+- **分数 1.0**：所有工具调用都成功
+- **分数 0.0**：至少有一个工具调用失败
+</评分量表>
 
-工具定义：{tool_definitions}
-工具调用：{tool_calls}
-工具响应：{tool_responses}
+<工具定义>
+{tool_definitions}
+</工具定义>
 
+<工具调用>
+{tool_calls}
+</工具调用>
+
+<工具响应>
+{tool_responses}
+</工具响应>
+
+<注意事项>
 工具调用是 AI 智能体生成的工具调用列表。它包括调用以及每个工具调用的结果。
 工具定义是被调用工具的定义列表。此定义可以包含工具提供的功能描述、工具接受的参数以及工具的预期返回。此定义可以帮助评估工具调用是否成功或失败。
 工具响应是每个工具调用的响应。每个响应应该是一个字符串。
+</注意事项>
 
-预期输出
-===============
+<输出格式>
 生成具有以下结构的 JSON 对象：
-```json
 {{
   "reason": "工具调用成功或失败的简要说明",
   "score": 成功为 1.0，失败为 0.0
 }}
-```
+</输出格式>
+JSON:
 """
 ).strip()
 

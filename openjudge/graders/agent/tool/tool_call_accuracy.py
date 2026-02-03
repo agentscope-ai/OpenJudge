@@ -22,82 +22,89 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 TOOL_CALL_ACCURACY_PROMPT_EN = textwrap.dedent(
-    """# Instruction
-## Goal
-Your are an expert in evaluating the accuracy of a tool call considering relevance and \
-potential usefulness including syntactic and semantic correctness of a proposed tool call \
-from an intelligent system based on provided definition and data. Your goal will involve \
-answering the questions below using the information provided.
+    """You are an expert in evaluating the accuracy of a tool call considering relevance and potential usefulness including syntactic and semantic correctness of a proposed tool call from an intelligent system based on provided definition and data. Your goal will involve answering the questions below using the information provided.
 
-# Definition
-**Tool Call Accuracy** refers to the overall effectiveness of TOOL CALLS made by an \
-agent in response to a user's query within an ongoing CONVERSATION.
+<Rubrics>
+**Tool Call Accuracy** refers to the overall effectiveness of TOOL CALLS made by an agent in response to a user's query within an ongoing CONVERSATION.
 
-# EVALUATION CRITERIA
 Evaluate based on these factors:
 1. **Tool Relevance**: Do the tool call appropriately address the user's query?
-2. **Parameter Correctness**: Are all parameter values extracted from or reasonably inferred \
-    from the CONVERSATION?
+2. **Parameter Correctness**: Are all parameter values extracted from or reasonably inferred from the CONVERSATION?
+</Rubrics>
 
-# Ratings
-- Score 1: The tool calls were irrelevant to answer the user query, all names of tool calls could not be found as one of the function names in the tool definitions, or parameters of tool calls were incorrect.
-- Score 2: The tool calls were irrelevant to answer the user query, some names of tool calls could not be found as one of the function names in tool definitions, or parameters of tool calls were incorrect.
-- Score 3: The tool calls were partially relevant to answer the user query, and the description in tool definitions, all names of tool calls could be found as one of the function names in tool definitions, and parameters of tool calls were correct but irrelevant with the description in tool definitions.
-- Score 4: The tool calls were fairly relevant to answer the user query, all names of tool calls could be found as one of the function names in tool definitions, and parameters of tool calls were correct and relevant with the description in tool definition.
-- Score 5: The tool calls were fully relevant to answer the user query, all names of tool calls could be found as one of the function names in tool definitions, and parameters of tool calls were correct and relevant with the description in tool definition.
+<Scale>
+- **Score 1**: The tool calls were irrelevant to answer the user query, all names of tool calls could not be found as one of the function names in the tool definitions, or parameters of tool calls were incorrect.
+- **Score 2**: The tool calls were irrelevant to answer the user query, some names of tool calls could not be found as one of the function names in tool definitions, or parameters of tool calls were incorrect.
+- **Score 3**: The tool calls were partially relevant to answer the user query, and the description in tool definitions, all names of tool calls could be found as one of the function names in tool definitions, and parameters of tool calls were correct but irrelevant with the description in tool definitions.
+- **Score 4**: The tool calls were fairly relevant to answer the user query, all names of tool calls could be found as one of the function names in tool definitions, and parameters of tool calls were correct and relevant with the description in tool definition.
+- **Score 5**: The tool calls were fully relevant to answer the user query, all names of tool calls could be found as one of the function names in tool definitions, and parameters of tool calls were correct and relevant with the description in tool definition.
+</Scale>
 
-# Data
-CONVERSATION : {query}
-TOOL CALLS TO BE EVALUATED: {tool_calls}
-TOOL DEFINITIONS: {tool_definitions}
+<Conversation>
+{query}
+</Conversation>
 
-# Tasks
+<Tool Calls>
+{tool_calls}
+</Tool Calls>
+
+<Tool Definitions>
+{tool_definitions}
+</Tool Definitions>
+
+<Output Schema>
 Please provide your evaluation for the tool calls in relation to the user query and tool definitions.
 Your output should be a JSON object with the following format:
-```json
 {{
     "score": [Tool Call Accuracy Score],
-    "reason": [Reason for the score],
+    "reason": [Reason for the score]
 }}
-```
+</Output Schema>
+JSON:
 """
 ).strip()
 
 # Chinese Prompt
 TOOL_CALL_ACCURACY_PROMPT_ZH = textwrap.dedent(
-    """# 指令
-## 目标
-你是评估工具调用准确性的专家，需要考虑相关性和潜在有用性，包括基于提供的定义和数据，对智能系统提出的工具调用的语法和语义正确性进行评估。你的目标是使用提供的信息回答以下问题。
+    """你是评估工具调用准确性的专家，需要考虑相关性和潜在有用性，包括基于提供的定义和数据，对智能系统提出的工具调用的语法和语义正确性进行评估。你的目标是使用提供的信息回答以下问题。
 
-# 定义
+<评分标准>
 **工具调用准确性**是指智能体在正在进行的对话中响应用户查询所做的工具调用的整体有效性。
 
-# 评估标准
 基于以下因素进行评估：
 1. **工具相关性**：工具调用是否适当地解决了用户的查询？
 2. **参数正确性**：所有参数值是否从对话中提取或合理推断？
+</评分标准>
 
-# 评分
-- 分数 1：工具调用与回答用户问题无关，所有工具调用名称均未在工具定义中找到对应的函数名称，或者工具调用的参数不正确。
-- 分数 2：工具调用与回答用户问题无关，部分工具调用名称未在工具定义中找到对应的函数名称，或者工具调用的参数不正确。
-- 分数 3：工具调用与回答用户问题部分相关，工具定义中的描述与用户问题相关，所有工具调用名称均在工具定义中找到对应的函数名称，并且工具调用的参数正确，但与工具定义中的描述无关。
-- 分数 4：工具调用与回答用户问题基本相关，所有工具调用名称均在工具定义中找到对应的函数名称，并且工具调用的参数正确，与工具定义中的描述相关。
-- 分数 5：工具调用与回答用户查询完全相关，所有工具调用的名称都可以在工具定义中找到，并且工具调用的参数与工具定义中的描述一致且正确。
+<评分量表>
+- **分数 1**：工具调用与回答用户问题无关，所有工具调用名称均未在工具定义中找到对应的函数名称，或者工具调用的参数不正确。
+- **分数 2**：工具调用与回答用户问题无关，部分工具调用名称未在工具定义中找到对应的函数名称，或者工具调用的参数不正确。
+- **分数 3**：工具调用与回答用户问题部分相关，工具定义中的描述与用户问题相关，所有工具调用名称均在工具定义中找到对应的函数名称，并且工具调用的参数正确，但与工具定义中的描述无关。
+- **分数 4**：工具调用与回答用户问题基本相关，所有工具调用名称均在工具定义中找到对应的函数名称，并且工具调用的参数正确，与工具定义中的描述相关。
+- **分数 5**：工具调用与回答用户查询完全相关，所有工具调用的名称都可以在工具定义中找到，并且工具调用的参数与工具定义中的描述一致且正确。
+</评分量表>
 
-# 数据
-对话：{query}
-待评估的工具调用：{tool_calls}
-工具定义：{tool_definitions}
+<对话>
+{query}
+</对话>
 
-# 任务
+<工具调用>
+{tool_calls}
+</工具调用>
+
+<工具定义>
+{tool_definitions}
+</工具定义>
+
+<输出格式>
 请提供对工具调用相对于用户查询和工具定义的评估。
 你的输出应该是具有以下格式的 JSON 对象：
-```json
 {{
     "score": [工具调用准确性分数],
-    "reason": [分数的原因],
+    "reason": [分数的原因]
 }}
-```
+</输出格式>
+JSON:
 """
 ).strip()
 

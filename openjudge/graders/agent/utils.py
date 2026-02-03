@@ -147,11 +147,12 @@ def calculate_semantic_similarity(text1: str, text2: str) -> float:
         return 0.0
 
 
-def format_history(history: Optional[list] = None) -> str:
+def format_history(history: Optional[list] = None, include_tags: bool = True) -> str:
     """Format history steps for evaluation.
 
     Args:
         history: Optional list of previous step dictionaries
+        include_tags: Whether to include <History Steps> tags (default: True)
 
     Returns:
         Formatted history string, or empty string if no history
@@ -159,14 +160,17 @@ def format_history(history: Optional[list] = None) -> str:
     if not history:
         return ""
 
-    lines = ["<History Steps>"]
+    lines = []
+    if include_tags:
+        lines.append("<History Steps>")
     for i, hist_step in enumerate(history):
         lines.append(f"Step {i + 1}:")
         for key, value in hist_step.items():
             if value:
                 lines.append(f"{key.capitalize()}: {value}")
         lines.append("")
-    lines.append("</History Steps>")
+    if include_tags:
+        lines.append("</History Steps>")
 
     return "\n".join(lines)
 
