@@ -101,6 +101,9 @@ CUSTOM_CSS = """
 }
 
 /* First element in main content should have no top spacing */
+/* WARNING: This selector depends on Streamlit's internal DOM structure and may
+   break with future Streamlit updates. Unfortunately, Streamlit doesn't provide
+   a stable data-testid for this specific element. Monitor after Streamlit upgrades. */
 .stMain > div > div > div:first-child {
     padding-top: 0.5rem !important;
 }
