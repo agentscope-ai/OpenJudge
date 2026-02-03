@@ -24,60 +24,59 @@ HALLUCINATION_PROMPT_EN = textwrap.dedent(
     """
 You are a professional data annotator responsible for evaluating whether the model response contains hallucinations. Your task is to score according to the following criteria:
 
-<Scoring Criteria>
+<Rubrics>
 A hallucination-free response should:
 - Contain only verifiable facts (If context is provided, verify support from the context. If no context is provided or if the context is inconsistent with facts/common knowledge, verify factual correctness based on common knowledge).
 - Not make unsupported claims or assumptions.
 - Not add speculative or imagined details.
 - Be completely accurate regarding dates, numbers, and specific details.
 - Appropriately indicate uncertainty when information is incomplete.
-</Scoring Criteria>
+</Rubrics>
 
-<Guidance>
+<Steps>
 - Thoroughly read the query and response.
 - Identify all claims made in the response.
 - If context is provided: Cross-check each claim with the context.
 - If no context is provided, or the context is inconsistent with facts/common knowledge: verify the statement based on common knowledge and logical consistency.
 - Note any unsupported, contradictory, or factually incorrect information.
 - Consider the severity and number of hallucinations.
-</Guidance>
+</Steps>
 
-<Reminder>
+<Constraints>
 Focus only on factual accuracy. If context is provided, verify support from the context. If no context is provided or if the context is inconsistent with facts/common knowledge, verify factual correctness based on common knowledge. Do not consider style, grammar, or presentation when scoring. A short but factual response should score higher than a longer response containing unsupported claims.
-</Reminder>
+</Constraints>
 
-<query>
-{query}
-</query>
-
-<response>
-{response}
-</response>
-
-Use the following context to help you evaluate whether there are hallucinations in the response (ignore if empty):
-<context>
-{context}
-</context>
-
-If available, you may also use the following reference response to help you identify hallucinations in the response (ignore if empty):
-<reference_response>
-{reference_response}
-</reference_response>
-
-
-# Output Instructions
-Provide your evaluation in the following structured JSON format:
-{{
-    "score": <integer between 1 and 5, where 5 means no hallucinations and 1 means severe hallucinations>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning any hallucinations found or confirming factual accuracy>"
-}}
-
-Scoring Scale:
+<Scale>
 - 5: Response is not hallucinatory
 - 4: Response has slight deviation
 - 3: Response is partially fabricated
 - 2: Response is seriously fabricated
 - 1: Response is completely fabricated
+</Scale>
+
+<Query>
+{query}
+</Query>
+
+<Context>
+{context}
+</Context>
+
+<Reference Response>
+{reference_response}
+</Reference Response>
+
+<Response>
+{response}
+</Response>
+
+<Output Schema>
+Provide your evaluation in the following structured JSON format:
+{{
+    "score": <integer between 1 and 5, where 5 means no hallucinations and 1 means severe hallucinations>,
+    "reason": "<brief explanation for the assigned score, specifically mentioning any hallucinations found or confirming factual accuracy>"
+}}
+</Output Schema>
 
 JSON:
 """
@@ -97,50 +96,50 @@ HALLUCINATION_PROMPT_ZH = textwrap.dedent(
 - 在信息不完整时适当地表示不确定性。
 </评分标准>
 
-<指导>
+<评估步骤>
 - 仔细阅读输入问题和输出回答。
 - 识别输出中的所有声明。
 - 如果提供了上下文：需要参考上下文。
 - 如果未提供上下文或者上下文与事实/常识不一致：根据常识和逻辑一致性验证声明。
 - 注意任何无依据、矛盾或事实错误的信息。
 - 考虑幻觉的严重程度和数量。
-</指导>
+</评估步骤>
 
-<提醒>
+<注意事项>
 仅关注事实准确性。如果提供了上下文，则需要参考上下文。如果未提供上下文或者上下文与事实/常识不一致，则基于事实/常识验证事实正确性。评分时不要考虑风格、语法或呈现方式。简短但真实的回答应该比包含无依据声明的较长回答得分更高。
-</提醒>
+</注意事项>
 
-<查询>
-{query}
-</查询>
-
-<回答>
-{response}
-</回答>
-
-使用以下上下文帮助你评估输出中是否存在幻觉（如为空则忽略）:
-<上下文>
-{context}
-</上下文>
-
-如有需要，你也可以使用以下参考输出来帮助识别回答中的幻觉（如为空则忽略）：
-<参考回答>
-{reference_response}
-</参考回答>
-
-# 输出指令
-请按以下结构化 JSON 格式提供你的评估：
-{{
-    "score": <1到5之间的整数，其中5表示无幻觉，1表示完全捏造>,
-    "reason": "<对所给分数的简要解释，特别提到发现的任何幻觉或确认事实准确性>"
-}}
-
-评分标尺：
+<评分量表>
 - 5: 输出回答无幻觉
 - 4: 输出回答轻微偏差
 - 3: 输出回答局部虚构
 - 2: 输出回答严重虚构
 - 1: 输出回答完全捏造
+</评分量表>
+
+<查询>
+{query}
+</查询>
+
+<上下文>
+{context}
+</上下文>
+
+<参考回复>
+{reference_response}
+</参考回复>
+
+<回复>
+{response}
+</回复>
+
+<输出格式>
+请按以下结构化 JSON 格式提供你的评估：
+{{
+    "score": <1到5之间的整数，其中5表示无幻觉，1表示完全捏造>,
+    "reason": "<对所给分数的简要解释，特别提到发现的任何幻觉或确认事实准确性>"
+}}
+</输出格式>
 
 JSON:
 """

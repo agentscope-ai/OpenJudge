@@ -20,10 +20,10 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # English Prompt
 INSTRUCTION_FOLLOWING_PROMPT_EN = textwrap.dedent(
     """
-You are a professional data annotator responsible for evaluating whether the model response follows the given
-instructions. Your task is to score according to the following criteria:
+You are a professional data annotator responsible for evaluating whether the model response follows
+the given instructions. Your task is to score according to the following criteria:
 
-<Scoring Criteria>
+<Rubrics>
 A response that perfectly follows instructions should:
 - Address all required topics, questions, or tasks mentioned in the instruction.
 - Follow the specified format exactly (e.g., JSON, bullet points, numbered list, essay format).
@@ -39,52 +39,52 @@ Points should be deducted for:
 - Omitting required elements.
 - Adding excessive unrequested information.
 - Misinterpreting the instruction's intent.
-</Scoring Criteria>
+</Rubrics>
 
-<Guidance>
+<Steps>
 - Carefully parse the instruction to identify ALL requirements and constraints.
 - Break down complex instructions into individual requirements.
 - Check each requirement systematically against the response.
 - Consider both explicit requirements (stated clearly) and implicit requirements (strongly implied).
 - Evaluate format, structure, and style requirements separately from content requirements.
 - Be strict: partial fulfillment should result in lower scores.
-</Guidance>
+</Steps>
 
-<Reminder>
-The goal is to evaluate instruction-following capability, not content quality per se. A response can be well-written but
- score low if it doesn't follow instructions. Conversely, a simple response that perfectly follows all instructions
- should score high.
-</Reminder>
+<Constraints>
+The goal is to evaluate instruction-following capability, not content quality per se. A response can
+be well-written but score low if it doesn't follow instructions. Conversely, a simple response that
+perfectly follows all instructions should score high.
+</Constraints>
 
-Evaluate the following:
-
-<instruction>
-{instruction}
-</instruction>
-
-<query>
-{query}
-</query>
-
-<response>
-{response}
-</response>
-
-# Output Instructions
-Provide your evaluation in the following structured JSON format:
-{{
-    "score": <integer between 1 and 5, where 5 means perfect instruction adherence and 1 means complete failure to
-    follow instructions>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning which instruction requirements were
-    met or violated>"
-}}
-
-Scoring Scale:
+<Scale>
 - 5: Perfect adherence to all instruction aspects
 - 4: Follows most instructions with minor deviations
 - 3: Partial adherence, misses some requirements
 - 2: Significant instruction violations, misses major requirements
 - 1: Complete failure to follow instructions or major misunderstanding
+</Scale>
+
+<Instruction>
+{instruction}
+</Instruction>
+
+<Query>
+{query}
+</Query>
+
+<Response>
+{response}
+</Response>
+
+<Output Schema>
+Provide your evaluation in the following structured JSON format:
+{{
+    "score": <integer between 1 and 5, where 5 means perfect instruction adherence
+             and 1 means complete failure to follow instructions>,
+    "reason": "<brief explanation for the assigned score, specifically mentioning which instruction
+               requirements were met or violated>"
+}}
+</Output Schema>
 
 JSON:
 """
@@ -113,20 +113,26 @@ INSTRUCTION_FOLLOWING_PROMPT_ZH = textwrap.dedent(
 - 误解指令的意图。
 </评分标准>
 
-<指导>
+<评估步骤>
 - 仔细解析指令以识别所有要求和约束。
 - 将复杂的指令分解为单个要求。
 - 系统地根据输出检查每个要求。
 - 考虑明确的要求（清楚陈述的）和隐含的要求（强烈暗示的）。
 - 将格式、结构和风格要求与内容要求分开评估。
 - 严格要求：部分满足应导致较低的分数。
-</指导>
+</评估步骤>
 
-<提醒>
+<注意事项>
 目标是评估指令遵循能力，而不是内容质量本身。一个回答可能写得很好，但如果不遵循指令就会得分低。相反，一个简单但完美遵循所有指令的回答应该得到高分。
-</提醒>
+</注意事项>
 
-评估以下内容：
+<评分量表>
+- 5: 完美遵循指令的所有方面
+- 4: 遵循大部分指令，有轻微偏离
+- 3: 部分遵循，遗漏一些要求
+- 2: 明显违反指令，遗漏主要要求
+- 1: 完全未能遵循指令或严重误解
+</评分量表>
 
 <指令>
 {instruction}
@@ -136,23 +142,17 @@ INSTRUCTION_FOLLOWING_PROMPT_ZH = textwrap.dedent(
 {query}
 </查询>
 
-<回答>
+<回复>
 {response}
-</回答>
+</回复>
 
-# 输出指令
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
     "score": <1到5之间的整数，其中5表示完美遵循指令，1表示完全未能遵循指令>,
     "reason": "<对所给分数的简要解释，特别提到满足或违反了哪些指令要求>"
 }}
-
-评分标尺：
-- 5: 完美遵循指令的所有方面
-- 4: 遵循大部分指令，有轻微偏离
-- 3: 部分遵循，遗漏一些要求
-- 2: 明显违反指令，遗漏主要要求
-- 1: 完全未能遵循指令或严重误解
+</输出格式>
 
 JSON:
 """

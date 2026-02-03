@@ -20,10 +20,11 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 # English Prompt
 CORRECTNESS_PROMPT_EN = textwrap.dedent(
     """
-You are a professional data annotator responsible for evaluating whether the model response matches the provided
-correct response (reference response). Your task is to score according to the following criteria:
+You are a professional data annotator responsible for evaluating whether the model response matches
+the provided correct response (reference response). Your task is to score according to the
+following criteria:
 
-<Scoring Criteria>
+<Rubrics>
 A response that perfectly matches the reference response should:
 - Maintain factual consistency with all information in the reference response.
 - Include key points from the reference response that are relevant to the query.
@@ -41,60 +42,61 @@ Points should be deducted for:
 - Significantly departing from reference response style/format when matching is expected.
 - Taking reference response information out of context.
 - Over-relying on reference response when original synthesis is needed.
-</Scoring Criteria>
+</Rubrics>
 
-<Guidance>
+<Steps>
 - Carefully read the reference response to understand its key facts, style, and content.
 - Compare each claim in the response against the reference response.
 - Check if the response appropriately balances using reference response info vs. answering the specific question.
 - Evaluate whether the response matches the reference response's level of detail and confidence.
 - Consider if the response properly attributes or grounds information in the reference response.
 - Assess whether the response adds appropriate synthesis or only paraphrases.
-</Guidance>
+</Steps>
 
-<Reminder>
-The goal is to evaluate correctness against reference response, not general quality. A well-written response that
-contradicts the reference response should score low. A simple response that accurately reflects and properly uses the
-reference response should score high. Consider both accuracy and appropriate application of the reference response.
-</Reminder>
+<Constraints>
+The goal is to evaluate correctness against reference response, not general quality. A well-written
+response that contradicts the reference response should score low. A simple response that accurately
+reflects and properly uses the reference response should score high. Consider both accuracy and
+appropriate application of the reference response.
+</Constraints>
 
-<query>
+<Scale>
+- 5: The answer is completely consistent with the reference answer in terms of facts, key details,
+logic, and conclusions. Different wording is acceptable as long as the meaning is equivalent.
+- 4: The core conclusion of the answer is consistent with the reference answer, but there are
+non-critical omissions, vague statements, or minor errors that do not affect user understanding.
+- 3: The answer contains some correct information, but omits key points, contains verifiable errors,
+or significantly misinterprets the reference content.
+- 2: The core conclusion or key facts of the answer contradict the reference answer, containing only
+a few superficially related words, and are generally misleading.
+- 1: The answer is completely unrelated to or directly contradicts the reference answer.
+</Scale>
+
+<Query>
 {query}
-</query>
+</Query>
 
-<response>
-{response}
-</response>
-
-Additional context (ignore if empty):
-<context>
+<Context>
 {context}
-</context>
+</Context>
 
-The following is the correct response for your reference (ignore if empty):
-<reference_response>
+<Reference Response>
 {reference_response}
-</reference_response>
+</Reference Response>
 
-# Output Instructions
+<Response>
+{response}
+</Response>
+
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means perfect match with reference response and 1 means complete
-    deviation from reference response>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning how the response aligns with or
-    deviates from the reference response>"
+    "score": <integer between 1 and 5, where 5 means perfect match with reference response
+             and 1 means complete deviation from reference response>,
+    "reason": "<brief explanation for the assigned score, specifically mentioning how the response
+               aligns with or deviates from the reference response>"
 }}
-
-Scoring Scale:
-- 5: The answer is completely consistent with the reference answer in terms of facts, key details, logic, and
-conclusions. Different wording is acceptable as long as the meaning is equivalent.
-- 4: The core conclusion of the answer is consistent with the reference answer, but there are non-critical omissions,
-vague statements, or minor errors that do not affect user understanding and use.
-- 3: The answer contains some correct information, but omits key points, contains verifiable errors, or significantly
-misinterprets the reference content.
-- 2: The core conclusion or key facts of the answer contradict the reference answer, containing only a few superficially
- related words, and are generally misleading.
-- 1: The answer is completely unrelated to or directly contradicts the reference answer.
+</Output Schema>
 
 JSON:
 """
@@ -125,51 +127,50 @@ CORRECTNESS_PROMPT_ZH = textwrap.dedent(
 - 在需要原创综合时过度依赖参考回答。
 </评分标准>
 
-<指导>
+<评估步骤>
 - 仔细阅读参考回答以理解其关键事实、风格和内容。
 - 将输出中的每个声明与参考回答进行比较。
 - 检查输出是否适当地平衡使用参考回答信息和回答特定问题。
 - 评估输出是否与参考回答的细节水平和可信度相匹配。
 - 考虑输出是否正确地在参考回答中归因或支撑信息。
 - 评估输出是否添加了适当的综合还是仅仅转述。
-</指导>
+</评估步骤>
 
-<提醒>
-目标是评估与参考回答的正确性，而不是一般质量。一个写得很好但与参考回答矛盾的回答应该得分低。一个简单但准确反映并正确使用参考回答的回答应该得分高
-。同时考虑准确性和参考回答的适当应用。
-</提醒>
+<注意事项>
+目标是评估与参考回答的正确性，而不是一般质量。一个写得很好但与参考回答矛盾的回答应该得分低。一个简单但准确反映并正确使用参考回答的回答应该得分高。同时考虑准确性和参考回答的适当应用。
+</注意事项>
 
-<查询>
-{query}
-</查询>
-
-<回答>
-{response}
-</回答>
-
-附加上下文（如为空则忽略）:
-<上下文>
-{context}
-</上下文>
-
-以下是正确的回复供你参考（用于比较，如为空则忽略）：
-<参考回答>
-{reference_response}
-</参考回答>
-
-# 输出指令
-请按以下结构化 JSON 格式提供你的评估：
-{{
-    "score": <1到5之间的整数，其中5表示完美匹配参考回答，1表示完全偏离参考回答>,
-    "reason": "<对所给分数的简要解释，特别提到输出如何与参考回答一致或偏离>"
-}}
-
-评分标尺：
+<评分量表>
 - 5: 回答在事实、关键细节、逻辑和结论上与参考回答完全一致，允许措辞不同但语义等价。
 - 4: 回答的核心结论与参考回答一致，但存在非关键性省略、模糊表述或微小误差，不影响用户理解与使用。
 - 3: 回答包含部分正确信息，但遗漏关键点、包含可验证错误，或对参考内容有明显曲解。
 - 2: 回答的核心结论或关键事实与参考回答矛盾，仅含少量表面相关词，整体具有误导性。
 - 1: 回答与参考回答完全无关或直接矛盾
+</评分量表>
+
+<查询>
+{query}
+</查询>
+
+<上下文>
+{context}
+</上下文>
+
+<参考回复>
+{reference_response}
+</参考回复>
+
+<回复>
+{response}
+</回复>
+
+<输出格式>
+请按以下结构化 JSON 格式提供你的评估：
+{{
+    "score": <1到5之间的整数，其中5表示完美匹配参考回答，1表示完全偏离参考回答>,
+    "reason": "<对所给分数的简要解释，特别提到输出如何与参考回答一致或偏离>"
+}}
+</输出格式>
 
 JSON:
 """
