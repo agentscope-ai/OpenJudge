@@ -244,6 +244,16 @@ class PromptFormatChecker:
                     return True
             return False
 
+        def get_base_tag_name(tag: str) -> str:
+            """
+            Extract base tag name, removing (Optional) or （可选） suffixes.
+            e.g., "Context (Optional)" -> "Context"
+            """
+            # Remove (Optional) or （可选） suffix
+            tag = re.sub(r"\s*\(Optional\)\s*$", "", tag, flags=re.IGNORECASE)
+            tag = re.sub(r"\s*（可选）\s*$", "", tag)
+            return tag.strip()
+
         # Find all opening tags
         open_pattern = r"<([^/][^>]*)>"
         open_tags = re.findall(open_pattern, prompt)
@@ -252,20 +262,28 @@ class PromptFormatChecker:
         close_pattern = r"</([^>]+)>"
         close_tags = re.findall(close_pattern, prompt)
 
+        # Build a set of base names from closing tags for matching
+        close_tag_bases = {get_base_tag_name(tag) for tag in close_tags}
+
         # Check for unclosed opening tags
         for tag in set(open_tags):
             if should_ignore(tag):
                 continue
-            close_tag = f"</{tag}>"
-            if close_tag not in prompt:
+            base_name = get_base_tag_name(tag)
+            # Check if there's a matching closing tag (by base name)
+            if base_name not in close_tag_bases:
                 unpaired.append(f"<{tag}> (unclosed)")
+
+        # Build a set of base names from opening tags for matching
+        open_tag_bases = {get_base_tag_name(tag) for tag in open_tags}
 
         # Check for closing tags without opening tags
         for tag in set(close_tags):
             if should_ignore(tag):
                 continue
-            open_tag = f"<{tag}>"
-            if open_tag not in prompt:
+            base_name = get_base_tag_name(tag)
+            # Check if there's a matching opening tag (by base name)
+            if base_name not in open_tag_bases:
                 unpaired.append(f"</{tag}> (no opening tag)")
 
         return unpaired
