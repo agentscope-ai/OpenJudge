@@ -14,6 +14,7 @@ from features.grader.services.grader_factory import (
     run_evaluation,
     run_multimodal_evaluation,
 )
+from features.grader.services.single_evaluation_logger import log_single_evaluation
 from shared.components.common import render_empty_state, render_section_header
 from shared.i18n import t
 from shared.services.model_factory import create_model
@@ -227,6 +228,17 @@ def _run_evaluation(
             st.session_state.last_threshold = sidebar_config.get("threshold", 0.5)
             st.session_state.elapsed_time = elapsed
 
+            # Log evaluation for analytics
+            log_single_evaluation(
+                grader_name=grader_name,
+                input_data=input_data,
+                result=result,
+                threshold=sidebar_config.get("threshold", 0.5),
+                elapsed_time=elapsed,
+                model_name=sidebar_config.get("model_name"),
+                extra_params=sidebar_config.get("extra_params"),
+            )
+
             status.update(
                 label=f"Evaluation complete ({format_elapsed_time(elapsed)})",
                 state="complete",
@@ -234,10 +246,22 @@ def _run_evaluation(
         except Exception as e:  # pylint: disable=broad-exception-caught
             logging.exception("Evaluation failed with an unexpected error.")
             status.update(label="Evaluation failed", state="error")
-            st.session_state.evaluation_result = GraderError(
+            error_result = GraderError(
                 name=grader_name,
                 error=str(e),
                 reason=f"Exception: {type(e).__name__}: {str(e)}",
+            )
+            st.session_state.evaluation_result = error_result
+
+            # Log failed evaluation for analytics
+            log_single_evaluation(
+                grader_name=grader_name,
+                input_data=input_data,
+                result=error_result,
+                threshold=sidebar_config.get("threshold", 0.5),
+                elapsed_time=time.time() - start_time,
+                model_name=sidebar_config.get("model_name"),
+                extra_params=sidebar_config.get("extra_params"),
             )
 
 
