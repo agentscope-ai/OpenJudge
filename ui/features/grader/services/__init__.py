@@ -28,6 +28,11 @@ from features.grader.services.grader_factory import (
     run_evaluation,
     run_multimodal_evaluation,
 )
+from features.grader.services.single_evaluation_logger import (
+    SingleEvaluationLogger,
+    get_single_evaluation_logger,
+    log_single_evaluation,
+)
 
 __all__ = [
     "create_grader",
@@ -52,4 +57,8 @@ __all__ = [
     "BatchProgress",
     "BatchResult",
     "BatchStatus",
+    # Single evaluation logger
+    "SingleEvaluationLogger",
+    "get_single_evaluation_logger",
+    "log_single_evaluation",
 ]
