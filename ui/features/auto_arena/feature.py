@@ -309,6 +309,9 @@ class AutoArenaFeature(BaseFeature):
             config: Configuration dictionary
             progress_placeholder: Streamlit empty placeholder for progress display
         """
+        # Track evaluation success for auto-refresh
+        evaluation_success = False
+
         # Generate output directory
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = str(Path.home() / ".openjudge_studio" / "evaluations" / f"zs_{timestamp}")
@@ -386,6 +389,9 @@ class AutoArenaFeature(BaseFeature):
                         medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}."
                         st.write(f"{medal} {name}: {win_rate:.1%}")
 
+                    # Mark evaluation as completed successfully
+                    evaluation_success = True
+
                 except Exception as e:
                     progress.stage = PipelineStage.FAILED
                     progress.error = str(e)
@@ -394,6 +400,11 @@ class AutoArenaFeature(BaseFeature):
                     st.error(t("arena.progress.failed_msg", error=str(e)))
                     st.write("---")
                     st.write(f"💡 **{t('arena.progress.resume_tip')}**")
+                    evaluation_success = False
+
+        # Auto-refresh page after evaluation completes to show full result panel with chart
+        if evaluation_success:
+            st.rerun()
 
     def _render_quick_guide(self) -> None:
         """Render the quick start guide."""

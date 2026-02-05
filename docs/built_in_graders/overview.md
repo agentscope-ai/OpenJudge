@@ -29,13 +29,13 @@ Choose the right grader for your evaluation needs. OpenJudge organizes graders b
 
 Evaluate fundamental response quality including relevance, safety, and correctness. [→ Detailed Documentation](general.md)
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `RelevanceGrader` | Evaluates how relevant a response is to the user's query | LLM-Based | 1-5 |
-| `HallucinationGrader` | Detects fabricated information not supported by context | LLM-Based | 1-5 |
-| `HarmfulnessGrader` | Identifies harmful, offensive, or inappropriate content | LLM-Based | 1-5 |
-| `InstructionFollowingGrader` | Checks if response follows given instructions | LLM-Based | 1-5 |
-| `CorrectnessGrader` | Verifies response matches reference answer | LLM-Based | 1-5 |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `RelevanceGrader` | Evaluates how relevant a response is to the user's query | LLM-Based | 1-5 |
+|| `HallucinationGrader` | Detects fabricated information not supported by context | LLM-Based | 1-5 |
+|| `HarmfulnessGrader` | Identifies harmful, offensive, or inappropriate content | LLM-Based | 1-5 |
+|| `InstructionFollowingGrader` | Checks if response follows given instructions | LLM-Based | 1-5 |
+|| `CorrectnessGrader` | Verifies response matches reference answer | LLM-Based | 1-5 |
 
 
 ### Agent Graders
@@ -44,107 +44,108 @@ Comprehensive evaluation for AI agents across the entire lifecycle. [→ Detaile
 
 **Action Graders**
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `ActionAlignmentGrader` | Evaluates if agent actions align with goals | LLM-Based | {0, 1} |
-| `ActionLoopDetectionGrader` | Detects repetitive action loops | Code-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `ActionAlignmentGrader` | Evaluates if agent actions align with goals | LLM-Based | {0, 1} |
+|| `ActionLoopDetectionGrader` | Detects repetitive action loops | Code-Based | {0, 1} |
 
 **Tool Graders**
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `ToolSelectionGrader` | Evaluates appropriateness of tool selection | LLM-Based | 1-5 |
-| `ToolCallAccuracyGrader` | Checks tool call correctness | LLM-Based | 1-5 |
-| `ToolCallStepSequenceMatchGrader` | Multi-step tool sequence matching with step alignment for complex multi-turn agents | Code-Based | [0, 1] |
-| `ToolCallPrecisionRecallMatchGrader` | Simple precision/recall for flat tool call lists (single-step scenarios) | Code-Based | [0, 1] |
-| `ToolCallSuccessGrader` | Checks if tool calls succeeded | LLM-Based | {0, 1} |
-| `ToolParameterCheckGrader` | Validates tool parameters | LLM-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `ToolSelectionGrader` | Evaluates appropriateness of tool selection | LLM-Based | 1-5 |
+|| `ToolCallAccuracyGrader` | Checks tool call correctness | LLM-Based | 1-5 |
+|| `ToolCallStepSequenceMatchGrader` | Multi-step tool sequence matching with step alignment for complex multi-turn agents | Code-Based | [0, 1] |
+|| `ToolCallPrecisionRecallMatchGrader` | Simple precision/recall for flat tool call lists (single-step scenarios) | Code-Based | [0, 1] |
+|| `ToolCallSuccessGrader` | Checks if tool calls succeeded | LLM-Based | {0, 1} |
+|| `ToolParameterCheckGrader` | Validates tool parameters | LLM-Based | {0, 1} |
 
 **Memory Graders**
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `MemoryAccuracyGrader` | Evaluates accuracy of stored memories | LLM-Based | {0, 1} |
-| `MemoryDetailPreservationGrader` | Checks if important details are preserved | LLM-Based | {0, 1} |
-| `MemoryRetrievalEffectivenessGrader` | Evaluates memory retrieval quality | LLM-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `MemoryAccuracyGrader` | Evaluates accuracy of stored memories | LLM-Based | {0, 1} |
+|| `MemoryDetailPreservationGrader` | Checks if important details are preserved | LLM-Based | {0, 1} |
+|| `MemoryRetrievalEffectivenessGrader` | Evaluates memory retrieval quality | LLM-Based | {0, 1} |
 
 **Plan & Reflection Graders**
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `PlanFeasibilityGrader` | Evaluates if plans are executable | LLM-Based | {0, 1} |
-| `ReflectionAccuracyGrader` | Checks accuracy of agent reflections | LLM-Based | {0, 1} |
-| `ReflectionOutcomeUnderstandingGrader` | Evaluates understanding of outcomes | LLM-Based | {0, 1} |
-| `ReflectionProgressAwarenessGrader` | Checks awareness of task progress | LLM-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `PlanFeasibilityGrader` | Evaluates if plans are executable | LLM-Based | {0, 1} |
+|| `ReflectionAccuracyGrader` | Checks accuracy of agent reflections | LLM-Based | {0, 1} |
+|| `ReflectionOutcomeUnderstandingGrader` | Evaluates understanding of outcomes | LLM-Based | {0, 1} |
+|| `ReflectionProgressAwarenessGrader` | Checks awareness of task progress | LLM-Based | {0, 1} |
 
 **Observation Graders**
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `ObservationInformationGainGrader` | Evaluates information gain from observations | Code-Based | [0, 1] |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `ObservationInformationGainGrader` | Evaluates information gain from observations | Code-Based | [0, 1] |
 
 **Trajectory Graders**
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `TrajectoryComprehensiveGrader` | Comprehensive trajectory evaluation | LLM-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `TrajectoryAccuracyGrader` | Evaluates trajectory accuracy in achieving goals | LLM-Based | 1-3 |
+|| `TrajectoryComprehensiveGrader` | Comprehensive trajectory evaluation | LLM-Based | {0, 1} |
 
 
 ### Text Graders
 
 Fast, deterministic text comparison using various algorithms. [→ Detailed Documentation](text.md)
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `SimilarityGrader` | Text similarity with 15+ algorithms (BLEU, ROUGE, F1, etc.) | Code-Based | [0, 1] |
-| `StringMatchGrader` | String matching (exact, prefix, suffix, regex, etc.) | Code-Based | {0, 1} |
-| `NumberAccuracyGrader` | Compares numerical values with tolerance | Code-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `SimilarityGrader` | Text similarity with 15+ algorithms (BLEU, ROUGE, F1, etc.) | Code-Based | [0, 1] |
+|| `StringMatchGrader` | String matching (exact, prefix, suffix, regex, etc.) | Code-Based | {0, 1} |
+|| `NumberAccuracyGrader` | Compares numerical values with tolerance | Code-Based | {0, 1} |
 
 
 ### Code Graders
 
 Evaluate code quality, syntax, and execution. [→ Detailed Documentation](code_math.md)
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `CodeExecutionGrader` | Executes code against test cases | Code-Based | [0, 1] |
-| `SyntaxCheckGrader` | Validates Python syntax using AST | Code-Based | {0, 1} |
-| `CodeStyleGrader` | Checks indentation and naming conventions | Code-Based | [0, 1] |
-| `PatchSimilarityGrader` | Compares code patches using SequenceMatcher | Code-Based | [0, 1] |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `CodeExecutionGrader` | Executes code against test cases | Code-Based | [0, 1] |
+|| `SyntaxCheckGrader` | Validates Python syntax using AST | Code-Based | {0, 1} |
+|| `CodeStyleGrader` | Checks indentation and naming conventions | Code-Based | [0, 1] |
+|| `PatchSimilarityGrader` | Compares code patches using SequenceMatcher | Code-Based | [0, 1] |
 
 
 ### Math Graders
 
 Verify mathematical expressions and computations. [→ Detailed Documentation](code_math.md)
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `MathExpressionVerifyGrader` | Verifies math expressions (LaTeX & plain) | Code-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `MathExpressionVerifyGrader` | Verifies math expressions (LaTeX & plain) | Code-Based | {0, 1} |
 
 
 ### Format Graders
 
 Validate structured outputs and formatting. [→ Detailed Documentation](format.md)
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `JsonValidatorGrader` | Validates JSON syntax | Code-Based | {0, 1} |
-| `JsonMatchGrader` | Deep comparison of JSON structures | Code-Based | {0, 1} |
-| `LengthPenaltyGrader` | Penalizes too short/long responses | Code-Based | ≤0 (penalty) |
-| `NgramRepetitionPenaltyGrader` | Penalizes repetitive n-grams | Code-Based | ≤0 (penalty) |
-| `ReasoningFormatGrader` | Checks `<think>` and `<answer>` tags | Code-Based | {0, 1} |
-| `ReasoningToolCallFormatGrader` | Validates tool call format with JSON | Code-Based | {0, 1} |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `JsonValidatorGrader` | Validates JSON syntax | Code-Based | {0, 1} |
+|| `JsonMatchGrader` | Deep comparison of JSON structures | Code-Based | {0, 1} |
+|| `LengthPenaltyGrader` | Penalizes too short/long responses | Code-Based | ≤0 (penalty) |
+|| `NgramRepetitionPenaltyGrader` | Penalizes repetitive n-grams | Code-Based | ≤0 (penalty) |
+|| `ReasoningFormatGrader` | Checks `<think>` and `<answer>` tags | Code-Based | {0, 1} |
+|| `ReasoningToolCallFormatGrader` | Validates tool call format with JSON | Code-Based | {0, 1} |
 
 
 ### Multimodal Graders
 
 Evaluate vision-language tasks and image quality. [→ Detailed Documentation](multimodal.md)
 
-| Grader | Description | Type | Score Range |
-|--------|-------------|------|-------------|
-| `ImageCoherenceGrader` | Evaluates image-text coherence | LLM-Based | 1-5 |
-| `ImageHelpfulnessGrader` | Assesses if images help understanding | LLM-Based | 1-5 |
-| `TextToImageGrader` | Evaluates text-to-image generation quality | LLM-Based | 1-5 |
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `ImageCoherenceGrader` | Evaluates image-text coherence | LLM-Based | 1-5 |
+|| `ImageHelpfulnessGrader` | Assesses if images help understanding | LLM-Based | 1-5 |
+|| `TextToImageGrader` | Evaluates text-to-image generation quality | LLM-Based | 1-5 |
 
 ## Next Steps
 

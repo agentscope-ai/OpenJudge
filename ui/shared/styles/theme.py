@@ -604,10 +604,10 @@ CUSTOM_CSS = """
     padding-top: 0 !important;
 }
 
-/* Hide the original header area completely */
+/* Position the sidebar header area (contains collapse button) */
 [data-testid="stSidebarHeader"] {
     position: absolute !important;
-    top: 0.6rem !important;
+    top: 1.5rem !important;  /* Align with logo/title center after hiding empty container */
     right: 0.5rem !important;
     left: auto !important;
     width: auto !important;
@@ -620,6 +620,12 @@ CUSTOM_CSS = """
 /* Collapse button styling */
 [data-testid="stSidebarCollapseButton"] {
     margin: 0 !important;
+    opacity: 0.6 !important;
+    transition: opacity 0.2s ease !important;
+}
+
+[data-testid="stSidebarCollapseButton"]:hover {
+    opacity: 1 !important;
 }
 
 /* Content area - starts from top */
@@ -633,13 +639,19 @@ CUSTOM_CSS = """
     min-height: 0 !important;
 }
 
+/* Hide empty script injection containers at the top of sidebar */
+[data-testid="stSidebar"] .stVerticalBlock > .stElementContainer:first-child {
+    display: none !important;
+}
+
 /* Sidebar header - logo and title inline with space for button */
 .sidebar-header {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.25rem 0;
+    padding: 0.5rem 0;
     padding-right: 2.5rem; /* Space for collapse button */
+    min-height: 44px; /* Ensure consistent height for alignment */
 }
 
 .sidebar-header-text {
@@ -685,9 +697,17 @@ hr {
     outline: none !important;
 }
 
-/* Remove default Streamlit decoration lines */
+/* Remove default Streamlit decoration lines and Deploy button */
 .stDeployButton,
+.stAppDeployButton,
 [data-testid="stDecoration"] {
+    display: none !important;
+}
+
+/* Hide theme selector in Settings modal (stDialog) */
+.stDialog .stSelectbox,
+.stDialog label.e19d0zmo4,
+.stDialog .e19d0zmo2:has(.stSelectbox) {
     display: none !important;
 }
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """End-to-end paper review pipeline."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -21,7 +21,10 @@ from cookbooks.paper_review.schema import (
     CorrectnessResult,
     CriticalityResult,
     PaperReviewResult,
+    ProgressCallback,
+    ReviewProgress,
     ReviewResult,
+    ReviewStage,
     TexPackageInfo,
 )
 from cookbooks.paper_review.utils import encode_pdf_base64, load_pdf_bytes
@@ -43,13 +46,33 @@ class PipelineConfig:
     enable_criticality: bool = True
     enable_bib_verification: bool = True
     crossref_mailto: Optional[str] = None
+    progress_callback: Optional[ProgressCallback] = field(default=None)
 
 
 class PaperReviewPipeline:
     """End-to-end paper review pipeline using OpenJudge."""
 
+    # Stage i18n keys for progress reporting - UI should translate these keys
+    # Format: (stage_name_key, stage_description_key)
+    STAGE_I18N_KEYS = {
+        ReviewStage.LOADING_PDF: ("paper_review.progress.loading_pdf", "paper_review.progress.loading_pdf_desc"),
+        ReviewStage.SAFETY_CHECK: ("paper_review.progress.safety_check", "paper_review.progress.safety_check_desc"),
+        ReviewStage.CORRECTNESS: ("paper_review.progress.correctness", "paper_review.progress.correctness_desc"),
+        ReviewStage.REVIEW: ("paper_review.progress.review", "paper_review.progress.review_desc"),
+        ReviewStage.CRITICALITY: ("paper_review.progress.criticality", "paper_review.progress.criticality_desc"),
+        ReviewStage.BIB_VERIFICATION: (
+            "paper_review.progress.bib_verification",
+            "paper_review.progress.bib_verification_desc",
+        ),
+        ReviewStage.COMPLETED: ("paper_review.progress.completed", "paper_review.progress.completed_desc"),
+        ReviewStage.FAILED: ("paper_review.progress.failed", "paper_review.progress.failed_desc"),
+    }
+
     def __init__(self, config: PipelineConfig):
         self.config = config
+        self._progress_callback = config.progress_callback
+        self._progress = ReviewProgress()
+
         # Use LiteLLM for native PDF support
         from cookbooks.paper_review.models import LiteLLMModel
 
@@ -70,82 +93,173 @@ class PaperReviewPipeline:
         self.format_grader = FormatGrader(self.model)
         self.jailbreaking_grader = JailbreakingGrader(self.model)
 
+    def _count_enabled_stages(self, has_bib: bool = False) -> int:
+        """Count total enabled stages for progress tracking."""
+        count = 1  # Loading PDF is always counted
+        if self.config.enable_safety_checks:
+            count += 1
+        if self.config.enable_correctness:
+            count += 1
+        if self.config.enable_review:
+            count += 1
+        if self.config.enable_criticality:
+            count += 1  # May be skipped but we count it
+        if self.config.enable_bib_verification and has_bib:
+            count += 1
+        return count
+
+    def _notify_progress(
+        self,
+        stage: ReviewStage,
+        completed_stages: int,
+        total_stages: int,
+    ) -> None:
+        """Notify progress callback if set."""
+        if self._progress_callback:
+            # Get i18n keys for this stage (UI will translate)
+            i18n_keys = self.STAGE_I18N_KEYS.get(stage, ("", ""))
+            self._progress.update(
+                stage=stage,
+                stage_name=i18n_keys[0],  # i18n key for stage name
+                stage_description=i18n_keys[1],  # i18n key for description
+                completed_stages=completed_stages,
+                total_stages=total_stages,
+            )
+            self._progress_callback(self._progress)
+
+    def _notify_completed(self) -> None:
+        """Notify progress callback that review is completed."""
+        if self._progress_callback:
+            self._progress.mark_completed()
+            self._progress_callback(self._progress)
+
+    def _notify_failed(self, error: str) -> None:
+        """Notify progress callback that review has failed."""
+        if self._progress_callback:
+            self._progress.mark_failed(error)
+            self._progress_callback(self._progress)
+
     async def review_paper(
         self,
         pdf_input: Union[str, Path, bytes],
         bib_path: Optional[str] = None,
+        bib_content: Optional[str] = None,
     ) -> PaperReviewResult:
         """Review a single paper.
 
         Args:
             pdf_input: Path to PDF file or PDF bytes
             bib_path: Optional path to .bib file for reference verification
+            bib_content: Optional .bib file content string for reference verification
 
         Returns:
             PaperReviewResult with all evaluation results
         """
-        # Load and encode PDF
-        if isinstance(pdf_input, bytes):
-            pdf_bytes = pdf_input
-        else:
-            pdf_bytes = load_pdf_bytes(pdf_input)
-        pdf_data = encode_pdf_base64(pdf_bytes)
+        has_bib = bool(bib_path or bib_content)
+        total_stages = self._count_enabled_stages(has_bib)
+        completed_stages = 0
 
-        result = PaperReviewResult()
+        # Reset progress state for new review
+        self._progress.reset(total_stages)
 
-        # Phase 1: Safety checks
-        if self.config.enable_safety_checks:
-            logger.info("Running safety checks...")
-            safety_result = await self._run_safety_checks(pdf_data)
-            if not safety_result["is_safe"]:
-                result.is_safe = False
-                result.safety_issues = safety_result["issues"]
-                return result
-            result.format_compliant = safety_result["format_ok"]
+        try:
+            # Stage: Loading PDF
+            self._notify_progress(ReviewStage.LOADING_PDF, completed_stages, total_stages)
+            logger.info("Loading and encoding PDF...")
 
-        # Phase 2: Core evaluation
-        if self.config.enable_correctness:
-            logger.info("Running correctness detection...")
-            correctness = await self.correctness_grader.aevaluate(pdf_data=pdf_data)
-            if isinstance(correctness, GraderError):
-                logger.error(f"Correctness grader error: {correctness.error}")
+            if isinstance(pdf_input, bytes):
+                pdf_bytes = pdf_input
             else:
-                result.correctness = CorrectnessResult(
-                    score=correctness.score,
-                    reasoning=correctness.reason,
-                    key_issues=correctness.metadata.get("key_issues", []),
-                )
+                pdf_bytes = load_pdf_bytes(pdf_input)
+            pdf_data = encode_pdf_base64(pdf_bytes)
+            completed_stages += 1
 
-        if self.config.enable_review:
-            logger.info("Running paper review...")
-            review = await self.review_grader.aevaluate(pdf_data=pdf_data)
-            if isinstance(review, GraderError):
-                logger.error(f"Review grader error: {review.error}")
-            else:
-                result.review = ReviewResult(score=review.score, review=review.reason)
+            result = PaperReviewResult()
 
-        # Phase 3: Criticality verification
-        if self.config.enable_criticality and result.correctness and result.correctness.score > 1:
-            logger.info("Running criticality verification...")
-            findings = self._format_findings(result.correctness)
-            criticality = await self.criticality_grader.aevaluate(pdf_data=pdf_data, findings=findings)
-            if isinstance(criticality, GraderError):
-                logger.error(f"Criticality grader error: {criticality.error}")
-            else:
-                from cookbooks.paper_review.schema import CriticalityIssues
+            # Stage: Safety checks
+            if self.config.enable_safety_checks:
+                self._notify_progress(ReviewStage.SAFETY_CHECK, completed_stages, total_stages)
+                logger.info("Running safety checks...")
+                safety_result = await self._run_safety_checks(pdf_data)
+                completed_stages += 1
 
-                result.criticality = CriticalityResult(
-                    score=criticality.score,
-                    reasoning=criticality.reason,
-                    issues=CriticalityIssues(**criticality.metadata.get("issues", {})),
-                )
+                if not safety_result["is_safe"]:
+                    result.is_safe = False
+                    result.safety_issues = safety_result["issues"]
+                    # Notify failure using dedicated method
+                    self._notify_failed("Safety check failed: " + "; ".join(safety_result["issues"]))
+                    return result
+                result.format_compliant = safety_result["format_ok"]
 
-        # Phase 4: BibTeX verification
-        if self.config.enable_bib_verification and bib_path:
-            logger.info("Running BibTeX verification...")
-            result.bib_verification = await self._verify_bib(bib_path)
+            # Stage: Correctness
+            if self.config.enable_correctness:
+                self._notify_progress(ReviewStage.CORRECTNESS, completed_stages, total_stages)
+                logger.info("Running correctness detection...")
+                correctness = await self.correctness_grader.aevaluate(pdf_data=pdf_data)
+                if isinstance(correctness, GraderError):
+                    logger.error(f"Correctness grader error: {correctness.error}")
+                    # Continue with partial results - leave correctness as None
+                else:
+                    result.correctness = CorrectnessResult(
+                        score=correctness.score,
+                        reasoning=correctness.reason,
+                        key_issues=correctness.metadata.get("key_issues", []),
+                    )
+                completed_stages += 1
 
-        return result
+            # Stage: Review
+            if self.config.enable_review:
+                self._notify_progress(ReviewStage.REVIEW, completed_stages, total_stages)
+                logger.info("Running paper review...")
+                review = await self.review_grader.aevaluate(pdf_data=pdf_data)
+                if isinstance(review, GraderError):
+                    logger.error(f"Review grader error: {review.error}")
+                    # Continue with partial results - leave review as None
+                else:
+                    result.review = ReviewResult(score=review.score, review=review.reason)
+                completed_stages += 1
+
+            # Stage: Criticality verification
+            if self.config.enable_criticality:
+                self._notify_progress(ReviewStage.CRITICALITY, completed_stages, total_stages)
+                if result.correctness and result.correctness.score > 1:
+                    logger.info("Running criticality verification...")
+                    findings = self._format_findings(result.correctness)
+                    criticality = await self.criticality_grader.aevaluate(pdf_data=pdf_data, findings=findings)
+                    if isinstance(criticality, GraderError):
+                        logger.error(f"Criticality grader error: {criticality.error}")
+                        # Continue with partial results - leave criticality as None
+                    else:
+                        from cookbooks.paper_review.schema import CriticalityIssues
+
+                        result.criticality = CriticalityResult(
+                            score=criticality.score,
+                            reasoning=criticality.reason,
+                            issues=CriticalityIssues(**criticality.metadata.get("issues", {})),
+                        )
+                else:
+                    logger.info("Skipping criticality verification (no issues found)")
+                completed_stages += 1
+
+            # Stage: BibTeX verification
+            if self.config.enable_bib_verification and has_bib:
+                self._notify_progress(ReviewStage.BIB_VERIFICATION, completed_stages, total_stages)
+                logger.info("Running BibTeX verification...")
+                if bib_content:
+                    result.bib_verification = await self._verify_bib_content(bib_content)
+                elif bib_path:
+                    result.bib_verification = await self._verify_bib(bib_path)
+                completed_stages += 1
+
+            # Notify completion using dedicated method
+            self._notify_completed()
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Pipeline failed: {e}")
+            self._notify_failed(str(e))
+            raise
 
     async def _run_safety_checks(self, pdf_data: str) -> Dict[str, Any]:
         """Run jailbreaking and format checks."""
@@ -206,6 +320,28 @@ class PaperReviewPipeline:
             }
         except Exception as e:
             logger.error(f"BibTeX verification failed: {e}")
+            return {}
+
+    async def _verify_bib_content(self, bib_content: str) -> Dict[str, BibVerificationSummary]:
+        """Verify references from .bib file content string."""
+        try:
+            checker = BibChecker(mailto=self.config.crossref_mailto)
+            results = checker.check_bib_content(bib_content)
+
+            suspect_refs = [r.reference.title for r in results["results"] if r.status.value == "suspect"]
+
+            return {
+                "uploaded.bib": BibVerificationSummary(
+                    total_references=results["total_references"],
+                    verified=results["verified"],
+                    suspect=results["suspect"],
+                    errors=results["errors"],
+                    verification_rate=results["verification_rate"],
+                    suspect_references=suspect_refs,
+                )
+            }
+        except Exception as e:
+            logger.error(f"BibTeX content verification failed: {e}")
             return {}
 
     async def review_tex_package(

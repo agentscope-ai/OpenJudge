@@ -11,6 +11,7 @@ from shared.i18n.translations import get_all_translations
 
 # Session state key for UI language
 UI_LANGUAGE_KEY = "_ui_language"
+UI_LANGUAGE_INITIALIZED = "_ui_language_initialized"
 
 # Supported languages
 SUPPORTED_LANGUAGES = {
@@ -31,12 +32,25 @@ def get_available_languages() -> dict[str, str]:
     return SUPPORTED_LANGUAGES.copy()
 
 
+def _init_language_from_storage() -> None:
+    """Initialize language from URL query parameters."""
+    # Always check query params for language changes
+    params = st.query_params
+    if "lang" in params:
+        lang = params.get("lang")
+        if lang in SUPPORTED_LANGUAGES:
+            current = st.session_state.get(UI_LANGUAGE_KEY)
+            if current != lang:
+                st.session_state[UI_LANGUAGE_KEY] = lang
+
+
 def get_ui_language() -> str:
     """Get current UI language from session state.
 
     Returns:
         Current language code (e.g., 'zh', 'en')
     """
+    _init_language_from_storage()
     return st.session_state.get(UI_LANGUAGE_KEY, DEFAULT_LANGUAGE)
 
 
@@ -95,6 +109,17 @@ def t(key: str, **kwargs: Any) -> str:
     return text
 
 
+def _save_language_to_storage(lang: str) -> None:
+    """Save language to browser localStorage via JavaScript."""
+    # Use st.markdown with script tag - lighter than components.html
+    js_code = f"""
+    <script>
+        localStorage.setItem('openjudge_ui_language', '{lang}');
+    </script>
+    """
+    st.markdown(js_code, unsafe_allow_html=True)
+
+
 def render_language_selector(position: str = "sidebar") -> None:
     """Render language selector widget.
 
@@ -103,6 +128,10 @@ def render_language_selector(position: str = "sidebar") -> None:
     """
     current = get_ui_language()
     options = list(SUPPORTED_LANGUAGES.keys())
+
+    # Initialize the selector key in session state to match current language
+    if "_ui_lang_selector" not in st.session_state:
+        st.session_state["_ui_lang_selector"] = current
 
     # Custom styling for compact selector
     if position == "sidebar":
@@ -117,7 +146,6 @@ def render_language_selector(position: str = "sidebar") -> None:
                 "Language",
                 options=options,
                 format_func=lambda x: SUPPORTED_LANGUAGES[x],
-                index=options.index(current) if current in options else 0,
                 key="_ui_lang_selector",
                 label_visibility="collapsed",
             )
@@ -126,10 +154,54 @@ def render_language_selector(position: str = "sidebar") -> None:
             "🌐 Language / 语言",
             options=options,
             format_func=lambda x: SUPPORTED_LANGUAGES[x],
-            index=options.index(current) if current in options else 0,
             key="_ui_lang_selector",
         )
 
+    # Handle language change
     if selected != current:
         set_ui_language(selected)
+        # Save to localStorage only when language changes
+        _save_language_to_storage(selected)
+        st.rerun()
+
+
+def inject_language_loader() -> None:
+    """Initialize language from URL query parameters.
+
+    This is a lightweight function that doesn't inject any HTML.
+    Language loading is handled by _init_language_from_storage().
+    """
+    # Language is already initialized via _init_language_from_storage()
+    # which is called by get_ui_language()
+
+
+def _render_header_language_selector() -> None:
+    """Placeholder for header language selector (not implemented).
+
+    Actual rendering is done via render_sidebar_language_selector.
+    This is kept as a private function for potential future implementation.
+    """
+
+
+def render_sidebar_language_selector() -> None:
+    """Render a compact language selector in the sidebar.
+
+    Uses Streamlit native selectbox for reliability.
+    """
+    current_lang = get_ui_language()
+    lang_options = list(SUPPORTED_LANGUAGES.keys())
+
+    selected_lang = st.selectbox(
+        "🌐",
+        options=lang_options,
+        index=lang_options.index(current_lang) if current_lang in lang_options else 0,
+        format_func=lambda x: SUPPORTED_LANGUAGES[x],
+        key="_sidebar_lang_selector",
+        label_visibility="collapsed",
+    )
+
+    # Handle language change
+    if selected_lang != current_lang:
+        set_ui_language(selected_lang)
+        _save_language_to_storage(selected_lang)
         st.rerun()

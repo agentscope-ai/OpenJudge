@@ -161,7 +161,6 @@ def _render_task_card(
                     </div>
                 </div>
             </div>
-
             <!-- Progress bar -->
             <div style="
                 margin-top: 0.75rem;
@@ -176,7 +175,6 @@ def _render_task_card(
                     background: {style['color']};
                 "></div>
             </div>
-
             <!-- Success/Failed counts -->
             <div style="
                 display: flex;

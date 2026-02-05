@@ -23,14 +23,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 REFLECTION_PROGRESS_AWARENESS_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent demonstrates accurate awareness of progress toward completing the task in its reflection.
+    """You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent demonstrates accurate awareness of progress toward completing the task in its reflection. This includes correctly estimating progress and recognizing whether the agent is making forward progress or stuck in a loop.
 
-<Evaluation Type: Reflection Progress Awareness>
-The agent should demonstrate accurate awareness of progress toward completing the task in its reflection. This includes correctly estimating progress and recognizing whether the agent is making forward progress or stuck in a loop.
-</Evaluation Type>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. The agent accurately assesses progress when making forward advancement
 2. The agent correctly recognizes when it is stuck in a loop or repeating actions
 3. The agent realistically estimates how close it is to task completion based on current state
@@ -40,8 +35,7 @@ The agent should demonstrate accurate awareness of progress toward completing th
 7. The agent tracks progress for every mandatory step or constraint specified in the task
 </Rubrics>
 
-<Evaluation Criteria>
-For your analysis:
+<Steps>
 1. Apply each rubric: Check if the step demonstrates good progress awareness patterns described in each rubric
 2. Focus on relevant modules: Only consider observation and reflection modules
 3. Provide evidence-based reasoning: Explain how the reflection demonstrates progress awareness and why
@@ -49,55 +43,58 @@ For your analysis:
 5. Task Decomposition Check: Verify the agent identifies all sub-goals from the task description
 6. Keyword Sensitivity: Check if the agent recognizes key action verbs and object requirements in the task
 7. Progress Overestimation Check: Detect if the agent claims to be "close" or "almost done" while ignoring critical unfinished sub-goals
-</Evaluation Criteria>
+</Steps>
 
+<Constraints>
+Critical Note on Task Requirements:
+- If the task specifies particular objects, the agent MUST use exactly those objects. Considering alternatives indicates poor progress awareness and failure to understand task constraints.
+- If the task contains multiple sub-goals, the agent must track progress toward ALL sub-goals. Omitting any sub-goal leads to score = 0.0.
+- Agent must respect exact task specifications. Substituting similar items or skipping mentioned steps indicates fundamental misunderstanding of task progress.
+</Constraints>
+
+<Scale>
+- **Score 1.0**: Good awareness - progress awareness is accurate
+  * Agent correctly identifies what has been accomplished
+  * Agent accurately assesses distance to goal completion
+  * Agent recognizes all required sub-goals from task description
+  * Agent does not overestimate progress while ignoring critical unfinished steps
+
+- **Score 0.0**: Poor awareness - progress awareness is inaccurate
+  * Agent misjudges current progress or proximity to completion
+  * Agent overlooks critical sub-goals mentioned in the task
+  * Agent claims to be "close" or "almost done" while major requirements remain unmet
+  * Agent overestimates completion by ignoring mandatory task constraints
+</Scale>
+
+<Context (Optional)>
 {context}
+</Context>
 
+<History (Optional)>
 {history}
+</History>
 
 <Current Step>
 Observation: {observation}
 Reflection: {reflection}
 </Current Step>
 
-# Scoring Instructions
-- If progress awareness is accurate: score = 1.0 (good awareness)
-  * Agent correctly identifies what has been accomplished
-  * Agent accurately assesses distance to goal completion
-  * Agent recognizes all required sub-goals from task description
-  * Agent does not overestimate progress while ignoring critical unfinished steps
-
-- If progress awareness is inaccurate: score = 0.0 (poor awareness)
-  * Agent misjudges current progress or proximity to completion
-  * Agent overlooks critical sub-goals mentioned in the task
-  * Agent claims to be "close" or "almost done" while major requirements remain unmet
-  * Agent overestimates completion by ignoring mandatory task constraints
-
-Critical Note on Task Requirements:
-- If the task specifies particular objects, the agent MUST use exactly those objects. Considering alternatives indicates poor progress awareness and failure to understand task constraints.
-- If the task contains multiple sub-goals, the agent must track progress toward ALL sub-goals. Omitting any sub-goal leads to score = 0.0.
-- Agent must respect exact task specifications. Substituting similar items or skipping mentioned steps indicates fundamental misunderstanding of task progress.
-
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
     "score": <0.0 or 1.0>,
     "reason": "<detailed explanation of progress awareness quality and confidence level>"
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析智能体行为的专家。你的任务是评估智能体是否在其反思中展示了对完成任务进度的准确意识。
+    """你是一名分析智能体行为的专家。你的任务是评估智能体是否在其反思中展示了对完成任务进度的准确意识。这包括正确估计进度并识别智能体是在向前推进还是陷入循环。
 
-<评估类型：反思进度意识>
-智能体应该在其反思中展示对完成任务进度的准确意识。这包括正确估计进度并识别智能体是在向前推进还是陷入循环。
-</评估类型>
-
-<评估准则>
+<评分标准>
 1. 智能体在向前推进时准确评估进度
 2. 智能体在陷入循环或重复动作时正确识别
 3. 智能体根据当前状态现实地估计距离任务完成的接近程度
@@ -105,10 +102,9 @@ REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = textwrap.dedent(
 5. 智能体展示了对是否正在重复失败尝试的意识
 6. 智能体正确识别出任务描述中所有要求的子目标
 7. 智能体跟踪任务中指定的每个强制步骤或约束的进度
-</评估准则>
+</评分标准>
 
-<评估标准>
-进行分析时：
+<评估步骤>
 1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好进度意识模式
 2. 关注相关模块：仅考虑观察和反思模块
 3. 提供基于证据的推理：解释反思如何展示进度意识以及原因
@@ -116,41 +112,49 @@ REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = textwrap.dedent(
 5. 任务分解检查：验证智能体是否识别出任务描述中的所有子目标
 6. 关键词敏感性：检查智能体是否识别任务中的关键动作动词和对象要求
 7. 进度高估检查：检测智能体是否在忽略关键未完成子目标的情况下声称"接近"或"几乎完成"
-</评估标准>
+</评估步骤>
 
+<注意事项>
+关于任务要求的重要说明：
+- 如果任务指定了特定对象，智能体必须使用完全相同的对象。考虑替代品表明进度意识不佳且未能理解任务约束。
+- 如果任务包含多个子目标，智能体必须跟踪所有子目标的进度。遗漏任何子目标导致评分 = 0.0。
+- 智能体必须尊重确切的任务规范。替换类似物品或跳过提到的步骤表明对任务进度的根本误解。
+</注意事项>
+
+<评分量表>
+- **分数 1.0**：良好意识 - 进度意识准确
+  * 智能体正确识别已完成的内容
+  * 智能体准确评估距离目标完成的距离
+  * 智能体识别出任务描述中所有要求的子目标
+  * 智能体在忽略关键未完成步骤的情况下不会高估进度
+
+- **分数 0.0**：意识不佳 - 进度意识不准确
+  * 智能体误判当前进度或接近完成的程度
+  * 智能体忽略任务中提到的关键子目标
+  * 智能体在主要要求仍未满足时声称"接近"或"几乎完成"
+  * 智能体通过忽略强制任务约束来高估完成度
+</评分量表>
+
+<上下文（可选）>
 {context}
+</上下文>
 
+<历史记录（可选）>
 {history}
+</历史记录>
 
 <当前步骤>
 观察：{observation}
 反思：{reflection}
 </当前步骤>
 
-# 评分指令
-- 如果进度意识准确：score = 1.0（良好意识）
-  * 智能体正确识别已完成的内容
-  * 智能体准确评估距离目标完成的距离
-  * 智能体识别出任务描述中所有要求的子目标
-  * 智能体在忽略关键未完成步骤的情况下不会高估进度
-
-- 如果进度意识不准确：score = 0.0（意识不佳）
-  * 智能体误判当前进度或接近完成的程度
-  * 智能体忽略任务中提到的关键子目标
-  * 智能体在主要要求仍未满足时声称"接近"或"几乎完成"
-  * 智能体通过忽略强制任务约束来高估完成度
-
-关于任务要求的重要说明：
-- 如果任务指定了特定对象，智能体必须使用完全相同的对象。考虑替代品表明进度意识不佳且未能理解任务约束。
-- 如果任务包含多个子目标，智能体必须跟踪所有子目标的进度。遗漏任何子目标导致评分 = 0.0。
-- 智能体必须尊重确切的任务规范。替换类似物品或跳过提到的步骤表明对任务进度的根本误解。
-
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
     "score": <0.0 或 1.0>,
     "reason": "<关于进度意识质量的详细解释和置信度水平>"
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -266,10 +270,10 @@ class ReflectionProgressAwarenessGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = f"<context>\n{context}\n</context>" if context else ""
+        context_str = context if context else ""
 
         # Format history
-        history_str = format_history(history)
+        history_str = format_history(history, include_tags=False)
 
         try:
             result = await super()._aevaluate(

@@ -214,19 +214,27 @@ def render_preset_panel(
             st.markdown("---")
             st.markdown("**Import / Export**")
 
-            # Import
+            # Import - use a flag to prevent re-processing on rerun
             uploaded = st.file_uploader(
                 "Import", type=["yaml", "yml"], key="arena_import", label_visibility="collapsed"
             )
-            if uploaded:
+            # Track which file we've already processed
+            last_processed = st.session_state.get("arena_import_processed_file")
+            current_file_id = uploaded.file_id if uploaded else None
+
+            if uploaded and current_file_id != last_processed:
                 success, error, config = manager.import_from_file(uploaded.read())
                 if success and config:
                     ui_state = PresetManager.config_to_ui_state(config)
                     on_load(ui_state)
                     st.session_state[STATE_LOADED_PRESET] = None
+                    # Mark this file as processed before rerun
+                    st.session_state["arena_import_processed_file"] = current_file_id
                     st.rerun()
                 else:
                     st.error(f"Import failed: {error}")
+                    # Also mark as processed to avoid repeated error messages
+                    st.session_state["arena_import_processed_file"] = current_file_id
 
             # Export
             sidebar_cfg, panel_cfg = get_config()

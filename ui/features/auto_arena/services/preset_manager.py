@@ -3,6 +3,8 @@
 
 Handles saving, loading, importing, and exporting evaluation presets.
 Configuration format is compatible with cookbooks/auto_arena config.yaml.
+
+Note: This manager now uses workspace-based paths for multi-user isolation.
 """
 
 import re
@@ -13,10 +15,26 @@ from typing import Any
 import yaml
 
 
+def _get_workspace_presets_dir() -> Path:
+    """Get the presets directory for the current workspace.
+
+    Returns:
+        Path to workspace-specific presets directory
+    """
+    try:
+        from shared.services.workspace_manager import get_current_workspace_path
+
+        workspace_path = get_current_workspace_path()
+        return workspace_path / "presets" / "auto_arena"
+    except Exception:
+        # Fallback to default if workspace not available
+        return Path.home() / ".openjudge_studio" / "presets" / "auto_arena"
+
+
 class PresetManager:
     """Manages Auto Arena configuration presets.
 
-    Presets are stored as YAML files in ~/.openjudge_studio/presets/auto_arena/
+    Presets are stored in the workspace directory for multi-user isolation.
     The format is compatible with cookbooks config.yaml for interoperability.
     """
 
@@ -31,12 +49,12 @@ class PresetManager:
         """Initialize the preset manager.
 
         Args:
-            presets_dir: Custom presets directory. Defaults to ~/.openjudge_studio/presets/auto_arena/
+            presets_dir: Custom presets directory. If None, uses workspace directory.
         """
         if presets_dir:
             self.presets_dir = Path(presets_dir)
         else:
-            self.presets_dir = Path.home() / ".openjudge_studio" / "presets" / "auto_arena"
+            self.presets_dir = _get_workspace_presets_dir()
 
         # Ensure directory exists
         self.presets_dir.mkdir(parents=True, exist_ok=True)

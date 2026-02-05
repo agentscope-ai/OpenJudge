@@ -23,14 +23,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent correctly understands and interprets the outcome or result of an action in its reflection.
+    """You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent correctly understands and interprets the outcome or result of an action in its reflection. This occurs when the agent receives an observation indicating a specific result, and in the reflection module, the agent correctly understands what that observation means.
 
-<Evaluation Type: Reflection Outcome Understanding>
-The agent should correctly understand and interpret the outcome or result of an action in its reflection. This occurs when the agent receives an observation indicating a specific result, and in the reflection module, the agent correctly understands what that observation means.
-</Evaluation Type>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. Factual Accuracy: The agent's reflection must accurately describe what the observation states, without distorting or ignoring information
 2. Success/Failure Recognition: The agent correctly identifies whether an action succeeded or failed based on explicit signals in the observation
 3. State Change Understanding: The agent accurately understands what state changes occurred (or did not occur) from an action
@@ -42,7 +37,7 @@ The agent should correctly understand and interpret the outcome or result of an 
 9. Format Recognition: The agent correctly identifies when observation content is corrupted, unreadable, or in an unusable format
 </Rubrics>
 
-<Evaluation Criteria>
+<Steps>
 Critical Evaluation Principles (apply in order):
 
 1. Truth Preservation Test: Does the reflection accurately mirror the factual content of the observation without distortion?
@@ -69,19 +64,9 @@ Critical Evaluation Principles (apply in order):
 6. Format Validity Check: Does the agent recognize when observation content is corrupted or unreadable?
    - Binary data, encoding errors, or empty responses indicate extraction failure
    - Agent should acknowledge the need for alternative approaches when data cannot be parsed
-</Evaluation Criteria>
+</Steps>
 
-{context}
-
-{history}
-
-<Current Step>
-Observation: {observation}
-Reflection: {reflection}
-</Current Step>
-
-# Scoring Instructions
-
+<Constraints>
 Assign score = 0.0 (poor understanding) if ANY of the following occur:
 
 1. Factual Distortion: Reflection contradicts or ignores explicit observation content
@@ -119,27 +104,42 @@ Assign score = 1.0 (good understanding) if ALL of the following are met:
 - Agent recognizes when further actions (examine, search) are needed
 
 Evaluation Priority: Truth preservation is paramount. Any discrepancy between observation facts and reflection interpretation → score = 0.0
+</Constraints>
 
+<Scale>
+- **Score 1.0**: Good understanding - reflection accurately interprets the observation
+- **Score 0.0**: Poor understanding - reflection misinterprets or fabricates information
+</Scale>
+
+<Context (Optional)>
+{context}
+</Context>
+
+<History (Optional)>
+{history}
+</History>
+
+<Current Step>
+Observation: {observation}
+Reflection: {reflection}
+</Current Step>
+
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
     "score": <0.0 or 1.0>,
     "reason": "<detailed explanation of outcome understanding quality and confidence level>"
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析智能体行为的专家。你的任务是评估智能体是否在其反思中正确理解和解释了动作的结果或输出。
+    """你是一名分析智能体行为的专家。你的任务是评估智能体是否在其反思中正确理解和解释了动作的结果或输出。这发生在智能体收到表明特定结果的观察时，并且在反思模块中，智能体正确理解了该观察的含义。
 
-<评估类型：反思结果理解>
-智能体应该在其反思中正确理解和解释动作的结果或输出。这发生在智能体收到表明特定结果的观察时，并且在反思模块中，智能体正确理解了该观察的含义。
-</评估类型>
-
-<评估准则>
+<评分标准>
 1. 事实准确性：智能体的反思必须准确描述观察所陈述的内容，不能扭曲或忽略信息
 2. 成功/失败识别：智能体根据观察中的明确信号正确识别动作是成功还是失败
 3. 状态变化理解：智能体准确理解动作产生了哪些状态变化（或没有产生变化）
@@ -149,9 +149,9 @@ REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_ZH = textwrap.dedent(
 7. 无过早结论：智能体不会仅仅因为看到某物就得出其他东西不存在的结论
 8. 无虚构信息：智能体不会声称观察到了实际上并未出现在观察文本中的信息
 9. 格式识别：智能体能正确识别观察内容何时是损坏的、不可读的或不可用格式
-</评估准则>
+</评分标准>
 
-<评估标准>
+<评估步骤>
 关键评估原则（按顺序应用）：
 
 1. 真实性保持测试：反思是否准确地镜像了观察的事实内容而没有扭曲？
@@ -178,19 +178,9 @@ REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_ZH = textwrap.dedent(
 6. 格式有效性检查：智能体是否识别出观察内容何时是损坏或不可读的？
    - 二进制数据、编码错误或空响应表明提取失败
    - 当数据无法解析时，智能体应该承认需要替代方法
-</评估标准>
+</评估步骤>
 
-{context}
-
-{history}
-
-<当前步骤>
-观察：{observation}
-反思：{reflection}
-</当前步骤>
-
-# 评分指令
-
+<注意事项>
 以下任一情况出现则评分 = 0.0（理解不佳）：
 
 1. 事实扭曲：反思与观察的明确内容相矛盾或忽略观察内容
@@ -228,13 +218,33 @@ REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_ZH = textwrap.dedent(
 - 智能体识别出何时需要进一步动作（examine、search）
 
 评估优先级：真实性保持是首要的。观察事实与反思解释之间的任何差异 → 评分 = 0.0
+</注意事项>
 
+<评分量表>
+- **分数 1.0**：良好理解 - 反思准确解释了观察内容
+- **分数 0.0**：理解不佳 - 反思误解或虚构了信息
+</评分量表>
+
+<上下文（可选）>
+{context}
+</上下文>
+
+<历史记录（可选）>
+{history}
+</历史记录>
+
+<当前步骤>
+观察：{observation}
+反思：{reflection}
+</当前步骤>
+
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
     "score": <0.0 或 1.0>,
     "reason": "<关于结果理解质量的详细解释和置信度水平>"
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -350,10 +360,10 @@ class ReflectionOutcomeUnderstandingGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = f"<context>\n{context}\n</context>" if context else ""
+        context_str = context if context else ""
 
         # Format history
-        history_str = format_history(history)
+        history_str = format_history(history, include_tags=False)
 
         try:
             result = await super()._aevaluate(

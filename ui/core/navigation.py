@@ -38,29 +38,31 @@ class Navigation:
             st.warning("No features registered")
             return ""
 
-        # Build options - use display_label property for i18n support
-        # Note: get_all() returns classes, but display_label is a property that requires instances
+        # Build options - use stable feature_ids (not translated labels)
         feature_ids = [f.feature_id for f in features]
-        feature_labels = {f.feature_id: FeatureRegistry.get_instance(f.feature_id).display_label for f in features}
 
         # Get default feature id
         default_id = FeatureRegistry.get_default_feature_id()
 
-        # Use widget key directly for state management
+        # Widget key for selectbox
         widget_key = "_nav_feature_selector"
 
         # Initialize widget state if not exists
         if widget_key not in st.session_state:
             st.session_state[widget_key] = default_id
 
-        # Ensure current value is valid
+        # Ensure current value is valid (in case features changed)
         if st.session_state[widget_key] not in feature_ids:
             st.session_state[widget_key] = default_id
 
         # Get previous value for lifecycle hooks
         previous_id = st.session_state.get(CURRENT_FEATURE_KEY)
 
-        # Render selectbox (dropdown) for feature selection
+        # Build labels dynamically (these change with language, but values stay stable)
+        feature_labels = {f.feature_id: FeatureRegistry.get_instance(f.feature_id).display_label for f in features}
+
+        # Render selectbox with stable feature_ids as options
+        # No index parameter - let Streamlit manage state via key
         selected_id = st.selectbox(
             t("app.features"),
             options=feature_ids,

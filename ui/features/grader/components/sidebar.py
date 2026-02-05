@@ -22,11 +22,15 @@ def _render_api_settings(config: dict[str, Any]) -> None:
     """Render API settings section."""
     st.markdown(f'<div class="section-header">{t("api.settings")}</div>', unsafe_allow_html=True)
 
+    provider_options = list(DEFAULT_API_ENDPOINTS.keys())
+    if "grader_api_provider" not in st.session_state:
+        st.session_state["grader_api_provider"] = provider_options[0]
+
     endpoint_choice = st.selectbox(
         t("api.provider"),
-        options=list(DEFAULT_API_ENDPOINTS.keys()),
-        index=0,
+        options=provider_options,
         help=t("api.provider_help"),
+        key="grader_api_provider",
     )
 
     if endpoint_choice == "Custom":
@@ -34,6 +38,7 @@ def _render_api_settings(config: dict[str, Any]) -> None:
             t("api.custom_endpoint"),
             placeholder=t("api.custom_endpoint_placeholder"),
             help=t("api.custom_endpoint_help"),
+            key="grader_custom_endpoint",
         )
     else:
         api_endpoint = DEFAULT_API_ENDPOINTS[endpoint_choice]
@@ -43,6 +48,7 @@ def _render_api_settings(config: dict[str, Any]) -> None:
         type="password",
         placeholder=t("api.key_placeholder"),
         help=t("api.key_help"),
+        key="grader_api_key",
     )
 
     if api_key:
@@ -58,18 +64,31 @@ def _render_model_settings(config: dict[str, Any]) -> None:
     """Render model settings section."""
     st.markdown(f'<div class="section-header">{t("model.settings")}</div>', unsafe_allow_html=True)
 
+    # Use stable value "_custom_" for custom option to survive UI language switch
+    CUSTOM_VALUE = "_custom_"
+    model_options = DEFAULT_MODELS + [CUSTOM_VALUE]
+
+    def format_model_option(x: str) -> str:
+        return t("model.custom") if x == CUSTOM_VALUE else x
+
+    # Initialize default value in session state if not exists
+    if "grader_model_select" not in st.session_state:
+        st.session_state["grader_model_select"] = DEFAULT_MODELS[0] if DEFAULT_MODELS else CUSTOM_VALUE
+
     model_option = st.selectbox(
         t("model.select"),
-        options=DEFAULT_MODELS + [t("model.custom")],
-        index=0,
+        options=model_options,
+        format_func=format_model_option,
         label_visibility="collapsed",
+        key="grader_model_select",
     )
 
-    if model_option == t("model.custom"):
+    if model_option == CUSTOM_VALUE:
         model_name = st.text_input(
             t("model.custom_input"),
             placeholder=t("model.custom_placeholder"),
             label_visibility="collapsed",
+            key="grader_custom_model",
         )
     else:
         model_name = model_option
@@ -84,12 +103,16 @@ def _render_grader_settings(config: dict[str, Any]) -> None:
     category_options = list(GRADER_CATEGORIES.keys())
     category_labels = [GRADER_CATEGORIES[cat]["name"] for cat in category_options]
 
+    # Initialize category selection in session state
+    if "grader_category_idx" not in st.session_state:
+        st.session_state["grader_category_idx"] = 0
+
     selected_category_idx = st.selectbox(
         t("grader.sidebar.category"),
         options=range(len(category_options)),
         format_func=lambda x: category_labels[x],
-        index=0,
         help=t("grader.sidebar.category_help"),
+        key="grader_category_idx",
     )
     selected_category = category_options[selected_category_idx]
     config["grader_category"] = selected_category
@@ -98,12 +121,18 @@ def _render_grader_settings(config: dict[str, Any]) -> None:
     grader_names = list(graders_in_category.keys())
 
     if grader_names:
+        # Initialize grader selection in session state
+        # Reset grader selection when category changes
+        grader_key = f"grader_selection_{selected_category}"
+        if grader_key not in st.session_state:
+            st.session_state[grader_key] = 0
+
         selected_grader_idx = st.selectbox(
             t("grader.sidebar.grader"),
             options=range(len(grader_names)),
             format_func=lambda x: grader_names[x],
-            index=0,
             label_visibility="collapsed",
+            key=grader_key,
         )
         selected_grader = grader_names[selected_grader_idx]
         grader_config = GRADER_REGISTRY[selected_grader]
@@ -143,11 +172,20 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
     col1, col2 = st.columns(2)
 
     with col1:
+        # Use stable values to survive UI language switch
+        language_values = ["EN", "ZH"]
+        language_labels = {"EN": "English", "ZH": "中文"}
+
+        # Initialize default value in session state if not exists
+        if "grader_language_select" not in st.session_state:
+            st.session_state["grader_language_select"] = "EN"
+
         language_option = st.selectbox(
             t("grader.sidebar.language"),
-            options=["EN", "中文"],
-            index=0,
+            options=language_values,
+            format_func=lambda x: language_labels.get(x, x),
             help=t("grader.sidebar.language_help"),
+            key="grader_language_select",
         )
         config["language"] = LanguageEnum.EN if language_option == "EN" else LanguageEnum.ZH
 
@@ -157,20 +195,28 @@ def _render_evaluation_settings(config: dict[str, Any]) -> None:
             default_threshold = config["grader_config"].get("default_threshold", 0.5)
 
             if score_range == (1, 5):
+                # Initialize threshold in session state if not exists
+                if "grader_threshold_select" not in st.session_state:
+                    st.session_state["grader_threshold_select"] = int(default_threshold)
+
                 threshold = st.selectbox(
                     t("grader.sidebar.threshold"),
                     options=[1, 2, 3, 4, 5],
-                    index=int(default_threshold) - 1,
                     help=t("grader.sidebar.threshold_help"),
+                    key="grader_threshold_select",
                 )
             else:
+                # Initialize threshold slider in session state if not exists
+                if "grader_threshold_slider" not in st.session_state:
+                    st.session_state["grader_threshold_slider"] = float(default_threshold)
+
                 threshold = st.slider(
                     t("grader.sidebar.threshold"),
                     min_value=0.0,
                     max_value=1.0,
-                    value=float(default_threshold),
                     step=0.1,
                     help=t("grader.sidebar.threshold_help"),
+                    key="grader_threshold_slider",
                 )
             config["threshold"] = threshold
         else:

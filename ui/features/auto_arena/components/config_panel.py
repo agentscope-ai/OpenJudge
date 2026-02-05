@@ -192,24 +192,30 @@ def _render_single_endpoint(
         )
 
     with col2:
+        # Use stable value for custom option to survive UI language switch
+        CUSTOM_VALUE = "_custom_"
+
         # Check if there's a custom model value already set (e.g., from preset)
         current_model = st.session_state.get(f"arena_ep_model_{endpoint_id}", "")
 
         # Build options list - include current model if it's custom
         model_options = list(DEFAULT_MODELS)
-        custom_label = t("model.custom")
-        if current_model and current_model not in model_options and current_model != custom_label:
+        if current_model and current_model not in model_options and current_model != CUSTOM_VALUE:
             model_options.insert(0, current_model)
-        model_options.append(custom_label)
+        model_options.append(CUSTOM_VALUE)
+
+        def format_model(x: str) -> str:
+            return t("model.custom") if x == CUSTOM_VALUE else x
 
         model_option = st.selectbox(
             t("model.select"),
             options=model_options,
+            format_func=format_model,
             key=f"arena_ep_model_{endpoint_id}",
         )
 
     # Row 1.5: Custom model input (only if "Custom..." selected)
-    if model_option == t("model.custom"):
+    if model_option == CUSTOM_VALUE:
         model = st.text_input(
             t("model.custom_input"),
             placeholder=t("model.custom_placeholder"),
