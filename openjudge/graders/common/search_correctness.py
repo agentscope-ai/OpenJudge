@@ -12,7 +12,8 @@ from typing import Optional
 
 from loguru import logger
 
-from openjudge.graders.agentic_grader import AgenticGrader, BaseTool, ToolResult
+from openjudge.agentic import BaseTool, ToolResult
+from openjudge.graders.agentic_grader import AgenticGrader
 from openjudge.graders.schema import GraderError, GraderMode, GraderScore
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
