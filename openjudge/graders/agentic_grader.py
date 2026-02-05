@@ -219,7 +219,7 @@ class AgenticGrader(BaseGrader):
                 callback=callback,
             )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str = "",
         response: str = "",

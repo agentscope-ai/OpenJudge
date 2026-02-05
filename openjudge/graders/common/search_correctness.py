@@ -263,7 +263,7 @@ class SearchCorrectnessGrader(AgenticGrader):
             **kwargs,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str = "",
         response: str = "",
@@ -300,7 +300,8 @@ class SearchCorrectnessGrader(AgenticGrader):
         """
 
         try:
-            result = await super().aevaluate(
+            # Call parent's _aevaluate directly (AgenticGrader._aevaluate)
+            result = await super()._aevaluate(
                 query=query,
                 response=response,
                 **kwargs,
