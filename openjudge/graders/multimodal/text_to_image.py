@@ -90,10 +90,16 @@ Focus on visual quality, not semantic content. Keep your reasoning concise and s
 <Scale>
 Naturalness (first score):
 - 1: The scene does not look natural at all (wrong distance sense, shadows, or lighting).
+- 2: The scene looks mostly unnatural with significant issues in composition.
+- 3: The scene looks somewhat natural but has noticeable issues.
+- 4: The scene looks mostly natural with only minor imperfections.
 - 5: The image looks completely natural.
 
 Artifacts (second score):
 - 1: Large portion of distortion, watermark, scratches, blurred faces, unusual body parts, or unharmonized subjects.
+- 2: Significant artifacts present that are clearly visible and distracting.
+- 3: Moderate artifacts present that are noticeable upon inspection.
+- 4: Minor artifacts present that are barely noticeable.
 - 5: The image has no artifacts.
 </Scale>
 
@@ -173,10 +179,16 @@ TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_ZH = textwrap.dedent(
 <评分量表>
 自然度（第一个分数）：
 - 1: 场景看起来完全不自然（距离感、阴影或光照错误）。
+- 2: 场景看起来大部分不自然，构图存在明显问题。
+- 3: 场景看起来有些自然，但有明显的问题。
+- 4: 场景看起来大部分自然，只有轻微瑕疵。
 - 5: 图像看起来完全自然。
 
 伪影（第二个分数）：
 - 1: 大量失真、水印、划痕、模糊的面部、不寻常的身体部位或不协调的主体。
+- 2: 存在明显可见且令人分心的伪影。
+- 3: 存在中等程度的伪影，仔细检查可发现。
+- 4: 存在轻微伪影，几乎不明显。
 - 5: 图像没有伪影。
 </评分量表>
 
