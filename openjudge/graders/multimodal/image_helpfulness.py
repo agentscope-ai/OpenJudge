@@ -31,80 +31,88 @@ from openjudge.utils.utils import parse_structured_chat_response
 # English Prompt
 IMAGE_HELPFULNESS_PROMPT_EN = textwrap.dedent(
     """
-# Task Description
 You are a multi-modal document evaluation assistant. You will receive an image and its textual context.
 Your task is to evaluate the helpfulness of the image in enabling human readers to comprehend the text (context above and below) it accompanies.
 
-# Context Above
-{context_above}
-
-# Context Below
-{context_below}
-
-# Image
-[The image is provided below this section.]
-
-# Scoring Criteria
+<Rubrics>
 Evaluate how well the image helps human readers understand the content of its accompanying text, assigning a score from 1 to 5.
 A higher score indicates that the image significantly enhances comprehension of the text. Be precise when assigning the score.
+</Rubrics>
 
-- A score of 1 means the image is not at all helpful for comprehension.
-- A score of 2 means the image is minimally helpful for comprehension.
-- A score of 3 indicates the image provides some helpful context or information but may contain extraneous or less relevant details.
-- A score of 4 indicates the image is highly helpful in enabling comprehension of the text.
-- A score of 5 indicates the image perfectly enhances and clarifies the information provided in the text.
+<Steps>
+- Read the context above and below to understand what information is being conveyed.
+- Examine the image to identify what information or concepts it illustrates.
+- Assess whether the image adds value beyond what the text alone provides.
+- Evaluate the clarity and educational value of the image for readers.
+</Steps>
 
-Be rigorous and discerning when assigning your score.
+<Constraints>
+Be rigorous and discerning when assigning your score. Focus on how much the image aids comprehension, not just its relevance.
+</Constraints>
 
-# Output Instructions
-Provide your evaluation in the following structured JSON format:
+<Scale>
+- 1: The image is not at all helpful for comprehension.
+- 2: The image is minimally helpful for comprehension.
+- 3: The image provides some helpful context or information but may contain extraneous or less relevant details.
+- 4: The image is highly helpful in enabling comprehension of the text.
+- 5: The image perfectly enhances and clarifies the information provided in the text.
+</Scale>
+
+<Context Above>{context_above}</Context Above>
+<Context Below>{context_below}</Context Below>
+<Image>[The image is provided below this section.]</Image>
+
+<Output Schema>
 {{
     "score": <integer between 1 and 5>,
     "reason": "<brief explanation for the assigned score>"
 }}
-
-# Image
-[Insert Image Here]
+</Output Schema>
+JSON:
 """
 ).strip()
 
 # Chinese Prompt
 IMAGE_HELPFULNESS_PROMPT_ZH = textwrap.dedent(
     """
-# 任务描述
 你是一名多模态文档评估助手。你将收到一张图片及其文本背景。
 你的任务是评估图片对于帮助人类读者理解其伴随文本（上下文）的有用性。
 
-# 上文
-{context_above}
-
-# 下文
-{context_below}
-
-# 图片
-[图片将在本节下方提供。]
-
-# 评分标准
+<评分标准>
 评估图片对于帮助人类读者理解伴随文本内容的有用程度，给出1到5的分数。
 分数越高表示图片越能显著增强对文本的理解。请精确地给出分数。
+</评分标准>
 
-- 1分表示图片对理解文本完全没有帮助。
-- 2分表示图片对理解文本的帮助极小。
-- 3分表示图片提供了一些有用的背景或信息，但可能包含多余或关联性较弱的细节。
-- 4分表示图片对理解文本非常有帮助。
-- 5分表示图片完美地增强并澄清了文本中提供的信息。
+<评估步骤>
+- 阅读上下文以了解正在传达的信息。
+- 检查图片以识别它所说明的信息或概念。
+- 评估图片是否在文本之外提供了额外价值。
+- 评估图片对读者的清晰度和教育价值。
+</评估步骤>
 
-请严格审慎地评分。
+<注意事项>
+请严格审慎地评分。关注图片对理解的帮助程度，而不仅仅是相关性。
+</注意事项>
 
-# 输出指令
-请按以下结构化 JSON 格式提供你的评估：
+<评分量表>
+- 1: 图片对理解文本完全没有帮助。
+- 2: 图片对理解文本的帮助极小。
+- 3: 图片提供了一些有用的背景或信息，但可能包含多余或关联性较弱的细节。
+- 4: 图片对理解文本非常有帮助。
+- 5: 图片完美地增强并澄清了文本中提供的信息。
+</评分量表>
+
+<上文>{context_above}</上文>
+<下文>{context_below}</下文>
+<图片>[图片将在本节下方提供。]</图片>
+
+<输出格式>
 {{
     "score": <1到5之间的整数>,
     "reason": "<对所给分数的简要解释>"
 }}
-
-# 图片
-[在此插入图片]
+</输出格式>
+JSON:
 """
 ).strip()
 

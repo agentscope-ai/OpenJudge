@@ -30,80 +30,88 @@ from openjudge.utils.utils import parse_structured_chat_response
 # English Prompt
 IMAGE_COHERENCE_PROMPT_EN = textwrap.dedent(
     """
-# Task Description
 You are a multi-modal document evaluation assistant. You will receive an image and its textual context.
 Your task is to evaluate the coherence between the image and the text (context above and below) it accompanies.
 
-# Context Above
-{context_above}
-
-# Context Below
-{context_below}
-
-# Image
-[The image is provided below this section.]
-
-# Scoring Criteria
+<Rubrics>
 Assess how coherent the image is in relation to its accompanying text, assigning a score from 1 to 5.
 A higher score indicates stronger coherence between the image and the text. Be precise when assigning the score.
+</Rubrics>
 
-- A score of 1 means that the image is not at all coherent with the text.
-- A score of 2 means that the image is minimally coherent with the text.
-- A score of 3 indicates that the image shows some coherence with the text but may include unrelated elements.
-- A score of 4 indicates that the image is highly coherent with the text.
-- A score of 5 indicates perfect coherence, where the image completely corresponds with and enhances the text.
+<Steps>
+- Analyze the context above and below to understand the textual content and topic.
+- Examine the image to identify its main subjects and visual elements.
+- Compare the image content with the surrounding text to assess semantic alignment.
+- Evaluate whether the image placement is logical and enhances the text.
+</Steps>
 
-Be rigorous and discerning when assigning your score.
+<Constraints>
+Be rigorous and discerning when assigning your score. Focus on the semantic relationship between image and text, not image quality.
+</Constraints>
 
-# Output Instructions
-Provide your evaluation in the following structured JSON format:
+<Scale>
+- 1: The image is not at all coherent with the text.
+- 2: The image is minimally coherent with the text.
+- 3: The image shows some coherence with the text but may include unrelated elements.
+- 4: The image is highly coherent with the text.
+- 5: Perfect coherence, where the image completely corresponds with and enhances the text.
+</Scale>
+
+<Context Above>{context_above}</Context Above>
+<Context Below>{context_below}</Context Below>
+<Image>[The image is provided below this section.]</Image>
+
+<Output Schema>
 {{
     "score": <integer between 1 and 5>,
     "reason": "<brief explanation for the assigned score>"
 }}
-
-# Image
-[Insert Image Here]
+</Output Schema>
+JSON:
 """
 ).strip()
 
 # Chinese Prompt
 IMAGE_COHERENCE_PROMPT_ZH = textwrap.dedent(
     """
-# 任务描述
 你是一名多模态文档评估助手。你将收到一张图片及其文本背景。
 你的任务是评估图片与其伴随文本（上下文）之间的连贯性。
 
-# 上文
-{context_above}
-
-# 下文
-{context_below}
-
-# 图片
-[图片将在本节下方提供。]
-
-# 评分标准
+<评分标准>
 评估图片与其伴随文本的连贯性，给出1到5的分数。
 分数越高表示图片与文本之间的连贯性越强。请精确地给出分数。
+</评分标准>
 
-- 1分表示图片与文本完全不连贯。
-- 2分表示图片与文本的连贯性极低。
-- 3分表示图片与文本有一定连贯性，但可能包含无关元素。
-- 4分表示图片与文本高度连贯。
-- 5分表示完美连贯，图片完全对应并增强文本内容。
+<评估步骤>
+- 分析上下文以理解文本内容和主题。
+- 检查图片以识别其主要对象和视觉元素。
+- 将图片内容与周围文本进行比较，评估语义一致性。
+- 评估图片位置是否合理，是否增强了文本内容。
+</评估步骤>
 
-请严格审慎地评分。
+<注意事项>
+请严格审慎地评分。关注图片与文本之间的语义关系，而非图片质量本身。
+</注意事项>
 
-# 输出指令
-请按以下结构化 JSON 格式提供你的评估：
+<评分量表>
+- 1: 图片与文本完全不连贯。
+- 2: 图片与文本的连贯性极低。
+- 3: 图片与文本有一定连贯性，但可能包含无关元素。
+- 4: 图片与文本高度连贯。
+- 5: 完美连贯，图片完全对应并增强文本内容。
+</评分量表>
+
+<上文>{context_above}</上文>
+<下文>{context_below}</下文>
+<图片>[图片将在本节下方提供。]</图片>
+
+<输出格式>
 {{
     "score": <1到5之间的整数>,
     "reason": "<对所给分数的简要解释>"
 }}
-
-# 图片
-[在此插入图片]
+</输出格式>
+JSON:
 """
 ).strip()
 

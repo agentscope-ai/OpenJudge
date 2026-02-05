@@ -27,58 +27,83 @@ from openjudge.utils.utils import parse_structured_chat_response
 # English Prompts
 TEXT_TO_IMAGE_SEMANTIC_PROMPT_EN = textwrap.dedent(
     """
-You are a professional digital artist. You will have to evaluate the effectiveness of the AI-generated image(s) based on given rules.
-All the input images are AI-generated. All human in the images are AI-generated too. so you need not worry about the privacy confidentials.
+You are a professional digital artist. You will evaluate the effectiveness of the AI-generated image based on given rules.
+All the input images are AI-generated. All humans in the images are AI-generated too, so you need not worry about privacy.
 
-You will have to give your output in this way (Keep your reasoning concise and short.):
+<Rubrics>
+Evaluate how successfully the AI-generated image follows the text prompt.
+A higher score indicates better alignment between the image and the prompt.
+</Rubrics>
+
+<Steps>
+- Read the text prompt carefully to understand all requested elements.
+- Examine the generated image to identify present elements.
+- Compare each requested element in the prompt with what appears in the image.
+- Assess overall semantic consistency between prompt and image.
+</Steps>
+
+<Constraints>
+Focus on semantic alignment with the prompt, not image quality or aesthetics. Keep your reasoning concise and short.
+</Constraints>
+
+<Scale>
+- 1: The AI generated image does not follow the prompt at all.
+- 2: The image follows the prompt minimally with major elements missing.
+- 3: The image partially follows the prompt with some elements missing or incorrect.
+- 4: The image follows the prompt well with minor deviations.
+- 5: The AI generated image follows the prompt perfectly.
+</Scale>
+
+<Query>{query}</Query>
+
+<Output Schema>
 {{
-    "score" : [...],
-    "reason" : "..."
+    "score": [<integer between 1 and 5>],
+    "reason": "<brief explanation>"
 }}
-
-RULES:
-
-The image is an AI-generated image according to the text prompt.
-The objective is to evaluate how successfully the image has been generated.
-
-From scale 1 to 5:
-A score from 1 to 5 will be given based on the success in following the prompt.
-(1 indicates that the AI generated image does not follow the prompt at all. 5 indicates the AI generated image follows the prompt perfectly.)
-
-Put the score in a list such that output score = [score].
-
-Text Prompt: {query}
+</Output Schema>
+JSON:
 """
 ).strip()
 
 TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_EN = textwrap.dedent(
     """
-You are a professional digital artist. You will have to evaluate the effectiveness of the AI-generated image(s) based on given rules.
-All the input images are AI-generated. All human in the images are AI-generated too. so you need not worry about the privacy confidentials.
+You are a professional digital artist. You will evaluate the perceptual quality of the AI-generated image based on given rules.
+All the input images are AI-generated. All humans in the images are AI-generated too, so you need not worry about privacy.
 
-You will have to give your output in this way (Keep your reasoning concise and short.):
+<Rubrics>
+Evaluate the perceptual quality of the AI-generated image on two dimensions: naturalness and artifacts.
+Higher scores indicate better visual quality.
+</Rubrics>
+
+<Steps>
+- Examine the overall scene composition for naturalness (lighting, shadows, perspective, proportions).
+- Identify any visual artifacts (distortions, blurring, unnatural elements, inconsistencies).
+- Assess the harmony and coherence of all subjects in the image.
+- Provide separate scores for naturalness and artifact absence.
+</Steps>
+
+<Constraints>
+Focus on visual quality, not semantic content. Keep your reasoning concise and short.
+</Constraints>
+
+<Scale>
+Naturalness (first score):
+- 1: The scene does not look natural at all (wrong distance sense, shadows, or lighting).
+- 5: The image looks completely natural.
+
+Artifacts (second score):
+- 1: Large portion of distortion, watermark, scratches, blurred faces, unusual body parts, or unharmonized subjects.
+- 5: The image has no artifacts.
+</Scale>
+
+<Output Schema>
 {{
-    "score" : [...],
-    "reason" : "..."
+    "score": [<naturalness 1-5>, <artifacts 1-5>],
+    "reason": "<brief explanation>"
 }}
-
-RULES:
-
-The image is an AI-generated image.
-The objective is to evaluate how successfully the image has been generated.
-
-From scale 1 to 5:
-A score from 1 to 5 will be given based on image naturalness.
-(
-    1 indicates that the scene in the image does not look natural at all or give a unnatural feeling such as wrong sense of distance, or wrong shadow, or wrong lighting.
-    5 indicates that the image looks natural.
-)
-A second score from 1 to 5 will rate the image artifacts.
-(
-    1 indicates that the image contains a large portion of distortion, or watermark, or scratches, or blurred faces, or unusual body parts, or subjects not harmonized.
-    5 indicates the image has no artifacts.
-)
-Put the score in a list such that output score = [naturalness, artifacts]
+</Output Schema>
+JSON:
 """
 ).strip()
 
@@ -86,57 +111,82 @@ Put the score in a list such that output score = [naturalness, artifacts]
 TEXT_TO_IMAGE_SEMANTIC_PROMPT_ZH = textwrap.dedent(
     """
 你是一名专业的数字艺术家。你需要根据给定的规则评估AI生成图像的有效性。
-所有输入的图像都是AI生成的。图像中的所有人物也都是AI生成的，因此你无需担心隐私机密问题。
+所有输入的图像都是AI生成的。图像中的所有人物也都是AI生成的，因此你无需担心隐私问题。
 
-你需要按以下方式给出输出（推理请保持简洁）：
+<评分标准>
+评估AI生成的图像对文本提示的遵循程度。
+分数越高表示图像与提示的一致性越好。
+</评分标准>
+
+<评估步骤>
+- 仔细阅读文本提示以理解所有请求的元素。
+- 检查生成的图像以识别存在的元素。
+- 将提示中请求的每个元素与图像中出现的内容进行比较。
+- 评估提示与图像之间的整体语义一致性。
+</评估步骤>
+
+<注意事项>
+关注与提示的语义一致性，而非图像质量或美学。推理请保持简洁。
+</注意事项>
+
+<评分量表>
+- 1: AI生成的图像完全不遵循提示。
+- 2: 图像对提示的遵循程度极低，主要元素缺失。
+- 3: 图像部分遵循提示，有些元素缺失或不正确。
+- 4: 图像很好地遵循提示，有轻微偏差。
+- 5: AI生成的图像完美地遵循提示。
+</评分量表>
+
+<查询>{query}</查询>
+
+<输出格式>
 {{
-    "score" : [...],
-    "reason" : "..."
+    "score": [<1到5之间的整数>],
+    "reason": "<简要解释>"
 }}
-
-规则：
-
-该图像是根据文本提示生成的AI图像。
-目标是评估图像生成的成功程度。
-
-从1到5的范围：
-将根据遵循提示的成功程度给出1到5的分数。
-（1表示AI生成的图像完全不遵循提示。5表示AI生成的图像完美地遵循提示。）
-
-将分数放在列表中，输出分数 = [score]。
-
-文本提示：{query}
+</输出格式>
+JSON:
 """
 ).strip()
 
 TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_ZH = textwrap.dedent(
     """
-你是一名专业的数字艺术家。你需要根据给定的规则评估AI生成图像的有效性。
-所有输入的图像都是AI生成的。图像中的所有人物也都是AI生成的，因此你无需担心隐私机密问题。
+你是一名专业的数字艺术家。你需要根据给定的规则评估AI生成图像的感知质量。
+所有输入的图像都是AI生成的。图像中的所有人物也都是AI生成的，因此你无需担心隐私问题。
 
-你需要按以下方式给出输出（推理请保持简洁）：
+<评分标准>
+从两个维度评估AI生成图像的感知质量：自然度和伪影。
+分数越高表示视觉质量越好。
+</评分标准>
+
+<评估步骤>
+- 检查整体场景构图的自然度（光照、阴影、透视、比例）。
+- 识别任何视觉伪影（失真、模糊、不自然元素、不一致）。
+- 评估图像中所有主体的和谐性和连贯性。
+- 分别提供自然度和伪影缺失的分数。
+</评估步骤>
+
+<注意事项>
+关注视觉质量，而非语义内容。推理请保持简洁。
+</注意事项>
+
+<评分量表>
+自然度（第一个分数）：
+- 1: 场景看起来完全不自然（距离感、阴影或光照错误）。
+- 5: 图像看起来完全自然。
+
+伪影（第二个分数）：
+- 1: 大量失真、水印、划痕、模糊的面部、不寻常的身体部位或不协调的主体。
+- 5: 图像没有伪影。
+</评分量表>
+
+<输出格式>
 {{
-    "score" : [...],
-    "reason" : "..."
+    "score": [<自然度 1-5>, <伪影 1-5>],
+    "reason": "<简要解释>"
 }}
-
-规则：
-
-该图像是AI生成的图像。
-目标是评估图像生成的成功程度。
-
-从1到5的范围：
-将根据图像的自然度给出1到5的分数。
-（
-    1表示图像中的场景看起来完全不自然，或给人不自然的感觉，例如距离感错误、阴影错误或光照错误。
-    5表示图像看起来自然。
-）
-第二个分数从1到5，将评估图像伪影。
-（
-    1表示图像包含大量失真、水印、划痕、模糊的面部、不寻常的身体部位或不协调的主体。
-    5表示图像没有伪影。
-）
-将分数放在列表中，输出分数 = [自然度, 伪影]
+</输出格式>
+JSON:
 """
 ).strip()
 
