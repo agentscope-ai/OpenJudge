@@ -11,6 +11,9 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -193,6 +196,7 @@ class TrajectoryAccuracyGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_TRAJECTORY_ACCURACY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """Initialize the TrajectoryAccuracyGrader.
 
@@ -202,6 +206,7 @@ class TrajectoryAccuracyGrader(LLMGrader):
                    be used to initialize an OpenAIChatModel.
             template: Evaluation template. Defaults to DEFAULT_TRAJECTORY_ACCURACY_TEMPLATE.
             language: Language for evaluation prompts (default: LanguageEnum.EN).
+            strategy: Evaluation strategy. Defaults to None.
         """
         super().__init__(
             name="trajectory_accuracy",
@@ -210,6 +215,7 @@ class TrajectoryAccuracyGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_TRAJECTORY_ACCURACY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
     def _format_messages(
@@ -255,7 +261,7 @@ class TrajectoryAccuracyGrader(LLMGrader):
 
         return "\n\n".join(formatted_parts)
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
     ) -> GraderScore | GraderError:
@@ -306,7 +312,7 @@ class TrajectoryAccuracyGrader(LLMGrader):
         try:
             # Call parent evaluate method with the structured data
             # The prompt will extract query and response from messages automatically
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 messages=formatted_messages,
             )
             score = max(1.0, min(3.0, result.score))
