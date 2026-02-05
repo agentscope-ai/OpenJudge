@@ -70,6 +70,51 @@ asyncio.run(main())
 
 This gives you a basic reward signal based on relevance. For simple use cases, this single-dimension reward might be sufficient. But for production systems, you typically need to evaluate multiple quality dimensions simultaneously.
 
+## Advanced Evaluation: Using Evaluation Strategies
+
+For more robust evaluation, you can use evaluation strategies that control how the grader executes its assessment. Strategies determine how many times an evaluation is called, in what order, and how results are aggregated.
+
+For example, you can use a voting strategy to run the evaluation multiple times and aggregate results using voting mechanisms:
+
+```python
+import asyncio
+from openjudge.models import OpenAIChatModel
+from openjudge.graders.common import RelevanceGrader
+from openjudge.evaluation_strategy.voting_evaluation_strategy import VotingEvaluationStrategy
+from openjudge.runner.grading_runner import GradingRunner, GraderConfig
+
+async def main():
+    # Initialize the grading model
+    model = OpenAIChatModel(model="qwen3-32b")
+
+    # Configure the relevance grader with a voting strategy
+    voting_strategy = VotingEvaluationStrategy(num_votes=3)
+    grader_configs = {
+        "relevance": GraderConfig(
+            grader=RelevanceGrader(model=model, strategy=voting_strategy)
+        )
+    }
+
+    # Create runner and execute
+    runner = GradingRunner(
+        grader_configs=grader_configs,
+        max_concurrency=32,
+        show_progress=True
+    )
+
+    results = await runner.arun(dataset)
+
+    # Print results
+    for i, result in enumerate(results["relevance"]):
+        print(f"Sample {i}: relevance={result.score}/5")
+        print(f"  Reason: {result.reason}\n")
+
+asyncio.run(main())
+```
+
+Other strategies include:
+- **AverageEvaluationStrategy**: Averages numerical results across multiple runs to reduce noise
+- **DirectEvaluationStrategy**: Executes the evaluation once (this is the default when no strategy is specified)
 
 ## Add More Dimensions: Build Composite Rewards
 
@@ -276,4 +321,3 @@ When built-in graders don't cover your specific requirements, you can create cus
 - [Built-in Graders Overview](../built_in_graders/overview.md) — Browse all available graders organized by category
 - [Run Grading Tasks](../running_graders/run_tasks.md) — Explore parallel execution and result analysis
 - [Create Custom Graders](../building_graders/create_custom_graders.md) — Build domain-specific graders for specialized use cases
-
