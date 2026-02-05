@@ -92,10 +92,10 @@ a few superficially related words, and are generally misleading.
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means perfect match with reference response
-             and 1 means complete deviation from reference response>,
     "reason": "<brief explanation for the assigned score, specifically mentioning how the response
-               aligns with or deviates from the reference response>"
+               aligns with or deviates from the reference response>",
+    "score": <integer between 1 and 5, where 5 means perfect match with reference response
+             and 1 means complete deviation from reference response>
 }}
 </Output Schema>
 
@@ -168,8 +168,8 @@ CORRECTNESS_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1到5之间的整数，其中5表示完美匹配参考回答，1表示完全偏离参考回答>,
-    "reason": "<对所给分数的简要解释，特别提到输出如何与参考回答一致或偏离>"
+    "reason": "<对所给分数的简要解释，特别提到输出如何与参考回答一致或偏离>",
+    "score": <1到5之间的整数，其中5表示完美匹配参考回答，1表示完全偏离参考回答>
 }}
 </输出格式>
 

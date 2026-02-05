@@ -63,8 +63,8 @@ TRAJECTORY: {messages}
 Your output should be a JSON object with the following format:
 ```json
 {{
-    "score": [Trajectory Accuracy Score],
     "reason": [Reason for the score],
+    "score": [Trajectory Accuracy Score],
 }}
 ```
 </Output Schema>
@@ -107,8 +107,8 @@ TRAJECTORY_ACCURACY_PROMPT_ZH = textwrap.dedent(
 你的输出应该是一个JSON对象，格式如下：
 ```json
 {{
-    "score": [轨迹准确性评分],
     "reason": [评分原因],
+    "score": [轨迹准确性评分],
 }}
 ```
 </输出格式>

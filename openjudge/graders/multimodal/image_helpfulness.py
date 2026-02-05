@@ -60,8 +60,8 @@ Be rigorous and discerning when assigning your score.
 # Output Instructions
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5>,
-    "reason": "<brief explanation for the assigned score>"
+    "reason": "<brief explanation for the assigned score>",
+    "score": <integer between 1 and 5>
 }}
 
 # Image
@@ -100,8 +100,8 @@ IMAGE_HELPFULNESS_PROMPT_ZH = textwrap.dedent(
 # 输出指令
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1到5之间的整数>,
-    "reason": "<对所给分数的简要解释>"
+    "reason": "<对所给分数的简要解释>",
+    "score": <1到5之间的整数>
 }}
 
 # 图片

@@ -82,8 +82,8 @@ Reflection: {reflection}
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of progress awareness quality and confidence level>"
+    "reason": "<detailed explanation of progress awareness quality and confidence level>",
+    "score": <0.0 or 1.0>
 }}
 </Output Schema>
 JSON:
@@ -151,8 +151,8 @@ REFLECTION_PROGRESS_AWARENESS_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于进度意识质量的详细解释和置信度水平>"
+    "reason": "<关于进度意识质量的详细解释和置信度水平>",
+    "score": <0.0 或 1.0>
 }}
 </输出格式>
 JSON:

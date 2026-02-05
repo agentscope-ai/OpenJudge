@@ -72,8 +72,8 @@ class TestLLMGraderUnit:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -105,8 +105,8 @@ class TestLLMGraderUnit:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```""",
                     },
@@ -146,8 +146,8 @@ class TestLLMGraderUnit:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -179,8 +179,8 @@ class TestLLMGraderUnit:
     Return your answer in JSON format:
     ```json
     {{
-        "score": score,
-        "reason": "explanation for scoring"
+        "reason": "explanation for scoring",
+        "score": score
     }}
     ```"""
 
@@ -273,8 +273,8 @@ class TestLLMGraderUnit:
     Return your assessment in JSON format with a score from 0-5 and explanation:
     ```json
     {{
-        "score": score,
-        "reason": "detailed explanation for scoring"
+        "reason": "detailed explanation for scoring",
+        "score": score
     }}
     ```"""
 
@@ -369,8 +369,8 @@ class TestLLMGraderQuality:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -428,8 +428,8 @@ class TestLLMGraderQuality:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 

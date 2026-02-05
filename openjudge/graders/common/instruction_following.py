@@ -80,10 +80,10 @@ perfectly follows all instructions should score high.
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means perfect instruction adherence
-             and 1 means complete failure to follow instructions>,
     "reason": "<brief explanation for the assigned score, specifically mentioning which instruction
-               requirements were met or violated>"
+               requirements were met or violated>",
+    "score": <integer between 1 and 5, where 5 means perfect instruction adherence
+             and 1 means complete failure to follow instructions>
 }}
 </Output Schema>
 
@@ -150,8 +150,8 @@ INSTRUCTION_FOLLOWING_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1到5之间的整数，其中5表示完美遵循指令，1表示完全未能遵循指令>,
-    "reason": "<对所给分数的简要解释，特别提到满足或违反了哪些指令要求>"
+    "reason": "<对所给分数的简要解释，特别提到满足或违反了哪些指令要求>",
+    "score": <1到5之间的整数，其中5表示完美遵循指令，1表示完全未能遵循指令>
 }}
 </输出格式>
 

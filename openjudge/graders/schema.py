@@ -73,8 +73,8 @@ class GraderScore(GraderResult):
     Represents a numerical score assigned by a grader along with a reason.
 
     Attributes:
-        score (float): A numerical score assigned by the grader.
         reason (str): Explanation of how the score was determined.
+        score (float): A numerical score assigned by the grader.
         metadata (Dict[str, Any]): Optional additional information from the evaluation.
 
     Example:
@@ -88,8 +88,8 @@ class GraderScore(GraderResult):
         0.85
     """
 
-    score: float = Field(description="score")
     reason: str = Field(description="reason")
+    score: float = Field(description="score")
 
 
 class GraderScoreCallback(BaseModel):
@@ -98,8 +98,8 @@ class GraderScoreCallback(BaseModel):
     Represents a numerical score assigned by a grader along with a reason.
 
     Attributes:
-        score (float): A numerical score assigned by the grader.
         reason (str): Explanation of how the score was determined.
+        score (float): A numerical score assigned by the grader.
         metadata (Dict[str, Any]): Optional additional information from the evaluation.
 
     Example:
@@ -112,8 +112,8 @@ class GraderScoreCallback(BaseModel):
         0.9
     """
 
-    score: float = Field(description="score")
     reason: str = Field(description="reason")
+    score: float = Field(description="score")
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
         description="The metadata of the grader result",

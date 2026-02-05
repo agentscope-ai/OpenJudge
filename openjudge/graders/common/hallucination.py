@@ -74,8 +74,8 @@ Focus only on factual accuracy. If context is provided, verify support from the 
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means no hallucinations and 1 means severe hallucinations>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning any hallucinations found or confirming factual accuracy>"
+    "reason": "<brief explanation for the assigned score, specifically mentioning any hallucinations found or confirming factual accuracy>",
+    "score": <integer between 1 and 5, where 5 means no hallucinations and 1 means severe hallucinations>
 }}
 </Output Schema>
 
@@ -137,8 +137,8 @@ HALLUCINATION_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1到5之间的整数，其中5表示无幻觉，1表示完全捏造>,
-    "reason": "<对所给分数的简要解释，特别提到发现的任何幻觉或确认事实准确性>"
+    "reason": "<对所给分数的简要解释，特别提到发现的任何幻觉或确认事实准确性>",
+    "score": <1到5之间的整数，其中5表示无幻觉，1表示完全捏造>
 }}
 </输出格式>
 

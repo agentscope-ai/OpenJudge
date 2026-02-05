@@ -62,8 +62,8 @@ TOOL_PARAMETER_CHECK_PROMPT_EN = textwrap.dedent(
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of parameter quality and correctness>"
+    "reason": "<detailed explanation of parameter quality and correctness>",
+    "score": <0.0 or 1.0>
 }}
 </Output Schema>
 JSON:
@@ -112,8 +112,8 @@ TOOL_PARAMETER_CHECK_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于参数质量和正确性的详细解释>"
+    "reason": "<关于参数质量和正确性的详细解释>",
+    "score": <0.0 或 1.0>
 }}
 </输出格式>
 JSON:

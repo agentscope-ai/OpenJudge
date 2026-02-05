@@ -83,8 +83,8 @@ If a reference response is provided, you may use it as a baseline for comparison
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means highly relevant and 1 means completely irrelevant>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning how the response addresses or fails to address the query>"
+    "reason": "<brief explanation for the assigned score, specifically mentioning how the response addresses or fails to address the query>",
+    "score": <integer between 1 and 5, where 5 means highly relevant and 1 means completely irrelevant>
 }}
 </Output Schema>
 
@@ -156,8 +156,8 @@ RELEVANCE_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1到5之间的整数，其中5表示高度相关，1表示完全不相关>,
-    "reason": "<对所给分数的简要解释，特别提到输出如何解决或未能解决查询>"
+    "reason": "<对所给分数的简要解释，特别提到输出如何解决或未能解决查询>",
+    "score": <1到5之间的整数，其中5表示高度相关，1表示完全不相关>
 }}
 </输出格式>
 

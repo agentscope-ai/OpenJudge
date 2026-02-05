@@ -57,8 +57,8 @@ Evaluate based on these factors:
 Please provide your evaluation for the tool calls in relation to the user query and tool definitions.
 Your output should be a JSON object with the following format:
 {{
-    "score": [Tool Call Accuracy Score],
-    "reason": [Reason for the score]
+    "reason": [Reason for the score],
+    "score": [Tool Call Accuracy Score]
 }}
 </Output Schema>
 JSON:
@@ -101,8 +101,8 @@ TOOL_CALL_ACCURACY_PROMPT_ZH = textwrap.dedent(
 请提供对工具调用相对于用户查询和工具定义的评估。
 你的输出应该是具有以下格式的 JSON 对象：
 {{
-    "score": [工具调用准确性分数],
-    "reason": [分数的原因]
+    "reason": [分数的原因],
+    "score": [工具调用准确性分数]
 }}
 </输出格式>
 JSON:

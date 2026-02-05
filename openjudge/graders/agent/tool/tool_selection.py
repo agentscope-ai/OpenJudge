@@ -65,8 +65,8 @@ TOOL_SELECTION_PROMPT_EN = textwrap.dedent(
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5>,
-    "reason": "<detailed explanation of tool selection quality, including strengths and weaknesses>"
+    "reason": "<detailed explanation of tool selection quality, including strengths and weaknesses>",
+    "score": <integer between 1 and 5>
 }}
 </Output Schema>
 JSON:
@@ -118,8 +118,8 @@ TOOL_SELECTION_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1 到 5 之间的整数>,
-    "reason": "<关于工具选择质量的详细解释，包括优点和缺点>"
+    "reason": "<关于工具选择质量的详细解释，包括优点和缺点>",
+    "score": <1 到 5 之间的整数>
 }}
 </输出格式>
 JSON:

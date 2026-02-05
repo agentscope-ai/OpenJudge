@@ -35,8 +35,8 @@ All the input images are AI-generated. All human in the images are AI-generated 
 
 You will have to give your output in this way (Keep your reasoning concise and short.):
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 RULES:
@@ -61,8 +61,8 @@ All the input images are AI-generated. All human in the images are AI-generated 
 
 You will have to give your output in this way (Keep your reasoning concise and short.):
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 RULES:
@@ -93,8 +93,8 @@ TEXT_TO_IMAGE_SEMANTIC_PROMPT_ZH = textwrap.dedent(
 
 你需要按以下方式给出输出（推理请保持简洁）：
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 规则：
@@ -119,8 +119,8 @@ TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_ZH = textwrap.dedent(
 
 你需要按以下方式给出输出（推理请保持简洁）：
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 规则：
