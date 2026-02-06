@@ -91,6 +91,21 @@ Comprehensive evaluation for AI agents across the entire lifecycle. [→ Detaile
 || `TrajectoryComprehensiveGrader` | Comprehensive trajectory evaluation | LLM-Based | {0, 1} |
 
 
+### Multi-turn Conversation Graders
+
+Evaluate AI assistant capabilities in multi-turn conversations. [→ Detailed Documentation](multi_turn.md)
+
+|| Grader | Description | Type | Score Range |
+||--------|-------------|------|-------------|
+|| `ContextMemoryGrader` | Evaluates recall of earlier conversation details | LLM-Based | 1-5 |
+|| `AnaphoraResolutionGrader` | Evaluates pronoun and reference resolution | LLM-Based | 1-5 |
+|| `TopicSwitchGrader` | Evaluates handling of sudden topic changes | LLM-Based | 1-5 |
+|| `SelfCorrectionGrader` | Evaluates error correction based on feedback | LLM-Based | 1-5 |
+|| `InstructionClarificationGrader` | Evaluates ability to ask for clarification | LLM-Based | 1-5 |
+|| `ProactiveInteractionGrader` | Evaluates proactive engagement in conversation | LLM-Based | 1-5 |
+|| `ResponseRepetitionGrader` | Detects repetitive content in responses | LLM-Based | 1-5 |
+
+
 ### Text Graders
 
 Fast, deterministic text comparison using various algorithms. [→ Detailed Documentation](text.md)
@@ -153,6 +168,7 @@ Evaluate vision-language tasks and image quality. [→ Detailed Documentation](m
 
 - [General Graders](general.md) — Quality assessment (Relevance, Hallucination, Harmfulness, Instruction Following, Correctness)
 - [Agent Graders](agent_graders.md) — Agent evaluation (Action, Tool, Memory, Plan, Reflection, Trajectory)
+- [Multi-turn Graders](multi_turn.md) — Multi-turn conversation evaluation (Context Memory, Anaphora Resolution, Topic Switch)
 - [Text Graders](text.md) — Text similarity and matching (15+ algorithms)
 - [Code & Math Graders](code_math.md) — Code execution and math verification
 - [Format Graders](format.md) — Structure validation (JSON, Length, Repetition, Reasoning Format)

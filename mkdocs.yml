@@ -26,6 +26,7 @@ nav:
       - Overview: built_in_graders/overview.md
       - General Graders: built_in_graders/general.md
       - Agent Graders: built_in_graders/agent_graders.md
+      - Multi-turn Graders: built_in_graders/multi_turn.md
       - Multimodal Graders: built_in_graders/multimodal.md
       - Code & Math Graders: built_in_graders/code_math.md
       - Text Graders: built_in_graders/text.md
