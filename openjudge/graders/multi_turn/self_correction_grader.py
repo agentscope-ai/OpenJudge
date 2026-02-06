@@ -253,8 +253,8 @@ class SelfCorrectionGrader(LLMGrader):
 
     async def _aevaluate(
         self,
-        response: str,
-        history: List[Dict[str, str]],
+        response: str | Dict[str, Any],
+        history: List[Dict[str, Any]],
         **kwargs: Any,
     ) -> GraderScore:
         """
@@ -262,6 +262,7 @@ class SelfCorrectionGrader(LLMGrader):
 
         Args:
             response: The current assistant response to evaluate.
+                      Can be a string or a dict with 'content' field.
             history: List of previous conversation messages in ChatMessage format.
                      Example: [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
             **kwargs: Additional arguments.
@@ -273,10 +274,16 @@ class SelfCorrectionGrader(LLMGrader):
                 - metadata: Contains evaluation type and history info
         """
         try:
+            # Handle response as string or dict
+            if isinstance(response, dict):
+                response_str = response.get("content", str(response))
+            else:
+                response_str = response
+
             history_str = format_conversation_history(history)
 
             result = await super()._aevaluate(
-                response=response,
+                response=response_str,
                 history=history_str,
                 **kwargs,
             )
