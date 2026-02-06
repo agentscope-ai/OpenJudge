@@ -2,153 +2,87 @@
 """
 Example 4: AgentScope Agent (Full Delegation)
 
-Full delegation to AgentScope: Use AgentScope's ReActAgent as the reasoning engine.
-Best for: Reusing existing AgentScope agents for evaluation tasks.
-
-Dependencies:
-    pip install openjudge agentscope tavily-python
-
-Environment Variables:
-    OPENAI_API_KEY: OpenAI-compatible API Key
-    TAVILY_API_KEY: Tavily Search API Key
-
-Usage:
-    python 04_agentscope_agent.py
+Dependencies: pip install openjudge agentscope tavily-python
+Environment: OPENAI_API_KEY, TAVILY_API_KEY
 """
 
 import asyncio
 import os
 
-from agentscope.agent import ReActAgent
+from agentscope.agent import ReActAgent as ASReActAgent
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit, ToolResponse
 from tavily import TavilyClient
 
-from openjudge.agentic.adapters.agentscope import AgentScopeAgentAdapter
+from cookbooks.agentic_grader.adapters.agentscope import AgentScopeAgentAdapter
 from openjudge.graders.agentic_grader import AgenticGrader
 
-# =============================================================================
-# Tool Definition
-# =============================================================================
+# Create AgentScope tool
+toolkit = Toolkit()
+_tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
 
-def create_web_search_tool(toolkit: Toolkit, api_key: str) -> None:
-    """Create and register a web search tool with the toolkit.
+@toolkit.register_tool_function
+def web_search(query: str) -> ToolResponse:
+    """Search the web for information to verify facts.
 
     Args:
-        toolkit: AgentScope Toolkit to register the tool with.
-        api_key: Tavily API key.
-    """
-    client = TavilyClient(api_key=api_key)
-
-    def web_search(query: str) -> ToolResponse:
-        """Search the web for information to verify facts.
-
-        Args:
-            query: The search query string.
-
-        Returns:
-            Search results from the web.
-        """
-        response = client.search(query=query, search_depth="basic", max_results=3)
-
-        # Format search results
-        results = []
-        for i, item in enumerate(response.get("results", []), 1):
-            title = item.get("title", "No title")
-            url = item.get("url", "")
-            content = item.get("content", "")[:200]
-            results.append(f"[{i}] {title}\nURL: {url}\nContent: {content}...")
-
-        output = "\n\n".join(results) if results else "No results found."
-        return ToolResponse(content=output)
-
-    toolkit.register_tool_function(web_search)
-
-
-# =============================================================================
-# Grader Creation
-# =============================================================================
-
-
-def create_grader() -> AgenticGrader:
-    """Create a grader using AgentScope Agent.
+        query: The search query string.
 
     Returns:
-        Configured AgenticGrader instance.
+        Search results from the web.
     """
-    # 1. Create AgentScope toolkit with web search tool
-    toolkit = Toolkit()
-    create_web_search_tool(toolkit, os.getenv("TAVILY_API_KEY"))
-
-    # 2. Create AgentScope Agent
-    model = OpenAIChatModel(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        model_name="qwen3-32b",
-    )
-
-    as_agent = ReActAgent(
-        name="fact_checker",
-        sys_prompt="You are a fact-checking assistant. Verify claims and provide accuracy scores.",
-        model=model,
-        formatter=OpenAIChatFormatter(),
-        toolkit=toolkit,
-        max_iters=5,
-    )
-
-    # 3. Wrap AgentScope Agent for OpenJudge
-    oj_agent = AgentScopeAgentAdapter(as_agent)
-
-    # 4. Define evaluation prompt template
-    correctness_template = """
-    Evaluate the factual correctness of this response:
-
-    **Question:** {query}
-    **Response:** {response}
-
-    Use available tools to verify facts. Output format: {{"score": 0-10, "reason": "..."}}
-    """
-
-    # 5. Create Grader
-    grader = AgenticGrader(
-        agent=oj_agent,
-        template=correctness_template,
-        name="agentscope_agent_correctness_grader",
-    )
-
-    return grader
+    response = _tavily_client.search(query=query, max_results=3)
+    results = [f"[{i}] {r['title']}: {r['content'][:200]}..." for i, r in enumerate(response.get("results", []), 1)]
+    return ToolResponse(content="\n".join(results))
 
 
-# =============================================================================
-# Main
-# =============================================================================
+# Create AgentScope Agent
+as_agent = ASReActAgent(
+    name="fact_checker",
+    sys_prompt="You are a fact-checking assistant.",
+    model=OpenAIChatModel(api_key=os.getenv("OPENAI_API_KEY"), model_name="qwen3-32b"),
+    formatter=OpenAIChatFormatter(),
+    toolkit=toolkit,
+    max_iters=5,
+)
 
+# Create Grader
+grader = AgenticGrader(
+    agent=AgentScopeAgentAdapter(as_agent),
+    template="""
+You are a fact-checking assistant. Your task is to verify the factual accuracy of the given response.
 
-async def main():
-    """Run the example."""
-    # Check environment variables
-    if not os.getenv("TAVILY_API_KEY"):
-        print("Error: Please set TAVILY_API_KEY environment variable")
-        return
+**Question:** {query}
+**Response to evaluate:** {response}
 
-    if not os.getenv("OPENAI_API_KEY"):
-        print("Error: Please set OPENAI_API_KEY environment variable")
-        return
+Instructions:
+1. Identify the key factual claims in the response.
+2. Use the available search tool to verify each claim against reliable sources.
+3. Compare the search results with the claims in the response.
+4. Provide a score from 1-5 based on factual accuracy.
 
-    # Create Grader
-    grader = create_grader()
+Scoring Criteria:
+- 5: All factual claims are verified and accurate.
+- 4: Core facts are correct with minor inaccuracies.
+- 3: Partially correct, some claims are wrong.
+- 2: Core facts contradict search results.
+- 1: Completely inaccurate or fabricated.
 
-    print("=" * 60)
-    print("Example 4: AgentScope Agent (Full Delegation)")
-    print("=" * 60)
+Output your evaluation in JSON format:
+{{"score": <1-5>, "reason": "<your detailed reasoning with search evidence>"}}
+""",
+    name="agentscope_agent_correctness_grader",
+)
 
-    # Test case
+# Evaluate
+if __name__ == "__main__":
     query = """Please introduce BYD company, including:
 1. Full company name and stock code
-2. Main business and core technologies
-3. 2024 NEV sales and revenue
-4. Global market presence and main models"""
+2. Main business areas and core technologies
+3. 2024 NEV sales volume and global ranking
+4. Key markets and popular models"""
 
     response = """BYD Company Limited (Stock: A-share 002594, H-share 1211) is a global leader in new energy vehicles.
 
@@ -158,28 +92,17 @@ The company focuses on NEVs, power batteries, and rail transit. It masters core 
 **2024 Performance:**
 - NEV sales: ~4.26 million units, #1 globally for two consecutive years
 - Revenue: ~620 billion RMB
-- Net profit: ~35 billion RMB
 - Power battery installations: Top 3 globally
 
 **Global Presence & Models:**
 - China: Dynasty series (Han, Tang, Song), Ocean series (Seal, Seagull)
-- Europe: Germany, France, UK, etc.
+- Europe: Germany, France, UK
 - Southeast Asia: Thailand, Singapore, Malaysia
 - South America: Factory in Brazil
-- Middle East: UAE, Saudi Arabia
 
 BYD has become a global leader in the NEV industry through innovation and globalization."""
 
-    print(f"\nQuery:\n{query}")
-    print(f"\nResponse to evaluate:\n{response[:200]}...")
-    print("\nEvaluating...")
-
-    result = await grader.aevaluate(query=query, response=response)
-    print(f"\nScore: {result.score}")
+    result = asyncio.run(grader.aevaluate(query=query, response=response))
+    print(f"Score: {result.score}")
     print(f"Reason: {result.reason}")
     print(f"Tool calls: {result.metadata.get('tool_calls', 0)}")
-    print(f"Iterations: {result.metadata.get('iterations', 0)}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

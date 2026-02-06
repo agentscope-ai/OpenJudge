@@ -14,10 +14,17 @@ Architecture:
 
     - Agent Layer (openjudge.agentic.agents):
       BaseAgent defines how the agent thinks (ReAct, CoT, etc.)
-      ReActAgent is the built-in implementation (default)
+      ReActAgent is the built-in implementation
 
     - Adapter Layer (openjudge.agentic.adapters):
-      ToolAdapter and AgentAdapter for integrating external frameworks
+      FunctionToolAdapter for wrapping Python functions as tools.
+      External framework adapters (LangChain, AgentScope) are provided as
+      examples in tutorials/integrations/ to avoid circular dependencies.
+
+Design Principle:
+    AgenticGrader follows "unified interface" design - it only accepts a
+    pre-built agent parameter. Whether using built-in ReActAgent or external
+    framework adapters, the agent must be constructed externally first.
 
 Classes:
     AgenticGrader: Main class for tool-augmented evaluation.
@@ -28,13 +35,11 @@ import os
 import re
 import textwrap
 import time
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from openjudge.agentic import BaseAgent, BaseTool, ReActAgent
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderRank, GraderScore
-from openjudge.models.base_chat_model import BaseChatModel
-from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
@@ -50,73 +55,65 @@ class AgenticGrader(BaseGrader):
     - Tool Layer: Defines what capabilities the agent has (search, code execution, etc.)
     - Agent Layer: Defines how the agent thinks (ReAct, CoT, Multi-Agent, etc.)
 
-    The default configuration uses OpenJudge's built-in ReActAgent, which
-    has zero external dependencies. You can swap in external frameworks
-    (LangChain, AgentScope, etc.) using the adapter classes.
+    Design Principle (Unified Interface):
+        AgenticGrader only accepts a pre-built `agent` parameter. Whether using
+        the built-in ReActAgent or external framework adapters, the agent must
+        be constructed externally first. This design:
+        - Keeps the interface simple and consistent
+        - Separates concerns: Grader handles evaluation, Agent handles reasoning
+        - Avoids parameter conflicts (model/tools vs agent)
 
     Attributes:
         agent (BaseAgent): The agent responsible for reasoning and tool calling.
         template (PromptTemplate): Template for generating evaluation prompts.
-        model (BaseChatModel): The LLM model (managed by agent for built-in agent).
         language (LanguageEnum): Language for prompts.
-        max_iterations (int): Maximum number of tool-calling iterations.
 
-    Example (Default - Built-in ReActAgent):
+    Example (Built-in ReActAgent - Recommended):
+        >>> from openjudge.agentic import ReActAgent
+        >>> # Step 1: Build the agent first
+        >>> agent = ReActAgent(
+        ...     model={"model": "gpt-4", "api_key": "..."},
+        ...     tools=[WebSearchTool()],
+        ...     max_iterations=10,
+        ... )
+        >>> # Step 2: Create grader with the agent
         >>> grader = AgenticGrader(
-        ...     model=model,
-        ...     tools=[WebSearchTool(), CodeExecutionTool()],
+        ...     agent=agent,
         ...     template="Evaluate the response: {response}",
         ... )
         >>> result = await grader.aevaluate(query="...", response="...")
 
-    Example (With LangChain Tools):
-        >>> from langchain_tavily import TavilySearch
-        >>> from openjudge.agentic.adapters.langchain import LangChainToolAdapter
-        >>> lc_tool = TavilySearch()
-        >>> oj_tool = LangChainToolAdapter(lc_tool)
-        >>> grader = AgenticGrader(model=model, tools=[oj_tool], template="...")
-
-    Example (With LangChain Agent):
-        >>> from langchain.agents import create_agent
-        >>> from openjudge.agentic.adapters.langchain import LangChainAgentAdapter
-        >>> lc_agent = create_agent(llm, tools)
-        >>> oj_agent = LangChainAgentAdapter(lc_agent)
-        >>> grader = AgenticGrader(agent=oj_agent, template="...")
-
-    Example (With AgentScope Agent):
-        >>> from agentscope.agent import ReActAgent as ASReActAgent
-        >>> from openjudge.agentic.adapters.agentscope import AgentScopeAgentAdapter
-        >>> as_agent = ASReActAgent(...)
-        >>> oj_agent = AgentScopeAgentAdapter(as_agent)
-        >>> grader = AgenticGrader(agent=oj_agent, template="...")
+    Example (With External Agent - LangChain):
+        >>> # Adapter code: see tutorials/integrations/langchain_adapter.py
+        >>> from langchain.agents import create_react_agent
+        >>> lc_agent = create_react_agent(llm, tools)
+        >>> # Wrap with adapter (implement BaseAgent.arun)
+        >>> class LangChainAgentAdapter(BaseAgent):
+        ...     def __init__(self, lc_agent):
+        ...         self._lc_agent = lc_agent
+        ...     async def arun(self, messages):
+        ...         result = await self._lc_agent.ainvoke({"messages": messages})
+        ...         return AgentResult(content=result.get("output", ""))
+        >>> agent = LangChainAgentAdapter(lc_agent)
+        >>> grader = AgenticGrader(agent=agent, template="...")
     """
 
     def __init__(
         self,
-        model: Optional[Union[BaseChatModel, dict]] = None,
-        tools: Optional[List[BaseTool]] = None,
-        agent: Optional[BaseAgent] = None,
+        agent: BaseAgent,
         template: Optional[Union[str, dict, list, PromptTemplate]] = None,
         name: str = "agentic_grader",
         mode: GraderMode = GraderMode.POINTWISE,
         description: str = "Tool-augmented agentic grader",
         language: Optional[Union[LanguageEnum, str]] = None,
-        max_iterations: int = 10,
-        callback: Optional[Callable] = None,
         **kwargs: Any,
     ):
         """Initialize AgenticGrader.
 
-        You can initialize in two ways:
-        1. Provide model + tools + template: Uses built-in ReActAgent (recommended)
-        2. Provide agent + template: Uses the provided agent directly
-
         Args:
-            model: LLM for reasoning and tool calling. Can be either a BaseChatModel
-                   instance or a dictionary configuration. Required if agent is None.
-            tools: List of available tools. Only used with built-in agent.
-            agent: Pre-configured agent (e.g., from LangChain or AgentScope).
-                   If provided, model and tools are ignored.
+            agent: Pre-configured agent (required). Can be built-in ReActAgent or
+                   external framework adapter (LangChain, AgentScope, etc.).
+                   The agent must be constructed externally first.
             template: Template for generating prompts (required). Can be a str, list,
                      dict or PromptTemplate object. Defines how query/response are
                      formatted and passed to the agent.
@@ -125,19 +122,29 @@ class AgenticGrader(BaseGrader):
             description: Grader description.
             language: Language for prompts. Can be LanguageEnum, string, or None.
                      If None, defaults to environment variable LANGUAGE or "en".
-            max_iterations: Max tool-calling iterations (only for built-in agent).
-            callback: Callback function for processing model response metadata.
             **kwargs: Additional keyword arguments passed to template rendering.
 
         Raises:
-            ValueError: If neither model nor agent is provided.
+            ValueError: If agent is not provided.
             ValueError: If template is not provided.
+
+        Example:
+            >>> from openjudge.agentic import ReActAgent
+            >>> agent = ReActAgent(
+            ...     model={"model": "gpt-4", "api_key": "..."},
+            ...     tools=[WebSearchTool()],
+            ... )
+            >>> grader = AgenticGrader(agent=agent, template="Evaluate: {response}")
         """
         super().__init__(name=name, mode=mode, description=description, **kwargs)
 
         # Validate inputs
-        if agent is None and model is None:
-            raise ValueError("Either 'model' or 'agent' must be provided")
+        if agent is None:
+            raise ValueError(
+                "Agent is required for AgenticGrader. "
+                "Please construct an agent first (e.g., ReActAgent) and pass it in. "
+                "Example: agent = ReActAgent(model=..., tools=[...])"
+            )
 
         if template is None:
             raise ValueError(
@@ -193,31 +200,8 @@ class AgenticGrader(BaseGrader):
         else:
             raise ValueError("Template must be a str, list, dict or PromptTemplate object")
 
-        # Initialize model
-        if isinstance(model, dict):
-            self._model_config = model
-            self.model = OpenAIChatModel(**model)
-        elif model is not None:
-            self._model_config = None
-            self.model = model
-        else:
-            self._model_config = None
-            self.model = None
-
-        # Store callback
-        self.callback = callback
-        self.max_iterations = max_iterations
-
-        # Create or use the agent
-        if agent is not None:
-            self.agent = agent
-        else:
-            self.agent = ReActAgent(
-                model=self.model,
-                tools=tools,
-                max_iterations=max_iterations,
-                callback=callback,
-            )
+        # Use the provided agent directly
+        self.agent = agent
 
     async def _aevaluate(
         self,
@@ -243,11 +227,12 @@ class AgenticGrader(BaseGrader):
             ValueError: If required fields cannot be extracted from agent output.
 
         Example:
-            >>> grader = AgenticGrader(
-            ...     model=OpenAIChatModel(model="gpt-4"),
+            >>> from openjudge.agentic import ReActAgent
+            >>> agent = ReActAgent(
+            ...     model={"model": "gpt-4", "api_key": "..."},
             ...     tools=[WebSearchTool()],
-            ...     template="Evaluate: {response}",
             ... )
+            >>> grader = AgenticGrader(agent=agent, template="Evaluate: {response}")
             >>> result = await grader.aevaluate(
             ...     query="What is the capital of France?",
             ...     response="The capital of France is Paris."
@@ -392,13 +377,13 @@ class AgenticGrader(BaseGrader):
             "description": self.description,
             "template": (self.template.model_dump() if isinstance(self.template, PromptTemplate) else self.template),
             "tools": list(self.tools.keys()),
-            "max_iterations": self.max_iterations,
             "agent_type": type(self.agent).__name__,
             **self.kwargs,
         }
 
-        if hasattr(self, "_model_config") and self._model_config:
-            d["model"] = self._model_config
+        # Include agent's max_iterations if available
+        if hasattr(self.agent, "max_iterations"):
+            d["max_iterations"] = self.agent.max_iterations
 
         return d
 
@@ -406,30 +391,75 @@ class AgenticGrader(BaseGrader):
     def from_config(cls, config: dict) -> "AgenticGrader":
         """Create an AgenticGrader from a configuration dictionary.
 
+        This is a convenience method for creating AgenticGrader from serialized
+        config (e.g., from YAML/JSON files). It internally builds a ReActAgent
+        from the model/tools config.
+
+        Note:
+            This method is provided for convenience when loading from config files.
+            For programmatic usage, prefer constructing the agent explicitly:
+
+            >>> agent = ReActAgent(model=..., tools=[...])
+            >>> grader = AgenticGrader(agent=agent, template=...)
+
         Args:
             config: A dictionary containing the AgenticGrader configuration.
+                Required keys:
+                - template: The evaluation template
+                - model: Model configuration dict (for building ReActAgent)
+                Optional keys:
+                - tools: List of tool instances
+                - max_iterations: Max iterations for ReActAgent (default: 10)
+                - name, mode, description, language: Grader settings
 
         Returns:
             A new AgenticGrader instance.
+
+        Example:
+            >>> config = {
+            ...     "model": {"model": "gpt-4", "api_key": "..."},
+            ...     "tools": [my_search_tool],
+            ...     "template": "Evaluate: {response}",
+            ...     "max_iterations": 10,
+            ... }
+            >>> grader = AgenticGrader.from_config(config)
         """
         config = config.copy()
 
+        # Extract grader-level config
         name = config.pop("name", "agentic_grader")
         mode = config.pop("mode", GraderMode.POINTWISE)
         description = config.pop("description", "Tool-augmented agentic grader")
         template = config.pop("template", None)
-        model = config.pop("model", {})
+        language = config.pop("language", None)
+
+        # Extract agent-level config
+        model_config = config.pop("model", None)
         tools = config.pop("tools", None)
         max_iterations = config.pop("max_iterations", 10)
+        callback = config.pop("callback", None)
+
+        # Build the agent from config
+        if model_config is None:
+            raise ValueError(
+                "Model configuration is required in config for from_config(). "
+                "Please provide 'model' key with model configuration dict."
+            )
+
+        agent = ReActAgent(
+            model=model_config,
+            tools=tools,
+            max_iterations=max_iterations,
+            callback=callback,
+        )
 
         return cls(
+            agent=agent,
+            template=template,
             name=name,
             mode=mode,
             description=description,
-            template=template,
-            model=model,
-            tools=tools,
-            max_iterations=max_iterations,
+            language=language,
             **config,
         )
 

@@ -18,7 +18,7 @@ Architecture:
     2. Agent Layer (agents.py):
        - BaseAgent: Abstract base class defining agent interface
        - AgentResult: Standardized result format for agent execution
-       - ReActAgent: Built-in ReAct implementation (default)
+       - ReActAgent: Built-in ReAct implementation
        - Defines HOW the agent thinks and reasons
 
     3. Adapter Layer (adapters/):
@@ -27,6 +27,11 @@ Architecture:
        - AgentScopeToolAdapter, AgentScopeAgentAdapter: AgentScope integration
        - Enables integration with external frameworks
 
+Design Principle:
+    AgenticGrader follows "unified interface" design - it only accepts a
+    pre-built agent parameter. Whether using built-in ReActAgent or external
+    framework adapters, the agent must be constructed externally first.
+
 Core Components (exported from this module):
     BaseTool: Abstract base class for all tools.
     ToolResult: Standardized result format for tool execution.
@@ -34,12 +39,15 @@ Core Components (exported from this module):
     AgentResult: Standardized result format for agent execution.
     ReActAgent: Built-in ReAct agent implementation.
 
-Adapters (import directly from their modules):
+Adapters (import from their modules):
+    >>> # Core adapter (always available)
     >>> from openjudge.agentic.adapters.function import FunctionToolAdapter
-    >>> from openjudge.agentic.adapters.langchain import LangChainToolAdapter
-    >>> from openjudge.agentic.adapters.langchain import LangChainAgentAdapter
-    >>> from openjudge.agentic.adapters.agentscope import AgentScopeToolAdapter
-    >>> from openjudge.agentic.adapters.agentscope import AgentScopeAgentAdapter
+    >>>
+    >>> # External framework adapters (see cookbooks/agentic_grader/adapters/)
+    >>> from cookbooks.agentic_grader.adapters.langchain import LangChainToolAdapter
+    >>> from cookbooks.agentic_grader.adapters.langchain import LangChainAgentAdapter
+    >>> from cookbooks.agentic_grader.adapters.agentscope import AgentScopeToolAdapter
+    >>> from cookbooks.agentic_grader.adapters.agentscope import AgentScopeAgentAdapter
 
 Example - Creating a Custom Tool:
     >>> from openjudge.agentic import BaseTool, ToolResult
@@ -96,7 +104,7 @@ Example - Wrapping a Function as a Tool:
 
 Example - Using LangChain Tools:
     >>> from langchain_community.tools import DuckDuckGoSearchRun
-    >>> from openjudge.agentic.adapters.langchain import LangChainToolAdapter
+    >>> from cookbooks.agentic_grader.adapters.langchain import LangChainToolAdapter
     >>> from openjudge.agentic import ReActAgent
     >>>
     >>> lc_tool = DuckDuckGoSearchRun()
@@ -105,7 +113,7 @@ Example - Using LangChain Tools:
 
 Example - Using External Agent:
     >>> from langchain.agents import create_agent
-    >>> from openjudge.agentic.adapters.langchain import LangChainAgentAdapter
+    >>> from cookbooks.agentic_grader.adapters.langchain import LangChainAgentAdapter
     >>>
     >>> lc_agent = create_agent(llm, tools)
     >>> oj_agent = LangChainAgentAdapter(lc_agent)

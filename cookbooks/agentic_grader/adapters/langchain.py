@@ -17,7 +17,7 @@ Dependencies:
 Example:
     >>> # Use LangChain tools with OpenJudge's ReActAgent
     >>> from langchain_community.tools import DuckDuckGoSearchRun
-    >>> from openjudge.agentic.adapters.langchain import LangChainToolAdapter
+    >>> from cookbooks.agentic_grader.adapters.langchain import LangChainToolAdapter
     >>> from openjudge.agentic import ReActAgent
     >>>
     >>> lc_tool = DuckDuckGoSearchRun()
@@ -26,7 +26,7 @@ Example:
     >>>
     >>> # Use LangChain agent directly in OpenJudge
     >>> from langchain.agents import create_agent
-    >>> from openjudge.agentic.adapters.langchain import LangChainAgentAdapter
+    >>> from cookbooks.agentic_grader.adapters.langchain import LangChainAgentAdapter
     >>>
     >>> lc_agent = create_agent(llm, tools)
     >>> oj_agent = LangChainAgentAdapter(lc_agent)
@@ -37,8 +37,8 @@ from typing import Any, Dict, List
 
 from loguru import logger
 
-from ..agents import AgentResult, BaseAgent
-from ..tools import BaseTool, ToolResult
+from openjudge.agentic.agents import AgentResult, BaseAgent
+from openjudge.agentic.tools import BaseTool, ToolResult
 
 __all__ = [
     "LangChainToolAdapter",
@@ -59,17 +59,16 @@ class LangChainToolAdapter(BaseTool):
     Example:
         >>> from langchain_community.tools import DuckDuckGoSearchRun
         >>> from openjudge.agentic.adapters.langchain import LangChainToolAdapter
+        >>> from openjudge.agentic import ReActAgent
+        >>> from openjudge.graders.agentic_grader import AgenticGrader
         >>>
         >>> # Wrap a LangChain tool
         >>> lc_tool = DuckDuckGoSearchRun()
         >>> oj_tool = LangChainToolAdapter(lc_tool)
         >>>
-        >>> # Use with OpenJudge's ReActAgent
-        >>> from openjudge.agentic import ReActAgent
+        >>> # Build agent first, then create grader (unified interface)
         >>> agent = ReActAgent(model=model, tools=[oj_tool])
-        >>>
-        >>> # Or use with AgenticGrader
-        >>> grader = AgenticGrader(model=model, tools=[oj_tool], template="...")
+        >>> grader = AgenticGrader(agent=agent, template="...")
     """
 
     def __init__(self, lc_tool: Any):

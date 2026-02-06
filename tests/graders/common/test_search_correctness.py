@@ -51,7 +51,8 @@ class TestSearchCorrectnessGraderUnit:
             tavily_api_key="test-api-key",
         )
         assert grader.name == "search_correctness"
-        assert grader.model == mock_model
+        # model is now inside agent (unified interface design)
+        assert grader.agent.model == mock_model
 
     def test_initialization_with_language(self):
         """Test initialization with different languages"""

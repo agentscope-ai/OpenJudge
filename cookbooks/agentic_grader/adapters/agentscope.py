@@ -17,7 +17,7 @@ Dependencies:
 Example:
     >>> # Use AgentScope tools with OpenJudge's ReActAgent
     >>> from agentscope.tool import Toolkit
-    >>> from openjudge.agentic.adapters.agentscope import AgentScopeToolAdapter
+    >>> from cookbooks.agentic_grader.adapters.agentscope import AgentScopeToolAdapter
     >>> from openjudge.agentic import ReActAgent
     >>>
     >>> toolkit = Toolkit()
@@ -30,7 +30,7 @@ Example:
     >>>
     >>> # Use AgentScope agent directly in OpenJudge
     >>> from agentscope.agent import ReActAgent as ASReActAgent
-    >>> from openjudge.agentic.adapters.agentscope import AgentScopeAgentAdapter
+    >>> from cookbooks.agentic_grader.adapters.agentscope import AgentScopeAgentAdapter
     >>>
     >>> as_agent = ASReActAgent(name="evaluator", ...)
     >>> oj_agent = AgentScopeAgentAdapter(as_agent)
@@ -42,8 +42,8 @@ from typing import Any, Callable, Dict, List, Union
 
 from loguru import logger
 
-from ..agents import AgentResult, BaseAgent
-from ..tools import BaseTool, ToolResult
+from openjudge.agentic.agents import AgentResult, BaseAgent
+from openjudge.agentic.tools import BaseTool, ToolResult
 
 __all__ = [
     "AgentScopeToolAdapter",

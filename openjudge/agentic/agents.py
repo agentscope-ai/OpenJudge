@@ -16,10 +16,17 @@ Classes:
     ReActAgent: Built-in ReAct agent implementation using OpenAI function calling.
 
 Example:
-    >>> from openjudge.agentic import ReActAgent, BaseTool
+    >>> from openjudge.agentic import ReActAgent
     >>>
-    >>> # Create agent with tools
+    >>> # Create agent with model instance
     >>> agent = ReActAgent(model=my_model, tools=[tool1, tool2])
+    >>>
+    >>> # Or with dict config (convenience)
+    >>> agent = ReActAgent(
+    ...     model={"model": "gpt-4", "api_key": "..."},
+    ...     tools=[tool1, tool2],
+    ... )
+    >>>
     >>> result = await agent.arun(messages)
     >>> print(result.content)
 """
@@ -32,6 +39,9 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field
+
+from openjudge.models.base_chat_model import BaseChatModel
+from openjudge.models.openai_chat_model import OpenAIChatModel
 
 from .tools import BaseTool
 
@@ -102,7 +112,7 @@ class BaseAgent(ABC):
     or custom multi-agent systems.
 
     Attributes:
-        model: The LLM model used for reasoning. Should have an `achat` method.
+        model: The LLM model used for reasoning (BaseChatModel instance).
         tools: Dictionary mapping tool names to BaseTool instances.
         max_iterations: Maximum number of reasoning iterations to prevent infinite loops.
         callback: Optional callback function for processing model responses.
@@ -113,13 +123,20 @@ class BaseAgent(ABC):
         ...         # Custom reasoning logic
         ...         return AgentResult(content="Final answer")
         >>>
+        >>> # With model instance
         >>> agent = MyCustomAgent(model=my_model, tools=[tool1, tool2])
+        >>>
+        >>> # With dict config
+        >>> agent = MyCustomAgent(
+        ...     model={"model": "gpt-4", "api_key": "..."},
+        ...     tools=[tool1, tool2],
+        ... )
         >>> result = await agent.arun(messages)
     """
 
     def __init__(
         self,
-        model: Any,
+        model: Union[BaseChatModel, Dict[str, Any]],
         tools: Optional[List[BaseTool]] = None,
         max_iterations: int = 10,
         callback: Optional[Callable[..., Any]] = None,
@@ -127,8 +144,9 @@ class BaseAgent(ABC):
         """Initialize the agent.
 
         Args:
-            model: The LLM model for reasoning. Should have an `achat` method
-                  that accepts messages and tools parameters.
+            model: The LLM model for reasoning. Can be either:
+                   - A BaseChatModel instance with `achat` method
+                   - A dict config (will be converted to OpenAIChatModel)
             tools: List of available tools for the agent. Each tool should be
                   a BaseTool instance.
             max_iterations: Maximum number of reasoning iterations to prevent
@@ -136,7 +154,10 @@ class BaseAgent(ABC):
             callback: Optional callback function for processing model responses.
                      Can be used for logging, metrics collection, etc.
         """
-        self.model = model
+        if isinstance(model, dict):
+            self.model: BaseChatModel = OpenAIChatModel(**model)
+        else:
+            self.model = model
         self.tools: Dict[str, BaseTool] = {tool.name: tool for tool in (tools or [])}
         self.max_iterations = max_iterations
         self.callback = callback
@@ -221,26 +242,33 @@ class ReActAgent(BaseAgent):
     is optimized for evaluation tasks.
 
     Attributes:
-        model: The LLM model for reasoning.
+        model: The LLM model for reasoning (BaseChatModel instance).
         tools: Dictionary mapping tool names to BaseTool instances.
         max_iterations: Maximum reasoning iterations.
         callback: Optional callback for model responses.
         truncate_tool_output: Maximum length for tool output before truncation.
 
     Example:
+        >>> # With model instance
         >>> agent = ReActAgent(
         ...     model=OpenAIChatModel(model="gpt-4"),
-        ...     tools=[WebSearchTool(), CodeExecutionTool()],
-        ...     max_iterations=10,
-        ...     truncate_tool_output=4000,
+        ...     tools=[WebSearchTool()],
         ... )
+        >>>
+        >>> # With dict config (convenience)
+        >>> agent = ReActAgent(
+        ...     model={"model": "gpt-4", "api_key": "..."},
+        ...     tools=[WebSearchTool()],
+        ...     max_iterations=10,
+        ... )
+        >>>
         >>> result = await agent.arun(messages)
         >>> print(result.content)
     """
 
     def __init__(
         self,
-        model: Any,
+        model: Union[BaseChatModel, Dict[str, Any]],
         tools: Optional[List[BaseTool]] = None,
         max_iterations: int = 10,
         callback: Optional[Callable[..., Any]] = None,
@@ -249,7 +277,9 @@ class ReActAgent(BaseAgent):
         """Initialize the ReActAgent.
 
         Args:
-            model: The LLM model for reasoning. Should have an `achat` method.
+            model: The LLM model for reasoning. Can be either:
+                   - A BaseChatModel instance with `achat` method
+                   - A dict config (will be converted to OpenAIChatModel)
             tools: List of available tools for the agent.
             max_iterations: Maximum number of reasoning iterations. Defaults to 10.
             callback: Optional callback for processing model responses.

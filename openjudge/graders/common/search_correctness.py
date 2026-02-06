@@ -12,7 +12,7 @@ from typing import Optional
 
 from loguru import logger
 
-from openjudge.agentic import BaseTool, ToolResult
+from openjudge.agentic import BaseTool, ReActAgent, ToolResult
 from openjudge.graders.agentic_grader import AgenticGrader
 from openjudge.graders.schema import GraderError, GraderMode, GraderScore
 from openjudge.models.base_chat_model import BaseChatModel
@@ -251,15 +251,20 @@ class SearchCorrectnessGrader(AgenticGrader):
     ):
         search_tool = TavilySearchTool(api_key=tavily_api_key)
 
-        super().__init__(
+        # Build the agent first (unified interface design)
+        agent = ReActAgent(
             model=model,
             tools=[search_tool],
+            max_iterations=max_iterations,
+        )
+
+        super().__init__(
+            agent=agent,
             template=DEFAULT_SEARCH_CORRECTNESS_TEMPLATE,
             name="search_correctness",
             mode=GraderMode.POINTWISE,
             description="Factual accuracy verification using web search",
             language=language,
-            max_iterations=max_iterations,
             **kwargs,
         )
 
