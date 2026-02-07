@@ -506,7 +506,7 @@ Admonitions can contain complex nested content:
 ### Standard Links
 
 - [Internal documentation link](../built_in_graders/overview.md)
-- [External link to GitHub](https://github.com/modelscope/OpenJudge)
+- [External link to GitHub](https://github.com/agentscope-ai/OpenJudge)
 
 ### Links with Code
 

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -21,14 +22,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 REFLECTION_ACCURACY_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent provides accurate reflections based on actual observations.
+    """You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent provides accurate reflections based on actual observations. The agent should reflect only on objects, states, and details that are actually mentioned in the observation, without inventing or fabricating information.
 
-<Evaluation Type: Reflection Accuracy>
-The agent should provide accurate reflections based on actual observations. The agent should reflect only on objects, states, and details that are actually mentioned in the observation, without inventing or fabricating information.
-</Evaluation Type>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. The agent mentions only objects or entities in reflection that were present in the observation
 2. The agent describes only states or conditions that were reported in the observation
 3. The agent uses only specific details (colors, numbers, locations) found in the observation
@@ -36,81 +32,86 @@ The agent should provide accurate reflections based on actual observations. The 
 5. The agent's reflection includes only information that can be derived from the observation
 </Rubrics>
 
-<Evaluation Criteria>
-For your analysis:
+<Steps>
 1. Apply each rubric: Check if the step demonstrates good accuracy patterns described in each rubric
 2. Focus on relevant modules: Only consider observation and reflection modules
 3. Provide evidence-based reasoning: Explain how the reflection demonstrates accuracy and why
 4. Assess confidence: Rate your confidence based on how clearly the accuracy is exhibited
-</Evaluation Criteria>
+</Steps>
 
+<Scale>
+- **Score 1.0**: The reflection is accurate and grounded (good accuracy)
+- **Score 0.0**: The reflection contains fabrications (poor accuracy)
+</Scale>
+
+<Context (Optional)>
 {context}
+</Context>
 
+<History (Optional)>
 {history}
+</History>
 
 <Current Step>
 Observation: {observation}
 Reflection: {reflection}
 </Current Step>
 
-# Scoring Instructions
-- If the reflection is accurate and grounded: score = 1.0 (good accuracy)
-- If the reflection contains fabrications: score = 0.0 (poor accuracy)
-
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of reflection accuracy and confidence level>"
+    "reason": "<detailed explanation of reflection accuracy and confidence level>",
+    "score": <0.0 or 1.0>
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 REFLECTION_ACCURACY_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析智能体行为的专家。你的任务是评估智能体是否基于实际观察提供了准确的反思。
+    """你是一名分析智能体行为的专家。你的任务是评估智能体是否基于实际观察提供了准确的反思。智能体应该只反思实际在观察中提到的对象、状态和细节，而不捏造或编造信息。
 
-<评估类型：反思准确性>
-智能体应该基于实际观察提供准确的反思。智能体应该只反思实际在观察中提到的对象、状态和细节，而不捏造或编造信息。
-</评估类型>
-
-<评估准则>
+<评分标准>
 1. 智能体在反思中只提到了观察中存在的对象或实体
 2. 智能体只描述了观察中报告的状态或条件
 3. 智能体只使用了观察中找到的具体细节（颜色、数字、位置）
 4. 智能体只反思在观察中实际看到或检测到的内容
 5. 智能体的反思只包含了可以从观察中推导出的信息
-</评估准则>
+</评分标准>
 
-<评估标准>
-进行分析时：
+<评估步骤>
 1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好准确性模式
 2. 关注相关模块：仅考虑观察和反思模块
 3. 提供基于证据的推理：解释反思如何展示准确性以及原因
 4. 评估置信度：根据准确性表现的清晰程度评估你的置信度
-</评估标准>
+</评估步骤>
 
+<评分量表>
+- **分数 1.0**：反思准确且基于事实（良好准确性）
+- **分数 0.0**：反思包含捏造的内容（准确性不佳）
+</评分量表>
+
+<上下文（可选）>
 {context}
+</上下文>
 
+<历史记录（可选）>
 {history}
+</历史记录>
 
 <当前步骤>
 观察：{observation}
 反思：{reflection}
 </当前步骤>
 
-# 评分指令
-- 如果反思准确且基于事实：score = 1.0（良好准确性）
-- 如果反思包含捏造的内容：score = 0.0（准确性不佳）
-
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于反思准确性的详细解释和置信度水平>"
+    "reason": "<关于反思准确性的详细解释和置信度水平>",
+    "score": <0.0 或 1.0>
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -174,7 +175,17 @@ class ReflectionAccuracyGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_REFLECTION_ACCURACY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize ReflectionAccuracyGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_REFLECTION_ACCURACY_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="reflection_accuracy",
             mode=GraderMode.POINTWISE,
@@ -182,9 +193,10 @@ class ReflectionAccuracyGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_REFLECTION_ACCURACY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         observation: str,
         reflection: str,
@@ -213,13 +225,13 @@ class ReflectionAccuracyGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = f"<context>\n{context}\n</context>" if context else ""
+        context_str = context if context else ""
 
         # Format history
-        history_str = format_history(history)
+        history_str = format_history(history, include_tags=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 observation=observation,
                 reflection=reflection,
                 history=history_str,

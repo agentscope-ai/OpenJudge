@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, Type
 
 from pydantic import BaseModel
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import (
     BaseGrader,
     GraderMode,
@@ -62,6 +63,7 @@ class LLMGrader(BaseGrader):
         template: str | dict | PromptTemplate | None = None,
         structured_model: Type[BaseModel] | None = None,
         callback: Callable | None = None,
+        strategy: BaseEvaluationStrategy | None = None,
         **kwargs: Any,
     ):
         """Initialize an LLMGrader.
@@ -88,10 +90,11 @@ class LLMGrader(BaseGrader):
                       Can be one of the following:
                       1. A Callable that processes the response and populates metadata
                       2. None, in which case no callback processing is performed
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
             **kwargs: Additional keyword arguments passed to the parent Grader class and
                      used in the template rendering.
         """
-        super().__init__(name=name, mode=mode, description=description, **kwargs)
+        super().__init__(name=name, mode=mode, description=description, strategy=strategy, **kwargs)
 
         # Handle language parameter
         if not language:
@@ -143,8 +146,10 @@ class LLMGrader(BaseGrader):
 
         # Initialize model
         if isinstance(model, dict):
+            self._model_config = model
             self.model = OpenAIChatModel(**model)
         else:
+            self._model_config = None
             self.model = model
 
         # Store parameters
@@ -158,7 +163,8 @@ class LLMGrader(BaseGrader):
             else:
                 self.structured_model = GraderScoreCallback
 
-        assert self.language and self.template and self.model
+        if not (self.language and self.template and self.model):
+            raise RuntimeError("Missing required attributes: language, template, or model")
 
     def to_dict(self) -> dict:
         """Convert the LLMGrader to a dictionary representation.
@@ -170,13 +176,18 @@ class LLMGrader(BaseGrader):
         Returns:
             A dictionary containing the serialized LLMGrader information.
         """
-        return {
+        d = {
             "name": self.name,
             "mode": self.mode.value,
             "description": self.description,
             "template": (self.template.model_dump() if isinstance(self.template, PromptTemplate) else self.template),
             **self.kwargs,
         }
+
+        # Include model config if the data type is dict
+        if hasattr(self, "_model_config") and self._model_config:
+            d["model"] = self._model_config
+        return d
 
     @classmethod
     def from_config(
@@ -216,7 +227,7 @@ class LLMGrader(BaseGrader):
             **config,
         )
 
-    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
+    async def _aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
         """Evaluate using LLM.
 
         Performs evaluation using a large language model according to the configured
@@ -335,4 +346,4 @@ class LLMGrader(BaseGrader):
     @staticmethod
     def get_metadata() -> Dict[str, Any]:
         """Return the docstring of the aevaluate method to explain how LLMGrader works with LLM."""
-        return {"aevaluate": LLMGrader.aevaluate.__doc__, "prompt": {}}
+        return {"aevaluate": LLMGrader._aevaluate.__doc__, "prompt": {}}

@@ -324,7 +324,7 @@ if __name__ == "__main__":
                 description="A mock listwise grader for demonstration",
             )
 
-        async def aevaluate(self, **kwargs) -> GraderResult:
+        async def _aevaluate(self, **kwargs) -> GraderResult:
             # Simulate some evaluation logic
             responses = kwargs.get("responses", [])
             if responses:

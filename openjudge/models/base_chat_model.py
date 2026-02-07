@@ -10,7 +10,7 @@ from typing import Any, AsyncGenerator
 
 from openjudge.models.schema.oai.response import ChatResponse
 
-TOOL_CHOICE_MODES = ["auto", "none", "any", "required"]
+TOOL_CHOICE_MODES = {"auto", "none", "any", "required"}
 
 
 class BaseChatModel(ABC):
@@ -113,13 +113,34 @@ class BaseChatModel(ABC):
             raise TypeError(
                 f"tool_choice must be str, got {type(tool_choice)}",
             )
+
+        tool_choice = tool_choice.strip()
+        if not tool_choice:
+            raise ValueError("`tool_choice` must be a non-empty string.")
+
         if tool_choice in TOOL_CHOICE_MODES:
             return
 
-        available_functions = [tool["function"]["name"] for tool in tools] if tools else []
+        if not tools:
+            raise ValueError(
+                f"Tool choice '{tool_choice}' is not a built-in mode ({', '.join(TOOL_CHOICE_MODES)}) "
+                "and no tools were provided."
+            )
+
+        available_functions = set()
+        for i, tool in enumerate(tools):
+            if not isinstance(tool, dict):
+                raise TypeError(f"Tool at index {i} is not a dictionary.")
+            func = tool.get("function")
+            if not isinstance(func, dict):
+                raise TypeError(f"Tool at index {i} missing or invalid 'function' field.")
+            name = func.get("name")
+            if not isinstance(name, str):
+                raise TypeError(f"Tool function name at index {i} is not a string.")
+            available_functions.add(name)
 
         if tool_choice not in available_functions:
-            all_options = TOOL_CHOICE_MODES + available_functions
+            all_options = sorted(TOOL_CHOICE_MODES | available_functions)
             raise ValueError(
-                f"Invalid tool_choice '{tool_choice}'. " f"Available options: {', '.join(sorted(all_options))}",
+                f"Invalid tool_choice '{tool_choice}'. " f"Available options: {', '.join(all_options)}",
             )

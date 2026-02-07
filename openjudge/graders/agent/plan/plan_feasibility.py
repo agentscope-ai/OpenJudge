@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -21,14 +22,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 PLAN_FEASIBILITY_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent creates a plan that is logically sound and feasible.
+    """You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent creates a plan that is logically sound and feasible. The plan should respect physical constraints, logical prerequisites, and the current state of the environment.
 
-<Evaluation Type: Plan Feasibility>
-The agent should create plans that are logically sound and feasible, respecting causal logic, specifying actions in correct order, and proposing executable actions. The plan should respect physical constraints, logical prerequisites, and the current state of the environment.
-</Evaluation Type>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. The plan respects causal logic (e.g., obtaining an object before using it)
 2. The plan specifies actions in a feasible order (e.g., opening before closing)
 3. The plan proposes actions that can be executed given the current environment state
@@ -36,17 +32,25 @@ The agent should create plans that are logically sound and feasible, respecting 
 5. The plan contains logically consistent steps and goals
 </Rubrics>
 
-<Evaluation Criteria>
-For your analysis:
+<Steps>
 1. Apply each rubric: Check if the step demonstrates good feasibility patterns described in each rubric
 2. Focus on relevant modules: Only consider plan, observation, and memory modules
 3. Provide evidence-based reasoning: Explain how the plan demonstrates feasibility and why
 4. Assess confidence: Rate your confidence based on how clearly the feasibility is exhibited
-</Evaluation Criteria>
+</Steps>
 
+<Scale>
+- **Score 1.0**: The plan is feasible and logically sound (good feasibility)
+- **Score 0.0**: The plan has feasibility issues (poor feasibility)
+</Scale>
+
+<Context (Optional)>
 {context}
+</Context>
 
+<History (Optional)>
 {history}
+</History>
 
 <Current Step>
 Plan: {plan}
@@ -54,48 +58,48 @@ Observation: {observation}
 Memory: {memory}
 </Current Step>
 
-# Scoring Instructions
-- If the plan is feasible and logically sound: score = 1.0 (good feasibility)
-- If the plan has feasibility issues: score = 0.0 (poor feasibility)
-
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of plan feasibility and confidence level>"
+    "reason": "<detailed explanation of plan feasibility and confidence level>",
+    "score": <0.0 or 1.0>
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 PLAN_FEASIBILITY_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析智能体行为的专家。你的任务是评估智能体是否创建了逻辑上合理且可行的计划。
+    """你是一名分析智能体行为的专家。你的任务是评估智能体是否创建了逻辑上合理且可行的计划。该计划应该尊重物理约束、逻辑前提和环境的当前状态。
 
-<评估类型：计划可行性>
-智能体应该创建逻辑上合理且可行的计划，尊重因果逻辑、以正确的顺序指定动作，并提出可执行的动作。该计划应该尊重物理约束、逻辑前提和环境的当前状态。
-</评估类型>
-
-<评估准则>
+<评分标准>
 1. 计划尊重因果逻辑（例如，在使用对象之前获得它）
 2. 计划以可行的顺序指定动作（例如，在关闭之前打开）
 3. 计划提出了在当前环境状态下可以执行的动作
 4. 计划考虑了动作的必要前提条件或先决条件
 5. 计划包含逻辑上一致的步骤和目标
-</评估准则>
+</评分标准>
 
-<评估标准>
-进行分析时：
+<评估步骤>
 1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好可行性模式
 2. 关注相关模块：仅考虑计划、观察和记忆模块
 3. 提供基于证据的推理：解释计划如何展示可行性以及原因
 4. 评估置信度：根据可行性表现的清晰程度评估你的置信度
-</评估标准>
+</评估步骤>
 
+<评分量表>
+- **分数 1.0**：计划可行且逻辑合理（良好可行性）
+- **分数 0.0**：计划存在可行性问题（可行性不佳）
+</评分量表>
+
+<上下文（可选）>
 {context}
+</上下文>
 
+<历史记录（可选）>
 {history}
+</历史记录>
 
 <当前步骤>
 计划：{plan}
@@ -103,16 +107,13 @@ PLAN_FEASIBILITY_PROMPT_ZH = textwrap.dedent(
 记忆：{memory}
 </当前步骤>
 
-# 评分指令
-- 如果计划可行且逻辑合理：score = 1.0（良好可行性）
-- 如果计划存在可行性问题：score = 0.0（可行性不佳）
-
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于计划可行性的详细解释和置信度水平>"
+    "reason": "<关于计划可行性的详细解释和置信度水平>",
+    "score": <0.0 或 1.0>
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -177,7 +178,18 @@ class PlanFeasibilityGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_PLAN_FEASIBILITY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize PlanFeasibilityGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            threshold: Success threshold [1, 5] (default: 3)
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_PLAN_FEASIBILITY_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="plan_feasibility",
             mode=GraderMode.POINTWISE,
@@ -185,9 +197,10 @@ class PlanFeasibilityGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_PLAN_FEASIBILITY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         plan: str,
         observation: str,
@@ -219,13 +232,13 @@ class PlanFeasibilityGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = f"<context>\n{context}\n</context>" if context else ""
+        context_str = context if context else ""
 
         # Format history
-        history_str = format_history(history)
+        history_str = format_history(history, include_tags=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 plan=plan,
                 observation=observation,
                 memory=memory,

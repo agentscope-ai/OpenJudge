@@ -29,6 +29,8 @@ from loguru import logger
 from openjudge.generator.iterative_rubric.categorizer import LLMRubricCategorizer
 from openjudge.generator.iterative_rubric.mcr_selector import SuperFastAdaptiveMCR2
 from openjudge.generator.iterative_rubric.query_rubric_generator import (
+    LISTWISE_EVALUATION_TEMPLATE,
+    POINTWISE_EVALUATION_TEMPLATE,
     QuerySpecificRubricGenerator,
 )
 from openjudge.generator.llm_grader_generator import (
@@ -63,6 +65,10 @@ class IterativeRubricsGeneratorConfig(LLMGraderGeneratorConfig):
         categories_number: Target number of categories when categorization is enabled.
                           Controls how many thematic groups to create during categorization.
                           Defaults to 5.
+        task_description: Optional task description to guide rubric generation.
+                         Provides context about the evaluation task (e.g.,
+                         "Evaluate summaries focusing on coherence and fluency").
+                         Defaults to None.
         max_retries: Maximum LLM API retry attempts on failure.
                     Used for handling transient failures in LLM interactions.
                     Defaults to 5.
@@ -94,10 +100,11 @@ class IterativeRubricsGeneratorConfig(LLMGraderGeneratorConfig):
     enable_categorization: bool = False
     query_specific_generate_number: int = 1
     categories_number: int = 5
+    task_description: str | None = None  # Optional task description for rubric generation
 
     # Generation parameters
     max_retries: int = 5
-    max_epochs: int = 3
+    max_epochs: int = 5
 
     # Batch processing parameters
     batch_size: int = 10
@@ -264,9 +271,24 @@ class IterativeRubricsGenerator(LLMGraderGenerator):
             grader_kwargs["min_score"] = self.config.min_score
             grader_kwargs["max_score"] = self.config.max_score
 
-        # Add custom template if provided
-        if hasattr(self.config, "custom_evaluation_prompt") and self.config.custom_evaluation_prompt:
+        # Add template - use custom if provided, otherwise use default based on grader_mode
+        if hasattr(self.config, "custom_evaluation_prompt") and self.config.custom_evaluation_prompt is not None:
             grader_kwargs["template"] = self.config.custom_evaluation_prompt
+        else:
+            # Use default template based on grader_mode
+            if self.config.grader_mode == GraderMode.LISTWISE:
+                grader_kwargs["template"] = LISTWISE_EVALUATION_TEMPLATE
+            else:
+                grader_kwargs["template"] = POINTWISE_EVALUATION_TEMPLATE
+
+        # Add task_description_section for template formatting
+        if self.config.task_description:
+            if self.config.language == LanguageEnum.ZH:
+                grader_kwargs["task_description_section"] = f"\n## 任务场景描述\n{self.config.task_description}\n"
+            else:
+                grader_kwargs["task_description_section"] = f"\n## Task Description\n{self.config.task_description}\n"
+        else:
+            grader_kwargs["task_description_section"] = ""
 
         return LLMGrader(**grader_kwargs)
 
@@ -355,6 +377,7 @@ class IterativeRubricsGenerator(LLMGraderGenerator):
             "max_retries": self.config.max_retries,
             "max_epochs": self.config.max_epochs,
             "language": self.config.language,
+            "task_description": self.config.task_description,
         }
 
         # Add min_score and max_score only for pointwise mode
@@ -411,7 +434,7 @@ class IterativeRubricsGenerator(LLMGraderGenerator):
 
             logger.info(
                 f"ALL_SAMPLES completed: {len(all_rubrics)} total rubrics from "
-                f"{successful_count} successful samples ({failed_count} failed)",
+                f"{successful_count} samples ({failed_count} failed)",
             )
             return all_rubrics
 

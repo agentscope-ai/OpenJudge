@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import logging
 import os
 from typing import List, Union
 
@@ -24,6 +25,9 @@ from transformers import PreTrainedTokenizer
 from verl.utils.model import compute_position_id_with_mask
 
 # Note: Removed pydantic template classes to avoid Ray pickle serialization issues
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseChatRLDataset(Dataset):
@@ -88,7 +92,7 @@ class BaseChatRLDataset(Dataset):
 
         self.dataframe = datasets.concatenate_datasets(dataframes)
         total = len(self.dataframe)
-        print(f"Dataset length: {total}")
+        logger.info(f"Dataset length: {total}")
 
         # Handle max_samples parameter
         if self.max_samples > 0 and self.max_samples < total:
@@ -96,7 +100,7 @@ class BaseChatRLDataset(Dataset):
 
             indices = np.arange(self.max_samples)
             self.dataframe = self.dataframe.select(indices.tolist())
-            print(f"Selected {self.max_samples} samples (total: {total})")
+            logger.info(f"Selected {self.max_samples} samples (total: {total})")
 
         # Filter overlong prompts
         if self.filter_overlong_prompts:
@@ -130,7 +134,7 @@ class BaseChatRLDataset(Dataset):
 
                 return len(tokenizer.encode(prompt)) <= max_length
             except Exception as e:
-                print(f"Error during filtering: {e}")
+                logger.error(f"Error during filtering: {e}")
                 return True  # Keep sample on error
 
         original_len = len(self.dataframe)
@@ -139,14 +143,14 @@ class BaseChatRLDataset(Dataset):
             num_proc=1,  # Use single process to avoid serialization issues
             desc=f"Filtering prompts exceeding {max_length} tokens",
         )
-        print(f"Dataset length after filtering: {len(self.dataframe)} (original: {original_len})")
+        logger.info(f"Dataset length after filtering: {len(self.dataframe)} (original: {original_len})")
 
     def _extract_prompt(self, example):
         """Extract prompt from example."""
         # First try new data structure
         if "input" in example and example["input"]:
             for msg in example["input"]:
-                if msg.get("role") == "user" and msg.get("content"):
+                if isinstance(msg, dict) and msg.get("role") == "user" and msg.get("content"):
                     return msg["content"]
 
         # Fallback to old data structure
@@ -249,16 +253,13 @@ class BaseChatRLDataset(Dataset):
             self.data_files = copy.deepcopy(self.original_data_files)
             self._load_dataset()
         else:
-            print("Using old dataloader checkpoint file, recommend training from scratch")
+            logger.info("Using old dataloader checkpoint file, recommend training from scratch")
 
     def __getstate__(self):
         """Get state for serialization."""
-        if not self.serialize_dataset:
-            state = self.__dict__.copy()
-            if "dataframe" in state:
-                del state["dataframe"]
-            return state
-        return self.__dict__.copy()
+        state = self.__dict__.copy()
+        state.pop("dataframe", None)
+        return state
 
 
 class PairwiseChatRLDataset(BaseChatRLDataset):
@@ -268,7 +269,7 @@ class PairwiseChatRLDataset(BaseChatRLDataset):
         super().__init__(data_files, tokenizer, config, processor, max_samples)
         # Pairwise related configuration
         self.pairwise_response_index = self.config.get("pairwise_response_index", 0)  # Which response to train on
-        print(f"Using Pairwise mode, selected response index: {self.pairwise_response_index}")
+        logger.info(f"Using Pairwise mode, selected response index: {self.pairwise_response_index}")
 
     def _build_messages(self, example: dict) -> List[dict]:
         """Build chat messages from example - Pairwise mode."""
@@ -323,9 +324,7 @@ Please consider the following principles in your evaluation and then indicate yo
             response_b = example["output"][1].get("answer", {}).get("content", "")
 
         # Use string formatting directly to avoid PairwiseTrainTemplate class (prevent pickle serialization issues)
-        principles_str = ""
-        for i, principle in enumerate(principles):
-            principles_str += f"{i + 1}. {principle}\n"
+        principles_str = "".join(f"{i}. {principle}\n" for i, principle in enumerate(principles, start=1))
 
         prompt = f"""# Task Description
 {task_desc}
@@ -376,7 +375,7 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
 
     def __init__(self, data_files, tokenizer, config, processor=None, max_samples: int = -1):
         super().__init__(data_files, tokenizer, config, processor, max_samples)
-        print("Using Pointwise mode")
+        logger.info("Using Pointwise mode")
 
     def _build_messages(self, example: dict) -> List[dict]:
         """Build chat messages from example - Pointwise mode."""
@@ -432,9 +431,7 @@ Please consider the following principles in your evaluation."""
                 response = output_item.get("answer", {}).get("content", "")
 
         # Use string formatting directly
-        principles_str = ""
-        for i, principle in enumerate(principles):
-            principles_str += f"{i + 1}. {principle}\n"
+        principles_str = "".join(f"{i}. {principle}\n" for i, principle in enumerate(principles, start=1))
 
         prompt = f"""# Task Description
 {task_desc}
@@ -452,6 +449,7 @@ Please consider the following principles in your evaluation."""
     def _extract_ground_truth(self, row_dict):
         """Extract pointwise ground truth label."""
         try:
+            helpfulness = 0
             output_data = row_dict.get("output", [])
             if output_data:
                 output_item = output_data[0] if isinstance(output_data, list) else output_data
@@ -462,11 +460,10 @@ Please consider the following principles in your evaluation."""
                         if isinstance(label_data, dict):
                             # For pointwise, return scoring information
                             helpfulness = label_data.get("helpfulness", 0)
-                            return {"helpfulness": helpfulness, "task_type": "pointwise"}
-
-            return {"helpfulness": 0, "task_type": "pointwise"}
-        except:
-            return {"helpfulness": 0, "task_type": "pointwise"}
+            return {"helpfulness": helpfulness, "task_type": "pointwise"}
+        except Exception as e:
+            logger.error(f"Failed to extract label from {row_dict}: {e}")
+            return {"helpfulness": helpfulness, "task_type": "pointwise"}
 
 
 # Backward compatible aliases

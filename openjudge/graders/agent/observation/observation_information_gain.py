@@ -7,6 +7,9 @@ in observation observations.
 import math
 from typing import Any, Dict, List
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.agent.utils import (
     calculate_text_similarity,
     extract_action_observation_pairs,
@@ -34,15 +37,27 @@ class ObservationInformationGainGrader(BaseGrader):
     def __init__(
         self,
         similarity_threshold: float = 0.5,
+        strategy: BaseEvaluationStrategy | None = None,
+        **kwargs: Any,
     ):
+        """
+        Initialize the ObservationInformationGainGrader.
+
+        Args:
+            similarity_threshold: Threshold for considering observations as redundant
+            strategy: Strategy for handling missing or invalid inputs
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(
             name="observation_information_gain",
             mode=GraderMode.POINTWISE,
             description="Evaluate information gain and redundancy in observation observations",
+            strategy=strategy,
+            **kwargs,
         )
         self.similarity_threshold = similarity_threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
     ) -> GraderScore:

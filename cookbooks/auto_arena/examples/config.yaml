@@ -1,0 +1,241 @@
+# =============================================================================
+# Auto Arena Configuration
+# =============================================================================
+# This configuration file defines all settings for the Auto Arena evaluation
+# pipeline, including task definition, query generation, target endpoints,
+# judge endpoint, evaluation parameters, and output settings.
+#
+# Environment variables can be referenced using ${VAR_NAME} syntax.
+# =============================================================================
+
+# =============================================================================
+# Task Configuration
+# =============================================================================
+# Defines the task that the target models/agents will be evaluated on.
+
+task:
+  # [Required] A clear description of what the task is about.
+  # This helps the query generator create relevant test queries.
+  description: "English to Chinese translation assistant, helping users translate various types of English content into fluent and accurate Chinese"
+
+  # [Optional] The usage scenario or context for this task.
+  # Provides additional context for query generation.
+  scenario: "Users need to translate English articles, documents, or text into Chinese"
+
+# =============================================================================
+# Query Generation Configuration
+# =============================================================================
+# Settings for automatic test query generation.
+
+query_generation:
+  # ---------------------------------------------------------------------------
+  # Basic Settings
+  # ---------------------------------------------------------------------------
+
+  # [Optional, default=20] Total number of queries to generate.
+  num_queries: 20
+
+  # [Optional] Seed queries to guide the generation style and format.
+  # These examples help the generator understand what kind of queries to create.
+  seed_queries:
+    - "Please translate the following paragraph into Chinese: 'The rapid advancement of artificial intelligence has transformed numerous industries.'"
+    - "Translate this sentence to Chinese: 'Climate change poses significant challenges to global food security.'"
+
+  # [Optional] Query categories with weights for stratified generation.
+  # Each category can have a name, description, and weight.
+  # If not specified, queries are generated without category constraints.
+  # categories:
+  #   - name: "technical"
+  #     description: "Technical documents and papers"
+  #     weight: 0.3
+  #   - name: "literary"
+  #     description: "Literary and creative content"
+  #     weight: 0.3
+  #   - name: "business"
+  #     description: "Business and formal documents"
+  #     weight: 0.4
+
+  # ---------------------------------------------------------------------------
+  # Custom Endpoint (Optional)
+  # ---------------------------------------------------------------------------
+  # If not specified, uses judge_endpoint for query generation.
+
+  # endpoint:
+  #   base_url: "https://api.openai.com/v1"
+  #   api_key: "${OPENAI_API_KEY}"
+  #   model: "gpt-4o"
+  #   system_prompt: null           # Optional system prompt for query generation
+  #   extra_params:                 # Optional extra parameters
+  #     temperature: 0.9
+
+  # ---------------------------------------------------------------------------
+  # Generation Control
+  # ---------------------------------------------------------------------------
+
+  # [Optional, default=10, range=1-50] Number of queries generated per API call.
+  # Higher values are more efficient but may reduce diversity.
+  queries_per_call: 10
+
+  # [Optional, default=3, min=1] Number of parallel batches for generation.
+  # Increases throughput but uses more API quota concurrently.
+  num_parallel_batches: 3
+
+  # [Optional, default=0.9, range=0.0-2.0] Sampling temperature.
+  # Higher values increase diversity but may reduce quality.
+  temperature: 0.9
+
+  # [Optional, default=0.95, range=0.0-1.0] Top-p (nucleus) sampling.
+  # Controls the cumulative probability threshold for token selection.
+  top_p: 0.95
+
+  # ---------------------------------------------------------------------------
+  # Deduplication
+  # ---------------------------------------------------------------------------
+
+  # [Optional, default=0.85, range=0.0-1.0] Maximum similarity threshold.
+  # Queries with similarity above this threshold are considered duplicates.
+  # Lower values enforce stricter deduplication.
+  max_similarity: 0.85
+
+  # ---------------------------------------------------------------------------
+  # Evol-Instruct Complexity Evolution
+  # ---------------------------------------------------------------------------
+  # Evol-Instruct progressively increases query complexity through
+  # multiple evolution rounds.
+
+  # [Optional, default=false] Enable complexity evolution.
+  enable_evolution: false
+
+  # [Optional, default=1, range=0-3] Number of evolution rounds.
+  # Each round increases the complexity of queries.
+  evolution_rounds: 1
+
+  # [Optional] Complexity evolution strategies to apply.
+  # Available strategies:
+  #   - "constraints": Add constraints and requirements
+  #   - "reasoning": Require multi-step reasoning
+  #   - "edge_cases": Include edge cases and corner scenarios
+  #   - "specificity": Make queries more specific and detailed
+  #   - "multi_step": Require multiple steps to complete
+  complexity_levels:
+    - "constraints"
+    - "reasoning"
+    - "edge_cases"
+
+# =============================================================================
+# Target Endpoints
+# =============================================================================
+# Define the models or agents to be evaluated. Each endpoint is identified
+# by a unique name and configured with connection details.
+
+target_endpoints:
+  # Example: GPT-4 as baseline
+  gpt4_baseline:
+    # [Required] API base URL (OpenAI-compatible format)
+    base_url: "https://api.openai.com/v1"
+
+    # [Required] API key (supports ${ENV_VAR} format for security)
+    api_key: "${OPENAI_API_KEY}"
+
+    # [Required] Model name/identifier
+    model: "gpt-4"
+
+    # [Optional] System prompt to set the model's behavior
+    system_prompt: "You are a professional English-Chinese translator. Provide accurate and fluent translations."
+
+    # [Optional] Extra parameters passed to the API request
+    extra_params:
+      temperature: 0.7
+      max_tokens: 2048
+
+  # Example: Qwen model as candidate
+  qwen_candidate:
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key: "${DASHSCOPE_API_KEY}"
+    model: "qwen-max"
+    system_prompt: "You are a professional English-Chinese translator. Provide accurate and fluent translations."
+    extra_params:
+      temperature: 0.7
+      max_tokens: 2048
+
+# =============================================================================
+# Judge Endpoint
+# =============================================================================
+# The judge model evaluates and compares responses from target endpoints.
+# It should be a capable model that can assess quality objectively.
+
+judge_endpoint:
+  # [Required] API base URL
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+  # [Required] API key
+  api_key: "${DASHSCOPE_API_KEY}"
+
+  # [Required] Model name (recommend using a strong model for judging)
+  model: "qwen-max"
+
+  # [Optional] System prompt for the judge
+  # If not specified, a default judging prompt will be used.
+  system_prompt: null
+
+  # [Optional] Extra parameters for the judge model
+  # Lower temperature is recommended for more consistent judgments.
+  extra_params:
+    temperature: 0.1
+    max_tokens: 4096
+
+# =============================================================================
+# Evaluation Configuration
+# =============================================================================
+# Settings that control the evaluation process.
+
+evaluation:
+  # [Optional, default=10] Maximum number of concurrent API requests.
+  # Higher values increase throughput but may hit rate limits.
+  max_concurrency: 10
+
+  # [Optional, default=60] Request timeout in seconds.
+  # Increase for complex tasks or slow endpoints.
+  timeout: 60
+
+  # [Optional, default=3] Number of retry attempts for failed requests.
+  retry_times: 3
+
+# =============================================================================
+# Output Configuration
+# =============================================================================
+# Settings for saving evaluation results and intermediate data.
+
+output:
+  # [Optional, default=true] Save generated queries to a JSON file.
+  save_queries: true
+
+  # [Optional, default=true] Save all model responses to a JSON file.
+  save_responses: true
+
+  # [Optional, default=true] Save detailed evaluation results including
+  # individual judgments and scores.
+  save_details: true
+
+  # [Optional, default="./evaluation_results"] Directory for output files.
+  # Supports relative and absolute paths.
+  output_dir: "./evaluation_results"
+
+# =============================================================================
+# Report Configuration
+# =============================================================================
+# Settings for generating evaluation reports. When enabled, a comprehensive
+# Markdown report explaining the rankings with concrete examples is generated.
+
+report:
+  # [Optional, default=false] Enable report generation.
+  # When true, generates a detailed Markdown report after evaluation.
+  enabled: true
+
+  # [Optional, default="zh"] Report language.
+  # Supported values: "zh" (Chinese), "en" (English)
+  language: "zh"
+
+  # [Optional, default=3, range=1-10] Number of examples per section.
+  # Controls how many concrete examples are included in the report.
+  include_examples: 3

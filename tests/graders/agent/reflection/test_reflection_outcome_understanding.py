@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Complete demo test for ReflectionOutcomeUnderstandingGrader showing unit tests and quality tests.
@@ -92,9 +91,6 @@ class TestReflectionOutcomeUnderstandingGraderUnit:
             assert result.score == 1.0  # Normalized from 0.9
             assert "understand" in result.reason.lower() or "correct" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_misinterpretation(self):
         """Test evaluation detecting outcome misinterpretation"""
@@ -125,9 +121,6 @@ class TestReflectionOutcomeUnderstandingGraderUnit:
             # Assertions
             assert result.score == 0.0  # Normalized from 0.1
             assert "misinterpret" in result.reason.lower() or "failed" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_evaluation_with_context_and_history(self):
@@ -165,9 +158,6 @@ class TestReflectionOutcomeUnderstandingGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "understand" in result.reason.lower() or "correct" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

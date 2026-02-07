@@ -17,13 +17,29 @@ Get started with OpenJudge in 5 minutes. This guide walks you through installati
 === "From Source"
 
     ```bash
-    git clone https://github.com/modelscope/OpenJudge.git
+    git clone https://github.com/agentscope-ai/OpenJudge.git
     cd OpenJudge
 
     # Install based on your needs:
     pip install -e .        # Standard installation
     pip install -e .[dev]   # With development dependencies
     pip install -e .[verl]  # With VerL option for training scenarios
+    ```
+
+=== "Docker"
+
+    ```bash
+    git clone https://github.com/agentscope-ai/OpenJudge.git
+    cd OpenJudge
+
+    # Build the Docker image
+    docker build -f docker/Dockerfile.base -t openjudge:latest .
+
+    # Run the container
+    docker run -it \
+        -v $(pwd):/workspace/OpenJudge \
+        --name openjudge \
+        openjudge:latest
     ```
 
 > **Tips:**
@@ -83,6 +99,21 @@ For a complete list of available graders, see [Built-in Graders](../built_in_gra
 
 In this quickstart, we'll use `RelevanceGrader` to evaluate a QA response.
 
+## Choose an Evaluation Strategy for Your Grader
+
+An evaluation strategy enhances the reliability and robustness of your grader by applying different techniques to improve the quality of the evaluation. Different types of graders may benefit from different evaluation strategies depending on your scenario requirements.
+OpenJudge provides several evaluation strategies:
+
+| Strategy | Purpose | Best For |
+|----------|---------|----------|
+| `DirectEvaluationStrategy` | Default strategy, single evaluation | Fastest option, good for initial testing |
+| `AverageEvaluationStrategy` | Numerical averaging over multiple evaluations | Numeric scores, reducing noise |
+| `VotingEvaluationStrategy` | Majority voting over multiple evaluations | Categorical outputs, increasing reliability |
+
+In this quickstart, we'll use `AverageEvaluationStrategy` for `RelevanceGrader`.
+
+!!! note "What is an Evaluation Strategy?"
+    An **Evaluation Strategy** defines how the grader process is executed to enhance reliability and robustness. Learn more in [Core Concepts](core_concepts.md).
 
 ## Prepare Your Data
 
@@ -96,19 +127,23 @@ data = {
 ```
 
 
-## Initialize Model and Grader
+## Initialize Grader
 
-Create the LLM model and the `RelevanceGrader` to evaluate how well the response addresses the query:
+Create the `RelevanceGrader` to evaluate how well the response addresses the query:
 
 ```python
 from openjudge.models import OpenAIChatModel
 from openjudge.graders.common.relevance import RelevanceGrader
+from openjudge.evaluation_strategy.average_evaluation_strategy import AverageEvaluationStrategy
 
 # Create the judge model (uses OPENAI_API_KEY and OPENAI_BASE_URL from env)
 model = OpenAIChatModel(model="qwen3-32b")
 
+# Create the evaluation strategy optionally
+strategy = AverageEvaluationStrategy(num_evaluations=5)
+
 # Create the grader
-grader = RelevanceGrader(model=model)
+grader = RelevanceGrader(model=model, strategy=strategy)
 ```
 
 !!! note "What is a Grader?"

@@ -42,7 +42,7 @@ dependencies = [
     "loguru>=0.7.3,<0.8.0",
     "json_repair>=0.54.0,<1.0.0",
     "pydantic>=2.11.5,<3.0.0",
-    "openai>=1.85.0,<2.0.0",
+    "openai>=2.8.0",
     "tenacity>=9.1.0,<10.0.0",
     "math-verify>=0.7.0,<0.8.0",
     "tqdm>=4.66.0,<5.0.0",
@@ -80,9 +80,9 @@ verl = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/modelscope/OpenJudge"
-Repository = "https://github.com/modelscope/OpenJudge"
-Documentation = "https://modelscope.github.io/OpenJudge/"
+Homepage = "https://github.com/agentscope-ai/OpenJudge"
+Repository = "https://github.com/agentscope-ai/OpenJudge"
+Documentation = "https://agentscope-ai.github.io/OpenJudge/"
 
 [tool.setuptools]
 packages = { find = { where = ["."] } }
@@ -97,3 +97,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 version = {attr = "openjudge.__version__"}
+
+[tool.pylint.design]
+max-statements = 75

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -21,14 +22,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 ACTION_ALIGNMENT_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent executes an action that aligns with its stated plan or reasoning.
+    """You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent executes an action that aligns with its stated plan or reasoning. The action should follow logically from the plan and reflection, demonstrating good alignment between the agent's planning and execution modules.
 
-<Evaluation Type: Action Alignment>
-The agent should execute actions that are consistent with its stated plan or reasoning. The action should follow logically from the plan and reflection, demonstrating good alignment between the agent's planning and execution modules.
-</Evaluation Type>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. The action directly implements the stated plan (e.g., plan says "open" and action is "open")
 2. The action targets the correct object specified in the plan
 3. The action contributes to achieving the goal stated in the plan
@@ -36,81 +32,86 @@ The agent should execute actions that are consistent with its stated plan or rea
 5. The action respects important preconditions or constraints mentioned in the plan
 </Rubrics>
 
-<Evaluation Criteria>
-For your analysis:
+<Steps>
 1. Apply each rubric: Check if the step demonstrates good alignment patterns described in each rubric
 2. Focus on relevant modules: Only consider plan and action modules
 3. Provide evidence-based reasoning: Explain how the step demonstrates alignment and why
 4. Assess confidence: Rate your confidence based on how clearly the alignment is exhibited
-</Evaluation Criteria>
+</Steps>
 
+<Scale>
+- **Score 1.0**: The action aligns well with the plan (good alignment)
+- **Score 0.0**: The action does not align with the plan (poor alignment)
+</Scale>
+
+<Context (Optional)>
 {context}
+</Context>
 
+<History (Optional)>
 {history}
+</History>
 
 <Current Step>
 Plan: {plan}
 Action: {action}
 </Current Step>
 
-# Scoring Instructions
-- If the action aligns well with the plan: score = 1.0 (good alignment)
-- If the action does not align with the plan: score = 0.0 (poor alignment)
-
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of action-plan alignment and confidence level>"
+    "reason": "<detailed explanation of action-plan alignment and confidence level>",
+    "score": <0.0 or 1.0>
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 ACTION_ALIGNMENT_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析智能体行为的专家。你的任务是评估智能体是否执行了与其声明的计划或推理一致的动作。
+    """你是一名分析智能体行为的专家。你的任务是评估智能体是否执行了与其声明的计划或推理一致的动作。该动作应该符合计划和反思的逻辑，表明智能体的计划和执行模块之间有良好的对齐。
 
-<评估类型：动作对齐>
-智能体应该执行与其声明的计划或推理一致的动作。该动作应该符合计划和反思的逻辑，表明智能体的计划和执行模块之间有良好的对齐。
-</评估类型>
-
-<评估准则>
+<评分标准>
 1. 动作直接实现了声明的计划（例如，计划说"打开"动作就是"打开"）
 2. 动作针对计划中指定的正确对象
 3. 动作有助于实现计划中声明的目标
 4. 动作序列遵循计划中概述的逻辑顺序
 5. 动作尊重计划中提到的重要前提条件或约束
-</评估准则>
+</评分标准>
 
-<评估标准>
-进行分析时：
+<评估步骤>
 1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好对齐模式
 2. 关注相关模块：仅考虑计划和动作模块
 3. 提供基于证据的推理：解释步骤如何展示对齐以及原因
 4. 评估置信度：根据对齐表现的清晰程度评估你的置信度
-</评估标准>
+</评估步骤>
 
+<评分量表>
+- **分数 1.0**：动作与计划很好地对齐（良好对齐）
+- **分数 0.0**：动作与计划不对齐（对齐不佳）
+</评分量表>
+
+<上下文（可选）>
 {context}
+</上下文>
 
+<历史记录（可选）>
 {history}
+</历史记录>
 
 <当前步骤>
 计划：{plan}
 动作：{action}
 </当前步骤>
 
-# 评分指令
-- 如果动作与计划很好地对齐：score = 1.0（良好对齐）
-- 如果动作与计划不对齐：score = 0.0（对齐不佳）
-
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于动作-计划对齐的详细解释和置信度水平>"
+    "reason": "<关于动作-计划对齐的详细解释和置信度水平>",
+    "score": <0.0 或 1.0>
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -174,6 +175,7 @@ class ActionAlignmentGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_ACTION_ALIGNMENT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize ActionAlignmentGrader.
@@ -183,6 +185,7 @@ class ActionAlignmentGrader(LLMGrader):
             template: The prompt template for action alignment evaluation.
                      Defaults to DEFAULT_ACTION_ALIGNMENT_TEMPLATE.
             language: The language for the evaluation prompt. Defaults to LanguageEnum.EN.
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
         """
         super().__init__(
             name="action_alignment",
@@ -191,9 +194,10 @@ class ActionAlignmentGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_ACTION_ALIGNMENT_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         plan: str,
         action: str,
@@ -220,13 +224,13 @@ class ActionAlignmentGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = f"<context>\n{context}\n</context>" if context else ""
+        context_str = context if context else ""
 
         # Format history
-        history_str = format_history(history)
+        history_str = format_history(history, include_tags=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 plan=plan,
                 action=action,
                 history=history_str,

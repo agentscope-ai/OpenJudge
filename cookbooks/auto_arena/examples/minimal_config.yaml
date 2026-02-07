@@ -1,0 +1,35 @@
+# =============================================================================
+# Minimal Configuration Example
+# =============================================================================
+# This is the minimum required configuration for Auto Arena evaluation.
+# Only required fields are specified; all other settings use defaults.
+# =============================================================================
+
+# Task description (required)
+task:
+  description: "Academic GPT assistant for research and writing tasks"
+
+# Target endpoints to evaluate (required, at least one)
+target_endpoints:
+  model_v1:
+    base_url: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4"
+
+  model_v2:
+    base_url: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-3.5-turbo"
+
+# Judge endpoint for evaluation (required)
+judge_endpoint:
+  base_url: "https://api.openai.com/v1"
+  api_key: "${OPENAI_API_KEY}"
+  model: "gpt-4"
+
+# All other settings use defaults:
+# - query_generation.num_queries: 20
+# - query_generation.temperature: 0.9
+# - evaluation.max_concurrency: 10
+# - evaluation.timeout: 60
+# - output.output_dir: "./evaluation_results"

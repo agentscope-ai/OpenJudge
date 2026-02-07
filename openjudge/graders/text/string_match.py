@@ -11,6 +11,7 @@ A unified grader for string matching evaluation supporting multiple algorithms:
 
 from typing import Any, Dict
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.graders.text._utils.string_match_compute import (
     compute_char_overlap,
@@ -110,6 +111,7 @@ class StringMatchGrader(BaseGrader):
         case_sensitive: bool = False,
         ignore_whitespace: bool = False,
         algorithm: str = "exact_match",
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize string match grader
@@ -120,11 +122,13 @@ class StringMatchGrader(BaseGrader):
             case_sensitive: Default case sensitivity for matching algorithms
             ignore_whitespace: Default whitespace handling for exact match
             algorithm: Algorithm to use (exact_match, substring_match, etc.)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
         """
         super().__init__(
             name=name,
             mode=GraderMode.POINTWISE,
             description=description,
+            strategy=strategy,
         )
         self.case_sensitive = case_sensitive
         self.ignore_whitespace = ignore_whitespace
@@ -136,7 +140,7 @@ class StringMatchGrader(BaseGrader):
                 f"Supported algorithms: {', '.join(sorted(COMPUTE_FUNCTIONS.keys()))}",
             )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         reference_response: str = "",
         response: str = "",

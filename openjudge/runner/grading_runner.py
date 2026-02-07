@@ -6,14 +6,13 @@ collect their results. It supports concurrent execution of evaluators and
 organizes results by sample for further analysis.
 
 Classes:
-    GraderConfig: Configuration for a grader including the grader instance and data mapper.
     RunnerResult: Result container for grading runs.
     GradingRunner: Main runner class for executing evaluators.
 """
 
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from loguru import logger
 from tqdm.asyncio import tqdm_asyncio
@@ -22,7 +21,12 @@ from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderError, GraderResult
 from openjudge.runner.aggregator.base_aggregator import BaseAggregator
 from openjudge.runner.base_runner import BaseRunner, RunnerResult
-from openjudge.utils.concurrency import ConcurrencyManager
+from openjudge.runner.resource_executor.base_resource_executor import (
+    BaseResourceExecutor,
+)
+from openjudge.runner.resource_executor.semaphore_resource_executor import (
+    SemaphoreResourceExecutor,
+)
 from openjudge.utils.mapping import parse_data_with_mapper
 
 
@@ -147,8 +151,9 @@ class GradingRunner(BaseRunner):
         self,
         grader_configs: Dict[str, GraderConfig | BaseGrader | Tuple[BaseGrader, Dict[str, str] | Callable | None]],
         max_concurrency: int = 32,
-        aggregators: BaseAggregator | Callable | List[BaseAggregator | Callable] | None = None,
+        aggregators: Union[BaseAggregator, Callable, List[Union[BaseAggregator, Callable]], None] = None,
         show_progress: bool = True,
+        executor: BaseResourceExecutor | None = None,
     ) -> None:
         """Initialize the grading runner.
 
@@ -161,6 +166,8 @@ class GradingRunner(BaseRunner):
             aggregators: Optional aggregator or list of aggregators to combine results
                 from multiple graders.
             show_progress: Whether to display a progress bar during execution. Defaults to True.
+            executor: Optional execution resource to manage task execution.
+                       Defaults to LocalController if not provided.
 
         Example:
             >>> # Initialize with multiple graders
@@ -173,8 +180,7 @@ class GradingRunner(BaseRunner):
         self.grader_configs = {name: GraderConfig.create(config) for name, config in grader_configs.items()}
         self.max_concurrency = max_concurrency
         self.show_progress = show_progress
-        concurrency_manager = ConcurrencyManager()
-        concurrency_manager.set_max_concurrency(max_concurrency)
+        self.executor = executor or SemaphoreResourceExecutor(max_concurrency)
 
         # Handle aggregators
         if not aggregators:
@@ -190,12 +196,12 @@ class GradingRunner(BaseRunner):
         data: dict,
         grader: BaseGrader,
         mapper: Dict[str, str] | Callable | None,
+        executor: BaseResourceExecutor,
     ) -> GraderResult:
         """Run a single evaluation asynchronously.
 
-        This internal method runs a single evaluation by applying the mapper to
-        the input data and then passing the result to the grader. It handles exceptions
-        that may occur during evaluation and wraps them in a GraderError.
+        This internal method runs a single evaluation.
+        It handles exceptions that may occur during evaluation and wraps them in a GraderError.
 
         Args:
             data: Input data for the evaluation. This is typically a dictionary containing
@@ -206,6 +212,7 @@ class GradingRunner(BaseRunner):
                 - A dictionary mapping (e.g., {"input_text": "query"}) that renames fields
                 - A callable function that takes the data dict and returns a transformed dict
                 - None, in which case data is passed to the grader unchanged
+            executor: Execution resource to manage the execution of the task
 
         Returns:
             GraderResult: The result of the evaluation from the grader. This can be:
@@ -228,25 +235,21 @@ class GradingRunner(BaseRunner):
             ...     }
             >>> result = await GradingRunner._arun(data, ContextGrader(), custom_mapper)
         """
-        concurrency_manager = ConcurrencyManager()
+        try:
+            data = parse_data_with_mapper(data, mapper)
+            # Create an isolated grader instance for this evaluation to prevent state sharing
+            isolated_grader = grader.copy()
 
-        async def _evaluate(data) -> GraderResult:
-            try:
-                data = parse_data_with_mapper(data, mapper)
-                return await grader.aevaluate(**data)
-            except Exception as e:
-                error_msg = f"Error in {grader.name} during evaluation: {str(e)}"
-                logger.error(error_msg)
-                return GraderError(
-                    name=grader.name,
-                    reason=f"Error in {grader.name} during evaluation",
-                    error=error_msg,
-                )
-
-        # Use the concurrency manager to control execution
-        return await concurrency_manager.run_with_concurrency_control(
-            _evaluate(data),
-        )
+            # The grader itself handles the mapping internally
+            return await isolated_grader.aevaluate(executor=executor, **data)
+        except Exception as e:
+            error_msg = f"Error in {grader.name} during evaluation: {str(e)}"
+            logger.error(error_msg)
+            return GraderError(
+                name=grader.name,
+                reason=f"Error in {grader.name} during evaluation",
+                error=error_msg,
+            )
 
     async def arun(
         self,
@@ -327,6 +330,10 @@ class GradingRunner(BaseRunner):
         all_coroutines = []
         coroutine_info = []  # Track (grader_name, sample_index) for each coroutine
 
+        # Use the executor from self
+        executor = self.executor
+
+        # Execute executor lifecycle
         for name, config in self.grader_configs.items():
             grader = config.grader
             mapper = config.mapper
@@ -335,7 +342,7 @@ class GradingRunner(BaseRunner):
             # Create coroutines for the current evaluator on all samples
             for i, case in enumerate(dataset):
                 all_coroutines.append(
-                    self._arun(data=case, grader=grader, mapper=mapper),
+                    self._arun(data=case, grader=grader, mapper=mapper, executor=executor),
                 )
                 coroutine_info.append(
                     (name, i),

@@ -12,6 +12,9 @@ to be quantified.
 
 import difflib
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 
@@ -24,14 +27,20 @@ class PatchSimilarityGrader(BaseGrader):
     providing a similarity score and detailed diff information.
     """
 
-    def __init__(self):
+    def __init__(self, strategy: BaseEvaluationStrategy | None = None):
+        """
+        Initialize PatchSimilarityGrader.
+        Args:
+            strategy (BaseEvaluationStrategy): The strategy to use for grading.
+        """
         super().__init__(
             name="patch_similarity",
             mode=GraderMode.POINTWISE,
             description="Calculate similarity between response patch and oracle patch using difflib.SequenceMatcher",
+            strategy=strategy,
         )
 
-    async def aevaluate(self, response: str, reference_response: str) -> GraderScore:
+    async def _aevaluate(self, response: str, reference_response: str) -> GraderScore:
         """Calculate similarity between response and reference patches.
 
         Uses difflib.SequenceMatcher to calculate the similarity ratio between

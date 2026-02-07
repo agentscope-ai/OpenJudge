@@ -16,11 +16,51 @@ OpenJudge provides training pipelines for building custom judge models. Each met
 | **Bradley-Terry** | Scalar score | Preference pairs | ❌ No | RLHF judge modeling, ranking |
 | **GRPO** | Generative (text) | Labeled responses | ✅ Yes | Interpretable evaluation with reasoning |
 
-**Common Requirements:**
+**Environment Setup:**
 
-```bash
-pip install verl==0.6.1
-```
+=== "Docker (Recommended)"
+
+    Use the pre-configured training Docker image:
+
+    ```bash
+    cd OpenJudge
+
+    # Build the training image
+    docker build -f docker/Dockerfile.train -t openjudge-train:latest .
+
+    # Run the container
+    docker run --gpus all -it \
+        --shm-size=64g \
+        -v $(pwd):/workspace/OpenJudge \
+        -v /path/to/your/models:/models \
+        -v /path/to/your/data:/data \
+        --name openjudge-train \
+        openjudge-train:latest
+    ```
+
+=== "Manual Installation"
+
+    For custom environments, follow the [verl installation guide](https://verl.readthedocs.io/en/latest/start/install.html):
+
+    ```bash
+    # 1. Create conda environment
+    conda create -n openjudge_train python==3.12
+    conda activate openjudge_train
+
+    # 2. Install dependencies (vLLM, SGLang, etc.)
+    git clone https://github.com/volcengine/verl && cd verl
+    USE_MEGATRON=0 bash scripts/install_vllm_sglang_mcore.sh
+
+    # 3. Install verl
+    pip install --no-deps -e .
+
+    # 4. Install OpenJudge (verl dependencies already installed in step 2)
+    cd /path/to/OpenJudge
+    pip install -e .
+    ```
+
+    !!! warning "Important"
+        Simply running `pip install verl` is **not sufficient**. verl requires specific versions of vLLM, SGLang, FlashAttention, and other dependencies. Please follow the full installation guide or use the Docker image.
 
 
 ## Datasets
@@ -102,7 +142,7 @@ data:
 | `train/loss` | Cross-entropy loss |
 | `val/loss` | Validation loss |
 
-→ **[Full Documentation](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/sft)**
+→ **[Full Documentation](https://github.com/agentscope-ai/OpenJudge/tree/main/cookbooks/training_judge_model/sft)**
 
 
 ---
@@ -178,7 +218,7 @@ optim:
 | `val/loss` | Validation loss |
 | `val/accuracy` | Validation accuracy |
 
-→ **[Full Documentation](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/bradley-terry)**
+→ **[Full Documentation](https://github.com/agentscope-ai/OpenJudge/tree/main/cookbooks/training_judge_model/bradley-terry)**
 
 
 ---
@@ -270,7 +310,7 @@ bash pointwise/run_pointwise.sh
 | `train/kl_divergence` | KL from reference model |
 | `train/policy_loss` | Policy gradient loss |
 
-→ **[Full Documentation](https://github.com/modelscope/OpenJudge/tree/main/cookbooks/training_judge_model/grpo)**
+→ **[Full Documentation](https://github.com/agentscope-ai/OpenJudge/tree/main/cookbooks/training_judge_model/grpo)**
 
 
 ---

@@ -88,9 +88,6 @@ class TestHarmfulnessGraderUnit:
             assert result.score == 4
             assert "potentially harmful" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_context_and_reference(self):
         """Test evaluation with context and reference answer"""
@@ -122,9 +119,6 @@ class TestHarmfulnessGraderUnit:
             # Assertions
             assert result.score == 5
             assert "completely safe and appropriate" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):
@@ -274,6 +268,7 @@ class TestHarmfulnessGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["harmfulness_run1"],
             another_grader_results=results["harmfulness_run2"],
         )

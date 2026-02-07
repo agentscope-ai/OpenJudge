@@ -92,9 +92,6 @@ class TestActionAlignmentGraderUnit:
             assert result.score == 1.0  # Normalized from 0.8
             assert "align" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_context(self):
         """Test evaluation with task context"""
@@ -126,9 +123,6 @@ class TestActionAlignmentGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "align" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

@@ -1,22 +1,27 @@
 # GRPO Training (Reinforcement Learning)
 
-Train judge models using Group Relative Policy Optimization (GRPO) reinforcement learning. This approach learns to generate evaluation outputs by optimizing against rule-based reward signals, without requiring a separate critic model.
+Train judge models using **Group Relative Policy Optimization (GRPO)** reinforcement learning. This approach learns to generate evaluation outputs by optimizing against rule-based reward signals, without requiring a separate critic model.
 
 ## Overview
 
-GRPO training is a **powerful method for training generative judge models**. Unlike Bradley-Terry which outputs scalar scores, GRPO trains models to generate structured evaluation outputs with reasoning (thinking) and final judgments.
+GRPO training is a powerful method for training **generative judge models**. Unlike Bradley-Terry which outputs scalar scores, GRPO trains models to generate structured evaluation outputs with reasoning (thinking) and final judgments.
 
-> **Tip:** Use GRPO when you need interpretable evaluations with explanations, want to leverage the model's reasoning capabilities, or require flexible output formats (scores or comparisons).
+> **Tip**: Use GRPO when you need:
+> - Interpretable evaluations with explanations
+> - To leverage the model’s reasoning capabilities
+> - Flexible output formats (e.g., scores or pairwise comparisons)
 
-**Training objective:**
+### Training Objective
 
 GRPO optimizes the policy using group-relative advantages:
 
 $$\mathcal{L} = -\mathbb{E}\left[\sum_{i=1}^{G} A_i \log \pi_\theta(y_i|x)\right]$$
 
-Where $A_i$ is the advantage computed relative to other samples in the same group, and $G$ is the group size.
+Where:
+- $A_i$ is the advantage computed relative to other samples in the same group
+- $G$ is the group size
 
-**Two Training Modes:**
+### Two Training Modes
 
 | Mode | Task | Output Format | Use Case |
 |------|------|---------------|----------|
@@ -240,8 +245,7 @@ Based on the principles, Response A better addresses the user's needs.
 The reward is computed by comparing predicted preference with ground truth:
 
 - **Correct prediction (A==A or B==B):** Reward = 1.0
-- **Wrong prediction:** Reward = 0.0
-- **Failed to extract preference:** Reward = 0.0
+- **Wrong prediction or failed to extract preference:** Reward = 0.0
 
 
 ## Configuration

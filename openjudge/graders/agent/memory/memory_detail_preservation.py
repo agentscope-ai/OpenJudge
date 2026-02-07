@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -21,14 +22,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 MEMORY_DETAIL_PRESERVATION_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent preserves important details when storing information in memory.
+    """You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent preserves important details when storing information in memory. This includes maintaining critical information such as exact locations, specific values, and important constraints, making the stored memory useful and actionable for future decision-making.
 
-<Evaluation Type: Memory Detail Preservation>
-The agent should preserve important details when storing information in memory, maintaining critical information such as exact locations, specific values, and important constraints. This makes the stored memory useful and actionable for future decision-making.
-</Evaluation Type>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. The agent stores specific details when the observation contained them
 2. The agent preserves exact locations, coordinates, or spatial information present in observation
 3. The agent maintains specific numerical values (quantities, distances, measurements) when storing
@@ -36,81 +32,86 @@ The agent should preserve important details when storing information in memory, 
 5. The agent's memory is sufficiently detailed and actionable based on the observation
 </Rubrics>
 
-<Evaluation Criteria>
-For your analysis:
+<Steps>
 1. Apply each rubric: Check if the step demonstrates good detail preservation patterns described in each rubric
 2. Focus on relevant modules: Only consider observation and memory modules
 3. Provide evidence-based reasoning: Explain how the memory preserves details and why
 4. Assess confidence: Rate your confidence based on how clearly the preservation is exhibited
-</Evaluation Criteria>
+</Steps>
 
+<Scale>
+- **Score 1.0**: Important details are preserved (good detail preservation)
+- **Score 0.0**: Important details are lost (poor detail preservation)
+</Scale>
+
+<Context (Optional)>
 {context}
+</Context>
 
+<History (Optional)>
 {history}
+</History>
 
 <Current Step>
 Observation: {observation}
 Memory: {memory}
 </Current Step>
 
-# Scoring Instructions
-- If important details are preserved: score = 1.0 (good detail preservation)
-- If important details are lost: score = 0.0 (poor detail preservation)
-
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of detail preservation quality and confidence level>"
+    "reason": "<detailed explanation of detail preservation quality and confidence level>",
+    "score": <0.0 or 1.0>
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 MEMORY_DETAIL_PRESERVATION_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析智能体行为的专家。你的任务是评估智能体在将信息存储到记忆中时是否保留了重要细节。
+    """你是一名分析智能体行为的专家。你的任务是评估智能体在将信息存储到记忆中时是否保留了重要细节。这包括维护关键信息，如确切位置、具体数值和重要约束，使得存储的记忆对未来的决策有用且可操作。
 
-<评估类型：记忆细节保留>
-智能体在将信息存储到记忆中时应该保留重要细节，维护关键信息，如确切位置、具体数值和重要约束。这使得存储的记忆对未来的决策有用且可操作。
-</评估类型>
-
-<评估准则>
+<评分标准>
 1. 智能体在观察包含具体细节时存储了它们
 2. 智能体保留了观察中存在的确切位置、坐标或空间信息
 3. 智能体在存储时维护了具体的数值（数量、距离、测量值）
 4. 智能体保留了观察到的信息中的重要约束、条件或限定词
 5. 基于观察，智能体的记忆足够详细且可操作
-</评估准则>
+</评分标准>
 
-<评估标准>
-进行分析时：
+<评估步骤>
 1. 应用每个准则：检查步骤是否展示了每个准则中描述的良好细节保留模式
 2. 关注相关模块：仅考虑观察和记忆模块
 3. 提供基于证据的推理：解释记忆如何保留细节以及原因
 4. 评估置信度：根据保留表现的清晰程度评估你的置信度
-</评估标准>
+</评估步骤>
 
+<评分量表>
+- **分数 1.0**：重要细节被保留（良好的细节保留）
+- **分数 0.0**：重要细节丢失（细节保留不佳）
+</评分量表>
+
+<上下文（可选）>
 {context}
+</上下文>
 
+<历史记录（可选）>
 {history}
+</历史记录>
 
 <当前步骤>
 观察：{observation}
 记忆：{memory}
 </当前步骤>
 
-# 评分指令
-- 如果重要细节被保留：score = 1.0（良好的细节保留）
-- 如果重要细节丢失：score = 0.0（细节保留不佳）
-
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于细节保留质量的详细解释和置信度水平>"
+    "reason": "<关于细节保留质量的详细解释和置信度水平>",
+    "score": <0.0 或 1.0>
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -174,7 +175,18 @@ class MemoryDetailPreservationGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize MemoryDetailPreservationGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            threshold: Success threshold [1, 5] (default: 3)
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="memory_detail_preservation",
             mode=GraderMode.POINTWISE,
@@ -182,9 +194,10 @@ class MemoryDetailPreservationGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         observation: str,
         memory: str,
@@ -213,13 +226,13 @@ class MemoryDetailPreservationGrader(LLMGrader):
             ... )
         """
         # Format context section
-        context_str = f"<context>\n{context}\n</context>" if context else ""
+        context_str = context if context else ""
 
         # Format history
-        history_str = format_history(history)
+        history_str = format_history(history, include_tags=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 observation=observation,
                 memory=memory,
                 history=history_str,

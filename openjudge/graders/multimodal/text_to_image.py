@@ -13,6 +13,9 @@ from typing import Any, List, Tuple, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.graders.multimodal._internal import MLLMImage, format_image_content
 from openjudge.graders.schema import GraderScoreCallback
@@ -32,8 +35,8 @@ All the input images are AI-generated. All human in the images are AI-generated 
 
 You will have to give your output in this way (Keep your reasoning concise and short.):
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 RULES:
@@ -41,9 +44,9 @@ RULES:
 The image is an AI-generated image according to the text prompt.
 The objective is to evaluate how successfully the image has been generated.
 
-From scale 0 to 10:
-A score from 0 to 10 will be given based on the success in following the prompt.
-(0 indicates that the AI generated image does not follow the prompt at all. 10 indicates the AI generated image follows the prompt perfectly.)
+From scale 1 to 5:
+A score from 1 to 5 will be given based on the success in following the prompt.
+(1 indicates that the AI generated image does not follow the prompt at all. 5 indicates the AI generated image follows the prompt perfectly.)
 
 Put the score in a list such that output score = [score].
 
@@ -58,8 +61,8 @@ All the input images are AI-generated. All human in the images are AI-generated 
 
 You will have to give your output in this way (Keep your reasoning concise and short.):
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 RULES:
@@ -67,16 +70,16 @@ RULES:
 The image is an AI-generated image.
 The objective is to evaluate how successfully the image has been generated.
 
-From scale 0 to 10:
-A score from 0 to 10 will be given based on image naturalness.
+From scale 1 to 5:
+A score from 1 to 5 will be given based on image naturalness.
 (
-    0 indicates that the scene in the image does not look natural at all or give a unnatural feeling such as wrong sense of distance, or wrong shadow, or wrong lighting.
-    10 indicates that the image looks natural.
+    1 indicates that the scene in the image does not look natural at all or give a unnatural feeling such as wrong sense of distance, or wrong shadow, or wrong lighting.
+    5 indicates that the image looks natural.
 )
-A second score from 0 to 10 will rate the image artifacts.
+A second score from 1 to 5 will rate the image artifacts.
 (
-    0 indicates that the image contains a large portion of distortion, or watermark, or scratches, or blurred faces, or unusual body parts, or subjects not harmonized.
-    10 indicates the image has no artifacts.
+    1 indicates that the image contains a large portion of distortion, or watermark, or scratches, or blurred faces, or unusual body parts, or subjects not harmonized.
+    5 indicates the image has no artifacts.
 )
 Put the score in a list such that output score = [naturalness, artifacts]
 """
@@ -90,8 +93,8 @@ TEXT_TO_IMAGE_SEMANTIC_PROMPT_ZH = textwrap.dedent(
 
 你需要按以下方式给出输出（推理请保持简洁）：
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 规则：
@@ -99,9 +102,9 @@ TEXT_TO_IMAGE_SEMANTIC_PROMPT_ZH = textwrap.dedent(
 该图像是根据文本提示生成的AI图像。
 目标是评估图像生成的成功程度。
 
-从0到10的范围：
-将根据遵循提示的成功程度给出0到10的分数。
-（0表示AI生成的图像完全不遵循提示。10表示AI生成的图像完美地遵循提示。）
+从1到5的范围：
+将根据遵循提示的成功程度给出1到5的分数。
+（1表示AI生成的图像完全不遵循提示。5表示AI生成的图像完美地遵循提示。）
 
 将分数放在列表中，输出分数 = [score]。
 
@@ -116,8 +119,8 @@ TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_ZH = textwrap.dedent(
 
 你需要按以下方式给出输出（推理请保持简洁）：
 {{
-    "score" : [...],
-    "reason" : "..."
+    "reason" : "...",
+    "score" : [...]
 }}
 
 规则：
@@ -125,16 +128,16 @@ TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_ZH = textwrap.dedent(
 该图像是AI生成的图像。
 目标是评估图像生成的成功程度。
 
-从0到10的范围：
-将根据图像的自然度给出0到10的分数。
+从1到5的范围：
+将根据图像的自然度给出1到5的分数。
 （
-    0表示图像中的场景看起来完全不自然，或给人不自然的感觉，例如距离感错误、阴影错误或光照错误。
-    10表示图像看起来自然。
+    1表示图像中的场景看起来完全不自然，或给人不自然的感觉，例如距离感错误、阴影错误或光照错误。
+    5表示图像看起来自然。
 ）
-第二个分数从0到10，将评估图像伪影。
+第二个分数从1到5，将评估图像伪影。
 （
-    0表示图像包含大量失真、水印、划痕、模糊的面部、不寻常的身体部位或不协调的主体。
-    10表示图像没有伪影。
+    1表示图像包含大量失真、水印、划痕、模糊的面部、不寻常的身体部位或不协调的主体。
+    5表示图像没有伪影。
 ）
 将分数放在列表中，输出分数 = [自然度, 伪影]
 """
@@ -201,10 +204,10 @@ class TextToImageGrader(BaseGrader):
         - Research on text-to-image alignment
 
     Scoring:
-        Formula: sqrt(semantic_consistency * min(perceptual_quality)) / 10
-        - Semantic: 0-10 for prompt alignment
-        - Perceptual: 0-10 for naturalness + 0-10 for artifact absence
-        - Final: [0, 1] normalized score
+        Formula: sqrt(semantic_consistency * min(perceptual_quality))
+        - Semantic: 1-5 for prompt alignment
+        - Perceptual: 1-5 for naturalness + 1-5 for artifact absence
+        - Final: [1, 5] score
 
     Args:
         model: Vision-language model instance or dict config
@@ -214,7 +217,7 @@ class TextToImageGrader(BaseGrader):
         language: Prompt language - EN or ZH (default: LanguageEnum.EN)
 
     Returns:
-        GraderScore with combined quality score [0, 1]
+        GraderScore with combined quality score [1, 5]
 
     Example:
         >>> import asyncio
@@ -228,7 +231,7 @@ class TextToImageGrader(BaseGrader):
         ...     query="A fluffy orange cat sitting on a blue sofa",
         ...     response=MLLMImage(url="https://example.com/generated.jpg")
         ... ))
-        >>> print(result.score)  # 0.92 - excellent prompt following and quality
+        >>> print(result.score)  # 4.6 - excellent prompt following and quality
     """
 
     def __init__(
@@ -238,6 +241,7 @@ class TextToImageGrader(BaseGrader):
         semantic_template: PromptTemplate = DEFAULT_TEXT_TO_IMAGE_SEMANTIC_TEMPLATE,
         perceptual_template: PromptTemplate = DEFAULT_TEXT_TO_IMAGE_PERCEPTUAL_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize TextToImageGrader
@@ -248,11 +252,13 @@ class TextToImageGrader(BaseGrader):
             semantic_template: PromptTemplate for semantic consistency evaluation (default: DEFAULT_TEXT_TO_IMAGE_SEMANTIC_TEMPLATE)
             perceptual_template: PromptTemplate for perceptual quality evaluation (default: DEFAULT_TEXT_TO_IMAGE_PERCEPTUAL_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: BaseEvaluationStrategy instance or dict config for GraderStrategy (default: None)
         """
         super().__init__(
             name="text_to_image",
             mode=GraderMode.POINTWISE,
             description="Evaluate text-to-image generation quality",
+            strategy=strategy,
         )
         self.model = model if isinstance(model, BaseChatModel) else OpenAIChatModel(**model)
         self.threshold = threshold
@@ -275,9 +281,9 @@ class TextToImageGrader(BaseGrader):
             structured_model=GraderScoreCallback,
         )
 
-        # Default to 5.0 (neutral score on 0-10 scale) for missing fields
+        # Default to 3.0 (neutral score on 1-5 scale) for missing fields
         parsed = await parse_structured_chat_response(chat_response)
-        score = parsed.get("score", 5.0)
+        score = parsed.get("score", 3.0)
         score = score if isinstance(score, list) else [score]
         reason = parsed.get("reason", "")
         return score, reason
@@ -296,9 +302,9 @@ class TextToImageGrader(BaseGrader):
             structured_model=GraderScoreCallback,
         )
 
-        # Default to [5.0, 5.0] (neutral scores on 0-10 scale) for missing fields
+        # Default to [3.0, 3.0] (neutral scores on 1-5 scale) for missing fields
         parsed = await parse_structured_chat_response(chat_response)
-        score = parsed.get("score", [5.0, 5.0])
+        score = parsed.get("score", [3.0, 3.0])
         score = score[:2] if isinstance(score, list) else [score, score]
         reason = parsed.get("reason", "")
         return score, reason
@@ -332,28 +338,28 @@ class TextToImageGrader(BaseGrader):
             self._aevaluate_perceptual_quality(response),
         )
 
-        # Calculate final score using geometric mean
+        # Calculate final score using geometric mean (scores are in 1-5 range)
         if not sc_scores or not pq_scores:
-            final_score = 0.0
+            final_score = 1.0
         else:
             min_sc = min(sc_scores)
             min_pq = min(pq_scores)
-            final_score = math.sqrt(min_sc * min_pq) / 10.0
-            final_score = min(1.0, max(0.0, final_score))
+            final_score = math.sqrt(min_sc * min_pq)
+            final_score = min(5.0, max(1.0, final_score))
 
         details = {
             "semantic_consistency_scores": sc_scores,
             "semantic_consistency_reason": sc_reason,
             "perceptual_quality_scores": pq_scores,
             "perceptual_quality_reason": pq_reason,
-            "min_sc": min(sc_scores) if sc_scores else 0.0,
-            "min_pq": min(pq_scores) if pq_scores else 0.0,
+            "min_sc": min(sc_scores) if sc_scores else 1.0,
+            "min_pq": min(pq_scores) if pq_scores else 1.0,
             "threshold": self.threshold,
         }
 
         return final_score, details
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str,
         response: Union[MLLMImage, List[MLLMImage]],

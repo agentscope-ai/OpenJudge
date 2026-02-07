@@ -5,6 +5,7 @@ It contains the LengthPenaltyGrader class which applies penalties for content
 that is either too short or too long according to configured thresholds.
 """
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 
@@ -19,6 +20,7 @@ class LengthPenaltyGrader(BaseGrader):
         min_length: int = 10,
         max_length: int = 1000,
         penalty_rate: float = 0.01,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize the LengthPenaltyGrader.
@@ -26,18 +28,20 @@ class LengthPenaltyGrader(BaseGrader):
             min_length: Minimum length of the content
             max_length: Maximum length of the content
             penalty_rate: Penalty rate for each character beyond the maximum length
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
         """
         super().__init__(
             name="length_penalty",
             mode=GraderMode.POINTWISE,
             description="Text length based penalty for content that is too short or too long.",
+            strategy=strategy,
         )
 
         self.min_length = min_length
         self.max_length = max_length
         self.penalty_rate = penalty_rate
 
-    async def aevaluate(self, response: str) -> GraderScore:
+    async def _aevaluate(self, response: str) -> GraderScore:
         """
         Calculate length-based penalty for text content.
 

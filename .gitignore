@@ -16,6 +16,7 @@ __pycache__/
 poetry.lock
 /site
 uv*/
+uv.lock
 
 # Build and Distribution Files
 /dist

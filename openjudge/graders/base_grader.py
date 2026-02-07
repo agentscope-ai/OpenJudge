@@ -6,27 +6,33 @@ for evaluating the quality of responses based on various criteria and returning
 either scores or rankings.
 """
 
+import copy
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.schema import GraderError, GraderMode, GraderRank, GraderScore
+from openjudge.runner.resource_executor.base_resource_executor import (
+    BaseResourceExecutor,
+)
 
 
 class BaseGrader(ABC):
     """Base class for graders.
 
     This abstract base class defines the interface for all graders.
-    Subclasses must implement the aevaluate method.
+    Subclasses must implement the _aevaluate method.
 
     Attributes:
         name (str): The name of the grader.
         mode (GraderMode): The grader mode (pointwise or listwise).
         description (str): Description of what this grader evaluates.
+        strategy (BaseEvaluationStrategy): The evaluation strategy to use.
         kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Example:
         >>> class MyGrader(BaseGrader):
-        ...     async def aevaluate(self, **kwargs):
+        ...     async def _aevaluate(self, **kwargs):
         ...         # Implementation here
         ...         pass
         >>> grader = MyGrader(
@@ -45,6 +51,7 @@ class BaseGrader(ABC):
         name: str = "",
         mode: GraderMode = GraderMode.POINTWISE,
         description: str = "",
+        strategy: BaseEvaluationStrategy | None = None,
         **kwargs: Any,
     ):
         """Initialize a Grader.
@@ -55,6 +62,7 @@ class BaseGrader(ABC):
                   or LISTWISE (joint evaluation of multiple samples).
                   Defaults to POINTWISE.
             description: Human-readable description of what this grader evaluates.
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
             **kwargs: Additional keyword arguments that will be stored and
                      accessible to subclasses.
 
@@ -73,10 +81,11 @@ class BaseGrader(ABC):
         self.name = name
         self.mode = mode
         self.description = description
+        self.strategy = strategy
         self.kwargs = kwargs
 
     @abstractmethod
-    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank | GraderError:
+    async def _aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank | GraderError:
         """Abstract method for performing the actual evaluation logic.
 
         This method must be implemented by all Grader subclasses. It performs
@@ -121,7 +130,7 @@ class BaseGrader(ABC):
             ...             description="Evaluates factual accuracy of answers"
             ...         )
             ...
-            ...     async def aevaluate(self, query: str, response: str, **kwargs):
+            ...     async def _aevaluate(self, query: str, response: str, **kwargs):
             ...         # Implementation would evaluate accuracy
             ...         return GraderScore(
             ...             name=self.name,
@@ -140,6 +149,35 @@ class BaseGrader(ABC):
             ...
             >>> # Implementation would rank answers by relevance
         """
+
+    # === [Core Interface] ===
+    async def aevaluate(self, executor: BaseResourceExecutor | None = None, **kwargs: Any) -> Any:
+        """
+        Called by the Runner to inject the resource.
+        """
+
+        # Wrap the atomic evaluation task to submit to the resource
+        async def managed_fn(**runtime_kwargs):
+            # Submit to executor for execution
+            # pylint: disable=protected-access
+            # Create a shallow copy of the grader to prevent top-level state modification.
+            if self.strategy:
+                runtime_self = self.copy()
+            else:
+                runtime_self = self
+
+            bound_method = runtime_self._aevaluate
+            if executor is None:
+                return await bound_method(**runtime_kwargs)
+            else:
+                return await executor.submit(bound_method, **runtime_kwargs)
+
+        # Execute the strategy
+        # The strategy receives a function with resource management capabilities
+        if self.strategy:
+            return await self.strategy.execute(managed_fn, **kwargs)
+        else:
+            return await managed_fn(**kwargs)
 
     @staticmethod
     def get_metadata() -> Dict[str, Any]:
@@ -235,3 +273,46 @@ class BaseGrader(ABC):
             "description": self.description,
             "kwargs": self.kwargs,
         }
+
+    def copy(self):
+        """Create a copy of this grader for evaluation to prevent state sharing between samples.
+
+        This method is called by the runner to create an isolated instance of the grader
+        for each evaluation to prevent state pollution. By default, it attempts to create
+        a new instance with the same parameters, but subclasses can override this to
+        provide more specific behavior, especially when dealing with non-serializable
+        objects like model connections.
+
+        Returns:
+            BaseGrader: A new instance of the grader with the same configuration
+        """
+
+        # # Get the class of this grader
+        # grader_class = self.__class__
+
+        # # Get constructor parameters by inspecting the grader's __init__ signature
+        # sig = inspect.signature(grader_class.__init__)
+        # init_params = {}
+
+        # for param_name in sig.parameters:
+        #     if param_name in ("self", "args", "kwargs"):  # Skip special params
+        #         continue
+        #     if hasattr(self, param_name) or param_name in self.__dict__:
+        #         # Get value from instance, defaulting to the parameter's default if available
+        #         param_default = sig.parameters[param_name].default
+        #         if param_default is not inspect.Parameter.empty:
+        #             init_params[param_name] = getattr(self, param_name, param_default)
+        #         else:
+        #             init_params[param_name] = self.__dict__.get(param_name, getattr(self, param_name, None))
+
+        # # Create new instance with preserved parameters
+        # copied_grader = grader_class(**init_params)
+
+        # # Copy over any remaining attributes that weren't part of __init__
+        # for attr_name, attr_value in self.__dict__.items():
+        #     if attr_name not in init_params and not attr_name.startswith("_"):
+        #         setattr(copied_grader, attr_name, attr_value)
+
+        # return copied_grader
+
+        return copy.copy(self)
