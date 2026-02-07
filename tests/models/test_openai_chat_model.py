@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Unit tests for OpenAIChatModel."""
+
 import asyncio
 from unittest.mock import AsyncMock, patch
 
@@ -365,6 +366,7 @@ class TestOpenAIChatModel:
 
         for key in not_expected_in_call:
             assert key not in call_kwargs
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """OpenAI Client."""
+
 import os
 from typing import Any, AsyncGenerator, Callable, Dict, Literal, Type
 
@@ -34,7 +35,9 @@ def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> None
                     and isinstance(block["input_audio"].get("data"), str)
                 ):
                     if not block["input_audio"]["data"].startswith("http"):
-                        block["input_audio"]["data"] = "data:;base64," + block["input_audio"]["data"]
+                        block["input_audio"]["data"] = (
+                            "data:;base64," + block["input_audio"]["data"]
+                        )
 
 
 class OpenAIChatModel(BaseChatModel):
@@ -89,7 +92,7 @@ class OpenAIChatModel(BaseChatModel):
             client_args["organization"] = organization
         if max_retries is not None:
             client_args["max_retries"] = max_retries
-    
+
         if timeout is not None:
             client_args["timeout"] = timeout
 
@@ -147,10 +150,16 @@ class OpenAIChatModel(BaseChatModel):
         # checking messages
         if not isinstance(messages, list):
             raise ValueError(
-                "OpenAI `messages` field expected type `list`, " f"got `{type(messages)}` instead.",
+                "OpenAI `messages` field expected type `list`, "
+                f"got `{type(messages)}` instead.",
             )
-        messages = [msg.to_dict() if isinstance(msg, ChatMessage) else msg for msg in messages]
-        if not all(isinstance(msg, dict) and "role" in msg and "content" in msg for msg in messages):
+        messages = [
+            msg.to_dict() if isinstance(msg, ChatMessage) else msg for msg in messages
+        ]
+        if not all(
+            isinstance(msg, dict) and "role" in msg and "content" in msg
+            for msg in messages
+        ):
             raise ValueError(
                 "Each message in the 'messages' list must contain a 'role' and 'content' key for OpenAI API.",
             )
@@ -255,7 +264,9 @@ class OpenAIChatModel(BaseChatModel):
                             parsed = repair_and_load_json(content)
                             # Ensure parsed is always a dict
                             if not isinstance(parsed, dict):
-                                parsed = {"result": parsed} if parsed is not None else {}
+                                parsed = (
+                                    {"result": parsed} if parsed is not None else {}
+                                )
                             parsed_response.parsed = parsed
                         else:
                             parsed_response.parsed = {}
@@ -281,7 +292,10 @@ class OpenAIChatModel(BaseChatModel):
                     parsed_response.parsed.update(callback_result)
             except Exception as e:
                 # Log the exception but don't fail the entire operation
-                logger.warning(f"Callback function raised an exception: {type(e).__name__}: {e}", exc_info=True)
+                logger.warning(
+                    f"Callback function raised an exception: {type(e).__name__}: {e}",
+                    exc_info=True,
+                )
 
         return parsed_response
 
@@ -367,7 +381,9 @@ class OpenAIChatModel(BaseChatModel):
                             parsed = {"result": parsed} if parsed is not None else {}
                         final_response.parsed = parsed
                     except Exception as e:
-                        logger.warning(f"Failed to parse structured output from streamed response: {e}")
+                        logger.warning(
+                            f"Failed to parse structured output from streamed response: {e}"
+                        )
                         final_response.parsed = {}
 
                 # Apply callback if provided
@@ -378,6 +394,9 @@ class OpenAIChatModel(BaseChatModel):
                             final_response.parsed = final_response.parsed or {}
                             final_response.parsed.update(callback_result)
                     except Exception as e:
-                        logger.warning(f"Callback function raised an exception: {type(e).__name__}: {e}", exc_info=True)
+                        logger.warning(
+                            f"Callback function raised an exception: {type(e).__name__}: {e}",
+                            exc_info=True,
+                        )
 
                 yield final_response
