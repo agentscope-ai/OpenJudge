@@ -318,94 +318,53 @@ class TestOpenAIChatModel:
             "data:;base64,",
         )
 
+    @pytest.mark.parametrize(
+        "init_kwargs, expected_in_call, not_expected_in_call",
+        [
+            (
+                {"max_retries": 5, "timeout": 120.0},
+                {"max_retries": 5, "timeout": 120.0},
+                [],
+            ),
+            ({}, {}, ["max_retries", "timeout"]),
+            ({"max_retries": None, "timeout": None}, {}, ["max_retries", "timeout"]),
+            ({"max_retries": 3}, {"max_retries": 3}, ["timeout"]),
+            ({"timeout": 30.0}, {"timeout": 30.0}, ["max_retries"]),
+        ],
+        ids=[
+            "with_retries_and_timeout",
+            "defaults",
+            "with_none_values",
+            "with_retries_only",
+            "with_timeout_only",
+        ],
+    )
     @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
-    def test_max_retries_and_timeout_parameters(self, mock_async_openai):
-        """Test that max_retries and timeout parameters are passed to AsyncOpenAI client."""
-        # Test with specific max_retries and timeout values
-        model = OpenAIChatModel(
+    def test_client_initialization_with_retries_and_timeout(
+        self,
+        mock_async_openai,
+        init_kwargs,
+        expected_in_call,
+        not_expected_in_call,
+    ):
+        """Test that max_retries and timeout parameters are passed to AsyncOpenAI client correctly."""
+        OpenAIChatModel(
             model="gpt-4",
             api_key="test-key",
-            max_retries=5,
-            timeout=120.0,
+            **init_kwargs,
         )
 
-        # Verify AsyncOpenAI was called with correct parameters
         mock_async_openai.assert_called_once()
         call_kwargs = mock_async_openai.call_args[1]
+
         assert call_kwargs["api_key"] == "test-key"
-        assert call_kwargs["max_retries"] == 5
-        assert call_kwargs["timeout"] == 120.0
 
-    @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
-    def test_max_retries_and_timeout_default_values(self, mock_async_openai):
-        """Test that max_retries and timeout use SDK defaults when not provided."""
-        # Test without providing max_retries and timeout
-        model = OpenAIChatModel(
-            model="gpt-4",
-            api_key="test-key",
-        )
+        for key, value in expected_in_call.items():
+            assert key in call_kwargs
+            assert call_kwargs[key] == value
 
-        # Verify AsyncOpenAI was called
-        mock_async_openai.assert_called_once()
-        call_kwargs = mock_async_openai.call_args[1]
-        assert call_kwargs["api_key"] == "test-key"
-        # When None, these parameters should not be in the call_kwargs
-        assert "max_retries" not in call_kwargs
-        assert "timeout" not in call_kwargs
-
-    @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
-    def test_max_retries_and_timeout_with_none_values(self, mock_async_openai):
-        """Test that explicitly passing None for max_retries and timeout doesn't add them to client_args."""
-        # Test with explicit None values
-        model = OpenAIChatModel(
-            model="gpt-4",
-            api_key="test-key",
-            max_retries=None,
-            timeout=None,
-        )
-
-        # Verify AsyncOpenAI was called
-        mock_async_openai.assert_called_once()
-        call_kwargs = mock_async_openai.call_args[1]
-        assert call_kwargs["api_key"] == "test-key"
-        # When explicitly None, these parameters should not be in the call_kwargs
-        assert "max_retries" not in call_kwargs
-        assert "timeout" not in call_kwargs
-
-    @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
-    def test_max_retries_only(self, mock_async_openai):
-        """Test that only max_retries is passed when timeout is not provided."""
-        # Test with only max_retries
-        model = OpenAIChatModel(
-            model="gpt-4",
-            api_key="test-key",
-            max_retries=3,
-        )
-
-        # Verify AsyncOpenAI was called with correct parameters
-        mock_async_openai.assert_called_once()
-        call_kwargs = mock_async_openai.call_args[1]
-        assert call_kwargs["api_key"] == "test-key"
-        assert call_kwargs["max_retries"] == 3
-        assert "timeout" not in call_kwargs
-
-    @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
-    def test_timeout_only(self, mock_async_openai):
-        """Test that only timeout is passed when max_retries is not provided."""
-        # Test with only timeout
-        model = OpenAIChatModel(
-            model="gpt-4",
-            api_key="test-key",
-            timeout=30.0,
-        )
-
-        # Verify AsyncOpenAI was called with correct parameters
-        mock_async_openai.assert_called_once()
-        call_kwargs = mock_async_openai.call_args[1]
-        assert call_kwargs["api_key"] == "test-key"
-        assert call_kwargs["timeout"] == 30.0
-        assert "max_retries" not in call_kwargs
-
+        for key in not_expected_in_call:
+            assert key not in call_kwargs
 
 if __name__ == "__main__":
     pytest.main([__file__])
