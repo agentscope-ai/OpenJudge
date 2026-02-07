@@ -86,7 +86,7 @@ pip install py-openjudge datasets
 # export OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 
 # Copy the evaluation script into the dataset directory
-cp -rf run_grader_evaluations.py agentscope-ai/OpenJudge/
+cp -f run_grader_evaluations.py agentscope-ai/OpenJudge/
 cd agentscope-ai/OpenJudge
 
 # Build the command

@@ -382,7 +382,7 @@ async def run_all_evaluations(
                 except asyncio.TimeoutError:
                     return {
                         "model": model,
-                        "config_name": config.name,
+                        "name": config.name,
                         "category": config.category,
                         "grader": config.grader,
                         "status": "timeout",
@@ -395,7 +395,7 @@ async def run_all_evaluations(
                 except Exception as e:
                     return {
                         "model": model,
-                        "config_name": config.name,
+                        "name": config.name,
                         "category": config.category,
                         "grader": config.grader,
                         "status": "error",
