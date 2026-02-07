@@ -78,13 +78,22 @@ Note: --category and --grader are mutually exclusive—you cannot use both at th
 ./run_grader_evals.sh --grader tool_call_accuracy
 ```
 
-### Example 3: Specify different models and increase parallelism
+### Example 3: Specify the model for each category and increase parallelism
 
 ```bash
 ./run_grader_evals.sh \
   --agent-model qwen3-max \
   --text-model qwen3-32b \
   --multimodal-model qwen-vl-max \
+  --workers 5
+```
+
+### Example 4: Specify multiple models for agent category
+
+```bash
+./run_grader_evals.sh \
+  --agent-model qwen3-max,qwen3-32b \
+  --category agent \
   --workers 5
 ```
 
