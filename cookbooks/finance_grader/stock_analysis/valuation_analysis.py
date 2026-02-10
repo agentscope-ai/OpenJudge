@@ -11,6 +11,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderRank
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -66,8 +67,8 @@ Criterion 3. Logical Rigor of Valuation: The valuation conclusion has a complete
 <Output Schema>
 Please output your assessment in the following JSON format strictly:
 {{
-    "rank": <[1, 2] or [2, 1]>,
-    "reason": "<detailed explanation of your evaluation reasoning, including performance comparison under each evaluation criterion>"
+    "reason": "<detailed explanation of your evaluation reasoning, including performance comparison under each evaluation criterion>",
+    "rank": <[1, 2] or [2, 1]>
 }}
 </Output Schema>
 
@@ -124,8 +125,8 @@ c. 与行业估值中枢对比
 <输出格式>
 请按以下结构化 JSON 格式严格输出你的评估：
 {{
-    "rank": <[1, 2] 或 [2, 1]>,
-    "reason": "<详细解释你的评估理由，包括在各个评估标准下的表现对比>"
+    "reason": "<详细解释你的评估理由，包括在各个评估标准下的表现对比>",
+    "rank": <[1, 2] 或 [2, 1]>
 }}
 </输出格式>
 
@@ -206,6 +207,7 @@ class ValuationAnalysisGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.ZH,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize ValuationAnalysisGrader.
@@ -222,6 +224,7 @@ class ValuationAnalysisGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_VALUATION_ANALYSIS_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
     async def _aevaluate(
@@ -242,6 +245,13 @@ class ValuationAnalysisGrader(LLMGrader):
 
         Returns:
             GraderRank: Rank result with [1, 2] if answer_1 is better, [2, 1] if answer_2 is better
+
+        Example:
+            >>> result = await grader.aevaluate(
+            ...     query="分析宁德时代的估值水平",
+            ...     answer_1="估值较高。",
+            ...     answer_2="当前PE 35倍，PEG 1.2，相对行业平均PE 25倍有溢价..."
+            ... )
         """
         try:
             result = await super()._aevaluate(

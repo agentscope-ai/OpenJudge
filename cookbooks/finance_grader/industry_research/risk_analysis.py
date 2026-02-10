@@ -11,6 +11,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderRank
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -69,8 +70,8 @@ Criterion 3. Logical Rigor of Risk Analysis: Assess whether the risk analysis ha
 <Output Schema>
 Please output your assessment in the following JSON format strictly:
 {{
-    "rank": <[1, 2] or [2, 1]>,
-    "reason": "<detailed explanation of your evaluation reasoning, including performance comparison under each evaluation criterion>"
+    "reason": "<detailed explanation of your evaluation reasoning, including performance comparison under each evaluation criterion>",
+    "rank": <[1, 2] or [2, 1]>
 }}
 </Output Schema>
 
@@ -130,8 +131,8 @@ c. 行业特有的风险(如 "矿产公司可能有安全事故")
 <输出格式>
 请按以下结构化 JSON 格式严格输出你的评估：
 {{
-    "rank": <[1, 2] 或 [2, 1]>,
-    "reason": "<详细解释你的评估理由，包括在各个评估标准下的表现对比>"
+    "reason": "<详细解释你的评估理由，包括在各个评估标准下的表现对比>",
+    "rank": <[1, 2] 或 [2, 1]>
 }}
 </输出格式>
 
@@ -212,6 +213,7 @@ class RiskAnalysisGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.ZH,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize RiskAnalysisGrader.
@@ -228,6 +230,7 @@ class RiskAnalysisGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_RISK_ANALYSIS_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
     async def _aevaluate(
@@ -248,6 +251,13 @@ class RiskAnalysisGrader(LLMGrader):
 
         Returns:
             GraderRank: Rank result with [1, 2] if answer_1 is better, [2, 1] if answer_2 is better
+
+        Example:
+            >>> result = await grader.aevaluate(
+            ...     query="分析紫金矿业的投资风险",
+            ...     answer_1="存在一定的市场风险。",
+            ...     answer_2="主要风险：1)铜价波动风险，铜价下跌10%将导致净利润下降8%..."
+            ... )
         """
         try:
             result = await super()._aevaluate(

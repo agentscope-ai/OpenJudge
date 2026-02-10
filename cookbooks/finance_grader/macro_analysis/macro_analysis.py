@@ -11,6 +11,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderRank
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -72,8 +73,8 @@ c. Each sub-argument should have a logical relationship with the conclusion, not
 <Output Schema>
 Please output your assessment in the following JSON format strictly:
 {{
-    "rank": <[1, 2] or [2, 1]>,
-    "reason": "<detailed explanation of your evaluation reasoning, including performance comparison under each evaluation criterion>"
+    "reason": "<detailed explanation of your evaluation reasoning, including performance comparison under each evaluation criterion>",
+    "rank": <[1, 2] or [2, 1]>
 }}
 </Output Schema>
 
@@ -136,8 +137,8 @@ c. 各子论点应和结论有逻辑关系，非孤立罗列，确保逻辑自�
 <输出格式>
 请按以下结构化 JSON 格式严格输出你的评估：
 {{
-    "rank": <[1, 2] 或 [2, 1]>,
-    "reason": "<详细解释你的评估理由，包括在各个评估标准下的表现对比>"
+    "reason": "<详细解释你的评估理由，包括在各个评估标准下的表现对比>",
+    "rank": <[1, 2] 或 [2, 1]>
 }}
 </输出格式>
 
@@ -218,6 +219,7 @@ class MacroAnalysisGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.ZH,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize MacroAnalysisGrader.
@@ -234,6 +236,7 @@ class MacroAnalysisGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_MACRO_ANALYSIS_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
     async def _aevaluate(
@@ -254,6 +257,13 @@ class MacroAnalysisGrader(LLMGrader):
 
         Returns:
             GraderRank: Rank result with [1, 2] if answer_1 is better, [2, 1] if answer_2 is better
+
+        Example:
+            >>> result = await grader.aevaluate(
+            ...     query="分析当前中国宏观经济形势",
+            ...     answer_1="经济形势总体稳定。",
+            ...     answer_2="当前中国经济呈现稳中向好态势：GDP增速5.2%，CPI温和..."
+            ... )
         """
         try:
             result = await super()._aevaluate(
