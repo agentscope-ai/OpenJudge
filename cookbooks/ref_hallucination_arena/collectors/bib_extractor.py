@@ -96,9 +96,7 @@ class BibExtractor:
                     return text[open_pos + 1 : i]
         return None  # unmatched
 
-    def _parse_fields(
-        self, key: str, entry_type: str, fields_str: str
-    ) -> Optional[Reference]:
+    def _parse_fields(self, key: str, entry_type: str, fields_str: str) -> Optional[Reference]:
         """Parse individual fields from BibTeX entry body."""
 
         def extract_field(name: str) -> Optional[str]:
