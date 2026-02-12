@@ -60,7 +60,7 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
 
         is_valid_str_tie_breaker = isinstance(tie_breaker, str) and tie_breaker in SUPPORTED_TIE_BREAKERS
         if not (is_valid_str_tie_breaker or callable(tie_breaker)):
-            raise ValueError("tie_breaker must be one of {'min', 'max', 'mean_closest'} or a callable")
+            raise ValueError(f"tie_breaker must be one of {SUPPORTED_TIE_BREAKERS} or a callable")
 
         self.num_votes = num_votes
         self.tie_breaker = tie_breaker
