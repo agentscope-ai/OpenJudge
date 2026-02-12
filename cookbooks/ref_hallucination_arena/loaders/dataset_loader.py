@@ -14,7 +14,7 @@ Each query object must have a "query" field. Optional fields:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 from loguru import logger
 
@@ -46,10 +46,7 @@ class DatasetLoader:
         if not self.path.exists():
             raise FileNotFoundError(f"Dataset file not found: {self.path}")
         if self.path.suffix not in self.SUPPORTED_FORMATS:
-            raise ValueError(
-                f"Unsupported format '{self.path.suffix}'. "
-                f"Supported: {self.SUPPORTED_FORMATS}"
-            )
+            raise ValueError(f"Unsupported format '{self.path.suffix}'. " f"Supported: {self.SUPPORTED_FORMATS}")
 
     def load(self) -> List[QueryItem]:
         """Load and validate all queries from the dataset file.
@@ -81,10 +78,7 @@ class DatasetLoader:
                 # Also support {"queries": [...], "metadata": {...}} wrapper format
                 return data["queries"]
             else:
-                raise ValueError(
-                    "JSON file must be an array of query objects, "
-                    "or an object with a 'queries' key."
-                )
+                raise ValueError("JSON file must be an array of query objects, " "or an object with a 'queries' key.")
         else:  # .jsonl
             items = []
             with open(self.path, "r", encoding="utf-8") as f:

@@ -20,7 +20,6 @@ from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
 from openjudge.utils.concurrency import ConcurrencyManager
 
-
 # Default system prompt template for reference recommendation
 DEFAULT_SYSTEM_PROMPT_ZH = (
     "你是一位学术文献推荐专家。请根据用户的研究主题，推荐{num_refs}篇真实存在的高质量学术论文。"
@@ -87,11 +86,7 @@ class ResponseCollector:
             except (KeyError, IndexError):
                 return custom
 
-        template = (
-            DEFAULT_SYSTEM_PROMPT_ZH
-            if query_item.language == "zh"
-            else DEFAULT_SYSTEM_PROMPT_EN
-        )
+        template = DEFAULT_SYSTEM_PROMPT_ZH if query_item.language == "zh" else DEFAULT_SYSTEM_PROMPT_EN
         return template.format(num_refs=query_item.num_refs)
 
     async def _call_endpoint(
@@ -183,9 +178,7 @@ class ResponseCollector:
             }
 
         tasks = [
-            self.concurrency_manager.run_with_concurrency_control(
-                _collect_one(i, ep_name)
-            )
+            self.concurrency_manager.run_with_concurrency_control(_collect_one(i, ep_name))
             for i in range(len(queries))
             for ep_name in self.endpoints
         ]
@@ -230,9 +223,7 @@ class ResponseCollector:
 
         results = [query_ep_results[i] for i in range(len(queries))]
 
-        success_count = sum(
-            1 for r in results if all(v is not None for v in r["responses"].values())
-        )
+        success_count = sum(1 for r in results if all(v is not None for v in r["responses"].values()))
         logger.info(f"Collection complete: {success_count}/{len(results)} queries fully successful")
 
         return results

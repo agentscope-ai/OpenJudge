@@ -87,9 +87,7 @@ class DblpVerifier(BaseVerifier):
         except Exception as e:
             return self._error(ref, f"DBLP error: {e}")
 
-    def _extract_match_with_authors(
-        self, ref: Reference, info: dict
-    ) -> Tuple[MatchDetail, List[str]]:
+    def _extract_match_with_authors(self, ref: Reference, info: dict) -> Tuple[MatchDetail, List[str]]:
         """Extract match details and author name list from DBLP response."""
         # Title
         matched_title = info.get("title", "").rstrip(".")
@@ -99,15 +97,11 @@ class DblpVerifier(BaseVerifier):
         authors = info.get("authors", {}).get("author", [])
         if isinstance(authors, dict):
             authors = [authors]
-        author_names = [
-            a.get("text", a) if isinstance(a, dict) else str(a) for a in authors
-        ]
+        author_names = [a.get("text", a) if isinstance(a, dict) else str(a) for a in authors]
         matched_authors_str = ", ".join(author_names[:3])
         if len(author_names) > 3:
             matched_authors_str += " et al."
-        author_sim = (
-            self.author_similarity(ref.authors, author_names) if ref.authors else 1.0
-        )
+        author_sim = self.author_similarity(ref.authors, author_names) if ref.authors else 1.0
 
         # Year
         matched_year = info.get("year", "")

@@ -90,9 +90,7 @@ class ArxivVerifier(BaseVerifier):
         except Exception as e:
             return self._error(ref, f"arXiv error: {e}")
 
-    def _extract_match_with_authors(
-        self, ref: Reference, entry: str
-    ) -> Tuple[MatchDetail, List[str]]:
+    def _extract_match_with_authors(self, ref: Reference, entry: str) -> Tuple[MatchDetail, List[str]]:
         """Extract match details and author name list from arXiv XML entry."""
         # Title
         title_m = re.search(r"<title>(.*?)</title>", entry, re.DOTALL)
@@ -104,9 +102,7 @@ class ArxivVerifier(BaseVerifier):
         matched_authors_str = ", ".join(author_matches[:3])
         if len(author_matches) > 3:
             matched_authors_str += " et al."
-        author_sim = (
-            self.author_similarity(ref.authors, author_matches) if ref.authors else 1.0
-        )
+        author_sim = self.author_similarity(ref.authors, author_matches) if ref.authors else 1.0
 
         # Year
         pub_m = re.search(r"<published>(\d{4})", entry)

@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 
 from cookbooks.ref_hallucination_arena.schema import (
     ArenaResult,
-    ModelScore,
     ModelVerificationResult,
     RefArenaConfig,
     VerificationStatus,
@@ -138,9 +137,7 @@ class RefReportGenerator:
         title = "## 模型排名" if self.lang == "zh" else "## Model Rankings"
 
         # Check if any model has year constraint data
-        has_yc = any(
-            ms.year_constrained_refs > 0 for ms in result.model_scores.values()
-        )
+        has_yc = any(ms.year_constrained_refs > 0 for ms in result.model_scores.values())
 
         if self.lang == "zh":
             header = "| 排名 | 模型 | 整体准确率 | 文献完整度 |"
@@ -164,10 +161,7 @@ class RefReportGenerator:
         rows = [title, "", header, sep]
         for rank, (name, _) in enumerate(result.rankings, 1):
             ms = result.model_scores[name]
-            row = (
-                f"| {rank} | {name} | **{ms.overall_accuracy:.1%}** | "
-                f"{ms.completeness:.1%} |"
-            )
+            row = f"| {rank} | {name} | **{ms.overall_accuracy:.1%}** | " f"{ms.completeness:.1%} |"
             if has_yc:
                 if ms.year_constrained_refs > 0:
                     row += f" {ms.year_compliance_rate:.1%} |"
@@ -202,9 +196,7 @@ class RefReportGenerator:
                 ms = result.model_scores[name]
                 ds = ms.discipline_scores.get(disc)
                 if ds:
-                    rows.append(
-                        f"| {name} | {ds.verification_rate:.1%} | {ds.total_refs} |"
-                    )
+                    rows.append(f"| {name} | {ds.verification_rate:.1%} | {ds.total_refs} |")
             parts.append("\n".join(rows))
 
         return "\n".join(parts)
@@ -275,10 +267,7 @@ class RefReportGenerator:
                 if halluc_ex:
                     ref = halluc_ex.reference
                     label = "幻觉" if self.lang == "zh" else "Hallucination"
-                    parts.append(
-                        f"\n**{label}**: {ref.title}\n"
-                        f"- {halluc_ex.message}"
-                    )
+                    parts.append(f"\n**{label}**: {ref.title}\n" f"- {halluc_ex.message}")
 
                 shown += 1
 
@@ -294,6 +283,6 @@ class RefReportGenerator:
         return (
             "---\n\n"
             "*This report is based on objective verification against Crossref, PubMed, arXiv, and DBLP. "
-            "All metrics are \"higher is better\": overall accuracy requires title, author, and year "
+            'All metrics are "higher is better": overall accuracy requires title, author, and year '
             "to exactly match a real paper.*"
         )

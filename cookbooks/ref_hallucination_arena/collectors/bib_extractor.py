@@ -4,8 +4,6 @@
 import re
 from typing import List, Optional
 
-from loguru import logger
-
 from cookbooks.ref_hallucination_arena.schema import Reference
 
 

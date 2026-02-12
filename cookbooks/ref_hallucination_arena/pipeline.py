@@ -24,10 +24,16 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from cookbooks.ref_hallucination_arena.collectors.bib_extractor import BibExtractor
-from cookbooks.ref_hallucination_arena.collectors.response_collector import ResponseCollector
+from cookbooks.ref_hallucination_arena.collectors.response_collector import (
+    ResponseCollector,
+)
 from cookbooks.ref_hallucination_arena.loaders.dataset_loader import DatasetLoader
-from cookbooks.ref_hallucination_arena.reporting.chart_generator import RefChartGenerator
-from cookbooks.ref_hallucination_arena.reporting.report_generator import RefReportGenerator
+from cookbooks.ref_hallucination_arena.reporting.chart_generator import (
+    RefChartGenerator,
+)
+from cookbooks.ref_hallucination_arena.reporting.report_generator import (
+    RefReportGenerator,
+)
 from cookbooks.ref_hallucination_arena.schema import (
     ArenaResult,
     ModelVerificationResult,
@@ -38,8 +44,9 @@ from cookbooks.ref_hallucination_arena.schema import (
 )
 from cookbooks.ref_hallucination_arena.scoring.objective_scorer import ObjectiveScorer
 from cookbooks.ref_hallucination_arena.scoring.ranking import RankingCalculator
-from cookbooks.ref_hallucination_arena.verifiers.composite_verifier import CompositeVerifier
-
+from cookbooks.ref_hallucination_arena.verifiers.composite_verifier import (
+    CompositeVerifier,
+)
 
 # =============================================================================
 # Checkpoint Management
@@ -51,7 +58,7 @@ class PipelineStage(str, Enum):
 
     NOT_STARTED = "not_started"
     QUERIES_LOADED = "queries_loaded"
-    RESPONSES_COLLECTING = "responses_collecting"        # in-progress (per-item)
+    RESPONSES_COLLECTING = "responses_collecting"  # in-progress (per-item)
     RESPONSES_COLLECTED = "responses_collected"
     REFS_EXTRACTED = "refs_extracted"
     VERIFICATION_IN_PROGRESS = "verification_in_progress"  # in-progress (per-item)
@@ -189,14 +196,9 @@ class CheckpointManager:
         """Atomically save the full responses list (called after each query completes)."""
         return self.save_json(self.RESPONSES_FILE, responses)
 
-    def save_verification_incremental(
-        self, results: Dict[str, List[ModelVerificationResult]]
-    ) -> str:
+    def save_verification_incremental(self, results: Dict[str, List[ModelVerificationResult]]) -> str:
         """Atomically save all verification results (called after each item completes)."""
-        serialized = {
-            model: [mvr.model_dump() for mvr in mvr_list]
-            for model, mvr_list in results.items()
-        }
+        serialized = {model: [mvr.model_dump() for mvr in mvr_list] for model, mvr_list in results.items()}
         return self.save_json(self.VERIFICATION_FILE, serialized)
 
     def clear(self) -> None:
@@ -321,15 +323,11 @@ class RefArenaPipeline:
             self._ckpt.save_responses_incremental(self._responses)
             saved_count += 1
             if saved_count % 10 == 0 or saved_count == total_queries:
-                logger.info(
-                    f"  Response progress: {saved_count}/{total_queries} queries saved"
-                )
+                logger.info(f"  Response progress: {saved_count}/{total_queries} queries saved")
 
         # Collect only pending queries, with per-query callback
         pending_queries = [self._queries[i] for i in pending_indices]
-        pending_responses = await collector.collect(
-            pending_queries, on_query_complete=_on_query_complete
-        )
+        pending_responses = await collector.collect(pending_queries, on_query_complete=_on_query_complete)
 
         # Final merge for any that might not have been saved via callback
         for local_idx, global_idx in enumerate(pending_indices):
@@ -452,16 +450,11 @@ class RefArenaPipeline:
             year_compliant=yc_compliant,
             year_noncompliant=yc_noncompliant,
             year_unknown=yc_unknown,
-            year_compliance_rate=(
-                yc_compliant / total if has_yc and total > 0 else 0.0
-            ),
+            year_compliance_rate=(yc_compliant / total if has_yc and total > 0 else 0.0),
         )
 
         yc_info = f" year_ok={yc_compliant}/{total}" if has_yc else ""
-        logger.debug(
-            f"  {model_name} | Q{idx}: {verified}/{total} verified"
-            f"{yc_info} ({discipline or 'unknown'})"
-        )
+        logger.debug(f"  {model_name} | Q{idx}: {verified}/{total} verified" f"{yc_info} ({discipline or 'unknown'})")
         return mvr
 
     def _verify_refs_incremental(
@@ -491,11 +484,7 @@ class RefArenaPipeline:
         total_items = len(self.config.target_endpoints) * len(self._responses)
         already_done = len(completed_keys)
         remaining = total_items - already_done
-        logger.info(
-            f"  Total items: {total_items}, "
-            f"already verified: {already_done}, "
-            f"remaining: {remaining}"
-        )
+        logger.info(f"  Total items: {total_items}, " f"already verified: {already_done}, " f"remaining: {remaining}")
 
         results = self._verification_results
         # Lock for thread-safe checkpoint writes and results updates
@@ -519,8 +508,7 @@ class RefArenaPipeline:
                     work_items.append((model_name, idx))
 
         logger.info(
-            f"  Parallel verification: {len(work_items)} items to verify "
-            f"with {parallel_queries} concurrent workers"
+            f"  Parallel verification: {len(work_items)} items to verify " f"with {parallel_queries} concurrent workers"
         )
 
         with CompositeVerifier(config=self.config.verification) as verifier:
@@ -534,29 +522,21 @@ class RefArenaPipeline:
                     results[model_name][idx] = mvr
                     self._ckpt.mark_verification_complete_item(model_name, idx)
                     safe_results: Dict[str, List[ModelVerificationResult]] = {
-                        m: [r for r in rlist if r is not None]
-                        for m, rlist in results.items()
+                        m: [r for r in rlist if r is not None] for m, rlist in results.items()
                     }
                     self._ckpt.save_verification_incremental(safe_results)
                     done_count += 1
                     if done_count % 50 == 0 or done_count == total_items:
-                        logger.info(
-                            f"  Verification progress: {done_count}/{total_items} items saved"
-                        )
+                        logger.info(f"  Verification progress: {done_count}/{total_items} items saved")
 
             with ThreadPoolExecutor(max_workers=parallel_queries) as executor:
-                futures = {
-                    executor.submit(_verify_one, mn, idx): (mn, idx)
-                    for mn, idx in work_items
-                }
+                futures = {executor.submit(_verify_one, mn, idx): (mn, idx) for mn, idx in work_items}
                 for future in as_completed(futures):
                     mn, idx = futures[future]
                     try:
                         future.result()
                     except Exception as e:
-                        logger.error(
-                            f"  Verification failed for {mn} Q{idx}: {e}"
-                        )
+                        logger.error(f"  Verification failed for {mn} Q{idx}: {e}")
 
         # Log per-model summary
         for model_name in self.config.target_endpoints:
@@ -564,18 +544,12 @@ class RefArenaPipeline:
             total_v = sum(m.verified for m in model_results)
             total_r = sum(m.total_refs for m in model_results)
             if total_r > 0:
-                logger.info(
-                    f"  {model_name}: {total_v}/{total_r} verified "
-                    f"({total_v/total_r:.1%})"
-                )
+                logger.info(f"  {model_name}: {total_v}/{total_r} verified " f"({total_v/total_r:.1%})")
             else:
                 logger.info(f"  {model_name}: 0 refs")
 
         # Clean up None placeholders (should not remain, but be safe)
-        self._verification_results = {
-            m: [r for r in rlist if r is not None]
-            for m, rlist in results.items()
-        }
+        self._verification_results = {m: [r for r in rlist if r is not None] for m, rlist in results.items()}
         return self._verification_results
 
     # ---- Step 5: Score and rank ----
@@ -664,8 +638,7 @@ class RefArenaPipeline:
                     self._responses = partial
                     completed_indices = self._ckpt.get_completed_response_indices()
                     logger.info(
-                        f"Resuming response collection: "
-                        f"{len(completed_indices)}/{len(self._queries)} already done"
+                        f"Resuming response collection: " f"{len(completed_indices)}/{len(self._queries)} already done"
                     )
                 else:
                     self._responses = [{}] * len(self._queries)
@@ -681,11 +654,7 @@ class RefArenaPipeline:
         # Step 3: Extract refs
         if checkpoint and checkpoint.stage >= PipelineStage.REFS_EXTRACTED:
             self._extracted = self._ckpt.load_json(CheckpointManager.EXTRACTED_FILE) or {}
-            total = sum(
-                len(refs)
-                for model_refs in self._extracted.values()
-                for refs in model_refs.values()
-            )
+            total = sum(len(refs) for model_refs in self._extracted.values() for refs in model_refs.values())
             logger.info(f"Resumed {total} extracted refs from checkpoint")
         else:
             self._extract_refs()
@@ -696,8 +665,7 @@ class RefArenaPipeline:
         if checkpoint and checkpoint.stage >= PipelineStage.VERIFICATION_COMPLETE:
             raw = self._ckpt.load_json(CheckpointManager.VERIFICATION_FILE) or {}
             self._verification_results = {
-                model: [ModelVerificationResult(**mvr) for mvr in mvr_list]
-                for model, mvr_list in raw.items()
+                model: [ModelVerificationResult(**mvr) for mvr in mvr_list] for model, mvr_list in raw.items()
             }
             logger.info("Resumed verification results from checkpoint (complete)")
         else:
@@ -706,22 +674,17 @@ class RefArenaPipeline:
             if checkpoint and checkpoint.stage >= PipelineStage.VERIFICATION_IN_PROGRESS:
                 raw = self._ckpt.load_json(CheckpointManager.VERIFICATION_FILE) or {}
                 self._verification_results = {
-                    model: [ModelVerificationResult(**mvr) for mvr in mvr_list]
-                    for model, mvr_list in raw.items()
+                    model: [ModelVerificationResult(**mvr) for mvr in mvr_list] for model, mvr_list in raw.items()
                 }
                 completed_v_keys = self._ckpt.get_completed_verification_keys()
-                logger.info(
-                    f"Resuming verification: "
-                    f"{len(completed_v_keys)} items already verified"
-                )
+                logger.info(f"Resuming verification: " f"{len(completed_v_keys)} items already verified")
             else:
                 self._verification_results = {}
 
             self._ckpt.update_stage(PipelineStage.VERIFICATION_IN_PROGRESS)
             self._verify_refs_incremental(completed_v_keys)
             serialized = {
-                model: [mvr.model_dump() for mvr in mvr_list]
-                for model, mvr_list in self._verification_results.items()
+                model: [mvr.model_dump() for mvr in mvr_list] for model, mvr_list in self._verification_results.items()
             }
             self._ckpt.save_json(CheckpointManager.VERIFICATION_FILE, serialized)
             self._ckpt.update_stage(PipelineStage.VERIFICATION_COMPLETE)

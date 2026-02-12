@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Ranking calculator: produce final rankings from objective scores."""
 
-from typing import Dict, List, Tuple
+from typing import Dict
 
 from loguru import logger
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Composite verifier: chains multiple sources with discipline-aware routing."""
 
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from loguru import logger
 
@@ -14,10 +14,11 @@ from cookbooks.ref_hallucination_arena.schema import (
 )
 from cookbooks.ref_hallucination_arena.verifiers.arxiv_verifier import ArxivVerifier
 from cookbooks.ref_hallucination_arena.verifiers.base_verifier import BaseVerifier
-from cookbooks.ref_hallucination_arena.verifiers.crossref_verifier import CrossrefVerifier
+from cookbooks.ref_hallucination_arena.verifiers.crossref_verifier import (
+    CrossrefVerifier,
+)
 from cookbooks.ref_hallucination_arena.verifiers.dblp_verifier import DblpVerifier
 from cookbooks.ref_hallucination_arena.verifiers.pubmed_verifier import PubmedVerifier
-
 
 # Default verification order per discipline
 DISCIPLINE_ROUTES: Dict[str, List[str]] = {
@@ -56,12 +57,8 @@ class CompositeVerifier:
 
         # Initialize individual verifiers
         self._verifiers: Dict[str, BaseVerifier] = {
-            "crossref": CrossrefVerifier(
-                mailto=config.crossref_mailto, timeout=config.timeout
-            ),
-            "pubmed": PubmedVerifier(
-                api_key=config.pubmed_api_key, timeout=config.timeout
-            ),
+            "crossref": CrossrefVerifier(mailto=config.crossref_mailto, timeout=config.timeout),
+            "pubmed": PubmedVerifier(api_key=config.pubmed_api_key, timeout=config.timeout),
             "arxiv": ArxivVerifier(timeout=config.timeout),
             "dblp": DblpVerifier(timeout=config.timeout),
         }

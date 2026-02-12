@@ -2,7 +2,6 @@
 """PubMed E-utilities verification for biomedical references."""
 
 import re
-import urllib.parse
 from typing import List, Optional, Tuple
 
 import httpx
@@ -170,9 +169,7 @@ class PubmedVerifier(BaseVerifier):
                 summaries.append(result[pmid])
         return summaries
 
-    def _extract_match_with_authors(
-        self, ref: Reference, info: dict
-    ) -> Tuple[MatchDetail, List[str]]:
+    def _extract_match_with_authors(self, ref: Reference, info: dict) -> Tuple[MatchDetail, List[str]]:
         """Extract match details and author name list from PubMed summary."""
         # Title
         matched_title = info.get("title", "").rstrip(".")
@@ -184,9 +181,7 @@ class PubmedVerifier(BaseVerifier):
         matched_authors_str = ", ".join(author_names[:3])
         if len(author_names) > 3:
             matched_authors_str += " et al."
-        author_sim = (
-            self.author_similarity(ref.authors, author_names) if ref.authors else 1.0
-        )
+        author_sim = self.author_similarity(ref.authors, author_names) if ref.authors else 1.0
 
         # Year (from pubdate or epubdate)
         pub_date = info.get("pubdate", "") or info.get("epubdate", "")

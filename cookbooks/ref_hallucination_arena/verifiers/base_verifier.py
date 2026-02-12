@@ -118,8 +118,8 @@ class BaseVerifier(ABC):
 
         name = BaseVerifier._strip_latex(name)
         name = name.lower().strip()
-        name = re.sub(r"['\u2019\u2018`]", "", name)   # apostrophes
-        name = re.sub(r"[-\u2010\u2011]", "", name)     # hyphens
+        name = re.sub(r"['\u2019\u2018`]", "", name)  # apostrophes
+        name = re.sub(r"[-\u2010\u2011]", "", name)  # hyphens
         # NFKD decomposition: Ž → Z + combining caron, then strip combiners
         name = unicodedata.normalize("NFKD", name)
         name = "".join(c for c in name if not unicodedata.combining(c))
@@ -187,12 +187,7 @@ class BaseVerifier(ABC):
             # Detect PubMed "LastName Initials" format:
             # last token is short (≤4 chars), all uppercase, no lowercase
             last_word = words[-1]
-            if (
-                len(words) >= 2
-                and len(last_word) <= 4
-                and last_word.isalpha()
-                and last_word == last_word.upper()
-            ):
+            if len(words) >= 2 and len(last_word) <= 4 and last_word.isalpha() and last_word == last_word.upper():
                 # PubMed style: take everything before the initials as last name
                 # Handle multi-word last names like "De Vos" → join all but last
                 last = " ".join(words[:-1])
@@ -260,10 +255,7 @@ class BaseVerifier(ABC):
         Returns True only when the normalized word sequences are
         identical.
         """
-        return (
-            BaseVerifier._normalize_title(ref_title)
-            == BaseVerifier._normalize_title(matched_title)
-        )
+        return BaseVerifier._normalize_title(ref_title) == BaseVerifier._normalize_title(matched_title)
 
     @staticmethod
     def strict_year_check(ref_year: Optional[str], matched_year: str) -> bool:
@@ -287,15 +279,9 @@ class BaseVerifier(ABC):
         Returns True only when title, year, AND all provided author
         names pass strict verification.
         """
-        detail.title_exact = BaseVerifier.strict_title_check(
-            ref.title, detail.matched_title
-        )
-        detail.year_exact = BaseVerifier.strict_year_check(
-            ref.year, detail.matched_year
-        )
-        detail.author_exact = BaseVerifier.strict_author_check(
-            ref.authors or "", matched_author_names
-        )
+        detail.title_exact = BaseVerifier.strict_title_check(ref.title, detail.matched_title)
+        detail.year_exact = BaseVerifier.strict_year_check(ref.year, detail.matched_year)
+        detail.author_exact = BaseVerifier.strict_author_check(ref.authors or "", matched_author_names)
         # DOI exact: both present and identical after lowering / stripping
         if ref.doi and matched_doi:
             detail.doi_exact = ref.doi.strip().lower() == matched_doi.strip().lower()

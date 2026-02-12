@@ -33,9 +33,7 @@ class ConcurrencyManager:
         self._max_concurrency = max_concurrency
         self._semaphore = asyncio.Semaphore(max_concurrency)
 
-    async def run_with_concurrency_control(
-        self, coro: Coroutine[Any, Any, T]
-    ) -> T:
+    async def run_with_concurrency_control(self, coro: Coroutine[Any, Any, T]) -> T:
         """Run a coroutine with concurrency control.
 
         Acquires the semaphore before executing the coroutine, ensuring

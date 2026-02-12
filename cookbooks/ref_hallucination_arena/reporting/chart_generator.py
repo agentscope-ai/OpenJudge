@@ -8,11 +8,11 @@ Generates:
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from loguru import logger
 
-from cookbooks.ref_hallucination_arena.schema import ArenaResult, ChartConfig, ModelScore
+from cookbooks.ref_hallucination_arena.schema import ArenaResult, ChartConfig
 
 
 def _setup_cjk_font():
@@ -92,17 +92,18 @@ class RefChartGenerator:
         metric_keys = list(metrics.keys())
         n_metrics = len(metric_keys)
 
-        fig, ax = plt.subplots(
-            figsize=(max(8, len(names) * n_metrics * 0.4 + 2), 6), dpi=self.config.dpi
-        )
+        fig, ax = plt.subplots(figsize=(max(8, len(names) * n_metrics * 0.4 + 2), 6), dpi=self.config.dpi)
         x_pos = np.arange(len(names))
         width = 0.8 / n_metrics
 
         for i, key in enumerate(metric_keys):
             offset = (i - n_metrics / 2 + 0.5) * width
             bars = ax.bar(
-                x_pos + offset, metrics[key], width,
-                label=key, color=colors_map[key],
+                x_pos + offset,
+                metrics[key],
+                width,
+                label=key,
+                color=colors_map[key],
                 alpha=1.0 if key == "Overall" else 0.75,
                 edgecolor="black" if key == "Overall" else "none",
                 linewidth=1.2 if key == "Overall" else 0,
@@ -111,8 +112,12 @@ class RefChartGenerator:
                 for bar in bars:
                     h = bar.get_height()
                     ax.text(
-                        bar.get_x() + bar.get_width() / 2, h + 1,
-                        f"{h:.1f}%", ha="center", fontsize=8, fontweight="bold",
+                        bar.get_x() + bar.get_width() / 2,
+                        h + 1,
+                        f"{h:.1f}%",
+                        ha="center",
+                        fontsize=8,
+                        fontweight="bold",
                     )
 
         ax.set_xticks(x_pos)
@@ -167,9 +172,7 @@ class RefChartGenerator:
         n_models = len(model_names)
         n_disc = len(all_disciplines)
 
-        fig, ax = plt.subplots(
-            figsize=(max(8, n_disc * n_models * 0.4), 6), dpi=self.config.dpi
-        )
+        fig, ax = plt.subplots(figsize=(max(8, n_disc * n_models * 0.4), 6), dpi=self.config.dpi)
 
         x = np.arange(n_disc)
         width = 0.8 / n_models
@@ -177,13 +180,8 @@ class RefChartGenerator:
 
         for i, name in enumerate(model_names):
             ms = result.model_scores[name]
-            rates = [
-                ms.discipline_scores.get(d, None)
-                for d in all_disciplines
-            ]
-            values = [
-                (ds.verification_rate * 100 if ds else 0.0) for ds in rates
-            ]
+            rates = [ms.discipline_scores.get(d, None) for d in all_disciplines]
+            values = [(ds.verification_rate * 100 if ds else 0.0) for ds in rates]
             offset = (i - n_models / 2 + 0.5) * width
             bars = ax.bar(x + offset, values, width, label=name, color=colors[i], alpha=0.85)
 
@@ -192,8 +190,11 @@ class RefChartGenerator:
                     h = bar.get_height()
                     if h > 0:
                         ax.text(
-                            bar.get_x() + bar.get_width() / 2, h + 0.5,
-                            f"{h:.0f}%", ha="center", fontsize=7,
+                            bar.get_x() + bar.get_width() / 2,
+                            h + 0.5,
+                            f"{h:.0f}%",
+                            ha="center",
+                            fontsize=7,
                         )
 
         ax.set_xticks(x)

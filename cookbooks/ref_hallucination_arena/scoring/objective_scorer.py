@@ -2,7 +2,7 @@
 """Objective scorer: compute verification-based metrics for each model."""
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Dict, List
 
 from loguru import logger
 
@@ -121,22 +121,20 @@ class ObjectiveScorer:
 
                 # Completeness: has title (always), + DOI + year + authors
                 ref = vr.reference
-                filled = sum([
-                    bool(ref.doi),
-                    bool(ref.year),
-                    bool(ref.authors),
-                ])
+                filled = sum(
+                    [
+                        bool(ref.doi),
+                        bool(ref.year),
+                        bool(ref.authors),
+                    ]
+                )
                 completeness_sum += filled / 3.0
 
         verification_rate = verified / total_refs if total_refs > 0 else 0.0
         hallucination_rate = (suspect + not_found) / total_refs if total_refs > 0 else 0.0
         avg_confidence = confidence_sum / confidence_count if confidence_count > 0 else 0.0
         completeness = completeness_sum / total_refs if total_refs > 0 else 0.0
-        year_compliance_rate = (
-            year_compliant_count / year_constrained_refs
-            if year_constrained_refs > 0
-            else 0.0
-        )
+        year_compliance_rate = year_compliant_count / year_constrained_refs if year_constrained_refs > 0 else 0.0
 
         # Per-field accuracy rates
         title_accuracy = title_correct / total_refs if total_refs > 0 else 0.0
@@ -150,11 +148,7 @@ class ObjectiveScorer:
         for disc in disc_totals:
             dt = disc_totals[disc]
             dv = disc_verified[disc]
-            d_conf = (
-                disc_confidence_sum[disc] / disc_confidence_count[disc]
-                if disc_confidence_count[disc] > 0
-                else 0.0
-            )
+            d_conf = disc_confidence_sum[disc] / disc_confidence_count[disc] if disc_confidence_count[disc] > 0 else 0.0
             discipline_scores[disc] = DisciplineScore(
                 discipline=disc,
                 total_refs=dt,

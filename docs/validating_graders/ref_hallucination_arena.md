@@ -9,7 +9,7 @@ Reference Hallucination Arena is a benchmark designed to evaluate LLMs' ability 
 
 The benchmark addresses a critical problem: when researchers ask LLMs for literature recommendations, models frequently "hallucinate" references—generating papers that sound plausible but do not actually exist. Reference Hallucination Arena quantifies this phenomenon across multiple models and academic disciplines.
 
-The official evaluation dataset is available on HuggingFace: [**OpenJudge/ref-hallucination-arena**](https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena).
+The official evaluation dataset is available on HuggingFace: [**agentscope-ai/OpenJudge**](https://huggingface.co/datasets/agentscope-ai/OpenJudge/tree/main/benchmark). You can download `ref_hallucination_query.json` from the `benchmark/` directory.
 
 **Key Features:**
 
@@ -36,7 +36,7 @@ The evaluation pipeline consists of six automated steps:
 
 ## Dataset
 
-The evaluation dataset is hosted on HuggingFace: [**OpenJudge/ref-hallucination-arena**](https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena).
+The evaluation dataset is hosted on HuggingFace: [**agentscope-ai/OpenJudge**](https://huggingface.co/datasets/agentscope-ai/OpenJudge/tree/main/benchmark). Download `ref_hallucination_query.json` from the `benchmark/` directory to use as your query file.
 
 Each query item in the dataset follows this schema:
 
@@ -93,13 +93,15 @@ Download the official dataset from HuggingFace or create your own query file in 
     python -c "
     from huggingface_hub import hf_hub_download
     hf_hub_download(
-        repo_id='OpenJudge/ref-hallucination-arena',
-        filename='queries.json',
+        repo_id='agentscope-ai/OpenJudge',
+        filename='benchmark/ref_hallucination_query.json',
         repo_type='dataset',
         local_dir='./data'
     )
     "
     ```
+
+    Or download directly from the [benchmark directory on HuggingFace](https://huggingface.co/datasets/agentscope-ai/OpenJudge/tree/main/benchmark).
 </li>
 <li><strong>Configure Endpoints</strong>
 

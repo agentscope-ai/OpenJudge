@@ -15,7 +15,6 @@ import yaml
 from loguru import logger
 from pydantic import BaseModel, Field
 
-
 # =============================================================================
 # Enums
 # =============================================================================
@@ -54,9 +53,7 @@ class OpenAIEndpoint(BaseModel):
     api_key: str = Field(..., description="API key, supports ${ENV_VAR} format")
     model: str = Field(..., description="Model name")
     system_prompt: Optional[str] = Field(default=None, description="System prompt")
-    extra_params: Optional[Dict[str, Any]] = Field(
-        default=None, description="Extra request parameters"
-    )
+    extra_params: Optional[Dict[str, Any]] = Field(default=None, description="Extra request parameters")
 
 
 class TaskConfig(BaseModel):
@@ -80,9 +77,7 @@ class DatasetConfig(BaseModel):
 
     path: str = Field(..., description="Path to JSON/JSONL dataset file")
     shuffle: bool = Field(default=False, description="Whether to shuffle queries before evaluation")
-    max_queries: Optional[int] = Field(
-        default=None, description="Max number of queries to use (None = use all)"
-    )
+    max_queries: Optional[int] = Field(default=None, description="Max number of queries to use (None = use all)")
 
 
 # =============================================================================
@@ -93,17 +88,12 @@ class DatasetConfig(BaseModel):
 class VerificationConfig(BaseModel):
     """Configuration for reference verification."""
 
-    crossref_mailto: Optional[str] = Field(
-        default=None, description="Email for Crossref polite pool"
-    )
-    pubmed_api_key: Optional[str] = Field(
-        default=None, description="PubMed API key (optional, increases rate limit)"
-    )
+    crossref_mailto: Optional[str] = Field(default=None, description="Email for Crossref polite pool")
+    pubmed_api_key: Optional[str] = Field(default=None, description="PubMed API key (optional, increases rate limit)")
     max_workers: int = Field(default=10, ge=1, le=50, description="Concurrent verification threads")
     timeout: float = Field(default=30.0, ge=5.0, description="Per-request timeout in seconds")
     verified_threshold: float = Field(
-        default=0.7, ge=0.0, le=1.0,
-        description="Min composite score to count as VERIFIED (title+author+year)"
+        default=0.7, ge=0.0, le=1.0, description="Min composite score to count as VERIFIED (title+author+year)"
     )
 
 
@@ -198,10 +188,10 @@ class MatchDetail(BaseModel):
     matched_doi: str = ""
 
     # Strict per-field match flags (populated during verification)
-    title_exact: bool = False    # normalized exact title match
-    author_exact: bool = False   # all provided author last names present
-    year_exact: bool = False     # year identical
-    doi_exact: bool = False      # DOI identical
+    title_exact: bool = False  # normalized exact title match
+    author_exact: bool = False  # all provided author last names present
+    year_exact: bool = False  # year identical
+    doi_exact: bool = False  # DOI identical
 
 
 class VerificationResult(BaseModel):
@@ -271,11 +261,11 @@ class ModelScore(BaseModel):
     completeness: float = 0.0
 
     # ---- Per-field accuracy rates (all refs as denominator) ----
-    title_accuracy: float = 0.0       # % of refs whose title exactly matches a real paper
-    author_accuracy: float = 0.0      # % of refs whose authors all match
-    year_accuracy: float = 0.0        # % of refs whose year exactly matches
-    doi_accuracy: float = 0.0         # % of refs whose DOI exactly matches
-    overall_accuracy: float = 0.0     # % of refs where ALL fields match (= verification_rate)
+    title_accuracy: float = 0.0  # % of refs whose title exactly matches a real paper
+    author_accuracy: float = 0.0  # % of refs whose authors all match
+    year_accuracy: float = 0.0  # % of refs whose year exactly matches
+    doi_accuracy: float = 0.0  # % of refs whose DOI exactly matches
+    overall_accuracy: float = 0.0  # % of refs where ALL fields match (= verification_rate)
 
     # Year constraint compliance (across queries that have year_constraint)
     year_constrained_refs: int = 0
@@ -402,9 +392,7 @@ class QueryItem(BaseModel):
         default=None,
         description="Time constraint on recommended references",
     )
-    metadata: Optional[Dict[str, Any]] = Field(
-        default=None, description="Arbitrary extra metadata"
-    )
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Arbitrary extra metadata")
 
 
 # =============================================================================

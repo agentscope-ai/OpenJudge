@@ -22,9 +22,7 @@ class CrossrefVerifier(BaseVerifier):
 
     def __init__(self, mailto: Optional[str] = None, timeout: float = 30.0):
         self.mailto = mailto
-        headers = {
-            "User-Agent": f"RefArena/1.0 (mailto:{mailto})" if mailto else "RefArena/1.0"
-        }
+        headers = {"User-Agent": f"RefArena/1.0 (mailto:{mailto})" if mailto else "RefArena/1.0"}
         self.client = httpx.Client(timeout=timeout, headers=headers)
 
     @property
@@ -138,9 +136,7 @@ class CrossrefVerifier(BaseVerifier):
 
         return self._not_found(ref, "Not found in Crossref")
 
-    def _extract_match_with_authors(
-        self, ref: Reference, data: dict
-    ) -> Tuple[MatchDetail, List[str]]:
+    def _extract_match_with_authors(self, ref: Reference, data: dict) -> Tuple[MatchDetail, List[str]]:
         """Extract match details and full author name list from Crossref response.
 
         Returns a tuple of (MatchDetail, list_of_author_full_names).
@@ -150,21 +146,13 @@ class CrossrefVerifier(BaseVerifier):
         title_sim = self.text_similarity(ref.title, matched_title)
 
         authors = data.get("author", [])
-        author_names = [
-            f"{a.get('given', '')} {a.get('family', '')}".strip() for a in authors
-        ]
+        author_names = [f"{a.get('given', '')} {a.get('family', '')}".strip() for a in authors]
         matched_authors_str = ", ".join(author_names[:3])
         if len(author_names) > 3:
             matched_authors_str += " et al."
-        author_sim = (
-            self.author_similarity(ref.authors, author_names) if ref.authors else 1.0
-        )
+        author_sim = self.author_similarity(ref.authors, author_names) if ref.authors else 1.0
 
-        pub_date = (
-            data.get("published-print")
-            or data.get("published-online")
-            or data.get("created")
-        )
+        pub_date = data.get("published-print") or data.get("published-online") or data.get("created")
         matched_year = ""
         if pub_date and "date-parts" in pub_date:
             parts = pub_date["date-parts"][0]
