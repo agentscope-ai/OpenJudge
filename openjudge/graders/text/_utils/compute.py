@@ -4,6 +4,7 @@ Core Computation Functions for Graders
 
 This module contains core computation functions used by various graders.
 All computation logic is centralized here to avoid code duplication.
+Supports both English and CJK (Chinese/Japanese/Korean) text via smart tokenization.
 """
 
 # pylint: disable=unused-argument
@@ -12,6 +13,9 @@ from collections import Counter
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
+
+from openjudge.graders.text._utils.tokenization import contains_cjk, smart_tokenize
+from openjudge.graders.text._utils.tokenization import word_tokenize as _word_tokenize
 
 
 def compute_bleu_score(
@@ -70,6 +74,9 @@ def compute_sentence_bleu(
     """
     Compute sentence-level BLEU score using NLTK
 
+    For CJK text, uses jieba word segmentation with punctuation and
+    stop-word removal for higher-quality n-gram overlap.
+
     Returns:
         Tuple[float, dict]: (score, details)
     """
@@ -78,8 +85,14 @@ def compute_sentence_bleu(
     except ImportError:
         return 0.0, {"error": "NLTK not installed. Please install: pip install nltk"}
 
-    response_tokens = response.split()
-    reference_tokens = [reference.split()]
+    # For CJK: remove punctuation & stop-words for cleaner n-gram matching
+    is_cjk = contains_cjk(reference) or contains_cjk(response)
+    if is_cjk:
+        response_tokens = _word_tokenize(response, remove_punctuation=True, remove_stopwords=True)
+        reference_tokens = [_word_tokenize(reference, remove_punctuation=True, remove_stopwords=True)]
+    else:
+        response_tokens = smart_tokenize(response)
+        reference_tokens = [smart_tokenize(reference)]
 
     smoothing = SmoothingFunction()
     smooth_func = getattr(smoothing, f"method{smoothing_function}")
@@ -111,6 +124,8 @@ def compute_gleu_score(
     """
     Compute GLEU score using NLTK
 
+    For CJK text, uses jieba with punctuation/stop-word removal.
+
     Returns:
         Tuple[float, dict]: (score, details)
     """
@@ -122,8 +137,13 @@ def compute_gleu_score(
             "message": "Please install: pip install nltk",
         }
 
-    response_tokens = response.split()
-    reference_tokens = [reference.split()]
+    is_cjk = contains_cjk(reference) or contains_cjk(response)
+    if is_cjk:
+        response_tokens = _word_tokenize(response, remove_punctuation=True, remove_stopwords=True)
+        reference_tokens = [_word_tokenize(reference, remove_punctuation=True, remove_stopwords=True)]
+    else:
+        response_tokens = smart_tokenize(response)
+        reference_tokens = [smart_tokenize(reference)]
 
     try:
         score = sentence_gleu(
@@ -192,6 +212,10 @@ def compute_meteor_score(
     """
     Compute METEOR score using NLTK
 
+    For CJK text, uses jieba with punctuation removal.
+    Note: NLTK METEOR's synonym/stemmer features are English-only;
+    for CJK the score is based purely on token overlap and ordering.
+
     Returns:
         Tuple[float, dict]: (score, details)
     """
@@ -203,8 +227,13 @@ def compute_meteor_score(
             "message": "Please install: pip install nltk",
         }
 
-    response_tokens = response.split()
-    reference_tokens = reference.split()
+    is_cjk = contains_cjk(reference) or contains_cjk(response)
+    if is_cjk:
+        response_tokens = _word_tokenize(response, remove_punctuation=True)
+        reference_tokens = _word_tokenize(reference, remove_punctuation=True)
+    else:
+        response_tokens = smart_tokenize(response)
+        reference_tokens = smart_tokenize(reference)
 
     try:
         score = meteor_score(
@@ -246,7 +275,26 @@ def compute_rouge_scores(
             "message": "Please install: pip install rouge-score",
         }
 
-    scorer = rouge_scorer.RougeScorer(rouge_types, use_stemmer=use_stemmer)
+    # For CJK text, disable stemmer (English-only) and use jieba tokenizer
+    # with punctuation + stop-word removal for meaningful ROUGE scores
+    if contains_cjk(reference) or contains_cjk(response):
+        use_stemmer = False
+
+        class _CJKTokenizer:
+            """Custom tokenizer for ROUGE that supports CJK text via jieba."""
+
+            def tokenize(self, text):
+                """Tokenize text using jieba with punctuation/stop-word removal."""
+                return _word_tokenize(text, remove_punctuation=True, remove_stopwords=True)
+
+        try:
+            scorer = rouge_scorer.RougeScorer(rouge_types, use_stemmer=False, tokenizer=_CJKTokenizer())
+        except TypeError:
+            # Older versions of rouge_score may not support tokenizer param
+            scorer = rouge_scorer.RougeScorer(rouge_types, use_stemmer=False)
+    else:
+        scorer = rouge_scorer.RougeScorer(rouge_types, use_stemmer=use_stemmer)
+
     scores = scorer.score(reference, response)
 
     aggregated = {}
@@ -281,12 +329,18 @@ def compute_rouge_ngram(
     """
     Compute ROUGE N-gram score (custom implementation)
 
+    For CJK text, uses jieba with punctuation/stop-word removal.
+
     Returns:
         Tuple[float, dict]: (score, details)
     """
+    is_cjk = contains_cjk(reference) or contains_cjk(response)
 
     def _get_ngrams(text: str, n: int) -> List[tuple]:
-        tokens = text.split()
+        if is_cjk:
+            tokens = _word_tokenize(text, remove_punctuation=True, remove_stopwords=True)
+        else:
+            tokens = smart_tokenize(text)
         ngrams = []
         for i in range(len(tokens) - n + 1):
             ngrams.append(tuple(tokens[i : i + n]))
@@ -349,6 +403,9 @@ def compute_f1_score(
     """
     Compute token-based F1 score
 
+    For CJK text, uses jieba with punctuation/stop-word removal so that
+    function words like "的", "是", "了" do not inflate the overlap.
+
     Returns:
         Tuple[float, dict]: (f1_score, details)
     """
@@ -359,8 +416,13 @@ def compute_f1_score(
         response_norm = response
         reference_norm = reference
 
-    response_tokens = response_norm.split()
-    reference_tokens = reference_norm.split()
+    is_cjk = contains_cjk(reference_norm) or contains_cjk(response_norm)
+    if is_cjk:
+        response_tokens = _word_tokenize(response_norm, remove_punctuation=True, remove_stopwords=True)
+        reference_tokens = _word_tokenize(reference_norm, remove_punctuation=True, remove_stopwords=True)
+    else:
+        response_tokens = smart_tokenize(response_norm)
+        reference_tokens = smart_tokenize(reference_norm)
 
     if len(response_tokens) == 0 or len(reference_tokens) == 0:
         if len(response_tokens) == 0 and len(reference_tokens) == 0:
@@ -454,8 +516,8 @@ def _token_sort_ratio(s1: str, s2: str) -> float:
     """Token order-independent fuzzy matching"""
     import Levenshtein
 
-    tokens1 = sorted(s1.split())
-    tokens2 = sorted(s2.split())
+    tokens1 = sorted(smart_tokenize(s1))
+    tokens2 = sorted(smart_tokenize(s2))
     return Levenshtein.ratio(" ".join(tokens1), " ".join(tokens2))
 
 
@@ -536,6 +598,11 @@ def _cosine_similarity_vectors(vec1: np.ndarray, vec2: np.ndarray) -> float:
     return max(0.0, min(similarity, 1.0))
 
 
+def _cjk_tfidf_tokenizer(text: str) -> List[str]:
+    """Custom tokenizer for TfidfVectorizer that supports CJK text."""
+    return smart_tokenize(text)
+
+
 def _cosine_tfidf(
     text1: str,
     text2: str,
@@ -550,7 +617,16 @@ def _cosine_tfidf(
         return 0.0
 
     try:
-        vectorizer = TfidfVectorizer(ngram_range=ngram_range, max_features=max_features)
+        # Use custom tokenizer for CJK text so TF-IDF works correctly
+        if contains_cjk(text1) or contains_cjk(text2):
+            vectorizer = TfidfVectorizer(
+                tokenizer=_cjk_tfidf_tokenizer,
+                ngram_range=ngram_range,
+                max_features=max_features,
+                token_pattern=None,  # disable default pattern when using custom tokenizer
+            )
+        else:
+            vectorizer = TfidfVectorizer(ngram_range=ngram_range, max_features=max_features)
         vectors = vectorizer.fit_transform([text1, text2])
         vec1 = vectors[0].toarray().flatten()
         vec2 = vectors[1].toarray().flatten()
@@ -561,9 +637,14 @@ def _cosine_tfidf(
 
 
 def _cosine_simple(text1: str, text2: str) -> float:
-    """Simple term frequency based cosine similarity"""
-    words1 = text1.split()
-    words2 = text2.split()
+    """Simple term frequency based cosine similarity — with CJK stop-word removal"""
+    is_cjk = contains_cjk(text1) or contains_cjk(text2)
+    if is_cjk:
+        words1 = _word_tokenize(text1, remove_punctuation=True, remove_stopwords=True)
+        words2 = _word_tokenize(text2, remove_punctuation=True, remove_stopwords=True)
+    else:
+        words1 = smart_tokenize(text1)
+        words2 = smart_tokenize(text2)
 
     counter1 = Counter(words1)
     counter2 = Counter(words2)
@@ -588,15 +669,21 @@ def compute_jaccard_similarity(
     """
     Compute Jaccard similarity
 
+    For CJK text, uses jieba with punctuation/stop-word removal.
+
     Returns:
         Tuple[float, dict]: (similarity_score, details)
     """
+    is_cjk = contains_cjk(reference) or contains_cjk(response)
     if use_ngrams:
         tokens1 = set(_ngram_tokenize(response, n))
         tokens2 = set(_ngram_tokenize(reference, n))
+    elif is_cjk:
+        tokens1 = set(_word_tokenize(response, remove_punctuation=True, remove_stopwords=True))
+        tokens2 = set(_word_tokenize(reference, remove_punctuation=True, remove_stopwords=True))
     else:
-        tokens1 = set(response.split())
-        tokens2 = set(reference.split())
+        tokens1 = set(smart_tokenize(response))
+        tokens2 = set(smart_tokenize(reference))
 
     if len(tokens1) == 0 and len(tokens2) == 0:
         return 1.0, {"use_ngrams": use_ngrams}
@@ -618,8 +705,11 @@ def compute_jaccard_similarity(
 
 
 def _ngram_tokenize(text: str, n: int) -> list:
-    """Simple n-gram tokenization"""
-    words = text.split()
+    """Simple n-gram tokenization — language-aware, CJK with stop-word removal"""
+    if contains_cjk(text):
+        words = _word_tokenize(text, remove_punctuation=True, remove_stopwords=True)
+    else:
+        words = smart_tokenize(text)
     ngrams = []
     for i in range(len(words) - n + 1):
         ngrams.append(tuple(words[i : i + n]))

@@ -3,12 +3,31 @@
 Text Normalization Utilities
 
 Text normalization tools for standardizing text to improve metric evaluation accuracy.
+Supports both English and CJK (Chinese/Japanese/Korean) text.
 """
 
 import re
 import string
 import unicodedata
 from typing import Optional
+
+# CJK fullwidth and common punctuation
+_CJK_PUNCTUATION = set(
+    "\u3001\u3002"  # 、。
+    "\uff01\uff1f"  # ！？
+    "\uff0c\uff1b\uff1a"  # ，；：
+    "\u201c\u201d"  # ""
+    "\u2018\u2019"  # ''
+    "\u3010\u3011"  # 【】
+    "\uff08\uff09"  # （）
+    "\u300a\u300b"  # 《》
+    "\u2026\u2014\uff5e\u00b7"  # …—～·
+    "\u300c\u300d"  # 「」
+    "\u300e\u300f"  # 『』
+    "\u3008\u3009"  # 〈〉
+    "\u3014\u3015"  # 〔〕
+)
+_ALL_PUNCTUATION = set(string.punctuation) | _CJK_PUNCTUATION
 
 
 # pylint: disable=redefined-outer-name
@@ -24,11 +43,12 @@ def normalize_text(
     Basic text normalization
 
     Based on OpenAI Evals framework normalization implementation.
+    Supports both English and CJK text (punctuation removal covers CJK punctuation).
 
     Args:
         text: Text to be normalized
         lowercase: Whether to convert to lowercase
-        remove_punctuation: Whether to remove punctuation
+        remove_punctuation: Whether to remove punctuation (including CJK punctuation)
         remove_articles: Whether to remove English articles (a, an, the)
         remove_extra_whitespace: Whether to remove extra whitespace
         case_sensitive: Whether to preserve case sensitivity (overrides lowercase parameter)
@@ -40,6 +60,8 @@ def normalize_text(
         >>> text = "  The quick brown fox!  "
         >>> normalize_text(text)
         'quick brown fox'
+        >>> normalize_text("你好，世界！")
+        '你好世界'
     """
     if not text:
         return ""
@@ -48,12 +70,11 @@ def normalize_text(
     if not case_sensitive and lowercase:
         text = text.lower()
 
-    # Remove punctuation
+    # Remove punctuation (both ASCII and CJK)
     if remove_punctuation:
-        exclude = set(string.punctuation)
-        text = "".join(char for char in text if char not in exclude)
+        text = "".join(char for char in text if char not in _ALL_PUNCTUATION)
 
-    # Remove English articles
+    # Remove English articles (only meaningful for English text)
     if remove_articles:
         # Use word boundaries to ensure only complete words are matched
         text = re.sub(r"\b(a|an|the)\b", " ", text, flags=re.IGNORECASE)
@@ -78,13 +99,14 @@ def normalize_text_advanced(
     Advanced text normalization
 
     Provides more normalization options, suitable for multilingual text.
+    Properly preserves CJK characters when removing special characters.
 
     Args:
         text: Text to be normalized
         lowercase: Whether to convert to lowercase
         remove_accents: Whether to remove accent marks
         remove_numbers: Whether to remove numbers
-        remove_special_chars: Whether to remove special characters
+        remove_special_chars: Whether to remove special characters (preserves CJK characters)
         normalize_unicode: Whether to perform Unicode normalization
         strip: Whether to strip leading/trailing whitespace
 
@@ -95,17 +117,21 @@ def normalize_text_advanced(
         >>> text = "Café résumé 123"
         >>> normalize_text_advanced(text, remove_accents=True)
         'cafe resume 123'
+        >>> normalize_text_advanced("你好，世界！Hello!")
+        '你好世界hello'
     """
     if not text:
         return ""
 
-    # Unicode normalization
+    # Unicode normalization (use NFKC for CJK to avoid decomposition issues)
     if normalize_unicode:
-        text = unicodedata.normalize("NFKD", text)
+        text = unicodedata.normalize("NFKC", text)
 
-    # Remove accent marks
+    # Remove accent marks (only for combining characters, not CJK)
     if remove_accents:
-        text = "".join(char for char in text if not unicodedata.combining(char))
+        # Re-normalize to NFKD temporarily to separate combining chars
+        decomposed = unicodedata.normalize("NFKD", text)
+        text = "".join(char for char in decomposed if not unicodedata.combining(char))
 
     # Convert to lowercase
     if lowercase:
@@ -115,9 +141,10 @@ def normalize_text_advanced(
     if remove_numbers:
         text = re.sub(r"\d+", "", text)
 
-    # Remove special characters (preserve letters, numbers, spaces)
+    # Remove special characters — use \w (Unicode-aware) to preserve letters
+    # from ALL scripts (including CJK), not just a-zA-Z
     if remove_special_chars:
-        text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
+        text = re.sub(r"[^\w\s]", "", text, flags=re.UNICODE)
 
     # Strip leading/trailing whitespace
     if strip:
@@ -151,7 +178,7 @@ def normalize_whitespace(text: str) -> str:
 
 def remove_punctuation(text: str, keep_chars: Optional[str] = None) -> str:
     """
-    Remove punctuation
+    Remove punctuation (both ASCII and CJK punctuation)
 
     Args:
         text: Text to be processed
@@ -165,11 +192,12 @@ def remove_punctuation(text: str, keep_chars: Optional[str] = None) -> str:
         'Hello world'
         >>> remove_punctuation("Hello, world!", keep_chars=",")
         'Hello, world'
+        >>> remove_punctuation("你好，世界！")
+        '你好世界'
     """
+    exclude = set(_ALL_PUNCTUATION)
     if keep_chars:
-        exclude = set(string.punctuation) - set(keep_chars)
-    else:
-        exclude = set(string.punctuation)
+        exclude -= set(keep_chars)
 
     return "".join(char for char in text if char not in exclude)
 
