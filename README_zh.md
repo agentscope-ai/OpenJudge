@@ -15,8 +15,10 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?logo=python)](https://pypi.org/project/py-openjudge/)
 [![PyPI](https://img.shields.io/badge/pypi-v0.2.0-blue?logo=pypi)](https://pypi.org/project/py-openjudge/)
 [![Documentation](https://img.shields.io/badge/docs-online-blue?logo=readthedocs&logoColor=white)](https://agentscope-ai.github.io/OpenJudge/)
+[![官方网站](https://img.shields.io/badge/官网-openjudge.me-blue?logo=googlechrome&logoColor=white)](https://openjudge.me/)
+[![在线试用](https://img.shields.io/badge/在线试用-免费体验-brightgreen?logo=rocket&logoColor=white)](https://openjudge.me/app/)
 
-[📖 文档](https://agentscope-ai.github.io/OpenJudge/) | [🤝 贡献指南](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [English](./README.md)
+[🌐 官方网站](https://openjudge.me/) | [🚀 在线试用](https://openjudge.me/app/) | [📖 文档](https://agentscope-ai.github.io/OpenJudge/) | [🤝 贡献指南](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [English](./README.md)
 
 </div>
 
@@ -29,12 +31,15 @@ OpenJudge 是一个 **开源评估框架**，用于 **AI 应用**（如智能体
 
 OpenJudge 提供**即用型评分器**，并支持生成**场景特定的评估标准（作为评分器）**，让这一流程更**简单**、更**专业**、更易于集成。它还可将评分结果转换为**奖励信号**，帮助你**微调**并优化应用。
 
+> **🚀 立即在线体验！** 访问 [openjudge.me/app](https://openjudge.me/app/) 在线使用评估器 — 无需安装。你可以直接在浏览器中测试内置评分器、构建自定义评估标准、查看评估结果。
+
 ---
 
 ## 📑 目录
 
 - [核心特性](#-核心特性)
 - [最新动态](#最新动态)
+- [在线体验平台](#-在线体验平台)
 - [安装](#-安装)
 - [快速开始](#-快速开始)
 - [集成](#-集成)
@@ -109,10 +114,19 @@ OpenJudge 提供**即用型评分器**，并支持生成**场景特定的评估�
 
 如果您正在使用主流可观测性平台（如 **LangSmith** 或 **Langfuse**），我们提供无缝集成方案，可增强平台的评测器和自动评测能力。我们也提供与训练框架（如 **VERL**）的集成方案，用于强化学习训练。👉 查看 [集成](#-集成) 了解详情
 
+### 🌐 在线体验平台
+
+无需编写代码即可体验 OpenJudge。我们的在线平台 [openjudge.me/app](https://openjudge.me/app/) 支持：
+- **交互式测试评分器** — 选择内置评分器，输入数据，即时查看评估结果
+- **构建自定义评估标准** — 使用零样本生成器，通过任务描述生成评分器
+- **查看排行榜** — 对比不同模型在各评估基准上的表现：[openjudge.me/leaderboard](https://openjudge.me/leaderboard)
+
 ----
 ## 最新动态
 
-- **2026-02-12** - 📚 **Reference Hallucination Arena** - 评估大语言模型学术引用幻觉的基准测试。 👉 [文档](./docs/validating_graders/ref_hallucination_arena.md)
+- **2026-02-12** - 📚 **Reference Hallucination Arena** - 评估大语言模型学术引用幻觉的基准测试。 👉 [文档](./docs/validating_graders/ref_hallucination_arena.md) | 📊 [排行榜](https://openjudge.me/leaderboard)
+
+- **2026-01-27** - 🖥️ **OpenJudge UI** - 基于 Streamlit 的可视化界面，支持评分器测试和 Auto Arena。👉 [在线体验](https://openjudge.me/app/) | 本地运行：`streamlit run ui/app.py`
 
 - **2025-12-26** - 在 [PyPI](https://pypi.org/project/py-openjudge/) 上发布 OpenJudge v0.2.0 - **重大更新！** 此版本通过在奖励构建之上添加对多样化评估场景的强大支持，扩展了我们的核心能力。通过统一奖励和评估信号，OpenJudge v0.2.0 提供了一种更全面的方法来优化应用性能和卓越性。→ [迁移指南](#迁移指南v01x--v020)
 
@@ -123,6 +137,8 @@ OpenJudge 提供**即用型评分器**，并支持生成**场景特定的评估�
 ---
 
 ## 📥 安装
+
+> 💡 **不想安装？** [在线体验 OpenJudge](https://openjudge.me/app/) — 直接在浏览器中使用评分器，无需任何配置。
 
 ```bash
 pip install py-openjudge
@@ -382,7 +398,7 @@ pip install rm-gallery
 
 **由 OpenJudge 团队用 ❤️ 打造**
 
-[⭐ 给我们 Star](https://github.com/agentscope-ai/OpenJudge) · [🐛 报告 Bug](https://github.com/agentscope-ai/OpenJudge/issues) · [💡 提议功能](https://github.com/agentscope-ai/OpenJudge/issues)
+[🌐 官方网站](https://openjudge.me/) · [🚀 在线试用](https://openjudge.me/app/) · [⭐ 给我们 Star](https://github.com/agentscope-ai/OpenJudge) · [🐛 报告 Bug](https://github.com/agentscope-ai/OpenJudge/issues) · [💡 提议功能](https://github.com/agentscope-ai/OpenJudge/issues)
 
 </div>
 

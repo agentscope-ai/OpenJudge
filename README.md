@@ -15,8 +15,10 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?logo=python)](https://pypi.org/project/py-openjudge/)
 [![PyPI](https://img.shields.io/badge/pypi-v0.2.0-blue?logo=pypi)](https://pypi.org/project/py-openjudge/)
 [![Documentation](https://img.shields.io/badge/docs-online-blue?logo=readthedocs&logoColor=white)](https://agentscope-ai.github.io/OpenJudge/)
+[![Website](https://img.shields.io/badge/website-openjudge.me-blue?logo=googlechrome&logoColor=white)](https://openjudge.me/)
+[![Try Online](https://img.shields.io/badge/try%20online-free-brightgreen?logo=rocket&logoColor=white)](https://openjudge.me/app/)
 
-[📖 Documentation](https://agentscope-ai.github.io/OpenJudge/) | [🤝 Contributing](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [中文](./README_zh.md)
+[🌐 Website](https://openjudge.me/) | [🚀 Try Online](https://openjudge.me/app/) | [📖 Documentation](https://agentscope-ai.github.io/OpenJudge/) | [🤝 Contributing](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [中文](./README_zh.md)
 
 </div>
 
@@ -30,12 +32,15 @@ OpenJudge is an **open-source evaluation framework** for **AI applications** (e.
 OpenJudge provides **ready-to-use graders** and supports generating **scenario-specific rubrics (as graders)**, making this workflow **simpler**, **more professional**, and **easy to integrate** into your workflow.
 It can also convert grading results into **reward signals** to help you **fine-tune** and optimize your application.
 
+> **🚀 Try it now!** Visit [openjudge.me/app](https://openjudge.me/app/) to use graders online — no installation required. Test built-in graders, build custom rubrics, and explore evaluation results directly in your browser.
+
 ---
 
 ## 📑 Table of Contents
 
 - [Key Features](#-key-features)
 - [News](#news)
+- [Online Playground](#-online-playground)
 - [Installation](#-installation)
 - [Quickstart](#-quickstart)
 - [Integrations](#-integrations)
@@ -47,11 +52,11 @@ It can also convert grading results into **reward signals** to help you **fine-t
 
 ## News
 
-- **2026-02-12** - 📚 **Reference Hallucination Arena** - Benchmark for evaluating LLM academic reference hallucination. 👉 [Documentation](./docs/validating_graders/ref_hallucination_arena.md)
+- **2026-02-12** - 📚 **Reference Hallucination Arena** - Benchmark for evaluating LLM academic reference hallucination. 👉 [Documentation](./docs/validating_graders/ref_hallucination_arena.md) | 📊 [Leaderboard](https://openjudge.me/leaderboard)
 
 - **2026-01-27** - 🆕 **Paper Review** - Automatically review academic papers using LLM-powered evaluation. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/paper_review/)
 
-- **2026-01-27** - 🖥️ **OpenJudge UI** - A Streamlit-based visual interface for grader testing and Auto Arena. Run `streamlit run ui/app.py` to get started.
+- **2026-01-27** - 🖥️ **OpenJudge UI** - A Streamlit-based visual interface for grader testing and Auto Arena. 👉 [Try Online](https://openjudge.me/app/) | Run locally: `streamlit run ui/app.py`
 
 - **2026-01-05** - 🏟️ **Auto Arena** - Automatically evaluate and compare multiple models without pre-existing test data. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/auto_arena/)
 
@@ -124,9 +129,18 @@ summarize evaluation Rubrics from your annotated data, and generate a llm-based 
 
 Using mainstream observability platforms like **LangSmith** or **Langfuse**? We offer seamless integration to enhance their evaluators and automated evaluation capabilities. We also provide integrations with training frameworks like **VERL** for RL training. 👉 See [Integrations](#-integrations) for details
 
+### 🌐 Online Playground
+
+Explore OpenJudge without writing a single line of code. Our online platform at [openjudge.me/app](https://openjudge.me/app/) lets you:
+- **Test graders interactively** — select a built-in grader, input your data, and see results instantly
+- **Build custom rubrics** — use the zero-shot generator to create graders from task descriptions
+- **View leaderboards** — compare model performance across evaluation benchmarks at [openjudge.me/leaderboard](https://openjudge.me/leaderboard)
+
 ---
 
 ## 📥 Installation
+
+> 💡 **Don't want to install anything?** [Try OpenJudge online](https://openjudge.me/app/) — use graders directly in your browser, no setup needed.
 
 ```bash
 pip install py-openjudge
@@ -387,6 +401,6 @@ If you use OpenJudge in your research, please cite:
 
 **Made with ❤️ by the OpenJudge Team**
 
-[⭐ Star Us](https://github.com/agentscope-ai/OpenJudge) · [🐛 Report Bug](https://github.com/agentscope-ai/OpenJudge/issues) · [💡 Request Feature](https://github.com/agentscope-ai/OpenJudge/issues)
+[🌐 Website](https://openjudge.me/) · [🚀 Try Online](https://openjudge.me/app/) · [⭐ Star Us](https://github.com/agentscope-ai/OpenJudge) · [🐛 Report Bug](https://github.com/agentscope-ai/OpenJudge/issues) · [💡 Request Feature](https://github.com/agentscope-ai/OpenJudge/issues)
 
 </div>
