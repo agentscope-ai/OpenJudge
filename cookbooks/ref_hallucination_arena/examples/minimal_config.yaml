@@ -1,0 +1,40 @@
+# =============================================================================
+# Reference Hallucination Arena - Minimal Configuration
+# =============================================================================
+# This is the minimum required configuration. Only required fields are
+# specified; all other settings use defaults.
+#
+# Dataset: https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena
+# =============================================================================
+
+# Task description (required)
+task:
+  description: "Evaluate LLM reference recommendation capabilities"
+
+# Dataset path (required)
+dataset:
+  path: "./cookbooks/ref_hallucination_arena/examples/queries_example.json"
+
+# Target endpoints to evaluate (required, at least one)
+target_endpoints:
+  model_a:
+    base_url: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4"
+    system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers in standard BibTeX format. Only recommend papers you are confident actually exist."
+
+  model_b:
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key: "${DASHSCOPE_API_KEY}"
+    model: "qwen3-max"
+    system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers in standard BibTeX format. Only recommend papers you are confident actually exist."
+
+# All other settings use defaults:
+# - verification.max_workers: 10
+# - verification.timeout: 30
+# - verification.verified_threshold: 0.7
+# - evaluation.max_concurrency: 40
+# - evaluation.timeout: 120
+# - output.output_dir: "./evaluation_results/ref_hallucination_arena"
+# - report.enabled: true
+# - report.language: "zh"

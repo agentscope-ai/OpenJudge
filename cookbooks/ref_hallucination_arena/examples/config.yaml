@@ -1,0 +1,172 @@
+# =============================================================================
+# Reference Hallucination Arena - Full Configuration
+# =============================================================================
+# This configuration file defines all settings for evaluating LLM reference
+# recommendation capabilities. The pipeline collects model responses, extracts
+# BibTeX references, and verifies them against Crossref, PubMed, arXiv, and DBLP.
+#
+# Dataset: https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena
+#
+# Environment variables can be referenced using ${VAR_NAME} syntax.
+# =============================================================================
+
+# =============================================================================
+# Task Configuration
+# =============================================================================
+# Describes the evaluation task and usage scenario.
+
+task:
+  # [Required] A clear description of the evaluation task.
+  description: "Reference Recommendation Hallucination Evaluation: Test LLM capabilities to recommend real academic papers across multiple disciplines (Computer Science, Biomedical, Physics, Chemistry, Mathematics, Medicine), verified via Crossref/PubMed/arXiv/DBLP."
+
+  # [Optional] The usage scenario for this evaluation.
+  scenario: "Researchers use AI assistants for literature recommendations and need recommended papers to be real and highly relevant."
+
+# =============================================================================
+# Dataset Configuration
+# =============================================================================
+# Queries come from a user-provided dataset file (JSON or JSONL).
+# Download the official dataset from HuggingFace:
+#   https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena
+
+dataset:
+  # [Required] Path to JSON/JSONL dataset file.
+  # You can use the bundled example or download from HuggingFace.
+  path: "./cookbooks/ref_hallucination_arena/examples/queries_example.json"
+
+  # [Optional, default=false] Whether to shuffle queries before evaluation.
+  shuffle: false
+
+  # [Optional, default=null] Max number of queries to use (null = use all).
+  max_queries: null
+
+# =============================================================================
+# Target Endpoints
+# =============================================================================
+# Define the models to be evaluated. Each endpoint is identified by a unique
+# name and configured with connection details. All endpoints must be
+# OpenAI-compatible.
+
+target_endpoints:
+
+  # Example: Qwen model
+  qwen:
+    # [Required] API base URL (OpenAI-compatible format)
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+    # [Required] API key (supports ${ENV_VAR} format for security)
+    api_key: "${DASHSCOPE_API_KEY}"
+
+    # [Required] Model name/identifier
+    model: "qwen3-max"
+
+    # [Optional] System prompt for reference recommendation.
+    # Use {num_refs} placeholder for the expected number of references.
+    system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
+
+    # [Optional] Extra parameters passed to the API request
+    extra_params:
+      temperature: 0.3
+
+  # Example: GPT-4 model
+  gpt4:
+    base_url: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4"
+    system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
+    extra_params:
+      temperature: 0.3
+
+  # Example: DeepSeek model
+  deepseek:
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
+    extra_params:
+      temperature: 0.3
+
+# =============================================================================
+# Verification Settings
+# =============================================================================
+# Controls how extracted references are verified against academic databases.
+
+verification:
+  # [Optional] Email for Crossref polite pool (increases rate limit).
+  crossref_mailto: ""
+
+  # [Optional] PubMed API key (increases rate limit).
+  pubmed_api_key: ""
+
+  # [Optional, default=10, range=1-50] Concurrent verification threads.
+  max_workers: 10
+
+  # [Optional, default=30, min=5] Per-request timeout in seconds.
+  timeout: 30
+
+  # [Optional, default=0.7, range=0.0-1.0] Min composite score (title+author+year)
+  # to count a reference as VERIFIED.
+  verified_threshold: 0.7
+
+# =============================================================================
+# Evaluation Settings
+# =============================================================================
+# Controls the model API call behavior.
+
+evaluation:
+  # [Optional, default=40] Maximum concurrent API requests.
+  max_concurrency: 40
+
+  # [Optional, default=120] Request timeout in seconds.
+  # Increase for thinking/reasoning models that respond slowly.
+  timeout: 120
+
+  # [Optional, default=3] Number of retry attempts for failed requests.
+  retry_times: 3
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+# Settings for saving evaluation results and intermediate data.
+
+output:
+  # [Optional, default=true] Save loaded queries to a JSON file.
+  save_queries: true
+
+  # [Optional, default=true] Save all model responses to a JSON file.
+  save_responses: true
+
+  # [Optional, default=true] Save detailed verification results.
+  save_details: true
+
+  # [Optional] Directory for output files.
+  output_dir: "./evaluation_results/ref_hallucination_arena"
+
+# =============================================================================
+# Report Settings
+# =============================================================================
+# Settings for generating evaluation reports and charts.
+
+report:
+  # [Optional, default=true] Enable report generation.
+  enabled: true
+
+  # [Optional, default="zh"] Report language: "zh" (Chinese) or "en" (English).
+  language: "en"
+
+  # [Optional, default=3, range=1-10] Number of examples per section.
+  include_examples: 3
+
+  # Chart generation settings
+  chart:
+    # [Optional, default=true] Enable chart generation.
+    enabled: true
+
+    # [Optional] Chart orientation: "horizontal" or "vertical".
+    orientation: "vertical"
+
+    # [Optional, default=true] Show percentage values on bars.
+    show_values: true
+
+    # [Optional, default=true] Highlight the best-performing model.
+    highlight_best: true

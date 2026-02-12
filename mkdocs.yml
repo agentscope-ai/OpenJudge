@@ -44,6 +44,7 @@ nav:
   - Validating Graders:
       - Overview: validating_graders/overview.md
       - Validate on RewardBench2: validating_graders/rewardbench2.md
+      - Reference Hallucination Arena: validating_graders/ref_hallucination_arena.md
 
   - Applications:
       - Auto Arena: applications/auto_arena.md
