@@ -74,8 +74,8 @@ TOPIC_SWITCH_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下JSON格式输出评估结果：
 {{
-    "reason": "<详细说明评估理由，包括话题切换的识别和处理分析>",
-    "score": <1-5的整数>
+    "reason": "详细说明评估理由，包括话题切换的识别和处理分析",
+    "score": 1-5的整数
 }}
 </输出格式>
 
@@ -131,8 +131,8 @@ The assistant should not unnecessarily mention old topics.
 <Output Schema>
 Output your evaluation in the following JSON format:
 {{
-    "reason": "<detailed explanation including analysis of topic switch recognition and handling>",
-    "score": <integer from 1-5>
+    "reason": "detailed explanation including analysis of topic switch recognition and handling",
+    "score": integer from 1-5
 }}
 </Output Schema>
 

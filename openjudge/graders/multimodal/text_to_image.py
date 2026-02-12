@@ -61,8 +61,8 @@ Focus on semantic alignment with the prompt, not image quality or aesthetics. Ke
 
 <Output Schema>
 {{
-    "score": [<integer between 1 and 5>],
-    "reason": "<brief explanation>"
+    "score": [integer between 1 and 5],
+    "reason": "brief explanation"
 }}
 </Output Schema>
 JSON:
@@ -108,8 +108,8 @@ Artifacts (second score):
 
 <Output Schema>
 {{
-    "score": [<naturalness 1-5>, <artifacts 1-5>],
-    "reason": "<brief explanation>"
+    "score": [naturalness 1-5, artifacts 1-5],
+    "reason": "brief explanation"
 }}
 </Output Schema>
 JSON:
@@ -150,8 +150,8 @@ TEXT_TO_IMAGE_SEMANTIC_PROMPT_ZH = textwrap.dedent(
 
 <输出格式>
 {{
-    "score": [<1到5之间的整数>],
-    "reason": "<简要解释>"
+    "score": [1到5之间的整数],
+    "reason": "简要解释"
 }}
 </输出格式>
 JSON:
@@ -197,8 +197,8 @@ TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_ZH = textwrap.dedent(
 
 <输出格式>
 {{
-    "score": [<自然度 1-5>, <伪影 1-5>],
-    "reason": "<简要解释>"
+    "score": [自然度 1-5, 伪影 1-5],
+    "reason": "简要解释"
 }}
 </输出格式>
 JSON:

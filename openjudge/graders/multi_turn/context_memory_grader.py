@@ -72,8 +72,8 @@ CONTEXT_MEMORY_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下JSON格式输出评估结果：
 {{
-    "reason": "<详细说明评估理由，包括助手记住或遗忘了哪些关键信息>",
-    "score": <1-5的整数>
+    "reason": "详细说明评估理由，包括助手记住或遗忘了哪些关键信息",
+    "score": 1-5的整数
 }}
 </输出格式>
 
@@ -128,8 +128,8 @@ If the current response doesn't need to reference earlier information but is oth
 <Output Schema>
 Output your evaluation in the following JSON format:
 {{
-    "reason": "<detailed explanation including what key information the assistant remembered or forgot>",
-    "score": <integer from 1-5>
+    "reason": "detailed explanation including what key information the assistant remembered or forgot",
+    "score": integer from 1-5
 }}
 </Output Schema>
 

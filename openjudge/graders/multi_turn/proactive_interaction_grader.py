@@ -73,8 +73,8 @@ PROACTIVE_INTERACTION_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下JSON格式输出评估结果：
 {{
-    "reason": "<详细说明评估理由，包括主动互动的质量和自然程度分析>",
-    "score": <1-5的整数>
+    "reason": "详细说明评估理由，包括主动互动的质量和自然程度分析",
+    "score": 1-5的整数
 }}
 </输出格式>
 
@@ -133,8 +133,8 @@ answered and no further interaction is needed, a concise response is acceptable.
 <Output Schema>
 Output your evaluation in the following JSON format:
 {{
-    "reason": "<detailed explanation including analysis of proactive interaction quality and naturalness>",
-    "score": <integer from 1-5>
+    "reason": "detailed explanation including analysis of proactive interaction quality and naturalness",
+    "score": integer from 1-5
 }}
 </Output Schema>
 

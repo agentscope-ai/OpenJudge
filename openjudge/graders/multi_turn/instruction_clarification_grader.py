@@ -73,8 +73,8 @@ INSTRUCTION_CLARIFICATION_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下JSON格式输出评估结果：
 {{
-    "reason": "<详细说明评估理由，包括模糊点识别和追问质量分析>",
-    "score": <1-5的整数>
+    "reason": "详细说明评估理由，包括模糊点识别和追问质量分析",
+    "score": 1-5的整数
 }}
 </输出格式>
 
@@ -130,8 +130,8 @@ question is already clear) should be penalized. Questions should be specific, no
 <Output Schema>
 Output your evaluation in the following JSON format:
 {{
-    "reason": "<detailed explanation including ambiguity identification and question quality analysis>",
-    "score": <integer from 1-5>
+    "reason": "detailed explanation including ambiguity identification and question quality analysis",
+    "score": integer from 1-5
 }}
 </Output Schema>
 

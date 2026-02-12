@@ -76,8 +76,8 @@ RESPONSE_REPETITION_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下JSON格式输出评估结果：
 {{
-    "reason": "<详细说明评估理由，包括发现的重复内容及其影响分析>",
-    "score": <1-5的整数>
+    "reason": "详细说明评估理由，包括发现的重复内容及其影响分析",
+    "score": 1-5的整数
 }}
 </输出格式>
 
@@ -136,8 +136,8 @@ High-quality non-repetitive responses should:
 <Output Schema>
 Output your evaluation in the following JSON format:
 {{
-    "reason": "<detailed explanation including identified repetitive content and impact analysis>",
-    "score": <integer from 1-5>
+    "reason": "detailed explanation including identified repetitive content and impact analysis",
+    "score": integer from 1-5
 }}
 </Output Schema>
 

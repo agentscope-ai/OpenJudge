@@ -65,8 +65,8 @@ Be rigorous and discerning when assigning your score. Focus on how much the imag
 
 <Output Schema>
 {{
-    "reason": "<brief explanation for the assigned score>",
-    "score": <integer between 1 and 5>
+    "reason": "brief explanation for the assigned score",
+    "score": integer between 1 and 5
 }}
 </Output Schema>
 JSON:
@@ -109,8 +109,8 @@ IMAGE_HELPFULNESS_PROMPT_ZH = textwrap.dedent(
 
 <输出格式>
 {{
-    "reason": "<对所给分数的简要解释>",
-    "score": <1到5之间的整数>
+    "reason": "对所给分数的简要解释",
+    "score": 1到5之间的整数
 }}
 </输出格式>
 JSON:

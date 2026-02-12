@@ -73,8 +73,8 @@ SELF_CORRECTION_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下JSON格式输出评估结果：
 {{
-    "reason": "<详细说明评估理由，包括错误识别、修正质量和态度分析>",
-    "score": <1-5的整数>
+    "reason": "详细说明评估理由，包括错误识别、修正质量和态度分析",
+    "score": 1-5的整数
 }}
 </输出格式>
 
@@ -133,8 +133,8 @@ challenge is reasonable and the assistant needs to correct.
 <Output Schema>
 Output your evaluation in the following JSON format:
 {{
-    "reason": "<detailed explanation including error recognition, correction quality, and attitude analysis>",
-    "score": <integer from 1-5>
+    "reason": "detailed explanation including error recognition, correction quality, and attitude analysis",
+    "score": integer from 1-5
 }}
 </Output Schema>
 
