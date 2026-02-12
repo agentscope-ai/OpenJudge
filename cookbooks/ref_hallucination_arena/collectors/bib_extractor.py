@@ -96,13 +96,15 @@ class BibExtractor:
                     return text[open_pos + 1 : i]
         return None  # unmatched
 
-    def _parse_fields(self, key: str, entry_type: str, fields_str: str) -> Optional[Reference]:
+    def _parse_fields(
+        self, key: str, entry_type: str, fields_str: str
+    ) -> Optional[Reference]:
         """Parse individual fields from BibTeX entry body."""
 
         def extract_field(name: str) -> Optional[str]:
             # Match field = {value}, field = "value", or field = number
             # Try brace-delimited value first (handles nested braces)
-            brace_pattern = rf'{name}\s*=\s*\{{(.*?)\}}'
+            brace_pattern = rf"{name}\s*=\s*\{{(.*?)\}}"
             m = re.search(brace_pattern, fields_str, re.IGNORECASE | re.DOTALL)
             if m:
                 return m.group(1).strip()
@@ -112,7 +114,7 @@ class BibExtractor:
             if m:
                 return m.group(1).strip()
             # Try unquoted numeric value (e.g., year = 2023)
-            num_pattern = rf'{name}\s*=\s*(\d+)'
+            num_pattern = rf"{name}\s*=\s*(\d+)"
             m = re.search(num_pattern, fields_str, re.IGNORECASE)
             if m:
                 return m.group(1).strip()

@@ -15,11 +15,11 @@ import fire
 from loguru import logger
 
 from cookbooks.ref_hallucination_arena.pipeline import RefArenaPipeline
-from cookbooks.ref_hallucination_arena.schema import load_config
+from cookbooks.ref_hallucination_arena.schema import RefArenaConfig, load_config
 
 
 async def _run_evaluation(
-    config: "RefArenaConfig",
+    config: RefArenaConfig,
     save: bool = False,
     resume: bool = True,
 ) -> None:
