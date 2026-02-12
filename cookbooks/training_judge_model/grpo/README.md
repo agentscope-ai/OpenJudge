@@ -338,6 +338,13 @@ export N_NODES=2
 bash pointwise/run_pointwise.sh
 ```
 
+### GRPO training using OpenJudge grader dataset
+```bash
+export RAY_ADDRESS="http://<head-ip>:8265"
+export N_NODES=2
+bash pointwise/run_pointwise_grader.sh
+```
+
 ### Resource Requirements
 
 | Configuration | GPUs | Memory per GPU | Recommended Model Size |
