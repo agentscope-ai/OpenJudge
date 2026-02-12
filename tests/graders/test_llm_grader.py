@@ -42,6 +42,7 @@ from openjudge.graders.base_grader import (
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderError
 from openjudge.models.openai_chat_model import OpenAIChatModel
+from openjudge.models.schema.prompt_template import LanguageEnum
 from openjudge.runner.grading_runner import GraderConfig, GradingRunner
 
 # ==================== UNIT TESTS ====================
@@ -60,6 +61,12 @@ class TestLLMGraderUnit:
                 model=AsyncMock(),
                 name="foo",
             )
+        assert "Missing template argument value" in str(error_obj.value)
+
+    def test_initialization_failure_with_invalid_template_type(self):
+        """Test initialization failure without template"""
+        with pytest.raises(ValueError) as error_obj:
+            LLMGrader(model=AsyncMock(), name="foo", template=AsyncMock())
         assert "Template must be a str, list, dict or PromptTemplate object" in str(error_obj.value)
 
     def test_initialization_with_string_template(self):
@@ -158,8 +165,19 @@ class TestLLMGraderUnit:
         )
 
         assert grader.name == "test_llm_grader"
-        assert isinstance(grader.model, OpenAIChatModel)
         # Note: We can't easily check the model config since it's private
+        assert isinstance(grader.model, OpenAIChatModel)
+
+        template = grader.get_template()
+        assert template["messages"][LanguageEnum.EN][0]["role"] == "system"
+        assert template["messages"][LanguageEnum.EN][1]["role"] == "user"
+        assert template_str in template["messages"][LanguageEnum.EN][1]["content"]
+        assert template["messages"][LanguageEnum.ZH][0]["role"] == "system"
+        assert template["messages"][LanguageEnum.ZH][1]["role"] == "user"
+        assert template_str in template["messages"][LanguageEnum.ZH][1]["content"]
+
+        default_template = grader.get_default_template()
+        assert len(default_template["messages"]) == 0
 
     @pytest.mark.asyncio
     async def test_pointwise_evaluation_success(self):
@@ -308,9 +326,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 RUN_QUALITY_TESTS = bool(OPENAI_API_KEY and OPENAI_BASE_URL)
 
-pytestmark = pytest.mark.skipif(not RUN_QUALITY_TESTS, reason="Requires API keys and base URL to run quality tests")
 
-
+@pytest.mark.skipif(not RUN_QUALITY_TESTS, reason="Requires API keys and base URL to run quality tests")
 @pytest.mark.quality
 class TestLLMGraderQuality:
     """Quality tests for LLMGrader - testing evaluation quality using golden dataset"""
