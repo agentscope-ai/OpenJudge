@@ -81,25 +81,14 @@ class ObjectiveScorer:
 
                 # Per-field accuracy: read from match_detail flags
                 md = vr.match_detail
-                if md is None:
-                    md = {}
-                if isinstance(md, dict):
-                    if md.get("title_exact", False):
+                if md:
+                    if md.title_exact:
                         title_correct += 1
-                    if md.get("author_exact", False):
+                    if md.author_exact:
                         author_correct += 1
-                    if md.get("year_exact", False):
+                    if md.year_exact:
                         year_correct += 1
-                    if md.get("doi_exact", False):
-                        doi_correct += 1
-                else:
-                    if getattr(md, "title_exact", False):
-                        title_correct += 1
-                    if getattr(md, "author_exact", False):
-                        author_correct += 1
-                    if getattr(md, "year_exact", False):
-                        year_correct += 1
-                    if getattr(md, "doi_exact", False):
+                    if md.doi_exact:
                         doi_correct += 1
 
                 if vr.status == VerificationStatus.VERIFIED:

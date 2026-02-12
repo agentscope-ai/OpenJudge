@@ -166,7 +166,6 @@ class ResponseCollector:
         # query's ALL endpoints are done.
         query_ep_results: Dict[int, Dict[str, Any]] = {}
         query_ep_counts: Dict[int, int] = {}
-        completed_queries = 0
 
         async def _collect_one(query_idx: int, endpoint_name: str) -> Dict[str, Any]:
             query_item = queries[query_idx]
@@ -216,7 +215,6 @@ class ResponseCollector:
                     on_query_complete(qi, query_ep_results[qi])
                 except Exception as e:
                     logger.warning(f"on_query_complete callback error for Q{qi}: {e}")
-                completed_queries += 1
 
             if completed % 10 == 0 or completed == total_calls:
                 logger.info(f"Progress: {completed}/{total_calls} calls completed")

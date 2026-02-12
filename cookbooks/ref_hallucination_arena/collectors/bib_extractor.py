@@ -100,10 +100,23 @@ class BibExtractor:
         """Parse individual fields from BibTeX entry body."""
 
         def extract_field(name: str) -> Optional[str]:
-            # Match field = {value} or field = "value"
-            pattern = rf'{name}\s*=\s*[{{"](.*?)[}}"]'
-            m = re.search(pattern, fields_str, re.IGNORECASE | re.DOTALL)
-            return m.group(1).strip() if m else None
+            # Match field = {value}, field = "value", or field = number
+            # Try brace-delimited value first (handles nested braces)
+            brace_pattern = rf'{name}\s*=\s*\{{(.*?)\}}'
+            m = re.search(brace_pattern, fields_str, re.IGNORECASE | re.DOTALL)
+            if m:
+                return m.group(1).strip()
+            # Try quote-delimited value
+            quote_pattern = rf'{name}\s*=\s*"(.*?)"'
+            m = re.search(quote_pattern, fields_str, re.IGNORECASE | re.DOTALL)
+            if m:
+                return m.group(1).strip()
+            # Try unquoted numeric value (e.g., year = 2023)
+            num_pattern = rf'{name}\s*=\s*(\d+)'
+            m = re.search(num_pattern, fields_str, re.IGNORECASE)
+            if m:
+                return m.group(1).strip()
+            return None
 
         title = extract_field("title")
         if not title:

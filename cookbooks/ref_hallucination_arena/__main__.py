@@ -19,17 +19,11 @@ from cookbooks.ref_hallucination_arena.schema import load_config
 
 
 async def _run_evaluation(
-    config_path: str,
-    output_dir: Optional[str] = None,
+    config: "RefArenaConfig",
     save: bool = False,
     resume: bool = True,
 ) -> None:
     """Run the evaluation pipeline."""
-    config = load_config(config_path)
-
-    if output_dir:
-        config.output.output_dir = output_dir
-
     pipeline = RefArenaPipeline(config=config, resume=resume)
     result = await pipeline.evaluate()
 
@@ -66,13 +60,16 @@ def main(
         logger.error(f"Config file not found: {config}")
         return
 
+    # Load config once and apply output_dir override
+    loaded_config = load_config(str(config_path))
+    if output_dir:
+        loaded_config.output.output_dir = output_dir
+
     if fresh:
         logger.info("Starting fresh (ignoring checkpoint)")
-        loaded_config = load_config(str(config_path))
-        effective_output_dir = output_dir or loaded_config.output.output_dir
         from cookbooks.ref_hallucination_arena.pipeline import CheckpointManager
 
-        CheckpointManager(effective_output_dir).clear()
+        CheckpointManager(loaded_config.output.output_dir).clear()
     else:
         logger.info("Resume mode enabled")
 
@@ -80,8 +77,7 @@ def main(
 
     asyncio.run(
         _run_evaluation(
-            str(config_path),
-            output_dir,
+            loaded_config,
             save,
             resume=not fresh,
         )

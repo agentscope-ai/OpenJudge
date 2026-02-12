@@ -331,7 +331,7 @@ class RefArenaPipeline:
 
         # Final merge for any that might not have been saved via callback
         for local_idx, global_idx in enumerate(pending_indices):
-            if self._responses[global_idx] is None:
+            if not self._responses[global_idx]:
                 self._responses[global_idx] = pending_responses[local_idx]
 
         return self._responses
