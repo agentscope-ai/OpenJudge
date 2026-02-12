@@ -3,16 +3,17 @@
 Tokenization Utilities
 
 Tokenization tools for breaking text into tokens.
-Supports both English (space-delimited) and CJK (Chinese/Japanese/Korean) text.
+All tokenization is powered by **jieba**, which handles both CJK and Latin text
+natively — English words, numbers, and punctuation are preserved as whole tokens
+while Chinese/Japanese/Korean text is properly segmented.
 
-For CJK text, uses **jieba** (a required dependency) with multiple cut modes:
-  - ``"accurate"`` (default): precise word segmentation, best for evaluation metrics.
-  - ``"search"``: finer-grained segmentation optimized for search-engine indexing;
-    long words are further segmented (e.g. "中华人民共和国" → "中华", "人民", "共和国",
-    "中华人民共和国").
-  - ``"all"``: full mode, outputs every possible word for maximum recall.
+jieba cut modes:
+  - ``"accurate"`` (default): precise word segmentation, best for evaluation.
+  - ``"search"``: finer-grained segmentation that further splits long words
+    (e.g. "中华人民共和国" → "中华", "人民", "共和国", "中华人民共和国").
+  - ``"all"``: full mode — outputs every possible word for maximum recall.
 
-Chinese stop-words can optionally be removed to improve metric quality.
+Stop-words can optionally be removed to improve metric quality.
 """
 
 import re
@@ -22,22 +23,9 @@ from typing import List, Literal, Optional, Set
 import jieba
 
 # ---------------------------------------------------------------------------
-# CJK detection
+# Punctuation sets
 # ---------------------------------------------------------------------------
-# CJK Unified Ideographs, Extension A, CJK Symbols and Punctuation,
-# Fullwidth punctuation, Katakana, Hiragana, Hangul
-_CJK_RANGES = (
-    r"\u4e00-\u9fff"  # CJK Unified Ideographs
-    r"\u3400-\u4dbf"  # CJK Extension A
-    r"\uf900-\ufaff"  # CJK Compatibility Ideographs
-    r"\u3000-\u303f"  # CJK Symbols and Punctuation
-    r"\u3040-\u309f"  # Hiragana
-    r"\u30a0-\u30ff"  # Katakana
-    r"\uac00-\ud7af"  # Hangul Syllables
-)
-_CJK_PATTERN = re.compile(f"[{_CJK_RANGES}]")
-
-# CJK punctuation set (Chinese fullwidth punctuation etc.)
+# CJK fullwidth and common punctuation (Unicode escapes for black-safety)
 CJK_PUNCTUATION = set(
     "\u3001\u3002"  # 、。
     "\uff01\uff1f"  # ！？
@@ -58,9 +46,9 @@ CJK_PUNCTUATION = set(
 _ALL_PUNCTUATION = set(string.punctuation) | CJK_PUNCTUATION
 
 # ---------------------------------------------------------------------------
-# Chinese stop-words (high-frequency function words that add little meaning)
+# Default stop-words (Chinese high-frequency function words)
 # ---------------------------------------------------------------------------
-_DEFAULT_CHINESE_STOPWORDS: Set[str] = {
+_DEFAULT_STOPWORDS: Set[str] = {
     "的",
     "了",
     "在",
@@ -135,54 +123,30 @@ _DEFAULT_CHINESE_STOPWORDS: Set[str] = {
     "嗯",
 }
 
-
-def contains_cjk(text: str) -> bool:
-    """
-    Detect whether text contains CJK (Chinese/Japanese/Korean) characters.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        bool: True if text contains CJK characters.
-
-    Example:
-        >>> contains_cjk("Hello world")
-        False
-        >>> contains_cjk("你好世界")
-        True
-        >>> contains_cjk("Hello 你好")
-        True
-    """
-    return bool(_CJK_PATTERN.search(text))
-
-
 # ---------------------------------------------------------------------------
-# Core CJK tokenization (jieba-based)
+# Core helpers
 # ---------------------------------------------------------------------------
 CutMode = Literal["accurate", "search", "all"]
 
 
 def _jieba_cut(text: str, mode: CutMode = "accurate") -> List[str]:
     """
-    Tokenize text using jieba with the specified cut mode.
+    Tokenize *text* with jieba in the given *mode*.
+
+    Works for any language — English words/numbers are kept intact.
 
     Args:
         text: Input text.
-        mode: Cut mode —
-            ``"accurate"`` (default): precise segmentation.
-            ``"search"``: search-engine mode (further splits long words).
-            ``"all"``: full mode (all possible words, maximum recall).
+        mode: ``"accurate"`` | ``"search"`` | ``"all"``.
 
     Returns:
         List[str]: Raw token list (may contain whitespace-only tokens).
     """
     if mode == "search":
         return list(jieba.cut_for_search(text))
-    elif mode == "all":
+    if mode == "all":
         return list(jieba.cut(text, cut_all=True))
-    else:  # "accurate"
-        return list(jieba.cut(text, cut_all=False))
+    return list(jieba.cut(text, cut_all=False))  # accurate
 
 
 def _filter_tokens(
@@ -197,63 +161,31 @@ def _filter_tokens(
 
     Args:
         tokens: Raw token list.
-        remove_punctuation: Remove punctuation tokens.
-        remove_stopwords: Remove Chinese stop-word tokens.
-        stopwords: Custom stop-word set (uses built-in set if *None*).
+        remove_punctuation: Drop punctuation tokens (ASCII + CJK).
+        remove_stopwords: Drop stop-word tokens.
+        stopwords: Custom stop-word set (falls back to built-in set).
 
     Returns:
         List[str]: Filtered token list.
     """
     if stopwords is None:
-        stopwords = _DEFAULT_CHINESE_STOPWORDS
+        stopwords = _DEFAULT_STOPWORDS
 
-    result = []
-    for t in tokens:
-        t_stripped = t.strip()
-        if not t_stripped:
+    result: List[str] = []
+    for tok in tokens:
+        tok = tok.strip()
+        if not tok:
             continue
-        if remove_punctuation and (t_stripped in _ALL_PUNCTUATION or all(ch in _ALL_PUNCTUATION for ch in t_stripped)):
+        if remove_punctuation and (tok in _ALL_PUNCTUATION or all(ch in _ALL_PUNCTUATION for ch in tok)):
             continue
-        if remove_stopwords and t_stripped in stopwords:
+        if remove_stopwords and tok in stopwords:
             continue
-        result.append(t_stripped)
+        result.append(tok)
     return result
 
 
-def _cjk_tokenize(
-    text: str,
-    mode: CutMode = "accurate",
-    remove_punctuation: bool = False,
-    remove_stopwords: bool = False,
-) -> List[str]:
-    """
-    Tokenize CJK text using jieba.
-
-    Args:
-        text: Text containing CJK characters.
-        mode: jieba cut mode (``"accurate"``, ``"search"``, ``"all"``).
-        remove_punctuation: Remove punctuation tokens from the result.
-        remove_stopwords: Remove Chinese stop-word tokens from the result.
-
-    Returns:
-        List[str]: List of tokens.
-
-    Example:
-        >>> _cjk_tokenize("机器学习是人工智能的重要分支。")
-        ['机器', '学习', '是', '人工智能', '的', '重要', '分支', '。']
-        >>> _cjk_tokenize("机器学习是人工智能的重要分支。", remove_punctuation=True, remove_stopwords=True)
-        ['机器', '学习', '人工智能', '重要', '分支']
-    """
-    tokens = _jieba_cut(text, mode=mode)
-    return _filter_tokens(
-        tokens,
-        remove_punctuation=remove_punctuation,
-        remove_stopwords=remove_stopwords,
-    )
-
-
 # ---------------------------------------------------------------------------
-# Public API — smart_tokenize / simple_tokenize / word_tokenize
+# Public API
 # ---------------------------------------------------------------------------
 
 
@@ -264,15 +196,15 @@ def smart_tokenize(
     remove_stopwords: bool = False,
 ) -> List[str]:
     """
-    Language-aware tokenization (recommended entry point for multilingual text).
+    Unified tokenization via jieba (recommended entry-point).
 
-    For CJK text, uses jieba; for others, whitespace split.
+    Handles English, Chinese, mixed, and any other text that jieba supports.
 
     Args:
         text: Text to tokenize.
-        lowercase: Whether to convert to lowercase.
-        mode: jieba cut mode for CJK text (``"accurate"``, ``"search"``, ``"all"``).
-        remove_stopwords: Whether to remove Chinese stop-words (CJK only).
+        lowercase: Convert to lowercase first.
+        mode: jieba cut mode (``"accurate"`` | ``"search"`` | ``"all"``).
+        remove_stopwords: Drop Chinese stop-words.
 
     Returns:
         List[str]: List of tokens.
@@ -284,44 +216,34 @@ def smart_tokenize(
         ['机器', '学习', '是', '人工智能', '的', '分支']
         >>> smart_tokenize("机器学习是人工智能的分支", remove_stopwords=True)
         ['机器', '学习', '人工智能', '分支']
-        >>> smart_tokenize("中华人民共和国成立了", mode="search")
-        ['中华', '华人', '人民', '共和', '共和国', '中华人民共和国', '成立', '了']
     """
     if lowercase:
         text = text.lower()
-    if contains_cjk(text):
-        return _cjk_tokenize(text, mode=mode, remove_stopwords=remove_stopwords)
-    return text.split()
+    tokens = _jieba_cut(text, mode=mode)
+    return _filter_tokens(tokens, remove_stopwords=remove_stopwords)
 
 
 def simple_tokenize(text: str, lowercase: bool = False) -> List[str]:
     """
-    Simple tokenization — language-aware.
-
-    Uses jieba accurate mode for CJK, whitespace split for others.
+    Simple tokenization via jieba (accurate mode, no filtering).
 
     Args:
         text: Text to tokenize.
-        lowercase: Whether to convert to lowercase.
+        lowercase: Convert to lowercase first.
 
     Returns:
         List[str]: List of tokens.
 
     Example:
         >>> simple_tokenize("Hello, world!")
-        ['Hello,', 'world!']
+        ['Hello', ',', 'world', '!']
         >>> simple_tokenize("今天天气很好")
         ['今天天气', '很', '好']
     """
     if lowercase:
         text = text.lower()
-    if contains_cjk(text):
-        return _cjk_tokenize(text, mode="accurate")
-    return text.split()
-
-
-_non_word_space_pattern = re.compile(r"[^\w\s]", re.UNICODE)
-_word_punctuation_pattern = re.compile(r"\w+|[^\w\s]", re.UNICODE)
+    tokens = _jieba_cut(text, mode="accurate")
+    return _filter_tokens(tokens)
 
 
 def word_tokenize(
@@ -331,19 +253,16 @@ def word_tokenize(
     mode: CutMode = "accurate",
 ) -> List[str]:
     """
-    Word-level tokenization — language-aware.
-
-    For CJK text, uses jieba with punctuation/stop-word filtering.
-    For non-CJK text, uses regex-based tokenization.
+    Word-level tokenization via jieba with optional punctuation/stop-word removal.
 
     Args:
         text: Text to tokenize.
-        remove_punctuation: Whether to remove punctuation marks.
-        remove_stopwords: Whether to remove Chinese stop-words (CJK only).
-        mode: jieba cut mode for CJK text.
+        remove_punctuation: Drop punctuation tokens (ASCII + CJK).
+        remove_stopwords: Drop stop-word tokens.
+        mode: jieba cut mode.
 
     Returns:
-        List[str]: List of tokens.
+        List[str]: List of word tokens.
 
     Example:
         >>> word_tokenize("Hello, world!")
@@ -355,23 +274,14 @@ def word_tokenize(
         >>> word_tokenize("机器学习是人工智能的重要分支。", remove_stopwords=True)
         ['机器', '学习', '人工智能', '重要', '分支']
     """
-    if contains_cjk(text):
-        return _cjk_tokenize(
-            text,
-            mode=mode,
-            remove_punctuation=remove_punctuation,
-            remove_stopwords=remove_stopwords,
-        )
-
-    if remove_punctuation:
-        # Keep only letters, numbers, and spaces
-        text = _non_word_space_pattern.sub(" ", text)
-        tokens = text.split()
-    else:
-        # Keep punctuation as separate tokens
-        tokens = _word_punctuation_pattern.findall(text)
-
-    return [t for t in tokens if t.strip()]
+    if not text:
+        return []
+    tokens = _jieba_cut(text, mode=mode)
+    return _filter_tokens(
+        tokens,
+        remove_punctuation=remove_punctuation,
+        remove_stopwords=remove_stopwords,
+    )
 
 
 def character_tokenize(text: str) -> List[str]:
@@ -393,12 +303,12 @@ def character_tokenize(text: str) -> List[str]:
 
 def ngram_tokenize(text: str, n: int = 2, char_level: bool = False) -> List[str]:
     """
-    N-gram tokenization — language-aware for word-level n-grams.
+    N-gram tokenization (word-level via jieba, or character-level).
 
     Args:
         text: Text to tokenize.
         n: Size of the n-gram.
-        char_level: Whether to use character-level n-grams (otherwise word-level).
+        char_level: Use character-level n-grams (otherwise word-level).
 
     Returns:
         List[str]: List of n-grams.
@@ -454,15 +364,11 @@ def sentence_tokenize(text: str) -> List[str]:
     return [s.strip() for s in sentences if s.strip()]
 
 
-_word_pattern = re.compile(r"\b\w+\b", re.UNICODE)
-
-
 def tokenize_preserving_case(text: str) -> List[str]:
     """
-    Tokenization preserving original case — language-aware.
+    Tokenization preserving original case.
 
-    For CJK text, delegates to smart_tokenize.
-    For non-CJK text, uses regex word boundary matching.
+    Uses jieba accurate mode without any filtering.
 
     Args:
         text: Text to tokenize.
@@ -476,17 +382,12 @@ def tokenize_preserving_case(text: str) -> List[str]:
         >>> tokenize_preserving_case("机器学习很重要")
         ['机器', '学习', '很', '重要']
     """
-    if contains_cjk(text):
-        return smart_tokenize(text)
-    return _word_pattern.findall(text)
+    return smart_tokenize(text)
 
 
 def whitespace_tokenize(text: str) -> List[str]:
     """
-    Tokenization based on whitespace characters — language-aware.
-
-    For CJK text, delegates to smart_tokenize since whitespace splitting is
-    not meaningful for languages without spaces between words.
+    Tokenization via jieba (replaces naive whitespace splitting).
 
     Args:
         text: Text to tokenize.
@@ -495,14 +396,12 @@ def whitespace_tokenize(text: str) -> List[str]:
         List[str]: List of tokens.
 
     Example:
-        >>> whitespace_tokenize("hello\\tworld\\ntest")
-        ['hello', 'world', 'test']
+        >>> whitespace_tokenize("hello world")
+        ['hello', 'world']
         >>> whitespace_tokenize("自然语言处理")
         ['自然语言', '处理']
     """
-    if contains_cjk(text):
-        return smart_tokenize(text)
-    return text.split()
+    return smart_tokenize(text)
 
 
 def get_word_count(text: str) -> int:
@@ -541,12 +440,10 @@ def get_character_count(text: str, include_spaces: bool = False) -> int:
     """
     if include_spaces:
         return len(text)
-    else:
-        return len(text.replace(" ", ""))
+    return len(text.replace(" ", ""))
 
 
 __all__ = [
-    "contains_cjk",
     "smart_tokenize",
     "simple_tokenize",
     "word_tokenize",

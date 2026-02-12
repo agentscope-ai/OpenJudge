@@ -35,7 +35,6 @@ from openjudge.graders.text._utils.string_match_compute import (
     compute_word_overlap,
 )
 from openjudge.graders.text._utils.tokenization import (
-    contains_cjk,
     simple_tokenize,
     smart_tokenize,
     word_tokenize,
@@ -44,7 +43,6 @@ from openjudge.graders.text._utils.tokenization import (
 __all__ = [
     "normalize_text",
     "normalize_text_advanced",
-    "contains_cjk",
     "smart_tokenize",
     "simple_tokenize",
     "word_tokenize",
