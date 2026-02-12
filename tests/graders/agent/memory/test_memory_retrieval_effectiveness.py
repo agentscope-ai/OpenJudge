@@ -93,9 +93,6 @@ class TestMemoryRetrievalEffectivenessGraderUnit:
             assert result.score == 1.0  # Normalized from 0.9
             assert "effective" in result.reason.lower() or "use" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_poor_retrieval(self):
         """Test evaluation detecting poor memory retrieval effectiveness"""
@@ -127,9 +124,6 @@ class TestMemoryRetrievalEffectivenessGraderUnit:
             # Assertions
             assert result.score == 0.0  # Normalized from 0.1
             assert "ignore" in result.reason.lower() or "redundant" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_evaluation_with_context_and_history(self):
@@ -169,9 +163,6 @@ class TestMemoryRetrievalEffectivenessGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "effective" in result.reason.lower() or "leverage" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

@@ -205,6 +205,59 @@ def trim_and_load_json(response: str, metric: Any = None) -> Dict[str, Any]:
         raise ValueError(error_msg) from e
 
 
+def format_conversation_history(
+    history: list[Dict[str, str]],
+    include_system: bool = False,
+) -> str:
+    """
+    Format conversation history into a readable string.
+
+    This function converts a list of chat messages in ChatMessage format
+    into a human-readable string representation for use in evaluation prompts.
+
+    Args:
+        history: List of conversation messages in ChatMessage format.
+                 Each message should have "role" and "content" keys.
+                 Example: [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+        include_system: Whether to include system messages. Defaults to False.
+
+    Returns:
+        Formatted string representation of the conversation history.
+        Returns "<No conversation history>" if history is empty.
+
+    Example:
+        >>> history = [
+        ...     {"role": "user", "content": "Hello"},
+        ...     {"role": "assistant", "content": "Hi there!"},
+        ...     {"role": "user", "content": "How are you?"},
+        ... ]
+        >>> formatted = format_conversation_history(history)
+        >>> print(formatted)
+        [User]: Hello
+
+        [Assistant]: Hi there!
+
+        [User]: How are you?
+    """
+    if not history:
+        return "<No conversation history>"
+
+    lines = []
+    for msg in history:
+        role = msg.get("role", "unknown")
+        content = msg.get("content", "")
+        if role == "system" and not include_system:
+            continue
+        role_display = {
+            "user": "User",
+            "assistant": "Assistant",
+            "system": "System",
+        }.get(role, role)
+        lines.append(f"[{role_display}]: {content}")
+
+    return "\n\n".join(lines) if lines else "<No conversation history>"
+
+
 async def parse_structured_chat_response(
     chat_response: Any,
     default: Optional[Dict[str, Any]] = None,

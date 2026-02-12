@@ -10,6 +10,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -82,8 +83,8 @@ If a reference response is provided, you may use it as a baseline for comparison
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means highly relevant and 1 means completely irrelevant>,
-    "reason": "<brief explanation for the assigned score, specifically mentioning how the response addresses or fails to address the query>"
+    "reason": "<brief explanation for the assigned score, specifically mentioning how the response addresses or fails to address the query>",
+    "score": <integer between 1 and 5, where 5 means highly relevant and 1 means completely irrelevant>
 }}
 </Output Schema>
 
@@ -155,8 +156,8 @@ RELEVANCE_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1到5之间的整数，其中5表示高度相关，1表示完全不相关>,
-    "reason": "<对所给分数的简要解释，特别提到输出如何解决或未能解决查询>"
+    "reason": "<对所给分数的简要解释，特别提到输出如何解决或未能解决查询>",
+    "score": <1到5之间的整数，其中5表示高度相关，1表示完全不相关>
 }}
 </输出格式>
 
@@ -264,6 +265,7 @@ class RelevanceGrader(LLMGrader):
         threshold: float = 3,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize RelevanceGrader
@@ -273,6 +275,7 @@ class RelevanceGrader(LLMGrader):
             threshold: Success threshold [1, 5] (default: 3)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_RELEVANCE_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
 
         Raises:
             ValueError: If threshold is not in range [1, 5]
@@ -287,16 +290,18 @@ class RelevanceGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_RELEVANCE_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
         self.threshold = threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str,
         response: str,
         context: str = "",
         reference_response: str = "",
-    ) -> GraderScore:
+        **kwargs,
+    ) -> GraderScore | GraderError:
         """
         Evaluate relevance of response to query
 
@@ -304,7 +309,8 @@ class RelevanceGrader(LLMGrader):
             query: Input query or conversation history
             response: Model response to evaluate
             context: Additional context or background information. Defaults to empty string.
-            reference: Reference response for comparison. Defaults to empty string.
+            reference_response: Reference response for comparison. Defaults to empty string.
+            **kwargs: Additional keyword arguments passed to the model
 
         Returns:
             GraderScore: Score with relevance value [1, 5]
@@ -318,18 +324,33 @@ class RelevanceGrader(LLMGrader):
             ... )
         """
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=query,
                 response=response,
                 context=context,
                 reference_response=reference_response,
             )
-            return GraderScore(
-                name=self.name,
-                score=result.score,
-                reason=result.reason,
-                metadata={**result.metadata, "threshold": self.threshold},
-            )
+
+            # Check if the result is an error
+            if isinstance(result, GraderError):
+                return result
+
+            # Check if result is GraderScore type specifically
+            if isinstance(result, GraderScore):
+                return GraderScore(
+                    name=self.name,
+                    score=result.score,
+                    reason=result.reason,
+                    metadata={**result.metadata, "threshold": self.threshold},
+                )
+            else:
+                # This shouldn't happen since we expect GraderScore, but just in case
+                return GraderScore(
+                    name=self.name,
+                    score=0.0,
+                    reason="Unexpected result type received",
+                    metadata={"original_result": result, "threshold": self.threshold},
+                )
 
         except Exception as e:
             logger.exception(f"Error evaluating relevance: {e}")

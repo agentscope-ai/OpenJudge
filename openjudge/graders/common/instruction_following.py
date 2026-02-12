@@ -11,6 +11,7 @@ from typing import Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -79,10 +80,10 @@ perfectly follows all instructions should score high.
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5, where 5 means perfect instruction adherence
-             and 1 means complete failure to follow instructions>,
     "reason": "<brief explanation for the assigned score, specifically mentioning which instruction
-               requirements were met or violated>"
+               requirements were met or violated>",
+    "score": <integer between 1 and 5, where 5 means perfect instruction adherence
+             and 1 means complete failure to follow instructions>
 }}
 </Output Schema>
 
@@ -149,8 +150,8 @@ INSTRUCTION_FOLLOWING_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1到5之间的整数，其中5表示完美遵循指令，1表示完全未能遵循指令>,
-    "reason": "<对所给分数的简要解释，特别提到满足或违反了哪些指令要求>"
+    "reason": "<对所给分数的简要解释，特别提到满足或违反了哪些指令要求>",
+    "score": <1到5之间的整数，其中5表示完美遵循指令，1表示完全未能遵循指令>
 }}
 </输出格式>
 
@@ -264,15 +265,17 @@ class InstructionFollowingGrader(LLMGrader):
         threshold: float = 3,
         template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
-        Initialize InstructionFollowingGrader
+        Initialize InstructionFollowingGrader.
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
             threshold: Success threshold [1, 5] (default: 3)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
 
         Raises:
             ValueError: If threshold is not in range [1, 5]
@@ -287,10 +290,11 @@ class InstructionFollowingGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
         self.threshold = threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         instruction: str,
         response: str,
@@ -315,7 +319,7 @@ class InstructionFollowingGrader(LLMGrader):
             ... )
         """
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 instruction=instruction,
                 response=response,
                 query=query,

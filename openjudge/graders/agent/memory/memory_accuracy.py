@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -59,8 +60,8 @@ Memory: {memory}
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of memory accuracy and confidence level>"
+    "reason": "<detailed explanation of memory accuracy and confidence level>",
+    "score": <0.0 or 1.0>
 }}
 </Output Schema>
 JSON:
@@ -107,8 +108,8 @@ MEMORY_ACCURACY_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于记忆准确性的详细解释和置信度水平>"
+    "reason": "<关于记忆准确性的详细解释和置信度水平>",
+    "score": <0.0 或 1.0>
 }}
 </输出格式>
 JSON:
@@ -174,7 +175,18 @@ class MemoryAccuracyGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_MEMORY_ACCURACY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize MemoryAccuracyGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_MEMORY_ACCURACY_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
+
         super().__init__(
             name="memory_accuracy",
             mode=GraderMode.POINTWISE,
@@ -182,9 +194,10 @@ class MemoryAccuracyGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_MEMORY_ACCURACY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         observation: str,
         memory: str,
@@ -219,7 +232,7 @@ class MemoryAccuracyGrader(LLMGrader):
         history_str = format_history(history, include_tags=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 observation=observation,
                 memory=memory,
                 history=history_str,

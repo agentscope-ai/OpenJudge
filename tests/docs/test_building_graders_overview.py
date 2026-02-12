@@ -8,7 +8,7 @@ from openjudge.graders.function_grader import FunctionGrader
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderScore
 from openjudge.models import OpenAIChatModel
-from openjudge.runner import GradingRunner
+from openjudge.runner.grading_runner import GradingRunner
 
 
 class TestOverviewLLMGrader:

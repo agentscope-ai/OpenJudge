@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -56,8 +57,8 @@ Evaluate based on these factors:
 Please provide your evaluation for the tool calls in relation to the user query and tool definitions.
 Your output should be a JSON object with the following format:
 {{
-    "score": [Tool Call Accuracy Score],
-    "reason": [Reason for the score]
+    "reason": [Reason for the score],
+    "score": [Tool Call Accuracy Score]
 }}
 </Output Schema>
 JSON:
@@ -100,8 +101,8 @@ TOOL_CALL_ACCURACY_PROMPT_ZH = textwrap.dedent(
 请提供对工具调用相对于用户查询和工具定义的评估。
 你的输出应该是具有以下格式的 JSON 对象：
 {{
-    "score": [工具调用准确性分数],
-    "reason": [分数的原因]
+    "reason": [分数的原因],
+    "score": [工具调用准确性分数]
 }}
 </输出格式>
 JSON:
@@ -208,8 +209,10 @@ class ToolCallAccuracyGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
-        """Initialize the ToolCallAccuracyGrader.
+        """
+        Initialize ToolCallAccuracyGrader.
 
         Args:
             model: The language model used for evaluation. Can be either a BaseChatModel
@@ -217,6 +220,7 @@ class ToolCallAccuracyGrader(LLMGrader):
                    be used to initialize an OpenAIChatModel.
             template: Evaluation template. Defaults to DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE.
             language: Language for evaluation prompts (default: LanguageEnum.EN).
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
         """
         super().__init__(
             name="tool_call_accuracy",
@@ -225,6 +229,7 @@ class ToolCallAccuracyGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
         # Pattern to match tool calls in JSON format
@@ -257,7 +262,7 @@ class ToolCallAccuracyGrader(LLMGrader):
 
         return tool_calls
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: str | List[Dict[str, Any]],
         tool_definitions: Dict[str, Any] | List[Dict[str, Any]],
@@ -336,7 +341,7 @@ class ToolCallAccuracyGrader(LLMGrader):
 
         try:
             # Call parent evaluate method with the structured data
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=json.dumps(query, indent=2, ensure_ascii=False),
                 tool_calls=json.dumps(tool_calls, indent=2, ensure_ascii=False),
                 tool_definitions=json.dumps(tool_definitions, indent=2, ensure_ascii=False),

@@ -12,6 +12,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.multimodal._internal import (
@@ -64,8 +65,8 @@ Be rigorous and discerning when assigning your score. Focus on how much the imag
 
 <Output Schema>
 {{
-    "score": <integer between 1 and 5>,
-    "reason": "<brief explanation for the assigned score>"
+    "reason": "<brief explanation for the assigned score>",
+    "score": <integer between 1 and 5>
 }}
 </Output Schema>
 JSON:
@@ -108,8 +109,8 @@ IMAGE_HELPFULNESS_PROMPT_ZH = textwrap.dedent(
 
 <输出格式>
 {{
-    "score": <1到5之间的整数>,
-    "reason": "<对所给分数的简要解释>"
+    "reason": "<对所给分数的简要解释>",
+    "score": <1到5之间的整数>
 }}
 </输出格式>
 JSON:
@@ -201,9 +202,10 @@ class ImageHelpfulnessGrader(LLMGrader):
         threshold: float = 0.7,
         template: PromptTemplate = DEFAULT_IMAGE_HELPFULNESS_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
-        Initialize ImageHelpfulnessGrader
+        Initialize ImageHelpfulnessGrader.
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
@@ -211,6 +213,7 @@ class ImageHelpfulnessGrader(LLMGrader):
             threshold: Success threshold [0, 1] (default: 0.7)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_IMAGE_HELPFULNESS_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
         """
         super().__init__(
             name="image_helpfulness",
@@ -219,6 +222,7 @@ class ImageHelpfulnessGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_IMAGE_HELPFULNESS_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
         self.max_context_size = max_context_size
         self.threshold = threshold
@@ -303,7 +307,7 @@ class ImageHelpfulnessGrader(LLMGrader):
 
         return final_score, details
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         response: List[Union[str, MLLMImage]],
         **kwargs: Any,

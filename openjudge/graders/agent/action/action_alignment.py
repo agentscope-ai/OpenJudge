@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.agent.utils import format_history
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
@@ -59,8 +60,8 @@ Action: {action}
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of action-plan alignment and confidence level>"
+    "reason": "<detailed explanation of action-plan alignment and confidence level>",
+    "score": <0.0 or 1.0>
 }}
 </Output Schema>
 JSON:
@@ -107,8 +108,8 @@ ACTION_ALIGNMENT_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于动作-计划对齐的详细解释和置信度水平>"
+    "reason": "<关于动作-计划对齐的详细解释和置信度水平>",
+    "score": <0.0 或 1.0>
 }}
 </输出格式>
 JSON:
@@ -174,6 +175,7 @@ class ActionAlignmentGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_ACTION_ALIGNMENT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
         """
         Initialize ActionAlignmentGrader.
@@ -183,6 +185,7 @@ class ActionAlignmentGrader(LLMGrader):
             template: The prompt template for action alignment evaluation.
                      Defaults to DEFAULT_ACTION_ALIGNMENT_TEMPLATE.
             language: The language for the evaluation prompt. Defaults to LanguageEnum.EN.
+            strategy: The evaluation strategy to use. Defaults to DirectStrategy.
         """
         super().__init__(
             name="action_alignment",
@@ -191,9 +194,10 @@ class ActionAlignmentGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_ACTION_ALIGNMENT_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         plan: str,
         action: str,
@@ -226,7 +230,7 @@ class ActionAlignmentGrader(LLMGrader):
         history_str = format_history(history, include_tags=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 plan=plan,
                 action=action,
                 history=history_str,

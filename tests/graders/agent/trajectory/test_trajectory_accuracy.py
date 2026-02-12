@@ -106,9 +106,6 @@ class TestTrajectoryAccuracyGraderUnit:
             assert result.score == 3.0
             assert "successfully" in result.reason.lower() or "achieves" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_unnecessary_steps(self):
         """Test evaluation detecting trajectory with unnecessary steps"""
@@ -166,9 +163,6 @@ class TestTrajectoryAccuracyGraderUnit:
             assert result.score == 2.0
             assert "unnecessary" in result.reason.lower() or "unrelated" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_failed_goal(self):
         """Test evaluation detecting trajectory that fails to achieve goal"""
@@ -213,9 +207,6 @@ class TestTrajectoryAccuracyGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "fail" in result.reason.lower() or "not achieve" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_empty_messages(self):

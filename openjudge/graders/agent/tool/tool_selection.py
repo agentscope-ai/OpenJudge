@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -64,8 +65,8 @@ TOOL_SELECTION_PROMPT_EN = textwrap.dedent(
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5>,
-    "reason": "<detailed explanation of tool selection quality, including strengths and weaknesses>"
+    "reason": "<detailed explanation of tool selection quality, including strengths and weaknesses>",
+    "score": <integer between 1 and 5>
 }}
 </Output Schema>
 JSON:
@@ -117,8 +118,8 @@ TOOL_SELECTION_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1 到 5 之间的整数>,
-    "reason": "<关于工具选择质量的详细解释，包括优点和缺点>"
+    "reason": "<关于工具选择质量的详细解释，包括优点和缺点>",
+    "score": <1 到 5 之间的整数>
 }}
 </输出格式>
 JSON:
@@ -191,7 +192,17 @@ class ToolSelectionGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_TOOL_SELECTION_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize ToolSelectionGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_TOOL_SELECTION_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="tool_selection",
             mode=GraderMode.POINTWISE,
@@ -199,9 +210,10 @@ class ToolSelectionGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_TOOL_SELECTION_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: Union[str, List[Dict[str, Any]]],
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
@@ -258,7 +270,7 @@ class ToolSelectionGrader(LLMGrader):
         selected_tools = json.dumps(tool_calls, indent=2, ensure_ascii=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=query,
                 available_tools=available_tools,
                 selected_tools=selected_tools,

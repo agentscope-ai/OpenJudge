@@ -94,7 +94,12 @@ RUN pip install --no-cache-dir --no-deps git+https://github.com/volcengine/verl.
 # =============================================================================
 # 7. OpenJudge Dependencies
 # =============================================================================
-RUN pip install --no-cache-dir \
+# Upgrade build tools BEFORE any package installs
+RUN pip install --no-cache-dir --upgrade "pip>=24.0" "setuptools>=69.0" "wheel>=0.43"
+
+RUN pip install --no-cache-dir --prefer-binary "numpy>=1.26,<2.0"
+
+RUN pip install --no-cache-dir --prefer-binary \
     "loguru>=0.7.3,<0.8.0" \
     "json_repair>=0.54.0,<1.0.0" \
     "openai>=1.85.0,<2.0.0" \
@@ -109,7 +114,9 @@ RUN pip install --no-cache-dir \
     "sacrebleu>=2.0.0" \
     "rouge-score>=0.1.2" \
     "python-Levenshtein>=0.20.0" \
-    "scikit-learn>=1.0.0"
+    "scikit-learn>=1.4.0,<2.0.0" \
+    "numba>=0.60.0,<0.61.0"
+
 
 # =============================================================================
 # 8. OpenJudge

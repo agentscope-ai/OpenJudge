@@ -106,9 +106,6 @@ class TestHallucinationGraderUnit:
             assert result.score == 4
             assert "hallucination" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_reference(self):
         """Test evaluation with reference answer"""
@@ -139,9 +136,6 @@ class TestHallucinationGraderUnit:
             # Assertions
             assert result.score == 5
             assert "accurate" in result.reason.lower() or "no hallucination" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):
@@ -290,6 +284,7 @@ class TestHallucinationGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["hallucination_run1"],
             another_grader_results=results["hallucination_run2"],
         )

@@ -20,6 +20,7 @@ import asyncio
 from functools import partial
 from typing import Any, Callable
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderRank, GraderScore
 
@@ -41,6 +42,7 @@ class FunctionGrader(BaseGrader):
         name: str = "",
         mode: GraderMode = GraderMode.POINTWISE,
         description: str = "",
+        strategy: BaseEvaluationStrategy | None = None,
         **kwargs: Any,
     ):
         """Initialize a FunctionGrader.
@@ -60,17 +62,19 @@ class FunctionGrader(BaseGrader):
                   or LISTWISE (joint evaluation of multiple samples).
                   Defaults to POINTWISE.
             description: Human-readable description of what this grader evaluates.
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
             **kwargs: Additional keyword arguments passed to the parent Grader class.
         """
         super().__init__(
-            name,
-            mode,
-            description,
+            name=name,
+            mode=mode,
+            description=description,
+            strategy=strategy,
             **kwargs,
         )
         self.func = func
 
-    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
+    async def _aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
         """Evaluate using a function.
 
         Performs evaluation by calling the wrapped function with the provided arguments.

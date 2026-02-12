@@ -13,6 +13,7 @@ conventions (snake_case for functions and variables).
 import re
 from typing import Any, Dict
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 
@@ -20,11 +21,18 @@ from openjudge.graders.schema import GraderMode, GraderScore
 class CodeStyleGrader(BaseGrader):
     """Basic code style checking including indentation consistency and naming conventions."""
 
-    def __init__(self):
+    def __init__(self, strategy: BaseEvaluationStrategy | None = None):
+        """
+        Initialize a CodeStyleGrader.
+
+        Args:
+            strategy: BaseEvaluationStrategy, optional
+        """
         super().__init__(
             name="code_style",
             mode=GraderMode.POINTWISE,
             description="Basic code style checking including indentation consistency and naming conventions.",
+            strategy=strategy,
         )
 
         self._function_pattern = re.compile(r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")
@@ -88,7 +96,7 @@ class CodeStyleGrader(BaseGrader):
             f"Naming convention: {good_names}/{total_names} names follow snake_case",
         )
 
-    async def aevaluate(self, response: str) -> GraderScore:
+    async def _aevaluate(self, response: str) -> GraderScore:
         """Evaluate code style in the provided response.
 
         Performs basic code style checking including indentation consistency and
@@ -169,4 +177,4 @@ class CodeStyleGrader(BaseGrader):
     @staticmethod
     def get_metadata() -> Dict[str, Any]:
         """Return the docstring of the aevaluate method."""
-        return {"aevaluate": CodeStyleGrader.aevaluate.__doc__}
+        return {"aevaluate": CodeStyleGrader._aevaluate.__doc__}

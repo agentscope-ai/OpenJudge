@@ -2,7 +2,7 @@
 """
 Tool Parameter Check Grader
 
-Evaluates whether the generated tool call extracts completely correct parameters from the query.
+Evaluates whether the generated tool call extracts completely correct parameters from the user query.
 """
 
 import json
@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -61,8 +62,8 @@ TOOL_PARAMETER_CHECK_PROMPT_EN = textwrap.dedent(
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <0.0 or 1.0>,
-    "reason": "<detailed explanation of parameter quality and correctness>"
+    "reason": "<detailed explanation of parameter quality and correctness>",
+    "score": <0.0 or 1.0>
 }}
 </Output Schema>
 JSON:
@@ -111,8 +112,8 @@ TOOL_PARAMETER_CHECK_PROMPT_ZH = textwrap.dedent(
 <输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <0.0 或 1.0>,
-    "reason": "<关于参数质量和正确性的详细解释>"
+    "reason": "<关于参数质量和正确性的详细解释>",
+    "score": <0.0 或 1.0>
 }}
 </输出格式>
 JSON:
@@ -180,7 +181,17 @@ class ToolParameterCheckGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize ToolParameterCheckGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="tool_parameter_check",
             mode=GraderMode.POINTWISE,
@@ -188,9 +199,10 @@ class ToolParameterCheckGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: Union[str, List[Dict[str, Any]]],
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
@@ -242,7 +254,7 @@ class ToolParameterCheckGrader(LLMGrader):
             query = str(query)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=query,
                 tool_definitions=json.dumps(tool_definitions, indent=2),
                 tool_calls=json.dumps(tool_calls, indent=2),

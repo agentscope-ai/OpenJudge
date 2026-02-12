@@ -27,7 +27,6 @@ Example:
 """
 
 import os
-from typing import Callable, Dict, Tuple, Union
 from unittest.mock import AsyncMock
 
 import pytest
@@ -73,8 +72,8 @@ class TestLLMGraderUnit:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -106,8 +105,8 @@ class TestLLMGraderUnit:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```""",
                     },
@@ -147,8 +146,8 @@ class TestLLMGraderUnit:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -180,8 +179,8 @@ class TestLLMGraderUnit:
     Return your answer in JSON format:
     ```json
     {{
-        "score": score,
-        "reason": "explanation for scoring"
+        "reason": "explanation for scoring",
+        "score": score
     }}
     ```"""
 
@@ -274,8 +273,8 @@ class TestLLMGraderUnit:
     Return your assessment in JSON format with a score from 0-5 and explanation:
     ```json
     {{
-        "score": score,
-        "reason": "detailed explanation for scoring"
+        "reason": "detailed explanation for scoring",
+        "score": score
     }}
     ```"""
 
@@ -370,8 +369,8 @@ class TestLLMGraderQuality:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -383,10 +382,7 @@ class TestLLMGraderQuality:
         )
 
         # Use mapper to configure data transformation
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
+        grader_configs = {
             "accuracy": GraderConfig(
                 grader=grader,
                 mapper={
@@ -432,8 +428,8 @@ class TestLLMGraderQuality:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -445,10 +441,7 @@ class TestLLMGraderQuality:
         )
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
+        grader_configs = {
             "accuracy_run1": GraderConfig(
                 grader=grader,
                 mapper={

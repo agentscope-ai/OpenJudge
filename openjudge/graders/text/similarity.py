@@ -12,6 +12,7 @@ A unified grader for text similarity evaluation supporting multiple algorithms:
 
 from typing import Any, Dict
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.graders.text._utils.compute import (
     compute_bleu_score,
@@ -133,23 +134,24 @@ class SimilarityGrader(BaseGrader):
         case_sensitive: bool = False,
         use_stemmer: bool = True,
         algorithm: str = "bleu",
+        strategy: BaseEvaluationStrategy | None = None,
         **kwargs: Any,
     ):
         """
         Initialize similarity grader
 
         Args:
-            name: Grader name
-            description: Grader description
             normalize: Default normalization behavior for applicable algorithms
             case_sensitive: Default case sensitivity for applicable algorithms
             use_stemmer: Default stemmer usage for ROUGE algorithms
             algorithm: Algorithm to use (bleu, rouge, f1_score, etc.)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
         """
         super().__init__(
             name="similarity",
             mode=GraderMode.POINTWISE,
             description="Unified text similarity grader",
+            strategy=strategy,
         )
         self.normalize = normalize
         self.case_sensitive = case_sensitive
@@ -163,7 +165,7 @@ class SimilarityGrader(BaseGrader):
             )
         self.kwargs = kwargs
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         reference_response: str,
         response: str,
