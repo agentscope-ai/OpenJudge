@@ -112,6 +112,8 @@ OpenJudge 提供**即用型评分器**，并支持生成**场景特定的评估�
 ----
 ## 最新动态
 
+- **2026-02-12** - 📚 **Reference Hallucination Arena** - 评估大语言模型学术引用幻觉的基准测试。 👉 [文档](./docs/validating_graders/ref_hallucination_arena.md)
+
 - **2025-12-26** - 在 [PyPI](https://pypi.org/project/py-openjudge/) 上发布 OpenJudge v0.2.0 - **重大更新！** 此版本通过在奖励构建之上添加对多样化评估场景的强大支持，扩展了我们的核心能力。通过统一奖励和评估信号，OpenJudge v0.2.0 提供了一种更全面的方法来优化应用性能和卓越性。→ [迁移指南](#迁移指南v01x--v020)
 
 - **2025-10-20** - [Auto-Rubric: Learning to Extract Generalizable Criteria for Reward Modeling](https://arxiv.org/abs/2510.17314) - 我们发布了一篇关于学习可泛化奖励标准以实现稳健建模的新论文。

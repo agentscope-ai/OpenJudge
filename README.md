@@ -47,13 +47,13 @@ It can also convert grading results into **reward signals** to help you **fine-t
 
 ## News
 
+- **2026-02-12** - 📚 **Reference Hallucination Arena** - Benchmark for evaluating LLM academic reference hallucination. 👉 [Documentation](./docs/validating_graders/ref_hallucination_arena.md)
+
 - **2026-01-27** - 🆕 **Paper Review** - Automatically review academic papers using LLM-powered evaluation. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/paper_review/)
 
 - **2026-01-27** - 🖥️ **OpenJudge UI** - A Streamlit-based visual interface for grader testing and Auto Arena. Run `streamlit run ui/app.py` to get started.
 
 - **2026-01-05** - 🏟️ **Auto Arena** - Automatically evaluate and compare multiple models without pre-existing test data. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/auto_arena/)
-
-- **2025-12-26** - Released OpenJudge v0.2.0 on [PyPI](https://pypi.org/project/py-openjudge/) → [migration-guide](#migration-guide-v01x--v020)
 
 ---
 
