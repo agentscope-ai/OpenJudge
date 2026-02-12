@@ -37,7 +37,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 
 @dataclass
@@ -356,38 +356,119 @@ async def run_all_evaluations(
     # Create semaphore for concurrency control
     semaphore = asyncio.Semaphore(max_workers)
 
-    async def run_with_semaphore(config: EvalConfig):
-        async with semaphore:
-            model = model_map[config.category]
-            print(f"[START] {config.name} ({config.grader}) with {model}")
-            result = await run_evaluation_async(config, model, base_dir)
+    async def run_with_semaphore(config: EvalConfig) -> List[Dict[str, Any]]:
+        """
+        Run evaluation for a single config with support for multiple models executed concurrently.
+        Each model evaluation independently acquires the semaphore to ensure global concurrency control.
+        Returns: List[Dict] - one result dictionary per model
+        """
+        # Parse model string from model_map (supports comma-separated values)
+        model_str = model_map.get(config.category, "")
+        models = [m.strip() for m in model_str.split(",") if m.strip()] if model_str else []
 
-            status_icon = "✓" if result["status"] == "success" else "✗"
+        if not models:
+            print(f"[!] No valid models found for config: {config.name} (category: {config.category})")
+            return []
+
+        print(f"[START] {config.name} ({config.grader}) with {len(models)} model(s): {', '.join(models)}")
+
+        # Inner function: evaluate a single model with semaphore protection
+        async def evaluate_single_model(model: str) -> Dict[str, Any]:
+            async with semaphore:  # Each model evaluation independently acquires a semaphore slot
+                try:
+                    result = await run_evaluation_async(config, model, base_dir)
+                    return result
+
+                except asyncio.TimeoutError:
+                    return {
+                        "model": model,
+                        "name": config.name,
+                        "category": config.category,
+                        "grader": config.grader,
+                        "status": "timeout",
+                        "error_output": "Evaluation timed out",
+                        "accuracy": 0.0,
+                        "correct": 0,
+                        "total": 0,
+                        "elapsed_seconds": 0.0,
+                    }
+                except Exception as e:
+                    return {
+                        "model": model,
+                        "name": config.name,
+                        "category": config.category,
+                        "grader": config.grader,
+                        "status": "error",
+                        "error_output": str(e),
+                        "accuracy": 0.0,
+                        "correct": 0,
+                        "total": 0,
+                        "elapsed_seconds": 0.0,
+                    }
+
+        # Create concurrent tasks for all models in this config
+        model_tasks = [evaluate_single_model(model) for model in models]
+
+        # Run all model evaluations concurrently (preserving order)
+        all_results = await asyncio.gather(*model_tasks, return_exceptions=False)
+
+        # Print results for each model (in original order)
+        for result in all_results:
+            model = result.get("model", "unknown")
+            status = result.get("status", "unknown")
+            status_icon = "✓" if status == "success" else "✗"
+
+            # Safely extract numeric fields with defaults
+            accuracy = result.get("accuracy", 0.0)
+            correct = result.get("correct", 0)
+            total = result.get("total", 0)
+            elapsed = result.get("elapsed_seconds", 0.0)
+
             print(
-                f"[{status_icon}] {config.name}: {result['accuracy']:.1%} "
-                f"({result['correct']}/{result['total']}) in {result['elapsed_seconds']:.1f}s"
+                f"[{status_icon}] {config.name:25s} | {model:15s} | "
+                f"{accuracy:6.1%} ({correct:3d}/{total:3d}) in {elapsed:5.1f}s"
             )
 
-            # Print error output if failed
-            if result["status"] != "success" and "error_output" in result:
-                print(f"    Status: {result['status']}")
-                print(f"    Error: {result['error_output'][-300:]}")
+            # Print error details if evaluation failed
+            if status != "success" and "error_output" in result:
+                error_msg = result["error_output"]
+                snippet = error_msg if len(error_msg) <= 300 else f"...{error_msg[-297:]}"
+                print(f"    Status: {status}")
+                print(f"    Error: {snippet}")
 
-            return result
+        return all_results
 
-    # Run all evaluations concurrently
+    # Create tasks for all configs (models within each config run concurrently)
     tasks = [run_with_semaphore(config) for config in configs_to_run]
-    results = await asyncio.gather(*tasks)
+
+    # Run all config tasks concurrently with exception handling
+    nested_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Flatten results and handle task-level exceptions
+    results: List[Dict[str, Any]] = []
+    for idx, task_result in enumerate(nested_results):
+        config_name = configs_to_run[idx].name if idx < len(configs_to_run) else f"config_{idx}"
+
+        if isinstance(task_result, Exception):
+            print(f"[✗] CRITICAL: Task for {config_name} failed with exception: {task_result}")
+            continue
+
+        if isinstance(task_result, list):
+            results.extend(task_result)
+        else:
+            print(f"[!] WARNING: Unexpected result type for {config_name}: {type(task_result)}")
+
+    results = sorted(results, key=lambda x: (x.get("grader", ""), x.get("model", "")))
 
     return results
 
 
-def print_results_table(results: List[Dict]):
+def print_results_table(results: List[Dict], delim_len=100):
     """Print results in a formatted table."""
 
-    print(f"\n{'='*90}")
+    print(f"\n{'=' * delim_len}")
     print("EVALUATION RESULTS SUMMARY")
-    print(f"{'='*90}")
+    print(f"{'=' * delim_len}")
 
     # Group by category
     categories = {}
@@ -408,10 +489,10 @@ def print_results_table(results: List[Dict]):
         cat_icon = {"text": "📝", "multimodal": "🖼️", "agent": "🤖"}[cat]
 
         print(f"\n{cat_icon} {cat.upper()}")
-        print("-" * 90)
+        print(f"{'-' * delim_len}")
         print(f"{'Grader':<35} {'Model':<15} {'Accuracy':>10} {'Correct':>10} {'Expected':>12} {'Time':>8}")
-        print("-" * 90)
-
+        print(f"{'-' * delim_len}")
+        grader_name = cat_results[0]["grader"] if cat_results else ""
         for r in cat_results:
             acc_str = f"{r['accuracy']:.1%}" if r["total"] > 0 else "N/A"
             correct_str = f"{r['correct']}/{r['total']}" if r["total"] > 0 else "N/A"
@@ -422,15 +503,22 @@ def print_results_table(results: List[Dict]):
                 total_correct += r["correct"]
                 total_samples += r["total"]
 
+            # Separate the results of different graders
+            if r["grader"] != grader_name:
+                grader_name = r["grader"]
+                print(f"{'-' * delim_len}")
+
             print(
                 f"{r['grader']:<35} {r['model']:<15} {acc_str:>10} {correct_str:>10} "
                 f"{r['expected_accuracy']:>12} {time_str:>8}"
             )
 
-    print(f"\n{'='*90}")
+        print(f"{'-' * delim_len}")
+
+    print(f"\n{'=' * delim_len}")
     overall_acc = total_correct / total_samples if total_samples > 0 else 0
     print(f"OVERALL: {total_correct}/{total_samples} ({overall_acc:.1%})")
-    print(f"{'='*90}\n")
+    print(f"{'=' * delim_len}\n")
 
 
 def main():
