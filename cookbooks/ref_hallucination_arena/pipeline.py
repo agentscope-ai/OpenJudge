@@ -623,22 +623,23 @@ class RefArenaPipeline:
                             continue
                         resp_data = self._responses[idx]
                         mvr = await asyncio.to_thread(
-                            self._verify_single_query, verifier, model_name, idx, resp_data,
+                            self._verify_single_query,
+                            verifier,
+                            model_name,
+                            idx,
+                            resp_data,
                         )
                         with ckpt_lock:
                             self._verification_results[model_name][idx] = mvr
                             self._ckpt.mark_verification_complete_item(model_name, idx)
                             safe = {
-                                m: [r for r in lst if r is not None]
-                                for m, lst in self._verification_results.items()
+                                m: [r for r in lst if r is not None] for m, lst in self._verification_results.items()
                             }
                             self._ckpt.save_verification_incremental(safe)
                             verified_count += 1
                             completed_verification_keys.add(v_key)
                             if verified_count % 20 == 0 or verified_count == total_expected:
-                                logger.info(
-                                    f"  [Streaming] Verified: {verified_count}/{total_expected}"
-                                )
+                                logger.info(f"  [Streaming] Verified: {verified_count}/{total_expected}")
                     except Exception as e:
                         logger.error(f"  Verification failed for {model_name} Q{idx}: {e}")
                     finally:
@@ -693,8 +694,7 @@ class RefArenaPipeline:
                 )
                 pending_queries = [self._queries[i] for i in pending_indices]
                 logger.info(
-                    f"  Collecting {len(pending_indices)} queries "
-                    f"({len(completed_response_indices)} already done)"
+                    f"  Collecting {len(pending_indices)} queries " f"({len(completed_response_indices)} already done)"
                 )
                 pending_responses = await collector.collect(
                     pending_queries,
@@ -722,12 +722,10 @@ class RefArenaPipeline:
 
         # Clean up None placeholders
         self._verification_results = {
-            m: [r for r in lst if r is not None]
-            for m, lst in self._verification_results.items()
+            m: [r for r in lst if r is not None] for m, lst in self._verification_results.items()
         }
         serialized = {
-            model: [mvr.model_dump() for mvr in mvr_list]
-            for model, mvr_list in self._verification_results.items()
+            model: [mvr.model_dump() for mvr in mvr_list] for model, mvr_list in self._verification_results.items()
         }
         self._ckpt.save_json(CheckpointManager.VERIFICATION_FILE, serialized)
 
@@ -825,8 +823,7 @@ class RefArenaPipeline:
             self._responses = self._ckpt.load_json(CheckpointManager.RESPONSES_FILE) or []
             raw = self._ckpt.load_json(CheckpointManager.VERIFICATION_FILE) or {}
             self._verification_results = {
-                model: [ModelVerificationResult(**mvr) for mvr in mvr_list]
-                for model, mvr_list in raw.items()
+                model: [ModelVerificationResult(**mvr) for mvr in mvr_list] for model, mvr_list in raw.items()
             }
             logger.info("Resumed verification results from checkpoint (complete)")
         else:
@@ -849,14 +846,12 @@ class RefArenaPipeline:
                 if checkpoint.stage >= PipelineStage.VERIFICATION_IN_PROGRESS:
                     raw = self._ckpt.load_json(CheckpointManager.VERIFICATION_FILE) or {}
                     self._verification_results = {
-                        model: [ModelVerificationResult(**mvr) for mvr in mvr_list]
-                        for model, mvr_list in raw.items()
+                        model: [ModelVerificationResult(**mvr) for mvr in mvr_list] for model, mvr_list in raw.items()
                     }
                     completed_v_keys = self._ckpt.get_completed_verification_keys()
 
                 logger.info(
-                    f"Resuming: {len(completed_indices)} queries collected, "
-                    f"{len(completed_v_keys)} items verified"
+                    f"Resuming: {len(completed_indices)} queries collected, " f"{len(completed_v_keys)} items verified"
                 )
 
             if not self._responses:

@@ -90,13 +90,31 @@ class ResponseCollector:
         # provider-specific params (enable_thinking, reasoning, …) are
         # forwarded correctly instead of raising TypeError.
         _STANDARD_PARAMS = {
-            "temperature", "top_p", "n", "max_tokens", "max_completion_tokens",
-            "stop", "presence_penalty", "frequency_penalty",
-            "logit_bias", "logprobs", "top_logprobs",
-            "response_format", "seed", "tools", "tool_choice",
-            "user", "service_tier", "store", "metadata",
-            "extra_body", "extra_headers", "extra_query",
-            "timeout", "stream_options", "reasoning_effort",
+            "temperature",
+            "top_p",
+            "n",
+            "max_tokens",
+            "max_completion_tokens",
+            "stop",
+            "presence_penalty",
+            "frequency_penalty",
+            "logit_bias",
+            "logprobs",
+            "top_logprobs",
+            "response_format",
+            "seed",
+            "tools",
+            "tool_choice",
+            "user",
+            "service_tier",
+            "store",
+            "metadata",
+            "extra_body",
+            "extra_headers",
+            "extra_query",
+            "timeout",
+            "stream_options",
+            "reasoning_effort",
         }
 
         for name, endpoint in target_endpoints.items():
