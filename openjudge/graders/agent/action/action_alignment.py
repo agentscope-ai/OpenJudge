@@ -170,10 +170,12 @@ class ActionAlignmentGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_ACTION_ALIGNMENT_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_ACTION_ALIGNMENT_TEMPLATE,
+        template: Optional[PromptTemplate] = DEFAULT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -183,7 +185,7 @@ class ActionAlignmentGrader(LLMGrader):
         Args:
             model: The chat model to use for evaluation, either as a BaseChatModel instance or config dict
             template: The prompt template for action alignment evaluation.
-                     Defaults to DEFAULT_ACTION_ALIGNMENT_TEMPLATE.
+                     Defaults to DEFAULT_TEMPLATE.
             language: The language for the evaluation prompt. Defaults to LanguageEnum.EN.
             strategy: The evaluation strategy to use. Defaults to DirectStrategy.
         """
@@ -192,7 +194,7 @@ class ActionAlignmentGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate action alignment with plan",
             model=model,
-            template=template or DEFAULT_ACTION_ALIGNMENT_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

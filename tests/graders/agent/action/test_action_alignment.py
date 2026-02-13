@@ -61,6 +61,23 @@ class TestActionAlignmentGraderUnit:
         assert grader.name == "action_alignment"
         assert grader.model == mock_model
 
+        template = grader.get_template()
+        default_template = grader.get_default_template()
+        print(f"template:{template}\ndefault_template:{default_template}")
+        assert template == default_template
+        assert len(template["messages"][LanguageEnum.EN]) == 1
+        assert template["messages"][LanguageEnum.EN][0]["role"] == "user"
+        assert (
+            "You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent executes an action that aligns with its stated plan or reasoning."
+            in template["messages"][LanguageEnum.EN][0]["content"]
+        )
+        assert len(template["messages"][LanguageEnum.ZH]) == 1
+        assert template["messages"][LanguageEnum.ZH][0]["role"] == "user"
+        assert (
+            "你是一名分析智能体行为的专家。你的任务是评估智能体是否执行了与其声明的计划或推理一致的动作。该动作应该符合计划和反思的逻辑，表明智能体的计划和执行模块之间有良好的对齐。"
+            in template["messages"][LanguageEnum.ZH][0]["content"]
+        )
+
     @pytest.mark.asyncio
     async def test_successful_evaluation_aligned(self):
         """Test successful evaluation with good alignment"""
@@ -156,12 +173,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 RUN_QUALITY_TESTS = bool(OPENAI_API_KEY and OPENAI_BASE_URL)
 
-pytestmark = pytest.mark.skipif(
-    not RUN_QUALITY_TESTS,
-    reason="Requires API keys and base URL to run quality tests",
-)
 
-
+@pytest.mark.skipif(not RUN_QUALITY_TESTS, reason="Requires API keys and base URL to run quality tests")
 @pytest.mark.quality
 class TestActionAlignmentGraderQuality:
     """Quality tests for ActionAlignmentGrader - testing evaluation quality"""
