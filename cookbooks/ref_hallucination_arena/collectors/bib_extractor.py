@@ -143,9 +143,7 @@ class BibExtractor:
               3. Fall back to bare numeric: ``name = 2023``
             """
             # --- Strategy 1: brace-delimited with depth counting ---
-            pattern = re.compile(
-                rf"{name}\s*=\s*\{{", re.IGNORECASE
-            )
+            pattern = re.compile(rf"{name}\s*=\s*\{{", re.IGNORECASE)
             m = pattern.search(fields_str)
             if m:
                 # Position of the opening brace

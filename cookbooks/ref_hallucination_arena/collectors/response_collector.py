@@ -199,7 +199,9 @@ class ResponseCollector:
         if not text:
             return False
         lower = text.lower()
-        return any(tag in lower for tag in ("@article", "@inproceedings", "@book", "@misc", "@phdthesis", "@techreport"))
+        return any(
+            tag in lower for tag in ("@article", "@inproceedings", "@book", "@misc", "@phdthesis", "@techreport")
+        )
 
     async def _do_tool_call(self, endpoint_name: str, query_item: QueryItem, timeout: float) -> Dict[str, Any]:
         """Run a tool-augmented ReAct call, with a fallback summarisation step.
@@ -236,13 +238,15 @@ class ResponseCollector:
                 f"(content length={len(content)}). Running fallback summarisation…"
             )
             content = await self._tool_fallback_summary(
-                endpoint_name, query_item, result, timeout,
+                endpoint_name,
+                query_item,
+                result,
+                timeout,
             )
 
         logger.info(
             f"Tool-augmented {endpoint_name}: "
-            f"{tool_calls_count} tool calls in {iterations} iterations"
-            + (" [with fallback]" if needs_fallback else "")
+            f"{tool_calls_count} tool calls in {iterations} iterations" + (" [with fallback]" if needs_fallback else "")
         )
         return {
             "endpoint": endpoint_name,
@@ -345,11 +349,7 @@ class ResponseCollector:
             return {"query_idx": query_idx, "endpoint": endpoint_name, "result": result}
 
         # Launch ALL tasks at once; semaphores handle per-endpoint throttling
-        tasks = [
-            asyncio.ensure_future(_collect_one(i, ep))
-            for i in range(num_queries)
-            for ep in self.endpoints
-        ]
+        tasks = [asyncio.ensure_future(_collect_one(i, ep)) for i in range(num_queries) for ep in self.endpoints]
 
         completed = 0
         for coro in asyncio.as_completed(tasks):

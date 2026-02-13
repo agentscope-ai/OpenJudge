@@ -56,8 +56,20 @@ def _setup_cjk_font():
             return
 
     # Fallback: find any ttf/ttc whose file path suggests CJK support
-    cjk_keywords = ("wqy", "wenquan", "noto", "cjk", "simhei", "yahei", "simsun",
-                     "fang", "heiti", "songti", "source-han", "sourcehan")
+    cjk_keywords = (
+        "wqy",
+        "wenquan",
+        "noto",
+        "cjk",
+        "simhei",
+        "yahei",
+        "simsun",
+        "fang",
+        "heiti",
+        "songti",
+        "source-han",
+        "sourcehan",
+    )
     for f in fm.fontManager.ttflist:
         path_lower = f.fname.lower()
         if any(kw in path_lower for kw in cjk_keywords):
