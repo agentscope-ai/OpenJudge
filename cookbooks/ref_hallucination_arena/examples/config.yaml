@@ -64,6 +64,10 @@ target_endpoints:
     # Use {num_refs} placeholder for the expected number of references.
     system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
 
+    # [Optional, default=5] Max concurrent requests for this endpoint.
+    # Each endpoint runs independently; set based on the provider's rate limit.
+    max_concurrency: 5
+
     # [Optional] Extra parameters passed to the API request
     extra_params:
       temperature: 0.3
@@ -73,6 +77,7 @@ target_endpoints:
     base_url: "https://api.openai.com/v1"
     api_key: "${OPENAI_API_KEY}"
     model: "gpt-4"
+    max_concurrency: 8
     system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
     extra_params:
       temperature: 0.3
@@ -145,9 +150,6 @@ verification:
 # Controls the model API call behavior.
 
 evaluation:
-  # [Optional, default=40] Maximum concurrent API requests.
-  max_concurrency: 40
-
   # [Optional, default=120] Request timeout in seconds.
   # Increase for thinking/reasoning models that respond slowly.
   timeout: 120

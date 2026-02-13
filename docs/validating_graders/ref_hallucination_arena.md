@@ -9,15 +9,17 @@ Reference Hallucination Arena is a benchmark designed to evaluate LLMs' ability 
 
 The benchmark addresses a critical problem: when researchers ask LLMs for literature recommendations, models frequently "hallucinate" references—generating papers that sound plausible but do not actually exist. Reference Hallucination Arena quantifies this phenomenon across multiple models and academic disciplines.
 
-The official evaluation dataset is available on HuggingFace: [**agentscope-ai/OpenJudge**](https://huggingface.co/datasets/agentscope-ai/OpenJudge/tree/main/benchmark). You can download `ref_hallucination_query.json` from the `benchmark/` directory.
+The official evaluation dataset is available on HuggingFace: [**OpenJudge/ref-hallucination-arena**](https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena).
 
 **Key Features:**
 
 | Feature | Description |
 |---------|-------------|
 | **Multi-source Verification** | Cross-validates references against Crossref, PubMed, arXiv, and DBLP |
-| **Multi-discipline Coverage** | Supports Computer Science, Biomedical, Physics, Chemistry, Mathematics, and more |
+| **Multi-discipline Coverage** | Supports Computer Science, Biomedical, Physics, Chemistry, Social Science, Interdisciplinary, and more |
 | **Field-level Accuracy** | Checks title, author, year, and DOI individually for fine-grained analysis |
+| **Strict Verification** | All fields (title, author, year) must exactly match a real paper to count as VERIFIED |
+| **Tool-augmented Mode** | Optional ReAct agent with Tavily web search to compare bare vs. tool-augmented hallucination rates |
 | **Year Constraint Support** | Tests whether models respect temporal constraints (e.g., "papers after 2020") |
 | **Checkpoint Resume** | Fine-grained per-item checkpointing for long-running evaluations |
 | **Objective Metrics** | No subjective judgment—all scores are based on verifiable facts |
@@ -27,7 +29,7 @@ The evaluation pipeline consists of six automated steps:
 | Step | Component | Description |
 |------|-----------|-------------|
 | 1 | `DatasetLoader` | Load evaluation queries from JSON/JSONL dataset |
-| 2 | `ResponseCollector` | Collect BibTeX-formatted responses from target models |
+| 2 | `ResponseCollector` | Collect BibTeX-formatted responses from target models (bare mode or tool-augmented ReAct mode) |
 | 3 | `BibExtractor` | Extract structured references from model responses |
 | 4 | `CompositeVerifier` | Verify each reference against Crossref/PubMed/arXiv/DBLP |
 | 5 | `ObjectiveScorer` + `RankingCalculator` | Compute verification metrics and rank models |
@@ -36,7 +38,7 @@ The evaluation pipeline consists of six automated steps:
 
 ## Dataset
 
-The evaluation dataset is hosted on HuggingFace: [**agentscope-ai/OpenJudge**](https://huggingface.co/datasets/agentscope-ai/OpenJudge/tree/main/benchmark). Download `ref_hallucination_query.json` from the `benchmark/` directory to use as your query file.
+The evaluation dataset is hosted on HuggingFace: [**OpenJudge/ref-hallucination-arena**](https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena).
 
 Each query item in the dataset follows this schema:
 
@@ -57,6 +59,7 @@ Each query item in the dataset follows this schema:
 | `num_refs` | No | Expected number of references (default: 5) |
 | `language` | No | Query language: `zh` or `en` (default: `zh`) |
 | `year_constraint` | No | Time constraint on recommended references |
+| `metadata` | No | Arbitrary extra metadata (dict) |
 
 **Year Constraint Formats:**
 
@@ -93,15 +96,15 @@ Download the official dataset from HuggingFace or create your own query file in 
     python -c "
     from huggingface_hub import hf_hub_download
     hf_hub_download(
-        repo_id='agentscope-ai/OpenJudge',
-        filename='benchmark/ref_hallucination_query.json',
+        repo_id='OpenJudge/ref-hallucination-arena',
+        filename='ref_hallucination_query.json',
         repo_type='dataset',
         local_dir='./data'
     )
     "
     ```
 
-    Or download directly from the [benchmark directory on HuggingFace](https://huggingface.co/datasets/agentscope-ai/OpenJudge/tree/main/benchmark).
+    Or download directly from [HuggingFace](https://huggingface.co/datasets/OpenJudge/ref-hallucination-arena).
 </li>
 <li><strong>Configure Endpoints</strong>
 
@@ -114,27 +117,51 @@ Create a YAML configuration file defining target models, verification settings, 
 
     dataset:
       path: "./data/queries.json"
+      shuffle: false        # Whether to shuffle queries before evaluation
+      max_queries: null      # Max number of queries to use (null = use all)
 
     target_endpoints:
-      qwen:
-        base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        api_key: "${DASHSCOPE_API_KEY}"
-        model: "qwen3-max"
+      # Bare mode (default): direct LLM call
+      model_a:
+        base_url: "https://api.example.com/v1"
+        api_key: "${MODEL_A_API_KEY}"
+        model: "model-a"
         system_prompt: "You are an academic literature recommendation expert. Recommend {num_refs} real papers in BibTeX format."
+        max_concurrency: 5   # Per-endpoint concurrency (default: 5)
         extra_params:
           temperature: 0.3
 
-      gpt4:
-        base_url: "https://api.openai.com/v1"
-        api_key: "${OPENAI_API_KEY}"
-        model: "gpt-4"
+      model_b:
+        base_url: "https://api.example.com/v1"
+        api_key: "${MODEL_B_API_KEY}"
+        model: "model-b"
         system_prompt: "You are an academic literature recommendation expert. Recommend {num_refs} real papers in BibTeX format."
+        max_concurrency: 8
         extra_params:
           temperature: 0.3
+
+      # Tool-augmented mode: ReAct agent with Tavily web search
+      model_b_with_tools:
+        base_url: "https://api.example.com/v1"
+        api_key: "${MODEL_B_API_KEY}"
+        model: "model-b"
+        extra_params:
+          temperature: 0.3
+        tool_config:
+          enabled: true
+          tavily_api_key: "${TAVILY_API_KEY}"
+          max_iterations: 10        # ReAct iterations (1-30, default: 10)
+          search_depth: "advanced"   # "basic" or "advanced"
 
     verification:
       max_workers: 10
-      verified_threshold: 0.7
+      crossref_mailto: ""    # Email for Crossref polite pool
+      pubmed_api_key: ""     # PubMed API key for higher rate limit
+      timeout: 30            # Per-request timeout in seconds
+
+    evaluation:
+      timeout: 120           # Model API request timeout in seconds
+      retry_times: 3         # Number of retry attempts
 
     output:
       output_dir: "./evaluation_results/ref_hallucination_arena"
@@ -190,19 +217,21 @@ Execute the pipeline via CLI or Python API. The pipeline supports checkpoint res
 
 ## Interpreting Results
 
-The primary metrics are **verification rate** (percentage of references confirmed as real) and **hallucination rate** (percentage of fabricated references):
+The primary metric is **overall accuracy** (also called verification rate)—the percentage of references where title, author, and year all exactly match a real paper. Models are ranked by: overall accuracy → year compliance rate → average confidence → completeness (descending):
 
 ```
 ============================================================
-REFERENCE HALLUCINATION ARENA RESULTS
+REFERENCE HALLUCINATION ARENA - RANKINGS
 ============================================================
-Model Rankings (by Verification Rate):
-  1. Kimi             : 78.4% verified (hallucination: 21.6%)
-  2. GPT-4            : 75.2% verified (hallucination: 24.8%)
-  3. DeepSeek         : 72.8% verified (hallucination: 27.2%)
-  4. Qwen             : 69.5% verified (hallucination: 30.5%)
+  1. Model A          [################----] overall=78.4%  title=85.2%  author=80.1%  doi=52.3%  refs=50
+  2. Model B          [###############-----] overall=75.2%  title=82.0%  author=77.5%  doi=48.7%  refs=50
+  3. Model C          [##############------] overall=72.8%  title=80.3%  author=75.0%  doi=45.2%  refs=50
+  4. Model D          [#############-------] overall=69.5%  title=78.1%  author=72.8%  doi=41.5%  refs=50
 ============================================================
 ```
+
+!!! info "Benchmark Leaderboard"
+    For real-world evaluation results on mainstream LLMs, visit the [**OpenJudge Leaderboard**](https://openjudge.me/leaderboard).
 
 **Interpretation:**
 
@@ -214,7 +243,7 @@ Model Rankings (by Verification Rate):
 Beyond overall rates, examine **per-field accuracy** for fine-grained insight:
 
 ```
-Per-Field Accuracy (Qwen):
+Per-Field Accuracy (Model A):
   Title Accuracy  : 82.3%    # Percentage of titles matching real papers
   Author Accuracy : 68.5%    # Percentage of correct author lists
   Year Accuracy   : 71.2%    # Percentage of correct publication years
@@ -226,12 +255,12 @@ This breakdown reveals that models may get titles right but fabricate author nam
 **Per-Discipline Performance** shows which academic fields are most challenging:
 
 ```
-Per-Discipline Verification Rate:
-  Computer Science : 81.2%
-  Biomedical       : 74.5%
-  Physics          : 70.3%
-  Chemistry        : 65.8%
-  Mathematics      : 58.1%
+Per-Discipline Overall Accuracy:
+  Computer Science  : 81.2%
+  Biomedical        : 74.5%
+  Physics           : 70.3%
+  Chemistry         : 65.8%
+  Social Science    : 58.1%
 ```
 
 
@@ -245,10 +274,12 @@ Each reference receives one of four verification statuses:
 
 | Status | Meaning | Typical Cause |
 |--------|---------|---------------|
-| **VERIFIED** | Reference confirmed as real | Paper found in academic databases with matching metadata |
+| **VERIFIED** | Reference confirmed as real | Paper found in academic databases with title, author, and year all strictly matching |
 | **SUSPECT** | Partial match found | Title similar but author/year mismatch; may be a real paper with wrong details |
-| **NOT_FOUND** | No match in any database | Likely a fabricated reference |
+| **NOT_FOUND** | No match in any database | Likely a fabricated reference, or a real paper with incorrect metadata |
 | **ERROR** | Verification failed | API timeout, rate limiting, or network issues |
+
+Note: Under the current strict verification logic, a reference is only marked VERIFIED when **all** provided fields (title, author, year) exactly match a real paper. Partial matches (e.g., correct title but wrong authors) are counted as NOT_FOUND with match details preserved for per-field accuracy analysis.
 
 ### Common Hallucination Patterns
 
@@ -300,11 +331,12 @@ Based on error analysis, consider these strategies:
 
 | Error Pattern | Root Cause | Solution |
 |---------------|------------|----------|
-| Low verification rate overall | Model lacks factual grounding | Use models with retrieval augmentation (RAG) |
-| High SUSPECT rate | Partial knowledge of papers | Strengthen system prompt to require exact metadata |
+| Low verification rate overall | Model lacks factual grounding | Enable tool-augmented mode with web search, or use RAG-capable models |
+| High NOT_FOUND rate with partial matches | Partial knowledge of papers | Strengthen system prompt to require exact metadata |
 | Poor DOI accuracy | DOIs are hard to memorize | Ask models to omit DOIs if uncertain |
 | Discipline-specific weakness | Domain knowledge gaps | Use domain-specialized models for specific fields |
 | Year constraint violations | Model ignores temporal restrictions | Emphasize time constraints in the prompt |
+| Tool mode reaches max iterations | Insufficient search depth | Increase `max_iterations` in `tool_config` (up to 30) |
 
 
 ## Output Files
@@ -313,14 +345,14 @@ All results are saved to the configured output directory:
 
 ```
 evaluation_results/ref_hallucination_arena/
-├── evaluation_report.md          # Detailed Markdown report
-├── evaluation_results.json       # Final rankings and scores
-├── verification_chart.png        # Verification rate bar chart
-├── discipline_chart.png          # Per-discipline breakdown chart
+├── evaluation_report.md          # Detailed Markdown report (bilingual zh/en)
+├── evaluation_results.json       # Final rankings, per-field accuracy, and scores
+├── verification_chart.png        # Per-field accuracy breakdown bar chart (Title/Author/Year/DOI/Overall)
+├── discipline_chart.png          # Per-discipline overall accuracy grouped bar chart
 ├── queries.json                  # Loaded evaluation queries
 ├── responses.json                # Raw model responses
 ├── extracted_refs.json           # Extracted BibTeX references
-├── verification_results.json     # Detailed verification results
+├── verification_results.json     # Detailed per-reference verification results
 └── checkpoint.json               # Pipeline checkpoint for resume
 ```
 
@@ -329,7 +361,7 @@ evaluation_results/ref_hallucination_arena/
 
 === "Verification Sources"
 
-    The `CompositeVerifier` checks references against four academic databases in parallel:
+    The `CompositeVerifier` checks references against four academic databases with **discipline-aware routing**:
 
     | Source | Coverage | Best For |
     |--------|----------|----------|
@@ -338,7 +370,13 @@ evaluation_results/ref_hallucination_arena/
     | **arXiv** | Preprints in STEM fields | Computer science, physics, mathematics |
     | **DBLP** | Computer science bibliography | CS conferences and journals |
 
-    A reference is marked as VERIFIED if it matches in **any** of the four sources with a composite score above the configured threshold (default: 0.7).
+    A reference is marked as **VERIFIED** only when **all** of the following strict checks pass against a real paper in any of the four sources:
+
+    - **Title**: Normalized exact match (lowercase, strip punctuation/HTML, compare word sequences)
+    - **Author**: Every author last name the model provides must appear in the real author list
+    - **Year**: Publication year must be identical
+
+    The verification order depends on the query's discipline. For example, `biomedical` queries check Crossref → PubMed → arXiv → DBLP, while `computer_science` queries check Crossref → DBLP → arXiv → PubMed. When a DOI is present, Crossref is always tried first regardless of discipline.
 
     ??? tip "Increase Verification Rate Limits"
         Provide optional credentials to get higher API rate limits:
@@ -366,6 +404,46 @@ evaluation_results/ref_hallucination_arena/
 
     Checkpoint stages: `QUERIES_LOADED` → `RESPONSES_COLLECTING` → `RESPONSES_COLLECTED` → `REFS_EXTRACTED` → `VERIFICATION_IN_PROGRESS` → `VERIFICATION_COMPLETE` → `EVALUATION_COMPLETE`
 
+=== "Tool-Augmented Mode"
+
+    The pipeline supports an optional **tool-augmented mode** where models use a ReAct agent with Tavily web search to find and verify real papers before recommending them. This enables direct comparison of "bare model" vs. "tool-augmented" hallucination rates for the same model.
+
+    ```yaml
+    target_endpoints:
+      # Same model, bare mode (no tools)
+      model_a_bare:
+        base_url: "https://api.example.com/v1"
+        api_key: "${MODEL_A_API_KEY}"
+        model: "model-a"
+        extra_params:
+          temperature: 0.3
+
+      # Same model, tool-augmented mode
+      model_a_with_tools:
+        base_url: "https://api.example.com/v1"
+        api_key: "${MODEL_A_API_KEY}"
+        model: "model-a"
+        extra_params:
+          temperature: 0.3
+        tool_config:
+          enabled: true
+          tavily_api_key: "${TAVILY_API_KEY}"
+          max_iterations: 10
+          search_depth: "advanced"
+    ```
+
+    | Parameter | Default | Description |
+    |-----------|---------|-------------|
+    | `enabled` | `false` | Set to `true` to activate tool-augmented mode |
+    | `tavily_api_key` | `null` | Tavily API key (falls back to `TAVILY_API_KEY` env var) |
+    | `max_iterations` | `10` | Maximum ReAct reasoning iterations (1–30) |
+    | `search_depth` | `"advanced"` | Tavily search depth: `"basic"` or `"advanced"` |
+
+    When the ReAct agent exhausts its iterations without producing BibTeX output, the pipeline automatically runs a **fallback summarization step**—one additional LLM call without tools—so the model can synthesize all gathered search results into proper BibTeX format.
+
+    !!! tip "Separate Prompts for Tool Mode"
+        When no custom `system_prompt` is set, the pipeline automatically uses a different default prompt for tool-augmented mode that instructs the model to search and verify papers before recommending them.
+
 === "Custom System Prompts"
 
     The system prompt controls how models format their reference output. Use the `{num_refs}` placeholder to dynamically insert the expected number of references:
@@ -387,6 +465,8 @@ evaluation_results/ref_hallucination_arena/
     !!! tip "BibTeX Format is Critical"
         The pipeline extracts references using BibTeX parsing. Ensure your system prompt explicitly requests BibTeX-formatted output for reliable extraction.
 
+    When no custom `system_prompt` is provided, the pipeline uses built-in defaults in both Chinese and English, selected based on the query's `language` field. Tool-augmented mode uses separate default prompts that include instructions for web search.
+
 === "Evaluation Report"
 
     Generate a comprehensive Markdown report with concrete examples:
@@ -403,7 +483,7 @@ evaluation_results/ref_hallucination_arena/
         highlight_best: true   # Highlight best-performing model
     ```
 
-    The report includes **Executive Summary**, **Model Rankings**, **Per-Discipline Analysis**, **Field-level Accuracy**, and **Representative Cases**.
+    The report includes **Executive Summary**, **Per-Field Accuracy Breakdown**, **Model Rankings**, **Per-Discipline Analysis**, **Verification Source Distribution**, and **Representative Cases**.
 
 
 ## Best Practices
@@ -415,12 +495,15 @@ evaluation_results/ref_hallucination_arena/
     - Use `--save` flag to persist all intermediate results for later analysis
     - Include **diverse disciplines** in your evaluation queries for comprehensive assessment
     - Use `{num_refs}` placeholder in system prompts to control reference count
+    - Use **tool-augmented mode** to compare bare vs. search-assisted hallucination rates for the same model
+    - Set per-endpoint `max_concurrency` based on each provider's rate limit
 
 !!! warning "Don't"
     - Set `max_concurrency` too high—this may trigger API rate limits on verification services
     - Skip checkpoint resumption for large-scale evaluations (hundreds of queries × many models)
     - Compare models with different system prompts unless intentionally testing prompt effects
     - Ignore per-discipline results—aggregate scores can mask discipline-specific weaknesses
+    - Set `tool_config.max_iterations` too high for tool-augmented mode—this increases latency and cost significantly
 
 
 ## Next Steps

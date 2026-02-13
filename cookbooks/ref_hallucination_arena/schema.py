@@ -80,6 +80,12 @@ class OpenAIEndpoint(BaseModel):
     model: str = Field(..., description="Model name")
     system_prompt: Optional[str] = Field(default=None, description="System prompt")
     extra_params: Optional[Dict[str, Any]] = Field(default=None, description="Extra request parameters")
+    max_concurrency: int = Field(
+        default=5,
+        ge=1,
+        le=100,
+        description="Max concurrent requests for this endpoint",
+    )
     tool_config: ToolConfig = Field(
         default_factory=ToolConfig,
         description="Tool-augmented mode configuration. "
@@ -135,9 +141,8 @@ class VerificationConfig(BaseModel):
 
 
 class EvaluationConfig(BaseModel):
-    """Evaluation configuration."""
+    """Evaluation configuration (timeout and retry apply to all endpoints)."""
 
-    max_concurrency: int = Field(default=40, description="Maximum concurrency")
     timeout: int = Field(default=120, description="Request timeout in seconds")
     retry_times: int = Field(default=3, description="Number of retries")
 

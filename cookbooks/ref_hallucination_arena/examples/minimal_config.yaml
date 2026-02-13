@@ -30,10 +30,10 @@ target_endpoints:
     system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers in standard BibTeX format. Only recommend papers you are confident actually exist."
 
 # All other settings use defaults:
+# - endpoint.max_concurrency: 5 (per endpoint)
 # - verification.max_workers: 10
 # - verification.timeout: 30
 # - verification.verified_threshold: 0.7
-# - evaluation.max_concurrency: 40
 # - evaluation.timeout: 120
 # - output.output_dir: "./evaluation_results/ref_hallucination_arena"
 # - report.enabled: true
