@@ -85,9 +85,33 @@ class ResponseCollector:
         self._tool_enabled: Dict[str, bool] = {}
         self._semaphores: Dict[str, asyncio.Semaphore] = {}
 
+        # Standard OpenAI SDK params for chat.completions.create().
+        # Anything NOT in this set is routed to ``extra_body`` so that
+        # provider-specific params (enable_thinking, reasoning, …) are
+        # forwarded correctly instead of raising TypeError.
+        _STANDARD_PARAMS = {
+            "temperature", "top_p", "n", "max_tokens", "max_completion_tokens",
+            "stop", "presence_penalty", "frequency_penalty",
+            "logit_bias", "logprobs", "top_logprobs",
+            "response_format", "seed", "tools", "tool_choice",
+            "user", "service_tier", "store", "metadata",
+            "extra_body", "extra_headers", "extra_query",
+            "timeout", "stream_options", "reasoning_effort",
+        }
+
         for name, endpoint in target_endpoints.items():
-            extra_params = endpoint.extra_params or {}
+            extra_params = dict(endpoint.extra_params or {})
             extra_params.pop("stream", None)
+
+            # Separate provider-specific params into extra_body
+            extra_body: Dict[str, Any] = {}
+            for key in list(extra_params.keys()):
+                if key not in _STANDARD_PARAMS:
+                    extra_body[key] = extra_params.pop(key)
+            if extra_body:
+                extra_params.setdefault("extra_body", {})
+                extra_params["extra_body"].update(extra_body)
+
             self.models[name] = OpenAIChatModel(
                 model=endpoint.model,
                 api_key=endpoint.api_key,

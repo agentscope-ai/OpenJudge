@@ -29,6 +29,32 @@ class BibExtractor:
         re.IGNORECASE,
     )
 
+    # Patterns for stripping thinking / reasoning blocks that some models
+    # embed directly in the content field (e.g. DeepSeek, QwQ, Kimi, etc.)
+    _THINKING_PATTERNS = [
+        # <think>...</think>  (most common)
+        re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE),
+        # <thinking>...</thinking>
+        re.compile(r"<thinking>.*?</thinking>", re.DOTALL | re.IGNORECASE),
+        # <reasoning>...</reasoning>
+        re.compile(r"<reasoning>.*?</reasoning>", re.DOTALL | re.IGNORECASE),
+        # <reflection>...</reflection>
+        re.compile(r"<reflection>.*?</reflection>", re.DOTALL | re.IGNORECASE),
+    ]
+
+    @classmethod
+    def _strip_thinking(cls, text: str) -> str:
+        """Remove thinking / reasoning blocks from model output.
+
+        Some models (DeepSeek, QwQ, Kimi, Grok, etc.) may embed their
+        chain-of-thought reasoning inside ``<think>…</think>`` or similar
+        tags directly in the ``content`` field.  These blocks can contain
+        partial BibTeX-like text that would confuse the extractor.
+        """
+        for pattern in cls._THINKING_PATTERNS:
+            text = pattern.sub("", text)
+        return text.strip()
+
     def extract(self, response_text: str) -> List[Reference]:
         """Extract references from a model response.
 
@@ -38,6 +64,11 @@ class BibExtractor:
         Returns:
             List of extracted Reference objects.
         """
+        if not response_text:
+            return []
+
+        # Strip any thinking / reasoning blocks before extraction
+        response_text = self._strip_thinking(response_text)
         if not response_text:
             return []
 
