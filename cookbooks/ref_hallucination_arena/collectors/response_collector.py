@@ -342,6 +342,7 @@ class ResponseCollector:
         self,
         queries: List[QueryItem],
         on_query_complete: Optional[Any] = None,
+        on_single_response: Optional[Any] = None,
     ) -> List[Dict[str, Any]]:
         """Collect responses from all endpoints for all queries.
 
@@ -351,6 +352,9 @@ class ResponseCollector:
             queries: List of QueryItem from the user-provided dataset.
             on_query_complete: Optional callback(query_idx, result_dict) called
                 as soon as all endpoints for a query are done.
+            on_single_response: Optional callback(query_idx, endpoint_name,
+                response_text) called as soon as a single endpoint responds
+                successfully. Enables streaming verification pipelines.
 
         Returns:
             List of dicts: {query, discipline, num_refs, responses: {endpoint: text}}
@@ -395,6 +399,13 @@ class ResponseCollector:
 
             query_results[qi]["responses"][ep] = res["response"] if res["success"] else None
             query_done_counts[qi] += 1
+
+            # Fire per-response callback as soon as an endpoint responds
+            if res["success"] and on_single_response:
+                try:
+                    on_single_response(qi, ep, res["response"])
+                except Exception as e:
+                    logger.warning(f"on_single_response callback error for Q{qi}/{ep}: {e}")
 
             if query_done_counts[qi] == num_endpoints and on_query_complete:
                 try:
