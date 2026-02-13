@@ -3,6 +3,12 @@
 
 Reuses the same pattern as cookbooks.auto_arena.response_collector but adapted
 for QueryItem (user-provided dataset) instead of GeneratedQuery.
+
+Supports two collection modes per endpoint:
+  - **Bare mode** (default): Direct LLM call via achat.
+  - **Tool-augmented mode** (tool_config.enabled=true): Uses a ReAct agent
+    with TavilySearchTool so the LLM can search the web to verify/find real
+    papers before recommending them.
 """
 
 import asyncio
@@ -34,12 +40,40 @@ DEFAULT_SYSTEM_PROMPT_EN = (
     "and briefly describe each paper's core contribution. Only recommend papers you are confident actually exist."
 )
 
+# Tool-augmented system prompts: instruct the model to use web_search to find/verify papers
+DEFAULT_TOOL_SYSTEM_PROMPT_ZH = (
+    "你是一位学术文献推荐专家。请根据用户的研究主题，推荐{num_refs}篇真实存在的高质量学术论文。\n\n"
+    "你可以使用 web_search 工具来搜索和验证论文的真实性。建议你：\n"
+    "1. 先用搜索工具查找相关领域的真实论文\n"
+    "2. 验证论文的标题、作者、年份等信息的准确性\n"
+    "3. 确认论文确实存在后，再以标准BibTeX格式输出\n\n"
+    "必须以标准BibTeX格式输出每篇论文的引用信息（包含title、author、year、journal/booktitle、doi等字段），"
+    "并在每条BibTeX后简述该论文的核心贡献。只推荐你通过搜索确认真实存在的论文，不要编造。"
+)
+
+DEFAULT_TOOL_SYSTEM_PROMPT_EN = (
+    "You are an academic literature recommendation expert. Based on the user's research topic, "
+    "recommend {num_refs} real, high-quality academic papers.\n\n"
+    "You have access to a web_search tool to search and verify papers. You should:\n"
+    "1. Use the search tool to find real papers in the relevant field\n"
+    "2. Verify the accuracy of paper titles, authors, years, and other metadata\n"
+    "3. Only output papers after confirming they actually exist\n\n"
+    "Output each paper in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), "
+    "and briefly describe each paper's core contribution. Only recommend papers you have verified to be real."
+)
+
 
 class ResponseCollector:
     """Collect reference recommendation responses from multiple target endpoints.
 
     For each query, builds an appropriate prompt (with system prompt specifying
     BibTeX output format) and calls all target endpoints concurrently.
+
+    Supports two modes per endpoint:
+      - **Bare mode** (default): Direct LLM call via model.achat().
+      - **Tool-augmented mode** (tool_config.enabled=true): Uses a ReAct agent
+        with TavilySearchTool. The model can autonomously search the web to
+        find and verify real papers before recommending them.
     """
 
     def __init__(
@@ -50,24 +84,61 @@ class ResponseCollector:
         self.endpoints = target_endpoints
         self.config = evaluation_config or EvaluationConfig()
 
-        # Initialize models
+        # Initialize models and optional ReAct agents
         self.models: Dict[str, OpenAIChatModel] = {}
+        self.agents: Dict[str, Any] = {}  # endpoint_name -> ReActAgent (only for tool-augmented)
         self.system_prompts: Dict[str, Optional[str]] = {}
+        self._tool_enabled: Dict[str, bool] = {}  # track which endpoints use tools
 
         for name, endpoint in target_endpoints.items():
             extra_params = endpoint.extra_params or {}
             extra_params.pop("stream", None)
-            self.models[name] = OpenAIChatModel(
+            model = OpenAIChatModel(
                 model=endpoint.model,
                 api_key=endpoint.api_key,
                 base_url=endpoint.base_url,
                 stream=False,
                 **extra_params,
             )
+            self.models[name] = model
             self.system_prompts[name] = endpoint.system_prompt
+
+            # Initialize ReAct agent if tool-augmented mode is enabled
+            tool_cfg = endpoint.tool_config
+            if tool_cfg.enabled:
+                self._tool_enabled[name] = True
+                agent = self._create_tool_agent(model, tool_cfg)
+                self.agents[name] = agent
+                logger.info(
+                    f"Endpoint '{name}': tool-augmented mode enabled "
+                    f"(max_iterations={tool_cfg.max_iterations})"
+                )
+            else:
+                self._tool_enabled[name] = False
 
         self.concurrency_manager = ConcurrencyManager()
         self.concurrency_manager.set_max_concurrency(self.config.max_concurrency)
+
+    @staticmethod
+    def _create_tool_agent(model: OpenAIChatModel, tool_cfg: Any) -> Any:
+        """Create a ReAct agent with TavilySearchTool for tool-augmented mode.
+
+        Args:
+            model: The OpenAI chat model instance.
+            tool_cfg: ToolConfig with tavily_api_key and max_iterations.
+
+        Returns:
+            Configured ReActAgent instance.
+        """
+        from openjudge.agentic import ReActAgent
+        from openjudge.graders.common.search_correctness import TavilySearchTool
+
+        search_tool = TavilySearchTool(api_key=tool_cfg.tavily_api_key)
+        return ReActAgent(
+            model=model,
+            tools=[search_tool],
+            max_iterations=tool_cfg.max_iterations,
+        )
 
     def _build_system_prompt(
         self,
@@ -77,7 +148,7 @@ class ResponseCollector:
         """Build system prompt for a specific endpoint and query.
 
         If the endpoint has a custom system_prompt, use it (with {num_refs} placeholder).
-        Otherwise use the default template based on query language.
+        Otherwise use the default template based on query language and tool mode.
         """
         custom = self.system_prompts.get(endpoint_name)
         if custom:
@@ -86,7 +157,20 @@ class ResponseCollector:
             except (KeyError, IndexError):
                 return custom
 
-        template = DEFAULT_SYSTEM_PROMPT_ZH if query_item.language == "zh" else DEFAULT_SYSTEM_PROMPT_EN
+        # Select template based on tool mode and language
+        use_tool = self._tool_enabled.get(endpoint_name, False)
+        if use_tool:
+            template = (
+                DEFAULT_TOOL_SYSTEM_PROMPT_ZH
+                if query_item.language == "zh"
+                else DEFAULT_TOOL_SYSTEM_PROMPT_EN
+            )
+        else:
+            template = (
+                DEFAULT_SYSTEM_PROMPT_ZH
+                if query_item.language == "zh"
+                else DEFAULT_SYSTEM_PROMPT_EN
+            )
         return template.format(num_refs=query_item.num_refs)
 
     async def _call_endpoint(
@@ -94,7 +178,24 @@ class ResponseCollector:
         endpoint_name: str,
         query_item: QueryItem,
     ) -> Dict[str, Any]:
-        """Call a single endpoint with retry."""
+        """Call a single endpoint with retry.
+
+        Uses bare achat for normal endpoints, or ReActAgent for tool-augmented
+        endpoints. For 429 rate-limit errors, uses longer waits between retries.
+        """
+        use_tool = self._tool_enabled.get(endpoint_name, False)
+
+        if use_tool:
+            return await self._call_endpoint_with_tools(endpoint_name, query_item)
+        else:
+            return await self._call_endpoint_bare(endpoint_name, query_item)
+
+    async def _call_endpoint_bare(
+        self,
+        endpoint_name: str,
+        query_item: QueryItem,
+    ) -> Dict[str, Any]:
+        """Call endpoint in bare mode (direct achat, no tools)."""
         model = self.models[endpoint_name]
         system_prompt = self._build_system_prompt(endpoint_name, query_item)
 
@@ -103,40 +204,128 @@ class ResponseCollector:
             ChatMessage(role="user", content=query_item.query),
         ]
 
-        @retry(
-            stop=stop_after_attempt(self.config.retry_times),
-            wait=wait_exponential(multiplier=2, min=2, max=60),
-            reraise=True,
-        )
-        async def _call_with_retry():
-            return await asyncio.wait_for(
-                model.achat(messages=messages),
-                timeout=self.config.timeout,
-            )
+        max_attempts = self.config.retry_times
+        last_error = None
 
-        try:
-            response = await _call_with_retry()
-            return {
-                "endpoint": endpoint_name,
-                "response": response.content,
-                "success": True,
-            }
-        except asyncio.TimeoutError:
-            logger.warning(f"Timeout calling {endpoint_name} for: {query_item.query[:50]}...")
-            return {
-                "endpoint": endpoint_name,
-                "response": None,
-                "success": False,
-                "error": "timeout",
-            }
-        except Exception as e:
-            logger.warning(f"Error calling {endpoint_name}: {e}")
-            return {
-                "endpoint": endpoint_name,
-                "response": None,
-                "success": False,
-                "error": str(e),
-            }
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = await asyncio.wait_for(
+                    model.achat(messages=messages),
+                    timeout=self.config.timeout,
+                )
+                return {
+                    "endpoint": endpoint_name,
+                    "response": response.content,
+                    "success": True,
+                }
+            except asyncio.TimeoutError:
+                logger.warning(f"Timeout calling {endpoint_name} (attempt {attempt}/{max_attempts})")
+                last_error = "timeout"
+                wait_time = min(10 * attempt, 60)
+                await asyncio.sleep(wait_time)
+            except Exception as e:
+                last_error = str(e)
+                is_rate_limit = "429" in str(e) or "rate" in str(e).lower()
+                if is_rate_limit:
+                    wait_time = min(30 * attempt, 180)
+                    logger.debug(
+                        f"Rate limited on {endpoint_name} (attempt {attempt}/{max_attempts}), "
+                        f"waiting {wait_time}s..."
+                    )
+                else:
+                    wait_time = min(5 * attempt, 60)
+                    logger.warning(
+                        f"Error calling {endpoint_name} (attempt {attempt}/{max_attempts}): {e}"
+                    )
+                await asyncio.sleep(wait_time)
+
+        logger.warning(f"All {max_attempts} attempts failed for {endpoint_name}: {last_error}")
+        return {
+            "endpoint": endpoint_name,
+            "response": None,
+            "success": False,
+            "error": last_error,
+        }
+
+    async def _call_endpoint_with_tools(
+        self,
+        endpoint_name: str,
+        query_item: QueryItem,
+    ) -> Dict[str, Any]:
+        """Call endpoint in tool-augmented mode using ReAct agent.
+
+        The ReAct agent drives a loop where the LLM can autonomously call
+        web_search to find and verify real papers before producing its final
+        BibTeX output.
+        """
+        agent = self.agents[endpoint_name]
+        system_prompt = self._build_system_prompt(endpoint_name, query_item)
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query_item.query},
+        ]
+
+        max_attempts = self.config.retry_times
+        last_error = None
+
+        # Tool-augmented mode needs longer timeout (multiple search rounds)
+        tool_timeout = self.config.timeout * 3
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                agent_result = await asyncio.wait_for(
+                    agent.arun(messages=messages),
+                    timeout=tool_timeout,
+                )
+                tool_calls_count = getattr(agent_result, "tool_calls_count", 0)
+                iterations = getattr(agent_result, "iterations", 0)
+                logger.info(
+                    f"Tool-augmented {endpoint_name}: "
+                    f"{tool_calls_count} tool calls in {iterations} iterations"
+                )
+                return {
+                    "endpoint": endpoint_name,
+                    "response": agent_result.content,
+                    "success": True,
+                    "metadata": {
+                        "tool_augmented": True,
+                        "tool_calls_count": tool_calls_count,
+                        "iterations": iterations,
+                    },
+                }
+            except asyncio.TimeoutError:
+                logger.warning(
+                    f"Timeout calling tool-augmented {endpoint_name} "
+                    f"(attempt {attempt}/{max_attempts}, timeout={tool_timeout}s)"
+                )
+                last_error = "timeout"
+                wait_time = min(10 * attempt, 60)
+                await asyncio.sleep(wait_time)
+            except Exception as e:
+                last_error = str(e)
+                is_rate_limit = "429" in str(e) or "rate" in str(e).lower()
+                if is_rate_limit:
+                    wait_time = min(30 * attempt, 180)
+                    logger.debug(
+                        f"Rate limited on tool-augmented {endpoint_name} "
+                        f"(attempt {attempt}/{max_attempts}), waiting {wait_time}s..."
+                    )
+                else:
+                    wait_time = min(5 * attempt, 60)
+                    logger.warning(
+                        f"Error calling tool-augmented {endpoint_name} "
+                        f"(attempt {attempt}/{max_attempts}): {e}"
+                    )
+                await asyncio.sleep(wait_time)
+
+        logger.warning(f"All {max_attempts} attempts failed for tool-augmented {endpoint_name}: {last_error}")
+        return {
+            "endpoint": endpoint_name,
+            "response": None,
+            "success": False,
+            "error": last_error,
+        }
 
     async def collect(
         self,
