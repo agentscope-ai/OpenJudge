@@ -11,7 +11,10 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
 )
 from openjudge.graders.schema import GraderScore
 
-SUPPORTED_TIE_BREAKERS = {"min", "max", "mean_closest"}
+MIN = "min"
+MAX = "max"
+CLOSEST_TO_MEAN = "closest_to_mean"
+SUPPORTED_TIE_BREAKERS = [MIN, MAX, CLOSEST_TO_MEAN]
 
 
 class VotingEvaluationStrategy(BaseEvaluationStrategy):
@@ -39,7 +42,7 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
     def __init__(
         self,
         num_votes: int = 3,
-        tie_breaker: str | Callable[[list[float], list[float]], float] = "min",
+        tie_breaker: str | Callable[[list[float], list[float]], float] = MIN,
     ):
         """Initialize the voting strategy.
 
@@ -49,17 +52,16 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
             tie_breaker (str | Callable[[list[float], list[float]], float]):
                 Tie-breaking strategy when highest vote counts are tied.
                 Supported string values:
-                - "min": select the lowest tied score
-                - "max": select the highest tied score
-                - "mean_closest": select tied score closest to mean of all scores
+                - MIN: select the lowest tied score
+                - MAX: select the highest tied score
+                - CLOSEST_TO_MEAN: select tied score closest to mean of all scores
                 You can also pass a callable receiving
                 (tie_candidates, all_scores) and returning one tie candidate.
         """
         if num_votes < 2:
             raise ValueError("num_votes must be at least 2")
 
-        is_valid_str_tie_breaker = isinstance(tie_breaker, str) and tie_breaker in SUPPORTED_TIE_BREAKERS
-        if not (is_valid_str_tie_breaker or callable(tie_breaker)):
+        if tie_breaker not in SUPPORTED_TIE_BREAKERS and not callable(tie_breaker):
             raise ValueError(f"tie_breaker must be one of {SUPPORTED_TIE_BREAKERS} or a callable")
 
         self.num_votes = num_votes
@@ -79,11 +81,11 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
                 )
             return selected
 
-        if self.tie_breaker == "min":
+        if self.tie_breaker == MIN:
             return min(tie_candidates)
-        if self.tie_breaker == "max":
+        if self.tie_breaker == MAX:
             return max(tie_candidates)
-        if self.tie_breaker == "mean_closest":
+        if self.tie_breaker == CLOSEST_TO_MEAN:
             mean_score = sum(all_scores) / len(all_scores)
             return min(tie_candidates, key=lambda score: (abs(score - mean_score), score))
 

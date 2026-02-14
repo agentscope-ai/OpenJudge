@@ -7,6 +7,9 @@ correctly according to the specifications.
 import pytest
 
 from openjudge.evaluation_strategy.voting_evaluation_strategy import (
+    CLOSEST_TO_MEAN,
+    MAX,
+    MIN,
     VotingEvaluationStrategy,
 )
 from openjudge.graders.schema import GraderError, GraderScore
@@ -23,8 +26,8 @@ class TestVotingEvaluationStrategy:
 
     def test_initialization_valid_tie_breaker(self):
         """Test successful initialization with valid tie_breaker."""
-        strategy = VotingEvaluationStrategy(num_votes=3, tie_breaker="max")
-        assert strategy.tie_breaker == "max"
+        strategy = VotingEvaluationStrategy(num_votes=3, tie_breaker=MAX)
+        assert strategy.tie_breaker == MAX
 
         strategy_with_callable = VotingEvaluationStrategy(
             num_votes=3,
@@ -41,13 +44,13 @@ class TestVotingEvaluationStrategy:
         """Test initialization raises error with invalid tie_breaker."""
         with pytest.raises(
             ValueError,
-            match="tie_breaker must be one of {'min', 'max', 'mean_closest'} or a callable",
+            match="tie_breaker must be one of .* or a callable",
         ):
             VotingEvaluationStrategy(num_votes=3, tie_breaker="median")
 
         with pytest.raises(
             ValueError,
-            match="tie_breaker must be one of {'min', 'max', 'mean_closest'} or a callable",
+            match="tie_breaker must be one of .* or a callable",
         ):
             VotingEvaluationStrategy(num_votes=3, tie_breaker=123)  # type: ignore[arg-type]
 
@@ -141,7 +144,7 @@ class TestVotingEvaluationStrategy:
     @pytest.mark.asyncio
     async def test_execute_tie_breaker_min(self):
         """Test tie is resolved by choosing lower score with tie_breaker=min."""
-        strategy = VotingEvaluationStrategy(num_votes=5, tie_breaker="min")
+        strategy = VotingEvaluationStrategy(num_votes=5, tie_breaker=MIN)
         scores = [1.0, 3.0, 5.0, 5.0, 3.0]
         call_count = 0
 
@@ -157,7 +160,7 @@ class TestVotingEvaluationStrategy:
     @pytest.mark.asyncio
     async def test_execute_tie_breaker_max(self):
         """Test tie is resolved by choosing higher score with tie_breaker=max."""
-        strategy = VotingEvaluationStrategy(num_votes=5, tie_breaker="max")
+        strategy = VotingEvaluationStrategy(num_votes=5, tie_breaker=MAX)
         scores = [1.0, 3.0, 5.0, 5.0, 3.0]
         call_count = 0
 
@@ -171,9 +174,9 @@ class TestVotingEvaluationStrategy:
         assert result.score == 5.0
 
     @pytest.mark.asyncio
-    async def test_execute_tie_breaker_mean_closest(self):
+    async def test_execute_tie_breaker_closest_to_mean(self):
         """Test tie is resolved by choosing score closest to mean."""
-        strategy = VotingEvaluationStrategy(num_votes=5, tie_breaker="mean_closest")
+        strategy = VotingEvaluationStrategy(num_votes=5, tie_breaker=CLOSEST_TO_MEAN)
         scores = [1.0, 3.0, 5.0, 5.0, 3.0]
         call_count = 0
 
