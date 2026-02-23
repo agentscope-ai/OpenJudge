@@ -2,7 +2,8 @@
 """
 Tool Parameter Check Grader
 
-Evaluates whether the generated tool call extracts completely correct parameters from the user query and the matching tool of tool definitions
+Evaluates whether the generated tool call extracts completely correct parameters from the user query and the matching
+tool of tool definitions
 """
 
 import json
