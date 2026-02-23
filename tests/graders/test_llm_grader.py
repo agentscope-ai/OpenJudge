@@ -72,7 +72,7 @@ class TestLLMGraderUnit:
     def test_initialization_with_string_template(self):
         """Test successful initialization with string template"""
         mock_model = AsyncMock()
-        template_str = """You're a LLM query answer relevance grader, you'll received Query/Response:
+        template_str = """You're a LLM query answer relevance grader, you'll receive Query/Response:
     Query: {query}
     Response: {response}
     Please read query/response, if the Response answers the Query, return 1, return 0 if no.
@@ -105,7 +105,7 @@ class TestLLMGraderUnit:
                     },
                     {
                         "role": "user",
-                        "content": """You'll received Query/Response:
+                        "content": """You'll receive Query/Response:
     Query: {query}
     Response: {response}
     Please read query/response, if the Response answers the Query, return 1, return 0 if no.
@@ -146,7 +146,7 @@ class TestLLMGraderUnit:
             "api_key": "test-key",
         }
 
-        template_str = """You're a LLM query answer relevance grader, you'll received Query/Response:
+        template_str = """You're a LLM query answer relevance grader, you'll receive Query/Response:
     Query: {query}
     Response: {response}
     Please read query/response, if the Response answers the Query, return 1, return 0 if no.
@@ -168,16 +168,26 @@ class TestLLMGraderUnit:
         # Note: We can't easily check the model config since it's private
         assert isinstance(grader.model, OpenAIChatModel)
 
-        template = grader.get_template()
-        assert template["messages"][LanguageEnum.EN][0]["role"] == "system"
-        assert template["messages"][LanguageEnum.EN][1]["role"] == "user"
-        assert template_str in template["messages"][LanguageEnum.EN][1]["content"]
-        assert template["messages"][LanguageEnum.ZH][0]["role"] == "system"
-        assert template["messages"][LanguageEnum.ZH][1]["role"] == "user"
-        assert template_str in template["messages"][LanguageEnum.ZH][1]["content"]
+        language_template = grader.get_template()
+        assert len(language_template) == 1
+        assert LanguageEnum.EN in language_template
+        templates = language_template[LanguageEnum.EN]
+        assert len(templates) == 2
+        for t in templates:
+            assert len(t) == 2
+            assert "role" in t
+            assert "content" in t
+
+            if t["role"] == "system":
+                assert (
+                    "You are a professional evaluation assistant. Please evaluate according to the user's requirements."
+                    in t["content"]
+                )
+            elif t["role"] == "user":
+                assert "You're a LLM query answer relevance grader, you'll receive Query/Response" in t["content"]
 
         default_template = grader.get_default_template()
-        assert len(default_template["messages"]) == 0
+        assert len(default_template) == 0
 
     @pytest.mark.asyncio
     async def test_pointwise_evaluation_success(self):
@@ -235,7 +245,7 @@ class TestLLMGraderUnit:
         mock_model.achat = AsyncMock(return_value=mock_response)
 
         # Create grader with template that follows the specification in docs
-        template = """You're a LLM query answer ranking grader, you'll received Query and multiple Responses:
+        template = """You're a LLM query answer ranking grader, you'll receive Query and multiple Responses:
     Query: {query}
     Responses:
     1. {response_1}
@@ -378,7 +388,7 @@ class TestLLMGraderQuality:
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between accurate and inaccurate responses (using Runner)"""
         # Create grader with real model following the specification in docs
-        template = """You're a LLM query answer accuracy grader, you'll received Query/Response and Context:
+        template = """You're a LLM query answer accuracy grader, you'll receive Query/Response and Context:
     Query: {query}
     Response: {response}
     Context: {context}
@@ -437,7 +447,7 @@ class TestLLMGraderQuality:
     async def test_consistency_with_runner(self, dataset, model):
         """Test grader evaluation consistency (using Runner)"""
         # Create grader with real model following the specification in docs
-        template = """You're a LLM query answer accuracy grader, you'll received Query/Response and Context:
+        template = """You're a LLM query answer accuracy grader, you'll receive Query/Response and Context:
     Query: {query}
     Response: {response}
     Context: {context}
