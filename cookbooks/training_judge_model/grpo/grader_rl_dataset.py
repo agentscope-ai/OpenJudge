@@ -464,48 +464,46 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
 
         return messages
 
+    def _import_with_fallback(self, module_path: str, name: str, fallback: str) -> str:
+        """Helper to import a variable from a module with a fallback."""
+        try:
+            module = __import__(module_path, fromlist=[name])
+            return getattr(module, name)
+        except ImportError:
+            return fallback
+
     def _format_template(self, messages: List[dict], example: dict) -> str:
         """Format template based on configured prompt template type."""
         # Import the specific prompts from openjudge
-        try:
-            from openjudge.graders.common.correctness import CORRECTNESS_PROMPT_EN
-        except ImportError:
-            # Define default if import fails
-            CORRECTNESS_PROMPT_EN = (
-                "Evaluate the factual correctness of the response. Query: {query}, Response: {response}"
-            )
+        CORRECTNESS_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.common.correctness",
+            "CORRECTNESS_PROMPT_EN",
+            "Evaluate the factual correctness of the response. Query: {query}, Response: {response}",
+        )
 
-        try:
-            from openjudge.graders.common.hallucination import HALLUCINATION_PROMPT_EN
-        except ImportError:
-            # Define default if import fails
-            HALLUCINATION_PROMPT_EN = "Check for hallucinations in the response. Query: {query}, Response: {response}"
+        HALLUCINATION_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.common.hallucination",
+            "HALLUCINATION_PROMPT_EN",
+            "Check for hallucinations in the response. Query: {query}, Response: {response}",
+        )
 
-        try:
-            from openjudge.graders.common.relevance import RELEVANCE_PROMPT_EN
-        except ImportError:
-            # Define default if import fails
-            RELEVANCE_PROMPT_EN = (
-                "Evaluate the relevance of the response to the query. Query: {query}, Response: {response}"
-            )
+        RELEVANCE_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.common.relevance",
+            "RELEVANCE_PROMPT_EN",
+            "Evaluate the relevance of the response to the query. Query: {query}, Response: {response}",
+        )
 
-        try:
-            from openjudge.graders.common.harmfulness import HARMFULNESS_PROMPT_EN
-        except ImportError:
-            # Define default if import fails
-            HARMFULNESS_PROMPT_EN = (
-                "Evaluate the harmfulness of the response to the query. Query: {query}, Response: {response}"
-            )
+        HARMFULNESS_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.common.harmfulness",
+            "HARMFULNESS_PROMPT_EN",
+            "Evaluate the harmfulness of the response to the query. Query: {query}, Response: {response}",
+        )
 
-        try:
-            from openjudge.graders.common.instruction_following import (
-                INSTRUCTION_FOLLOWING_PROMPT_EN,
-            )
-        except ImportError:
-            # Define default if import fails
-            INSTRUCTION_FOLLOWING_PROMPT_EN = (
-                "Evaluate the instruction_following of the response to the query. Query: {query}, Response: {response}"
-            )
+        INSTRUCTION_FOLLOWING_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.common.instruction_following",
+            "INSTRUCTION_FOLLOWING_PROMPT_EN",
+            "Evaluate the instruction_following of the response to the query. Query: {query}, Response: {response}",
+        )
 
         task_type = example.get("task_type", "unknown")
 
@@ -522,7 +520,10 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
         else:
             # Default to correctness if unknown template
             pprint(f"task type: {task_type}")
-            grader_template = CORRECTNESS_PROMPT_EN
+            raise ValueError(
+                f"Unknown task type: {task_type}. Valid types: correctness, hallucination, relevance, "
+                f"harmlessness, instruction_following"
+            )
         return self._format_grader_template(messages, example, grader_template)
 
     def _format_grader_template(self, messages: List[dict], example: dict, grader_prompt: str) -> str:
@@ -545,13 +546,17 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
             # Old format - extract from messages
             query = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
             response = self._get_response_content(example)
+            reference_response = None
+            context = None
 
+        instruction = query
         # Replace placeholders in the grader prompt
-        formatted_prompt = (
-            grader_prompt.replace("{query}", query if query is not None else "")
-            .replace("{response}", response if response is not None else "")
-            .replace("{reference_response}", reference_response if reference_response is not None else "")
-            .replace("{context}", str(context) if context is not None else "")
+        formatted_prompt = grader_prompt.format(
+            query=query or "",
+            response=response or "",
+            reference_response=reference_response or "",
+            context=str(context) or "",
+            instruction=instruction or "",
         )
 
         return [{"role": "user", "content": formatted_prompt}]

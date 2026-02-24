@@ -50,13 +50,13 @@ def extract_score(response_text):
                 score = int(numbers[0])  # Take the first number as score
                 if 0 <= score <= 5:  # Assume score range can be 0-1 (binary) or 1-5 (multi-class)
                     return score
-            except:
+            except Exception:
                 pass
     else:
         try:
             response_dict = json.loads(response_text)
             return response_dict.get("score", 0)
-        except:
+        except Exception:
             pass
 
     return 0  # Default to 0 if extraction fails
@@ -78,7 +78,7 @@ def calculate_reward(predicted_score, true_score):
     diff = abs(predicted_score - true_score)
 
     # For binary classification (0 or 1), use exact match
-    if true_score in [0, 1]:
+    if true_score in [0, 1] and predicted_score in [0, 1]:
         return 1.0 if diff == 0 else 0.0
 
     # For multi-class scenarios (1-5), use difference calculation
@@ -140,7 +140,7 @@ def compute_score(data_source, solution_str, ground_truth, extra_info=None, **kw
         }
 
     except Exception as e:
-        print(f"Error in compute_score: {e}")
+        pprint(f"Error in compute_score: {e}")
         # Return default values
         return {"score": 0.0, "error": str(e), "data_source": data_source}
 

@@ -101,8 +101,8 @@ ray job submit --address="${RAY_ADDRESS}" \
     -- \
     python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
-    data.train_files=${TRAIN_FILE} \
-    data.val_files=${VAL_FILE} \
+    data.train_files="${TRAIN_FILE}" \
+    data.val_files="${VAL_FILE}" \
     data.train_batch_size=$TRAIN_BATCH_SIZE \
     data.val_batch_size=$VAL_BATCH_SIZE \
     data.max_prompt_length=$MAX_PROMPT_LENGTH \
@@ -115,7 +115,7 @@ ray job submit --address="${RAY_ADDRESS}" \
     reward_model.reward_manager='naive' \
     custom_reward_function.path="${CUSTOM_REWARD_FUNCTION_PATH}" \
     custom_reward_function.name='compute_score' \
-    actor_rollout_ref.model.path=${MODEL_PATH} \
+    actor_rollout_ref.model.path="${MODEL_PATH}" \
     actor_rollout_ref.actor.optim.lr=$LR \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=24 \
@@ -145,6 +145,6 @@ ray job submit --address="${RAY_ADDRESS}" \
     trainer.test_freq=$TEST_FREQ \
     trainer.total_epochs=$TOTAL_EPOCHS \
     trainer.val_before_train=False \
-    trainer.default_local_dir=${SAVE_PATH}/${EXPERIMENT_NAME}
+    trainer.default_local_dir="${SAVE_PATH}/${EXPERIMENT_NAME}"
 
 echo "Training completed! Checkpoints saved to: ${SAVE_PATH}/${EXPERIMENT_NAME}"
