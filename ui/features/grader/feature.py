@@ -125,6 +125,8 @@ class GraderFeature(BaseFeature):
             self._render_batch_evaluation(sidebar_config)
 
         with tab_history:
+            if st.session_state.get(self.STATE_CURRENT_TAB) != 2:
+                st.session_state[self.STATE_CURRENT_TAB] = 2
             self._render_history_view(sidebar_config)
 
         with tab_help:
