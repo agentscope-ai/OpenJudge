@@ -47,11 +47,12 @@ def render_workspace_selector(show_language_selector: bool = False) -> None:
 
     # Main selector row - adjust columns based on whether language selector is shown
     if show_language_selector:
-        col_label, col_ws, col_menu, col_lang = st.columns([1.0, 2.0, 0.8, 1.5])
+        col_label, col_ws, col_menu, col_lang = st.columns([0.5, 2.5, 0.8, 1.5])
     else:
         col_label, col_ws, col_menu = st.columns([1.2, 3.5, 1.3])
 
     with col_label:
+        st.markdown("""<style>.stCaption{}</style>""", unsafe_allow_html=True)
         st.markdown(
             f'<div style="font-size: 0.75rem; font-weight: 600; color: #64748B; '
             f'padding-top: 0.5rem;">{t("workspace.label")}</div>',
@@ -59,6 +60,8 @@ def render_workspace_selector(show_language_selector: bool = False) -> None:
         )
 
     with col_ws:
+        # 🛠️ Fix: Resolves Selectbox dropdown rendering issue
+        st.markdown("""<style>ul[data-testid="stSelectboxOptions"]</style>""", unsafe_allow_html=True)
         # Build options based on whether shared workspaces are enabled
         options = []
         option_display = {}
@@ -143,6 +146,8 @@ def render_workspace_selector(show_language_selector: bool = False) -> None:
     # Language selector (if enabled)
     if show_language_selector:
         with col_lang:
+            # 🛠️ Fix: Resolves Selectbox dropdown rendering issue
+            st.markdown("""<style>ul[data-testid="stSelectboxOptions"]</style>""", unsafe_allow_html=True)
             current_lang = get_ui_language()
             languages = get_available_languages()
             lang_options = list(languages.keys())

@@ -15,7 +15,8 @@ from features.grader.services.batch_history_manager import BatchHistoryManager
 from shared.components.common import render_section_header
 from shared.styles.theme import get_score_color
 
-STATE_CURRENT_TAB = 'grader_current_tab'
+STATE_CURRENT_TAB = "grader_current_tab"
+
 
 def _render_summary_cards(summary: dict[str, Any], score_range: tuple[float, float]) -> None:
     """Render summary statistics cards."""
