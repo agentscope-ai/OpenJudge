@@ -350,12 +350,12 @@ class LLMGrader(BaseGrader):
             raise ValueError(f"Unsupported grader mode: {self.mode}")
         return result
 
-    def get_template(self, language: LanguageEnum | None = LanguageEnum.EN) -> Dict[str, Any]:
+    def get_template(self, language: LanguageEnum = LanguageEnum.EN) -> Dict[str, Any]:
         """Return the template of the specified language in this grader instance"""
         return self.template.get_prompt(language)
 
     @classmethod
-    def get_default_template(cls, language: LanguageEnum | None = LanguageEnum.EN) -> Dict[str, Any]:
+    def get_default_template(cls, language: LanguageEnum = LanguageEnum.EN) -> Dict[str, Any]:
         """Return the default template of the specified language in this grader class"""
         return cls.DEFAULT_TEMPLATE.get_prompt(language)
 
