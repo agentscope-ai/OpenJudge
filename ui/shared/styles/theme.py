@@ -597,6 +597,7 @@ CUSTOM_CSS = """
    ========================================================================= */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+    width: 300px;
 }
 
 /* Remove all top padding from sidebar */
