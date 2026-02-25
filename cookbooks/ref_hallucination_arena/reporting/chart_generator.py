@@ -16,28 +16,70 @@ from cookbooks.ref_hallucination_arena.schema import ArenaResult, ChartConfig
 
 
 def _setup_cjk_font():
-    """Try to configure CJK font for matplotlib."""
+    """Configure CJK font for matplotlib so Chinese text renders correctly.
+
+    Strategy:
+      1. Rebuild the font cache so newly-installed system fonts are picked up.
+      2. Walk a priority list of well-known CJK font families.
+      3. If none is found by family name, do a brute-force search for any
+         .ttf/.ttc whose path contains CJK-related keywords (wqy, noto, cjk).
+      4. As a last resort, register the font file directly via FontProperties.
+    """
     import matplotlib
 
     matplotlib.use("Agg")
+    import matplotlib.font_manager as fm
     import matplotlib.pyplot as plt
 
-    cjk_fonts = [
+    # Force-rebuild the font list so freshly-installed fonts are visible
+    fm._load_fontmanager(try_read_cache=False)
+
+    cjk_families = [
         "WenQuanYi Micro Hei",
         "WenQuanYi Zen Hei",
         "Noto Sans CJK SC",
+        "Noto Sans SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN",
         "SimHei",
         "Microsoft YaHei",
+        "PingFang SC",
+        "Hiragino Sans GB",
     ]
-    import matplotlib.font_manager as fm
 
     available = {f.name for f in fm.fontManager.ttflist}
-    for font in cjk_fonts:
+    for font in cjk_families:
         if font in available:
             plt.rcParams["font.sans-serif"] = [font] + plt.rcParams.get("font.sans-serif", [])
             plt.rcParams["axes.unicode_minus"] = False
+            logger.debug(f"CJK font configured: {font}")
             return
+
+    # Fallback: find any ttf/ttc whose file path suggests CJK support
+    cjk_keywords = (
+        "wqy",
+        "wenquan",
+        "noto",
+        "cjk",
+        "simhei",
+        "yahei",
+        "simsun",
+        "fang",
+        "heiti",
+        "songti",
+        "source-han",
+        "sourcehan",
+    )
+    for f in fm.fontManager.ttflist:
+        path_lower = f.fname.lower()
+        if any(kw in path_lower for kw in cjk_keywords):
+            plt.rcParams["font.sans-serif"] = [f.name] + plt.rcParams.get("font.sans-serif", [])
+            plt.rcParams["axes.unicode_minus"] = False
+            logger.debug(f"CJK font configured (path match): {f.name} ({f.fname})")
+            return
+
     plt.rcParams["axes.unicode_minus"] = False
+    logger.warning("No CJK font found – Chinese text in charts may display as boxes")
 
 
 class RefChartGenerator:

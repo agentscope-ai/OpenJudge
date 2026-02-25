@@ -12,6 +12,7 @@ Pipeline steps:
 Supports fine-grained, per-item checkpoint-based resume for all stages.
 """
 
+import asyncio
 import json
 import random
 import threading
@@ -552,6 +553,192 @@ class RefArenaPipeline:
         self._verification_results = {m: [r for r in rlist if r is not None] for m, rlist in results.items()}
         return self._verification_results
 
+    # ---- Steps 2+3+4 combined: Streaming pipeline ----
+
+    async def _collect_and_verify_streaming(
+        self,
+        completed_response_indices: Set[int],
+        completed_verification_keys: Set[str],
+    ) -> None:
+        """Streaming pipeline: collect → extract → verify concurrently.
+
+        Instead of waiting for all model responses before starting verification,
+        each individual response is extracted and verified as soon as it arrives.
+        This overlaps I/O-bound collection with verification, reducing overall
+        wall-clock time.
+
+        Args:
+            completed_response_indices: Query indices with all responses already collected.
+            completed_verification_keys: ``"model::idx"`` keys already verified.
+        """
+        logger.info("Steps 2+3+4: Streaming pipeline (collect → extract → verify)")
+
+        extractor = BibExtractor()
+        verification_queue: asyncio.Queue = asyncio.Queue()
+        total_queries = len(self._queries)
+        total_expected = len(self.config.target_endpoints) * total_queries
+
+        # ---- Initialise data structures ----
+        for model_name in self.config.target_endpoints:
+            self._extracted.setdefault(model_name, {})
+            if model_name not in self._verification_results:
+                self._verification_results[model_name] = [None] * total_queries  # type: ignore
+
+        # ---- Pre-enqueue collected-but-unverified items ----
+        pre_enqueued = 0
+        for qi in completed_response_indices:
+            resp_data = self._responses[qi]
+            for model_name in self.config.target_endpoints:
+                key = f"{model_name}::{qi}"
+                if key in completed_verification_keys:
+                    continue
+                # Extract BibTeX if not already available
+                if str(qi) not in self._extracted.get(model_name, {}):
+                    text = resp_data.get("responses", {}).get(model_name)
+                    refs = extractor.extract(text) if text else []
+                    self._extracted[model_name][str(qi)] = [r.model_dump() for r in refs]
+                await verification_queue.put((model_name, qi))
+                pre_enqueued += 1
+        if pre_enqueued:
+            logger.info(f"  Pre-enqueued {pre_enqueued} items from checkpoint for verification")
+
+        # ---- Verification workers ----
+        num_workers = self.config.verification.max_workers or 10
+        ckpt_lock = threading.Lock()
+        verified_count = len(completed_verification_keys)
+
+        with CompositeVerifier(config=self.config.verification) as verifier:
+
+            async def _verification_worker(wid: int) -> None:
+                nonlocal verified_count
+                while True:
+                    item = await verification_queue.get()
+                    if item is None:  # sentinel → stop
+                        verification_queue.task_done()
+                        break
+                    model_name, idx = item
+                    v_key = f"{model_name}::{idx}"
+                    try:
+                        if v_key in completed_verification_keys:
+                            continue
+                        resp_data = self._responses[idx]
+                        mvr = await asyncio.to_thread(
+                            self._verify_single_query,
+                            verifier,
+                            model_name,
+                            idx,
+                            resp_data,
+                        )
+                        with ckpt_lock:
+                            self._verification_results[model_name][idx] = mvr
+                            self._ckpt.mark_verification_complete_item(model_name, idx)
+                            safe = {
+                                m: [r for r in lst if r is not None] for m, lst in self._verification_results.items()
+                            }
+                            self._ckpt.save_verification_incremental(safe)
+                            verified_count += 1
+                            completed_verification_keys.add(v_key)
+                            if verified_count % 20 == 0 or verified_count == total_expected:
+                                logger.info(f"  [Streaming] Verified: {verified_count}/{total_expected}")
+                    except Exception as e:
+                        logger.error(f"  Verification failed for {model_name} Q{idx}: {e}")
+                    finally:
+                        verification_queue.task_done()
+
+            # Start workers
+            workers = [asyncio.create_task(_verification_worker(i)) for i in range(num_workers)]
+
+            # ---- Collect responses (feeds verification queue via callback) ----
+            pending_indices = [i for i in range(total_queries) if i not in completed_response_indices]
+
+            if pending_indices:
+                local_to_global = dict(enumerate(pending_indices))
+                saved_count = len(completed_response_indices)
+
+                def _on_single_response(local_idx: int, ep: str, text: str) -> None:
+                    """Extract BibTeX and enqueue for verification immediately."""
+                    gidx = local_to_global[local_idx]
+                    v_key = f"{ep}::{gidx}"
+                    if v_key in completed_verification_keys:
+                        return
+                    # Extract refs
+                    refs = extractor.extract(text) if text else []
+                    self._extracted[ep][str(gidx)] = [r.model_dump() for r in refs]
+                    # Ensure _responses has basic info for the verifier
+                    if not self._responses[gidx] or not self._responses[gidx].get("query"):
+                        qi = self._queries[gidx]
+                        self._responses[gidx] = {
+                            "query": qi.query,
+                            "discipline": qi.discipline,
+                            "num_refs": qi.num_refs,
+                            "language": qi.language,
+                            "responses": {},
+                        }
+                    self._responses[gidx]["responses"][ep] = text
+                    # Push into verification queue
+                    verification_queue.put_nowait((ep, gidx))
+
+                def _on_query_complete(local_idx: int, result_dict: dict) -> None:
+                    nonlocal saved_count
+                    gidx = local_to_global[local_idx]
+                    self._responses[gidx] = result_dict
+                    self._ckpt.mark_response_complete(gidx)
+                    self._ckpt.save_responses_incremental(self._responses)
+                    saved_count += 1
+                    if saved_count % 10 == 0 or saved_count == total_queries:
+                        logger.info(f"  Response checkpoint: {saved_count}/{total_queries}")
+
+                collector = ResponseCollector(
+                    target_endpoints=self.config.target_endpoints,
+                    evaluation_config=self.config.evaluation,
+                )
+                pending_queries = [self._queries[i] for i in pending_indices]
+                logger.info(
+                    f"  Collecting {len(pending_indices)} queries " f"({len(completed_response_indices)} already done)"
+                )
+                pending_responses = await collector.collect(
+                    pending_queries,
+                    on_query_complete=_on_query_complete,
+                    on_single_response=_on_single_response,
+                )
+                # Merge any responses not saved via callback
+                for li, gi in enumerate(pending_indices):
+                    if not self._responses[gi] or not self._responses[gi].get("query"):
+                        self._responses[gi] = pending_responses[li]
+            else:
+                logger.info("  All responses already collected from checkpoint")
+
+            # Wait for all verification items to finish
+            await verification_queue.join()
+
+            # Stop workers
+            for _ in range(num_workers):
+                await verification_queue.put(None)
+            await asyncio.gather(*workers, return_exceptions=True)
+
+        # ---- Save final state ----
+        self._ckpt.save_json(CheckpointManager.RESPONSES_FILE, self._responses)
+        self._ckpt.save_json(CheckpointManager.EXTRACTED_FILE, self._extracted)
+
+        # Clean up None placeholders
+        self._verification_results = {
+            m: [r for r in lst if r is not None] for m, lst in self._verification_results.items()
+        }
+        serialized = {
+            model: [mvr.model_dump() for mvr in mvr_list] for model, mvr_list in self._verification_results.items()
+        }
+        self._ckpt.save_json(CheckpointManager.VERIFICATION_FILE, serialized)
+
+        # Per-model summary
+        for mn in self.config.target_endpoints:
+            mr = self._verification_results.get(mn, [])
+            tv = sum(m.verified for m in mr)
+            tr = sum(m.total_refs for m in mr)
+            if tr > 0:
+                logger.info(f"  {mn}: {tv}/{tr} verified ({tv/tr:.1%})")
+            else:
+                logger.info(f"  {mn}: 0 refs")
+
     # ---- Step 5: Score and rank ----
 
     def _score_and_rank(self) -> ArenaResult:
@@ -599,10 +786,15 @@ class RefArenaPipeline:
     # ---- Main evaluate ----
 
     async def evaluate(self) -> ArenaResult:
-        """Run the full evaluation pipeline with fine-grained checkpoint support.
+        """Run the full evaluation pipeline with streaming verification.
 
-        Each long-running stage (response collection, verification) saves progress
-        per item, so interrupted runs can resume from the exact point of interruption.
+        Model responses are verified as soon as they arrive, rather than waiting
+        for all responses to complete first.  Steps 2 (collect), 3 (extract), and
+        4 (verify) run concurrently via a streaming pipeline, significantly
+        reducing total execution time when model response speeds vary.
+
+        All long-running stages save progress per item, so interrupted runs can
+        resume from the exact point of interruption.
 
         Returns:
             ArenaResult with rankings and scores.
@@ -625,68 +817,51 @@ class RefArenaPipeline:
                 total_queries=len(self._queries),
             )
 
-        # Step 2: Collect responses (incremental)
-        if checkpoint and checkpoint.stage >= PipelineStage.RESPONSES_COLLECTED:
-            self._responses = self._ckpt.load_json(CheckpointManager.RESPONSES_FILE) or []
-            logger.info(f"Resumed {len(self._responses)} responses from checkpoint (complete)")
-        else:
-            # Load partial responses if stage is RESPONSES_COLLECTING
-            completed_indices: Set[int] = set()
-            if checkpoint and checkpoint.stage >= PipelineStage.RESPONSES_COLLECTING:
-                partial = self._ckpt.load_json(CheckpointManager.RESPONSES_FILE)
-                if partial:
-                    self._responses = partial
-                    completed_indices = self._ckpt.get_completed_response_indices()
-                    logger.info(
-                        f"Resuming response collection: " f"{len(completed_indices)}/{len(self._queries)} already done"
-                    )
-                else:
-                    self._responses = [{}] * len(self._queries)
-            else:
-                # Fresh start: initialize empty response slots
-                self._responses = [{}] * len(self._queries)
-
-            self._ckpt.update_stage(PipelineStage.RESPONSES_COLLECTING)
-            await self._collect_responses_incremental(completed_indices)
-            self._ckpt.save_json(CheckpointManager.RESPONSES_FILE, self._responses)
-            self._ckpt.update_stage(PipelineStage.RESPONSES_COLLECTED)
-
-        # Step 3: Extract refs
-        if checkpoint and checkpoint.stage >= PipelineStage.REFS_EXTRACTED:
-            self._extracted = self._ckpt.load_json(CheckpointManager.EXTRACTED_FILE) or {}
-            total = sum(len(refs) for model_refs in self._extracted.values() for refs in model_refs.values())
-            logger.info(f"Resumed {total} extracted refs from checkpoint")
-        else:
-            self._extract_refs()
-            self._ckpt.save_json(CheckpointManager.EXTRACTED_FILE, self._extracted)
-            self._ckpt.update_stage(PipelineStage.REFS_EXTRACTED)
-
-        # Step 4: Verify refs (incremental)
+        # Steps 2+3+4: Streaming collect → extract → verify
         if checkpoint and checkpoint.stage >= PipelineStage.VERIFICATION_COMPLETE:
+            # All done – load from checkpoint
+            self._responses = self._ckpt.load_json(CheckpointManager.RESPONSES_FILE) or []
             raw = self._ckpt.load_json(CheckpointManager.VERIFICATION_FILE) or {}
             self._verification_results = {
                 model: [ModelVerificationResult(**mvr) for mvr in mvr_list] for model, mvr_list in raw.items()
             }
             logger.info("Resumed verification results from checkpoint (complete)")
         else:
-            # Load partial verification results if stage is VERIFICATION_IN_PROGRESS
+            # Gather partial progress from any interrupted run
+            completed_indices: Set[int] = set()
             completed_v_keys: Set[str] = set()
-            if checkpoint and checkpoint.stage >= PipelineStage.VERIFICATION_IN_PROGRESS:
-                raw = self._ckpt.load_json(CheckpointManager.VERIFICATION_FILE) or {}
-                self._verification_results = {
-                    model: [ModelVerificationResult(**mvr) for mvr in mvr_list] for model, mvr_list in raw.items()
-                }
-                completed_v_keys = self._ckpt.get_completed_verification_keys()
-                logger.info(f"Resuming verification: " f"{len(completed_v_keys)} items already verified")
-            else:
-                self._verification_results = {}
 
-            self._ckpt.update_stage(PipelineStage.VERIFICATION_IN_PROGRESS)
-            self._verify_refs_incremental(completed_v_keys)
-            serialized = {
-                model: [mvr.model_dump() for mvr in mvr_list] for model, mvr_list in self._verification_results.items()
-            }
-            self._ckpt.save_json(CheckpointManager.VERIFICATION_FILE, serialized)
+            if checkpoint and checkpoint.stage > PipelineStage.QUERIES_LOADED:
+                # Partial responses
+                partial = self._ckpt.load_json(CheckpointManager.RESPONSES_FILE)
+                if partial:
+                    self._responses = partial
+                completed_indices = self._ckpt.get_completed_response_indices()
+
+                # Partial extracted refs (compatible with old sequential checkpoint)
+                if checkpoint.stage >= PipelineStage.REFS_EXTRACTED:
+                    self._extracted = self._ckpt.load_json(CheckpointManager.EXTRACTED_FILE) or {}
+
+                # Partial verification results
+                if checkpoint.stage >= PipelineStage.VERIFICATION_IN_PROGRESS:
+                    raw = self._ckpt.load_json(CheckpointManager.VERIFICATION_FILE) or {}
+                    self._verification_results = {
+                        model: [ModelVerificationResult(**mvr) for mvr in mvr_list] for model, mvr_list in raw.items()
+                    }
+                    completed_v_keys = self._ckpt.get_completed_verification_keys()
+
+                logger.info(
+                    f"Resuming: {len(completed_indices)} queries collected, " f"{len(completed_v_keys)} items verified"
+                )
+
+            if not self._responses:
+                self._responses = [{}] * len(self._queries)
+
+            self._ckpt.update_stage(PipelineStage.RESPONSES_COLLECTING)
+            await self._collect_and_verify_streaming(
+                completed_indices,
+                completed_v_keys,
+            )
             self._ckpt.update_stage(PipelineStage.VERIFICATION_COMPLETE)
 
         # Step 5: Score and rank

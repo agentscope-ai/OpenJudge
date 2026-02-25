@@ -46,6 +46,32 @@ class Discipline(str, Enum):
 # =============================================================================
 
 
+class ToolConfig(BaseModel):
+    """Configuration for tool-augmented response collection.
+
+    When enabled, the model uses a ReAct agent with web search (Tavily API)
+    to verify and find real papers before recommending them. This allows
+    comparing "bare model" vs "tool-augmented" hallucination rates.
+    """
+
+    enabled: bool = Field(default=False, description="Whether to enable tool-augmented mode")
+    tavily_api_key: Optional[str] = Field(
+        default=None,
+        description="Tavily API key for web search. Supports ${ENV_VAR} format. "
+        "Falls back to TAVILY_API_KEY environment variable if not set.",
+    )
+    max_iterations: int = Field(
+        default=10,
+        ge=1,
+        le=30,
+        description="Maximum ReAct iterations for tool-augmented mode",
+    )
+    search_depth: str = Field(
+        default="advanced",
+        description="Tavily search depth: 'basic' or 'advanced'",
+    )
+
+
 class OpenAIEndpoint(BaseModel):
     """OpenAI-compatible endpoint configuration."""
 
@@ -54,6 +80,18 @@ class OpenAIEndpoint(BaseModel):
     model: str = Field(..., description="Model name")
     system_prompt: Optional[str] = Field(default=None, description="System prompt")
     extra_params: Optional[Dict[str, Any]] = Field(default=None, description="Extra request parameters")
+    max_concurrency: int = Field(
+        default=5,
+        ge=1,
+        le=100,
+        description="Max concurrent requests for this endpoint",
+    )
+    tool_config: ToolConfig = Field(
+        default_factory=ToolConfig,
+        description="Tool-augmented mode configuration. "
+        "When tool_config.enabled=true, the model uses ReAct agent with web search "
+        "to verify papers before recommending them.",
+    )
 
 
 class TaskConfig(BaseModel):
@@ -103,9 +141,8 @@ class VerificationConfig(BaseModel):
 
 
 class EvaluationConfig(BaseModel):
-    """Evaluation configuration."""
+    """Evaluation configuration (timeout and retry apply to all endpoints)."""
 
-    max_concurrency: int = Field(default=40, description="Maximum concurrency")
     timeout: int = Field(default=120, description="Request timeout in seconds")
     retry_times: int = Field(default=3, description="Number of retries")
 

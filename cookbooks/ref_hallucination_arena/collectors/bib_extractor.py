@@ -29,6 +29,32 @@ class BibExtractor:
         re.IGNORECASE,
     )
 
+    # Patterns for stripping thinking / reasoning blocks that some models
+    # embed directly in the content field (e.g. DeepSeek, QwQ, Kimi, etc.)
+    _THINKING_PATTERNS = [
+        # <think>...</think>  (most common)
+        re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE),
+        # <thinking>...</thinking>
+        re.compile(r"<thinking>.*?</thinking>", re.DOTALL | re.IGNORECASE),
+        # <reasoning>...</reasoning>
+        re.compile(r"<reasoning>.*?</reasoning>", re.DOTALL | re.IGNORECASE),
+        # <reflection>...</reflection>
+        re.compile(r"<reflection>.*?</reflection>", re.DOTALL | re.IGNORECASE),
+    ]
+
+    @classmethod
+    def _strip_thinking(cls, text: str) -> str:
+        """Remove thinking / reasoning blocks from model output.
+
+        Some models (DeepSeek, QwQ, Kimi, Grok, etc.) may embed their
+        chain-of-thought reasoning inside ``<think>…</think>`` or similar
+        tags directly in the ``content`` field.  These blocks can contain
+        partial BibTeX-like text that would confuse the extractor.
+        """
+        for pattern in cls._THINKING_PATTERNS:
+            text = pattern.sub("", text)
+        return text.strip()
+
     def extract(self, response_text: str) -> List[Reference]:
         """Extract references from a model response.
 
@@ -38,6 +64,11 @@ class BibExtractor:
         Returns:
             List of extracted Reference objects.
         """
+        if not response_text:
+            return []
+
+        # Strip any thinking / reasoning blocks before extraction
+        response_text = self._strip_thinking(response_text)
         if not response_text:
             return []
 
@@ -96,38 +127,104 @@ class BibExtractor:
                     return text[open_pos + 1 : i]
         return None  # unmatched
 
+    @staticmethod
+    def _strip_latex(text: str) -> str:
+        r"""Strip LaTeX markup from a BibTeX field value.
+
+        Handles (in order):
+          - Accent commands with braces: {\"{o}} → o, {\v{Z}} → Z
+          - Accent shorthand with braces: \'{e} → e, \"{o} → o
+          - Accent shorthand without braces: \'e → e, \"o → o
+          - Other LaTeX commands: \textbf{X} → X, \emph{Y} → Y
+          - Math mode: {$L$} → L, $T_c$ → Tc
+          - Remaining braces: {CAR-T} → CAR-T
+          - Tildes used as non-breaking spaces: ~ → space
+        """
+        # Pass 1: {\cmd{X}} → X  (e.g. {\"o} → o, {\v{Z}} → Z)
+        text = re.sub(r"\{\\[^a-zA-Z]?\{([^}]*)\}\}", r"\1", text)
+        # Pass 2: \cmd{X} → X  (e.g. \textbf{word}, \v{Z}, \"{o})
+        text = re.sub(r"\\[a-zA-Z]+\{([^}]*)\}", r"\1", text)
+        # Pass 3: \'X or \"X  (accent shorthand with single char, no braces)
+        text = re.sub(r"\\['\"`^~=.uvHtcdbkr]\{([^}]*)\}", r"\1", text)
+        text = re.sub(r"\\['\"`^~=.uvHtcdbkr]([a-zA-Z])", r"\1", text)
+        # Pass 4: remaining backslash commands like \& → &
+        text = re.sub(r"\\([&%#])", r"\1", text)
+        # Pass 5: any leftover \command → remove
+        text = re.sub(r"\\[a-zA-Z]+", "", text)
+        # Strip $ (math mode delimiters) and _ ^ (sub/superscripts)
+        text = re.sub(r"[$_^]", "", text)
+        # Remove remaining braces
+        text = re.sub(r"[{}]", "", text)
+        # Replace ~ (non-breaking space) with regular space
+        text = text.replace("~", " ")
+        # Collapse whitespace
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
     def _parse_fields(self, key: str, entry_type: str, fields_str: str) -> Optional[Reference]:
         """Parse individual fields from BibTeX entry body."""
 
         def extract_field(name: str) -> Optional[str]:
-            # Match field = {value}, field = "value", or field = number
-            # Try brace-delimited value first (handles nested braces)
-            brace_pattern = rf"{name}\s*=\s*\{{(.*?)\}}"
-            m = re.search(brace_pattern, fields_str, re.IGNORECASE | re.DOTALL)
+            """Extract a BibTeX field value, correctly handling nested braces.
+
+            Strategy:
+              1. Find ``name = {`` and use brace-counting to extract the full
+                 value, including any nested ``{...}`` groups.
+              2. Fall back to quote-delimited: ``name = "..."``
+              3. Fall back to bare numeric: ``name = 2023``
+            """
+            # --- Strategy 1: brace-delimited with depth counting ---
+            pattern = re.compile(rf"{name}\s*=\s*\{{", re.IGNORECASE)
+            m = pattern.search(fields_str)
             if m:
-                return m.group(1).strip()
-            # Try quote-delimited value
+                # Position of the opening brace
+                open_pos = m.end() - 1  # points at '{'
+                value = _extract_braced_value(fields_str, open_pos)
+                if value is not None:
+                    return value.strip()
+
+            # --- Strategy 2: quote-delimited ---
             quote_pattern = rf'{name}\s*=\s*"(.*?)"'
             m = re.search(quote_pattern, fields_str, re.IGNORECASE | re.DOTALL)
             if m:
                 return m.group(1).strip()
-            # Try unquoted numeric value (e.g., year = 2023)
+
+            # --- Strategy 3: bare numeric (e.g. year = 2023) ---
             num_pattern = rf"{name}\s*=\s*(\d+)"
             m = re.search(num_pattern, fields_str, re.IGNORECASE)
             if m:
                 return m.group(1).strip()
+
             return None
 
-        title = extract_field("title")
-        if not title:
+        def _extract_braced_value(text: str, open_pos: int) -> Optional[str]:
+            """Extract content between matched braces using depth counting."""
+            depth = 0
+            for i in range(open_pos, len(text)):
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        return text[open_pos + 1 : i]
             return None
+
+        title_raw = extract_field("title")
+        if not title_raw:
+            return None
+
+        # Clean LaTeX markup from title and authors so that downstream
+        # verification can match against plain-text database records.
+        title = self._strip_latex(title_raw)
+        authors_raw = extract_field("author")
+        authors = self._strip_latex(authors_raw) if authors_raw else None
 
         # Extract arXiv ID
         arxiv_id = None
         journal = extract_field("journal") or extract_field("booktitle") or ""
         eprint = extract_field("eprint")
         if eprint:
-            arxiv_id = eprint
+            arxiv_id = self._strip_latex(eprint)
         elif "arxiv" in journal.lower():
             arxiv_match = re.search(r"(\d{4}\.\d{4,5})", journal)
             if arxiv_match:
@@ -144,9 +241,9 @@ class BibExtractor:
         return Reference(
             key=key,
             title=title,
-            authors=extract_field("author"),
+            authors=authors,
             year=extract_field("year"),
-            journal=journal,
+            journal=self._strip_latex(journal) if journal else "",
             doi=extract_field("doi"),
             arxiv_id=arxiv_id,
             pmid=pmid,

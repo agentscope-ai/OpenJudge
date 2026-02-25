@@ -64,6 +64,10 @@ target_endpoints:
     # Use {num_refs} placeholder for the expected number of references.
     system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
 
+    # [Optional, default=5] Max concurrent requests for this endpoint.
+    # Each endpoint runs independently; set based on the provider's rate limit.
+    max_concurrency: 5
+
     # [Optional] Extra parameters passed to the API request
     extra_params:
       temperature: 0.3
@@ -73,11 +77,12 @@ target_endpoints:
     base_url: "https://api.openai.com/v1"
     api_key: "${OPENAI_API_KEY}"
     model: "gpt-4"
+    max_concurrency: 8
     system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
     extra_params:
       temperature: 0.3
 
-  # Example: DeepSeek model
+  # Example: DeepSeek model (bare mode, no tools)
   deepseek:
     base_url: "https://api.deepseek.com/v1"
     api_key: "${DEEPSEEK_API_KEY}"
@@ -85,6 +90,37 @@ target_endpoints:
     system_prompt: "You are an academic literature recommendation expert. Based on the user's research topic, recommend {num_refs} real, high-quality academic papers. You must output each paper's citation in standard BibTeX format (including title, author, year, journal/booktitle, doi fields), and briefly describe each paper's core contribution after the BibTeX entry. Only recommend papers you are confident actually exist; do not fabricate."
     extra_params:
       temperature: 0.3
+
+    # [Optional] Tool-augmented mode configuration.
+    # When omitted or enabled=false, the model runs in bare mode (no tools).
+    # tool_config:
+    #   enabled: false
+
+  # Example: DeepSeek model with tool-augmented mode
+  # The same model but with web search capability. The model can autonomously
+  # search the web via Tavily API to find and verify real papers before
+  # recommending them. This allows direct comparison of hallucination rates
+  # between bare mode and tool-augmented mode for the same model.
+  deepseek_with_tools:
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    extra_params:
+      temperature: 0.3
+    tool_config:
+      # [Required to enable] Set to true to activate tool-augmented mode.
+      enabled: true
+
+      # [Optional] Tavily API key for web search. Supports ${ENV_VAR} format.
+      # Falls back to TAVILY_API_KEY environment variable if not set.
+      tavily_api_key: "${TAVILY_API_KEY}"
+
+      # [Optional, default=10, range=1-30] Maximum ReAct reasoning iterations.
+      # Higher values allow more thorough search but increase latency and cost.
+      max_iterations: 10
+
+      # [Optional, default="advanced"] Tavily search depth: "basic" or "advanced".
+      search_depth: "advanced"
 
 # =============================================================================
 # Verification Settings
@@ -114,9 +150,6 @@ verification:
 # Controls the model API call behavior.
 
 evaluation:
-  # [Optional, default=40] Maximum concurrent API requests.
-  max_concurrency: 40
-
   # [Optional, default=120] Request timeout in seconds.
   # Increase for thinking/reasoning models that respond slowly.
   timeout: 120
