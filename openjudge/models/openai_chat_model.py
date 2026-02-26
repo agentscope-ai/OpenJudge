@@ -82,6 +82,11 @@ class OpenAIChatModel(BaseChatModel):
 
         # Initialize client
         client_args = client_args or {}
+
+         # Add timeout and max_retries defaults if not explicitly provided
+        client_args.setdefault("timeout", 60.0)
+        client_args.setdefault("max_retries", 2)
+        
         if api_key:
             client_args["api_key"] = api_key
         else:

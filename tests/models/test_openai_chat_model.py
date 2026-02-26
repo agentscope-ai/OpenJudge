@@ -296,6 +296,37 @@ class TestOpenAIChatModel:
             "data:;base64,",
         )
 
+        @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
+        def test_timeout_and_max_retries_passed(self, mock_async_openai):
+            """Test that timeout and max_retries are passed to AsyncOpenAI."""
+            OpenAIChatModel(
+                model="gpt-4",
+                api_key="test-key",
+                client_args={
+                    "timeout": 30.0,
+                    "max_retries": 3,
+                },
+            )
+
+            _, kwargs = mock_async_openai.call_args
+
+            assert kwargs["timeout"] == 30.0
+            assert kwargs["max_retries"] == 3
+
+        @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
+        def test_default_timeout_and_max_retries(self, mock_async_openai):
+            """Test that default timeout and max_retries are applied."""
+            OpenAIChatModel(
+                model="gpt-4",
+                api_key="test-key",
+            )
+
+            _, kwargs = mock_async_openai.call_args
+
+            assert kwargs["timeout"] == 60.0
+            assert kwargs["max_retries"] == 2
+
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
