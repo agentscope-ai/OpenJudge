@@ -52,7 +52,6 @@ def render_workspace_selector(show_language_selector: bool = False) -> None:
         col_label, col_ws, col_menu = st.columns([1.2, 3.5, 1.3])
 
     with col_label:
-        st.markdown("""<style>.stCaption{}</style>""", unsafe_allow_html=True)
         st.markdown(
             f'<div style="font-size: 0.75rem; font-weight: 600; color: #64748B; '
             f'padding-top: 0.5rem;">{t("workspace.label")}</div>',
@@ -60,8 +59,6 @@ def render_workspace_selector(show_language_selector: bool = False) -> None:
         )
 
     with col_ws:
-        # 🛠️ Fix: Resolves Selectbox dropdown rendering issue
-        st.markdown("""<style>ul[data-testid="stSelectboxOptions"]</style>""", unsafe_allow_html=True)
         # Build options based on whether shared workspaces are enabled
         options = []
         option_display = {}
@@ -146,8 +143,6 @@ def render_workspace_selector(show_language_selector: bool = False) -> None:
     # Language selector (if enabled)
     if show_language_selector:
         with col_lang:
-            # 🛠️ Fix: Resolves Selectbox dropdown rendering issue
-            st.markdown("""<style>ul[data-testid="stSelectboxOptions"]</style>""", unsafe_allow_html=True)
             current_lang = get_ui_language()
             languages = get_available_languages()
             lang_options = list(languages.keys())
@@ -212,9 +207,11 @@ def _render_create_dialog(manager: WorkspaceManager) -> None:
         label_visibility="collapsed",
     )
 
-    col1, _ = st.columns([1, 5])
+    col1, col2, _ = st.columns([2, 2, 1])
     with col1:
-        st.markdown("""<style>div[data-testid="stColumn"]</style>""", unsafe_allow_html=True)
+        st.button(f"✓ {t('workspace.create')}", on_click=handle_create_on_enter, type="primary")
+
+    with col2:
         if st.button(t("common.cancel"), key="ws_cancel_simple"):
             st.session_state[STATE_SHOW_CREATE_DIALOG] = False
 
@@ -226,10 +223,9 @@ def _render_delete_confirm(manager: WorkspaceManager) -> None:
         return
 
     st.warning(f"⚠️ {t('workspace.delete_confirm', name=ws_to_delete)}")
-    col1, col2, _ = st.columns([1, 1, 2])
+    col1, col2, _ = st.columns([2, 2, 1])
 
     with col1:
-        st.markdown("""<style>div[data-testid="stColumn"]</style>""", unsafe_allow_html=True)
         if st.button(f"🗑️ {t('workspace.delete')}", key="ws_confirm_delete", type="primary"):
             success, error_key = manager.delete_workspace(ws_to_delete)
             if success:
@@ -244,7 +240,6 @@ def _render_delete_confirm(manager: WorkspaceManager) -> None:
                 st.error(t(error_key))
 
     with col2:
-        st.markdown("""<style>div[data-testid="stColumn"]</style>""", unsafe_allow_html=True)
         if st.button(t("common.cancel"), key="ws_cancel_delete"):
             st.session_state[STATE_SHOW_DELETE_CONFIRM] = None
             st.rerun()

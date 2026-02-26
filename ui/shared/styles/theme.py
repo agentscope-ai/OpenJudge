@@ -640,8 +640,8 @@ CUSTOM_CSS = """
     min-height: 0 !important;
 }
 
-/* Hide empty script injection containers at the top of sidebar */
-[data-testid="stSidebar"] .stVerticalBlock > .stElementContainer:first-child {
+/* hide iframe occupy unnecessary heights */
+[data-testid="stSidebar"] iframe.stIFrame {
     display: none !important;
 }
 

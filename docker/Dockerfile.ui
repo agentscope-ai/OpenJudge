@@ -19,11 +19,14 @@ COPY cookbooks/ ./cookbooks/
 # Install the openjudge package
 RUN pip install --no-cache-dir -e .
 
-# Copy UI code
-COPY ui/ ./ui/
+# Copy UI requirements first for better caching
+COPY ui/requirements.txt ./ui/requirements.txt
 
 # Install UI-specific dependencies
 RUN pip install --no-cache-dir -r ui/requirements.txt
+
+# Copy UI code
+COPY ui/ ./ui/
 
 # Set working directory to UI folder
 WORKDIR /app/ui
