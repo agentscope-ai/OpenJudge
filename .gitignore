@@ -17,6 +17,7 @@ poetry.lock
 /site
 uv*/
 uv.lock
+local/
 
 # Build and Distribution Files
 /dist

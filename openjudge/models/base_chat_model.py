@@ -5,6 +5,7 @@ This module defines the abstract base class for chat models, providing a common
 interface for different LLM services such as OpenAI, DashScope, etc.
 """
 
+import copy
 from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator
 
@@ -144,3 +145,33 @@ class BaseChatModel(ABC):
             raise ValueError(
                 f"Invalid tool_choice '{tool_choice}'. " f"Available options: {', '.join(all_options)}",
             )
+
+    def __deepcopy__(self, memo):
+        """Deepcopy the chat model.
+
+        This method is used to create a deep copy of the chat model.
+
+        Returns:
+            BaseChatModel: A deep copy of the chat model.
+
+        Example:
+            >>> class MyChatModel(BaseChatModel):
+            ...     async def achat(self, *args, **kwargs):
+            ...         pass
+            >>> model = MyChatModel(model="test", stream=False)
+            >>> model_copy = copy.deepcopy(model)
+        """
+        # 1. Create a new instance without initializing the client
+        cls = self.__class__
+        new_obj = cls.__new__(cls)
+        memo[id(self)] = new_obj
+
+        # 2. Deep copy other regular attributes
+        for k, v in self.__dict__.items():
+            if k == "client":
+                # Inherit the async client for reuse
+                setattr(new_obj, k, getattr(self, k, None))
+            else:
+                setattr(new_obj, k, copy.deepcopy(v, memo))
+
+        return new_obj
