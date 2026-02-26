@@ -146,14 +146,14 @@ class BaseChatModel(ABC):
                 f"Invalid tool_choice '{tool_choice}'. " f"Available options: {', '.join(all_options)}",
             )
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: dict) -> "BaseChatModel":
         """Deepcopy the chat model.
-
         This method is used to create a deep copy of the chat model.
-
+        Args:
+            memo: A dictionary used by the `copy` module to manage object references
+                  and prevent infinite recursion.
         Returns:
             BaseChatModel: A deep copy of the chat model.
-
         Example:
             >>> class MyChatModel(BaseChatModel):
             ...     async def achat(self, *args, **kwargs):
@@ -170,7 +170,7 @@ class BaseChatModel(ABC):
         for k, v in self.__dict__.items():
             if k == "client":
                 # Inherit the async client for reuse
-                setattr(new_obj, k, getattr(self, k, None))
+                setattr(new_obj, k, v)
             else:
                 setattr(new_obj, k, copy.deepcopy(v, memo))
 

@@ -160,7 +160,7 @@ class BaseGrader(ABC):
         async def managed_fn(**runtime_kwargs):
             # Submit to executor for execution
             # pylint: disable=protected-access
-            # Create a shallow copy of the grader to prevent top-level state modification.
+            # Create a deep copy of the grader to prevent top-level state modification.
             if self.strategy:
                 runtime_self = copy.deepcopy(self)
             else:
