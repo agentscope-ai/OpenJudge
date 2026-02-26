@@ -195,12 +195,14 @@ class ImageHelpfulnessGrader(LLMGrader):
         >>> print(result.score)  # 4.5 - diagram very helpful for understanding
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_IMAGE_HELPFULNESS_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
         max_context_size: int = 500,
         threshold: float = 0.7,
-        template: PromptTemplate = DEFAULT_IMAGE_HELPFULNESS_TEMPLATE,
+        template: PromptTemplate = DEFAULT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -220,7 +222,7 @@ class ImageHelpfulnessGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate image helpfulness for understanding text",
             model=model,
-            template=template or DEFAULT_IMAGE_HELPFULNESS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

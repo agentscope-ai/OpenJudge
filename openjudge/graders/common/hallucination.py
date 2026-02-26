@@ -249,6 +249,8 @@ class HallucinationGrader(LLMGrader):
         >>> print(result.score)  # 5 - factually correct
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_HALLUCINATION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -278,7 +280,7 @@ class HallucinationGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate whether response contains hallucinations",
             model=model,
-            template=template or DEFAULT_HALLUCINATION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )
@@ -343,7 +345,7 @@ class HallucinationGrader(LLMGrader):
 
     @staticmethod
     def get_metadata() -> Dict[str, Any]:
-        prompt = DEFAULT_HALLUCINATION_TEMPLATE.get_prompt()
+        prompt = HallucinationGrader.DEFAULT_TEMPLATE.get_prompt()
         return {"aevaluate": HallucinationGrader._aevaluate.__doc__, "prompt": prompt}
 
 

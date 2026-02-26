@@ -304,6 +304,8 @@ class TrajectoryComprehensiveGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # computed from step averages
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_TRAJECTORY_COMPREHENSIVE_TEMPLATE
+
     @staticmethod
     def _create_trajectory_callback(
         language: LanguageEnum = LanguageEnum.ZH,
@@ -393,7 +395,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
     def __init__(
         self,
         model: Union[BaseChatModel, dict],
-        template: Optional[PromptTemplate] = DEFAULT_TRAJECTORY_COMPREHENSIVE_TEMPLATE,
+        template: Optional[PromptTemplate] = DEFAULT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
         resolution_threshold: float = 0.8,
         strategy: BaseEvaluationStrategy | None = None,
@@ -423,7 +425,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Comprehensive evaluation for agent trajectories including step-level and overall problem-solving assessment",
             model=model,
-            template=template or DEFAULT_TRAJECTORY_COMPREHENSIVE_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             structured_model=TrajectoryEvaluationOutput,
             callback=self._create_trajectory_callback(language=language),

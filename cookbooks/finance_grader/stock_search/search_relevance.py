@@ -187,6 +187,8 @@ class SearchRelevanceGrader(LLMGrader):
         >>> print(result.rank)  # [2, 1] if answer_2 is better
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_SEARCH_RELEVANCE_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -207,7 +209,7 @@ class SearchRelevanceGrader(LLMGrader):
             mode=GraderMode.LISTWISE,
             description="Evaluate stock search relevance by comparing two responses",
             model=model,
-            template=template or DEFAULT_SEARCH_RELEVANCE_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

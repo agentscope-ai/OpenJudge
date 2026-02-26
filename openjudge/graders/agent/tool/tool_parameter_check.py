@@ -176,10 +176,12 @@ class ToolParameterCheckGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # 1.0 (correct parameters)
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE,
+        template: Optional[PromptTemplate] = DEFAULT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -197,7 +199,7 @@ class ToolParameterCheckGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate tool parameter extraction correctness",
             model=model,
-            template=template or DEFAULT_TOOL_PARAMETER_CHECK_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

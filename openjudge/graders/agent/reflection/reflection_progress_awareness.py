@@ -215,10 +215,12 @@ class ReflectionProgressAwarenessGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_REFLECTION_PROGRESS_AWARENESS_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_REFLECTION_PROGRESS_AWARENESS_TEMPLATE,
+        template: Optional[PromptTemplate] = DEFAULT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -236,7 +238,7 @@ class ReflectionProgressAwarenessGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate reflection progress awareness",
             model=model,
-            template=template or DEFAULT_REFLECTION_PROGRESS_AWARENESS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

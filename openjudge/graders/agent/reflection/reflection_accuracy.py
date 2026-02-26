@@ -170,10 +170,12 @@ class ReflectionAccuracyGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_REFLECTION_ACCURACY_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_REFLECTION_ACCURACY_TEMPLATE,
+        template: Optional[PromptTemplate] = DEFAULT_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -191,7 +193,7 @@ class ReflectionAccuracyGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate reflection accuracy",
             model=model,
-            template=template or DEFAULT_REFLECTION_ACCURACY_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

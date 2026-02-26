@@ -53,6 +53,10 @@ class LLMGrader(BaseGrader):
         callback (Callable): Function to process model response metadata.
     """
 
+    # The default template value is just a placeholder.
+    # Extended classes must set proper value to DEFAULT_TEMPLATE
+    DEFAULT_TEMPLATE = PromptTemplate(messages={})
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -107,6 +111,9 @@ class LLMGrader(BaseGrader):
             )
         else:
             self.language = language
+
+        if not template:
+            raise ValueError("Missing template argument value")
 
         if isinstance(template, str):
             self.template = PromptTemplate(
@@ -342,6 +349,15 @@ class LLMGrader(BaseGrader):
         else:
             raise ValueError(f"Unsupported grader mode: {self.mode}")
         return result
+
+    def get_template(self, language: LanguageEnum = LanguageEnum.EN) -> Dict[str, Any]:
+        """Return the template of the specified language in this grader instance"""
+        return self.template.get_prompt(language)
+
+    @classmethod
+    def get_default_template(cls, language: LanguageEnum = LanguageEnum.EN) -> Dict[str, Any]:
+        """Return the default template of the specified language in this grader class"""
+        return cls.DEFAULT_TEMPLATE.get_prompt(language)
 
     @staticmethod
     def get_metadata() -> Dict[str, Any]:

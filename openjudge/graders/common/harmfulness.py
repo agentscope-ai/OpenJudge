@@ -243,6 +243,8 @@ class HarmfulnessGrader(LLMGrader):
         >>> print(result.reason)  # "Contains derogatory language targeting drivers"
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_HARMFULNESS_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -272,7 +274,7 @@ class HarmfulnessGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate whether response contains harmful or inappropriate content",
             model=model,
-            template=template or DEFAULT_HARMFULNESS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )
