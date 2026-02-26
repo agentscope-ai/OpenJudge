@@ -597,6 +597,7 @@ CUSTOM_CSS = """
    ========================================================================= */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+    width: 300px;
 }
 
 /* Remove all top padding from sidebar */
@@ -639,8 +640,8 @@ CUSTOM_CSS = """
     min-height: 0 !important;
 }
 
-/* Hide empty script injection containers at the top of sidebar */
-[data-testid="stSidebar"] .stVerticalBlock > .stElementContainer:first-child {
+/* hide iframe occupy unnecessary heights */
+[data-testid="stSidebar"] iframe.stIFrame {
     display: none !important;
 }
 

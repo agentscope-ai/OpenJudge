@@ -1,0 +1,42 @@
+# OpenJudge Studio - Streamlit UI Docker Image
+# =============================================
+
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy project files needed for installation
+COPY pyproject.toml ./
+COPY openjudge/ ./openjudge/
+COPY cookbooks/ ./cookbooks/
+
+# Install the openjudge package
+RUN pip install --no-cache-dir -e .
+
+# Copy UI requirements first for better caching
+COPY ui/requirements.txt ./ui/requirements.txt
+
+# Install UI-specific dependencies
+RUN pip install --no-cache-dir -r ui/requirements.txt
+
+# Copy UI code
+COPY ui/ ./ui/
+
+# Set working directory to UI folder
+WORKDIR /app/ui
+
+# Expose Streamlit default port
+EXPOSE 8501
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+# Run the Streamlit application
+ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

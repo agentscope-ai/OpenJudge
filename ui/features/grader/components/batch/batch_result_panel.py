@@ -15,6 +15,8 @@ from features.grader.services.batch_history_manager import BatchHistoryManager
 from shared.components.common import render_section_header
 from shared.styles.theme import get_score_color
 
+STATE_CURRENT_TAB = "grader_current_tab"
+
 
 def _render_summary_cards(summary: dict[str, Any], score_range: tuple[float, float]) -> None:
     """Render summary statistics cards."""
@@ -215,7 +217,7 @@ def _render_results_table(
         filter_option = st.selectbox(
             "Filter / 筛选",
             options=["All", "Passed", "Failed", "Errors"],
-            key=f"batch_result_filter_{task_id}",
+            key=f"batch_result_filter_{task_id}_{st.session_state.get(STATE_CURRENT_TAB)}",
             label_visibility="collapsed",
         )
 
@@ -223,7 +225,7 @@ def _render_results_table(
         sort_option = st.selectbox(
             "Sort / 排序",
             options=["Index ↑", "Index ↓", "Score ↑", "Score ↓"],
-            key=f"batch_result_sort_{task_id}",
+            key=f"batch_result_sort_{task_id}_{st.session_state.get(STATE_CURRENT_TAB)}",
             label_visibility="collapsed",
         )
 
@@ -254,7 +256,7 @@ def _render_results_table(
             min_value=1,
             max_value=max(1, total_pages),
             value=1,
-            key="batch_result_page",
+            key=f"batch_result_page_{st.session_state.get(STATE_CURRENT_TAB)}",
             label_visibility="collapsed",
         )
 
@@ -350,7 +352,7 @@ def _render_export_buttons(task_id: str, history_manager: BatchHistoryManager) -
                 file_name=f"{task_id}_results.json",
                 mime="application/json",
                 use_container_width=True,
-                key=f"download_json_{task_id}",
+                key=f"download_json_{task_id}_{st.session_state.get(STATE_CURRENT_TAB)}",
             )
 
     with col2:
@@ -362,7 +364,7 @@ def _render_export_buttons(task_id: str, history_manager: BatchHistoryManager) -
                 file_name=f"{task_id}_results.csv",
                 mime="text/csv",
                 use_container_width=True,
-                key=f"download_csv_{task_id}",
+                key=f"download_csv_{task_id}_{st.session_state.get(STATE_CURRENT_TAB)}",
             )
 
 

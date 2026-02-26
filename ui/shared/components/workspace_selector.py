@@ -47,7 +47,7 @@ def render_workspace_selector(show_language_selector: bool = False) -> None:
 
     # Main selector row - adjust columns based on whether language selector is shown
     if show_language_selector:
-        col_label, col_ws, col_menu, col_lang = st.columns([1.0, 2.0, 0.8, 1.5])
+        col_label, col_ws, col_menu, col_lang = st.columns([0.5, 2.5, 0.8, 1.5])
     else:
         col_label, col_ws, col_menu = st.columns([1.2, 3.5, 1.3])
 
@@ -179,38 +179,41 @@ def _render_create_dialog(manager: WorkspaceManager) -> None:
     st.markdown("---")
     st.markdown(f"**{t('workspace.create_title')}**")
 
-    new_name = st.text_input(
+    def handle_create_on_enter():
+        new_name = st.session_state.get("ws_new_name_input", "").strip()
+
+        if not new_name:
+            st.error(t("workspace.error.name_empty"))
+            return
+
+        is_valid, error_key = manager.validate_workspace_name(new_name)
+        if not is_valid:
+            st.error(t(error_key))
+            return
+
+        success, error_key = manager.create_workspace(new_name)
+        if success:
+            set_current_workspace(new_name)
+            st.session_state[STATE_SHOW_CREATE_DIALOG] = False
+        else:
+            st.error(t(error_key))
+
+    st.text_input(
         t("workspace.name"),
         placeholder="my_workspace",
         help=t("workspace.name_help"),
-        key="ws_new_name",
+        key="ws_new_name_input",
+        on_change=handle_create_on_enter,
+        label_visibility="collapsed",
     )
 
-    col1, col2, _ = st.columns([1, 1, 2])
-
+    col1, col2, _ = st.columns([2, 2, 1])
     with col1:
-        if st.button(f"✓ {t('workspace.create')}", key="ws_confirm_create", type="primary"):
-            if not new_name:
-                st.error(t("workspace.error.name_empty"))
-                return
-
-            is_valid, error_key = manager.validate_workspace_name(new_name)
-            if not is_valid:
-                st.error(t(error_key))
-                return
-
-            success, error_key = manager.create_workspace(new_name)
-            if success:
-                set_current_workspace(new_name)
-                st.session_state[STATE_SHOW_CREATE_DIALOG] = False
-                st.rerun()
-            else:
-                st.error(t(error_key))
+        st.button(f"✓ {t('workspace.create')}", on_click=handle_create_on_enter, type="primary")
 
     with col2:
-        if st.button(t("common.cancel"), key="ws_cancel_create"):
+        if st.button(t("common.cancel"), key="ws_cancel_simple"):
             st.session_state[STATE_SHOW_CREATE_DIALOG] = False
-            st.rerun()
 
 
 def _render_delete_confirm(manager: WorkspaceManager) -> None:
@@ -220,8 +223,7 @@ def _render_delete_confirm(manager: WorkspaceManager) -> None:
         return
 
     st.warning(f"⚠️ {t('workspace.delete_confirm', name=ws_to_delete)}")
-
-    col1, col2, _ = st.columns([1, 1, 2])
+    col1, col2, _ = st.columns([2, 2, 1])
 
     with col1:
         if st.button(f"🗑️ {t('workspace.delete')}", key="ws_confirm_delete", type="primary"):
