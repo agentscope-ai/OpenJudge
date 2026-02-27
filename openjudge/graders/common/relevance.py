@@ -259,6 +259,8 @@ class RelevanceGrader(LLMGrader):
         >>> print(result.score)  # 5 - relevant with conversation context
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_RELEVANCE_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -288,7 +290,7 @@ class RelevanceGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate relevance of response to user query",
             model=model,
-            template=template or DEFAULT_RELEVANCE_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

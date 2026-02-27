@@ -204,6 +204,8 @@ class OverallLogicGrader(LLMGrader):
         >>> print(result.rank)  # [2, 1] if answer_2 is better
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_OVERALL_LOGIC_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -224,7 +226,7 @@ class OverallLogicGrader(LLMGrader):
             mode=GraderMode.LISTWISE,
             description="Evaluate overall logic and structure quality by comparing two responses",
             model=model,
-            template=template or DEFAULT_OVERALL_LOGIC_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

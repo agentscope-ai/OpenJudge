@@ -225,6 +225,8 @@ class ResponseRepetitionGrader(LLMGrader):
         >>> print(result.score)  # Expected: low score due to repetition
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_RESPONSE_REPETITION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -248,7 +250,7 @@ class ResponseRepetitionGrader(LLMGrader):
             name="response_repetition",
             mode=GraderMode.POINTWISE,
             description="Evaluate response repetition in multi-turn conversations",
-            template=template or DEFAULT_RESPONSE_REPETITION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
             **kwargs,

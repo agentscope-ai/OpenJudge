@@ -217,6 +217,8 @@ class ContextMemoryGrader(LLMGrader):
         >>> print(result.score)  # Expected: low score due to forgetting constraint
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_CONTEXT_MEMORY_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -240,7 +242,7 @@ class ContextMemoryGrader(LLMGrader):
             name="context_memory",
             mode=GraderMode.POINTWISE,
             description="Evaluate context memory ability in multi-turn conversations",
-            template=template or DEFAULT_CONTEXT_MEMORY_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
             **kwargs,

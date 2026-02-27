@@ -266,6 +266,8 @@ class CorrectnessGrader(LLMGrader):
         >>> print(result.score)  # 2 - deviates from reference response
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_CORRECTNESS_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -295,7 +297,7 @@ class CorrectnessGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate whether response matches the provided reference response",
             model=model,
-            template=template or DEFAULT_CORRECTNESS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

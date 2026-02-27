@@ -220,6 +220,8 @@ class TopicSwitchGrader(LLMGrader):
         >>> print(result.score)  # Expected: high score for handling topic switch
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_TOPIC_SWITCH_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -243,7 +245,7 @@ class TopicSwitchGrader(LLMGrader):
             name="topic_switch",
             mode=GraderMode.POINTWISE,
             description="Evaluate topic switch handling ability in multi-turn conversations",
-            template=template or DEFAULT_TOPIC_SWITCH_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
             **kwargs,
