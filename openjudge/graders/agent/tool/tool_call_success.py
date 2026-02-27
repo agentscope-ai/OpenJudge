@@ -227,7 +227,7 @@ class ToolCallSuccessGrader(LLMGrader):
     def __init__(
         self,
         model: Union[BaseChatModel, Dict[str, Any]],
-        template: Optional[PromptTemplate] = DEFAULT_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):

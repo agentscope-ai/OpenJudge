@@ -395,7 +395,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
     def __init__(
         self,
         model: Union[BaseChatModel, dict],
-        template: Optional[PromptTemplate] = DEFAULT_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
         resolution_threshold: float = 0.8,
         strategy: BaseEvaluationStrategy | None = None,

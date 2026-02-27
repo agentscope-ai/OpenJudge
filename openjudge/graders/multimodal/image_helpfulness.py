@@ -202,7 +202,7 @@ class ImageHelpfulnessGrader(LLMGrader):
         model: BaseChatModel | dict,
         max_context_size: int = 500,
         threshold: float = 0.7,
-        template: PromptTemplate = DEFAULT_TEMPLATE,
+        template: PromptTemplate = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
