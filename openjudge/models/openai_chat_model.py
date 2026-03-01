@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """OpenAI Client."""
+
 import copy
 import os
 from typing import Any, AsyncGenerator, Callable, Dict, Literal, Type
@@ -27,6 +28,16 @@ def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> list
     """
     format_data = []
     for msg in messages:
+        msg_dict = msg.to_dict() if isinstance(msg, ChatMessage) else msg
+        if isinstance(msg_dict.get("content"), list):
+            for block in msg_dict["content"]:
+                if (
+                    isinstance(block, dict)
+                    and "input_audio" in block
+                    and isinstance(block["input_audio"].get("data"), str)
+                ):
+                    if not block["input_audio"]["data"].startswith("http"):
+                        block["input_audio"]["data"] = "data:;base64," + block["input_audio"]["data"]
         try:
             msg_copy = copy.deepcopy(msg)
             msg_dict = msg_copy.to_dict() if isinstance(msg_copy, ChatMessage) else msg_copy
@@ -58,6 +69,8 @@ class OpenAIChatModel(BaseChatModel):
         reasoning_effort: Literal["low", "medium", "high"] | None = None,
         organization: str | None = None,
         client_args: Dict[str, Any] | None = None,
+        max_retries: int | None = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the openai client.
@@ -94,6 +107,11 @@ class OpenAIChatModel(BaseChatModel):
 
         if organization:
             client_args["organization"] = organization
+        if max_retries is not None:
+            client_args["max_retries"] = max_retries
+
+        if timeout is not None:
+            client_args["timeout"] = timeout
 
         self.client = AsyncOpenAI(**client_args)
 
@@ -312,7 +330,10 @@ class OpenAIChatModel(BaseChatModel):
                     parsed_response.parsed.update(callback_result)
             except Exception as e:
                 # Log the exception but don't fail the entire operation
-                logger.warning(f"Callback function raised an exception: {type(e).__name__}: {e}", exc_info=True)
+                logger.warning(
+                    f"Callback function raised an exception: {type(e).__name__}: {e}",
+                    exc_info=True,
+                )
 
         return parsed_response
 
@@ -409,6 +430,9 @@ class OpenAIChatModel(BaseChatModel):
                             final_response.parsed = final_response.parsed or {}
                             final_response.parsed.update(callback_result)
                     except Exception as e:
-                        logger.warning(f"Callback function raised an exception: {type(e).__name__}: {e}", exc_info=True)
+                        logger.warning(
+                            f"Callback function raised an exception: {type(e).__name__}: {e}",
+                            exc_info=True,
+                        )
 
                 yield final_response

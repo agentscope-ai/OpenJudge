@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Unit tests for OpenAIChatModel."""
+
 import asyncio
 from unittest.mock import AsyncMock, patch
 
@@ -295,6 +296,54 @@ class TestOpenAIChatModel:
         assert messages[0]["content"][0]["input_audio"]["data"].startswith(
             "data:;base64,",
         )
+
+    @pytest.mark.parametrize(
+        "init_kwargs, expected_in_call, not_expected_in_call",
+        [
+            (
+                {"max_retries": 5, "timeout": 120.0},
+                {"max_retries": 5, "timeout": 120.0},
+                [],
+            ),
+            ({}, {}, ["max_retries", "timeout"]),
+            ({"max_retries": None, "timeout": None}, {}, ["max_retries", "timeout"]),
+            ({"max_retries": 3}, {"max_retries": 3}, ["timeout"]),
+            ({"timeout": 30.0}, {"timeout": 30.0}, ["max_retries"]),
+        ],
+        ids=[
+            "with_retries_and_timeout",
+            "defaults",
+            "with_none_values",
+            "with_retries_only",
+            "with_timeout_only",
+        ],
+    )
+    @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
+    def test_client_initialization_with_retries_and_timeout(
+        self,
+        mock_async_openai,
+        init_kwargs,
+        expected_in_call,
+        not_expected_in_call,
+    ):
+        """Test that max_retries and timeout parameters are passed to AsyncOpenAI client correctly."""
+        OpenAIChatModel(
+            model="gpt-4",
+            api_key="test-key",
+            **init_kwargs,
+        )
+
+        mock_async_openai.assert_called_once()
+        call_kwargs = mock_async_openai.call_args[1]
+
+        assert call_kwargs["api_key"] == "test-key"
+
+        for key, value in expected_in_call.items():
+            assert key in call_kwargs
+            assert call_kwargs[key] == value
+
+        for key in not_expected_in_call:
+            assert key not in call_kwargs
 
 
 if __name__ == "__main__":
