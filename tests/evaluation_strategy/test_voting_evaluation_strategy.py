@@ -136,7 +136,7 @@ class TestVotingEvaluationStrategy:
 
         with pytest.raises(
             ValueError,
-            match="VotingEvaluationStrategy only supports GraderScore."
+            match="VotingEvaluationStrategy only supports GraderScore. "
             "No results were returned from the evaluation correctly.",
         ):
             await strategy.execute(mock_call_fn)
