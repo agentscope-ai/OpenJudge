@@ -59,6 +59,10 @@ class LiteLLMModel:
             model = f"gemini/{model}"
         elif "claude" in model.lower() and not model.startswith("anthropic/"):
             model = f"anthropic/{model}"
+        elif self.base_url and not any(model.startswith(p) for p in ("openai/", "anthropic/", "gemini/", "azure/", "bedrock/")):
+            # When using a custom base_url with an OpenAI-compatible API (e.g. DashScope, vLLM),
+            # LiteLLM requires the "openai/" prefix to route correctly.
+            model = f"openai/{model}"
         return model
 
 
