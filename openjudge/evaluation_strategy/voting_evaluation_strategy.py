@@ -115,7 +115,7 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
         values = [result.score for result in results if hasattr(result, "score")]
         if len(values) == 0:
             raise ValueError(
-                "VotingEvaluationStrategy only supports GraderScore."
+                "VotingEvaluationStrategy only supports GraderScore. "
                 "No results were returned from the evaluation correctly."
             )
 

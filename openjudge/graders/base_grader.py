@@ -160,9 +160,9 @@ class BaseGrader(ABC):
         async def managed_fn(**runtime_kwargs):
             # Submit to executor for execution
             # pylint: disable=protected-access
-            # Create a shallow copy of the grader to prevent top-level state modification.
+            # Create a deep copy of the grader to prevent top-level state modification.
             if self.strategy:
-                runtime_self = self.copy()
+                runtime_self = copy.deepcopy(self)
             else:
                 runtime_self = self
 
@@ -273,46 +273,3 @@ class BaseGrader(ABC):
             "description": self.description,
             "kwargs": self.kwargs,
         }
-
-    def copy(self):
-        """Create a copy of this grader for evaluation to prevent state sharing between samples.
-
-        This method is called by the runner to create an isolated instance of the grader
-        for each evaluation to prevent state pollution. By default, it attempts to create
-        a new instance with the same parameters, but subclasses can override this to
-        provide more specific behavior, especially when dealing with non-serializable
-        objects like model connections.
-
-        Returns:
-            BaseGrader: A new instance of the grader with the same configuration
-        """
-
-        # # Get the class of this grader
-        # grader_class = self.__class__
-
-        # # Get constructor parameters by inspecting the grader's __init__ signature
-        # sig = inspect.signature(grader_class.__init__)
-        # init_params = {}
-
-        # for param_name in sig.parameters:
-        #     if param_name in ("self", "args", "kwargs"):  # Skip special params
-        #         continue
-        #     if hasattr(self, param_name) or param_name in self.__dict__:
-        #         # Get value from instance, defaulting to the parameter's default if available
-        #         param_default = sig.parameters[param_name].default
-        #         if param_default is not inspect.Parameter.empty:
-        #             init_params[param_name] = getattr(self, param_name, param_default)
-        #         else:
-        #             init_params[param_name] = self.__dict__.get(param_name, getattr(self, param_name, None))
-
-        # # Create new instance with preserved parameters
-        # copied_grader = grader_class(**init_params)
-
-        # # Copy over any remaining attributes that weren't part of __init__
-        # for attr_name, attr_value in self.__dict__.items():
-        #     if attr_name not in init_params and not attr_name.startswith("_"):
-        #         setattr(copied_grader, attr_name, attr_value)
-
-        # return copied_grader
-
-        return copy.copy(self)

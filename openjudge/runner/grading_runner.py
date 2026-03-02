@@ -11,6 +11,7 @@ Classes:
 """
 
 import asyncio
+import copy
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -238,7 +239,7 @@ class GradingRunner(BaseRunner):
         try:
             data = parse_data_with_mapper(data, mapper)
             # Create an isolated grader instance for this evaluation to prevent state sharing
-            isolated_grader = grader.copy()
+            isolated_grader = copy.deepcopy(grader)
 
             # The grader itself handles the mapping internally
             return await isolated_grader.aevaluate(executor=executor, **data)
