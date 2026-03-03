@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """LiteLLM-based model wrapper for PDF support."""
 
+import base64
 import os
 from typing import Any, List, Optional
 
@@ -8,6 +9,48 @@ import litellm
 
 litellm.drop_params = True
 os.environ.setdefault("LITELLM_LOG", "ERROR")
+
+
+def _pdf_base64_to_text(data_url: str) -> str:
+    """Extract text from a base64-encoded PDF data URL using PyMuPDF."""
+    try:
+        import pymupdf  # PyMuPDF
+
+        if data_url.startswith("data:application/pdf;base64,"):
+            b64 = data_url[len("data:application/pdf;base64,"):]
+        else:
+            b64 = data_url
+        pdf_bytes = base64.b64decode(b64)
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        pages_text = []
+        for i, page in enumerate(doc):
+            text = page.get_text()
+            if text.strip():
+                pages_text.append(f"--- Page {i + 1} ---\n{text}")
+        doc.close()
+        return "\n\n".join(pages_text)
+    except Exception as e:
+        return f"[PDF text extraction failed: {e}]"
+
+
+def _transform_messages_for_text_api(messages: List[dict]) -> List[dict]:
+    """Convert any 'file' content blocks (PDF) to plain text blocks."""
+    transformed = []
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            new_content = []
+            for block in content:
+                if isinstance(block, dict) and block.get("type") == "file":
+                    file_data = block.get("file", {}).get("file_data", "")
+                    text = _pdf_base64_to_text(file_data)
+                    new_content.append({"type": "text", "text": text})
+                else:
+                    new_content.append(block)
+            transformed.append({**msg, "content": new_content})
+        else:
+            transformed.append(msg)
+    return transformed
 
 
 class LiteLLMModel:
@@ -48,7 +91,15 @@ class LiteLLMModel:
         if self.base_url:
             completion_kwargs["api_base"] = self.base_url
 
-        response = litellm.completion(**completion_kwargs)
+        try:
+            response = litellm.completion(**completion_kwargs)
+        except litellm.BadRequestError as e:
+            if "file" in str(e).lower() or "invalid value" in str(e).lower():
+                # API does not support 'file' type — convert PDF to text and retry
+                completion_kwargs["messages"] = _transform_messages_for_text_api(messages)
+                response = litellm.completion(**completion_kwargs)
+            else:
+                raise
         return _LiteLLMResponse(response.choices[0].message.content)
 
     def _get_model_name(self) -> str:

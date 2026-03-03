@@ -112,7 +112,7 @@ class LLMGrader(BaseGrader):
         else:
             self.language = language
 
-        if not template:
+        if template is None:
             raise ValueError("Missing template argument value")
 
         if isinstance(template, str):
