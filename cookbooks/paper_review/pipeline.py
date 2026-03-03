@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """End-to-end paper review pipeline."""
 
+import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -58,6 +59,24 @@ class PipelineConfig:
     #        The AI will apply that venue's standards on top of discipline criteria.
     #        Users may pass any custom string — it appears verbatim in the prompt.
     venue: Optional[str] = None
+    # use_vision_for_pdf: when True, PDF pages are rendered to images and sent
+    #   as image_url blocks instead of extracting text.  Suitable for
+    #   multi-modal DashScope models such as qwen3.5-plus that support
+    #   image_url but not the OpenAI-style type:'file' content block.
+    #   Requires pypdfium2 (pip install pypdfium2).
+    use_vision_for_pdf: bool = False
+    # vision_max_pages: maximum number of pages to send when use_vision_for_pdf
+    #   is True.  Only the first N pages are rendered; the rest are dropped.
+    #   Set to None to send all pages (may exceed API request size limits for
+    #   long papers).  Default 30 covers most paper bodies while staying within
+    #   typical API payload limits (~8 MB).
+    vision_max_pages: Optional[int] = 30
+    # format_vision_max_pages: page limit used exclusively by the Format grader.
+    #   Format checking only needs the first few pages (title, abstract,
+    #   section headers) so a smaller limit keeps the request size small and
+    #   avoids connection errors on long papers.  Defaults to 10.
+    #   Set to None to fall back to vision_max_pages.
+    format_vision_max_pages: Optional[int] = 10
 
 
 class PaperReviewPipeline:
@@ -97,6 +116,8 @@ class PaperReviewPipeline:
             base_url=config.base_url,
             temperature=config.temperature,
             timeout=config.timeout,
+            use_vision_for_pdf=config.use_vision_for_pdf,
+            vision_max_pages=config.vision_max_pages,
         )
         self._init_graders()
 
@@ -187,6 +208,16 @@ class PaperReviewPipeline:
             else:
                 pdf_bytes = load_pdf_bytes(pdf_input)
             pdf_data = encode_pdf_base64(pdf_bytes)
+
+            # Pre-render PDF pages once (single-threaded) so all parallel grader
+            # threads hit the cache instead of racing to render simultaneously.
+            if self.config.use_vision_for_pdf:
+                self.model.warmup_vision_cache(pdf_data)
+                # Pre-render the smaller Format-grader slice if it differs.
+                fmt_limit = self.config.format_vision_max_pages
+                if fmt_limit != self.config.vision_max_pages:
+                    self.model.warmup_vision_cache(pdf_data, max_pages=fmt_limit)
+
             completed_stages += 1
 
             result = PaperReviewResult()
@@ -206,33 +237,39 @@ class PaperReviewPipeline:
                     return result
                 result.format_compliant = safety_result["format_ok"]
 
-            # Stage: Correctness
+            # Stage: Correctness + Review（并行，互相无依赖）
+            parallel_coros: Dict[str, Any] = {}
             if self.config.enable_correctness:
                 self._notify_progress(ReviewStage.CORRECTNESS, completed_stages, total_stages)
-                logger.info("Running correctness detection...")
-                correctness = await self.correctness_grader.aevaluate(pdf_data=pdf_data)
-                if isinstance(correctness, GraderError):
-                    logger.error(f"Correctness grader error: {correctness.error}")
-                    # Continue with partial results - leave correctness as None
-                else:
-                    result.correctness = CorrectnessResult(
-                        score=correctness.score,
-                        reasoning=correctness.reason,
-                        key_issues=correctness.metadata.get("key_issues", []),
-                    )
-                completed_stages += 1
-
-            # Stage: Review
+                parallel_coros["correctness"] = self.correctness_grader.aevaluate(pdf_data=pdf_data)
             if self.config.enable_review:
                 self._notify_progress(ReviewStage.REVIEW, completed_stages, total_stages)
-                logger.info("Running paper review...")
-                review = await self.review_grader.aevaluate(pdf_data=pdf_data)
-                if isinstance(review, GraderError):
-                    logger.error(f"Review grader error: {review.error}")
-                    # Continue with partial results - leave review as None
-                else:
-                    result.review = ReviewResult(score=review.score, review=review.reason)
-                completed_stages += 1
+                parallel_coros["review"] = self.review_grader.aevaluate(pdf_data=pdf_data)
+
+            if parallel_coros:
+                logger.info(f"Running {', '.join(parallel_coros)} in parallel...")
+                parallel_results = await asyncio.gather(*parallel_coros.values())
+                parallel_map = dict(zip(parallel_coros.keys(), parallel_results))
+
+                if "correctness" in parallel_map:
+                    correctness = parallel_map["correctness"]
+                    if isinstance(correctness, GraderError):
+                        logger.error(f"Correctness grader error: {correctness.error}")
+                    else:
+                        result.correctness = CorrectnessResult(
+                            score=correctness.score,
+                            reasoning=correctness.reason,
+                            key_issues=correctness.metadata.get("key_issues", []),
+                        )
+                    completed_stages += 1
+
+                if "review" in parallel_map:
+                    review = parallel_map["review"]
+                    if isinstance(review, GraderError):
+                        logger.error(f"Review grader error: {review.error}")
+                    else:
+                        result.review = ReviewResult(score=review.score, review=review.reason)
+                    completed_stages += 1
 
             # Stage: Criticality verification
             if self.config.enable_criticality:
@@ -281,19 +318,24 @@ class PaperReviewPipeline:
                 self.model.cleanup_files()
 
     async def _run_safety_checks(self, pdf_data: str) -> Dict[str, Any]:
-        """Run jailbreaking and format checks."""
+        """Run jailbreaking and format checks in parallel."""
         issues = []
         format_ok = True
 
-        # Jailbreaking check
-        jailbreak_result = await self.jailbreaking_grader.aevaluate(pdf_data=pdf_data)
+        # Jailbreaking + Format 并行执行，互相无依赖
+        jailbreak_result, format_result = await asyncio.gather(
+            self.jailbreaking_grader.aevaluate(pdf_data=pdf_data),
+            self.format_grader.aevaluate(
+                pdf_data=pdf_data,
+                vision_max_pages=self.config.format_vision_max_pages,
+            ),
+        )
+
         if isinstance(jailbreak_result, GraderError):
             logger.error(f"Jailbreaking grader error: {jailbreak_result.error}")
         elif jailbreak_result.metadata.get("is_abuse"):
             issues.append(f"Jailbreaking detected: {jailbreak_result.reason}")
 
-        # Format check
-        format_result = await self.format_grader.aevaluate(pdf_data=pdf_data)
         if isinstance(format_result, GraderError):
             logger.error(f"Format grader error: {format_result.error}")
         elif format_result.score == 1:

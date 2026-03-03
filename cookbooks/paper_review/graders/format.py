@@ -2,7 +2,7 @@
 """Format compliance grader for academic papers."""
 
 import re
-from typing import List
+from typing import List, Optional
 
 from cookbooks.paper_review.prompts.format import (
     FORMAT_SYSTEM_PROMPT,
@@ -61,18 +61,24 @@ class FormatGrader(LLMGrader):
             template=FORMAT_SYSTEM_PROMPT,  # Placeholder, not used
         )
 
-    async def aevaluate(self, pdf_data: str) -> GraderScore:
+    async def aevaluate(self, pdf_data: str, *, vision_max_pages: Optional[int] = None) -> GraderScore:
         """Check format compliance.
 
         Args:
             pdf_data: Base64 encoded PDF data URL
+            vision_max_pages: Override the model's vision_max_pages for this
+                call only.  Pass a smaller value to reduce request size when
+                format checking does not require the full paper.
 
         Returns:
             GraderScore with compliance status
         """
         try:
             messages = build_format_messages(pdf_data)
-            response = await self.model.achat(messages=messages)
+            achat_kwargs = {}
+            if vision_max_pages is not None:
+                achat_kwargs["_vision_max_pages"] = vision_max_pages
+            response = await self.model.achat(messages=messages, **achat_kwargs)
             content = await extract_response_content(response)
             parsed = parse_format_response(content)
 

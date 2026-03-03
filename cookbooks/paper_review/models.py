@@ -5,6 +5,7 @@ import base64
 import hashlib
 import os
 import tempfile
+import threading
 from typing import Any, List, Optional
 
 import litellm
@@ -76,15 +77,24 @@ class LiteLLMModel:
         base_url: Optional[str] = None,
         temperature: float = 0.7,
         timeout: int = 1500,
+        use_vision_for_pdf: bool = False,
+        vision_max_pages: Optional[int] = 30,
     ):
         self.model = model
         self.api_key = api_key
         self.base_url = base_url
         self.temperature = temperature
         self.timeout = timeout
+        self.use_vision_for_pdf = use_vision_for_pdf
+        self.vision_max_pages = vision_max_pages
         # Cache pdf_data_hash -> DashScope file_id to avoid re-uploading the
         # same PDF across multiple grader calls within one pipeline run.
         self._file_id_cache: dict = {}
+        # Cache pdf_data_hash -> list[base64_png] to avoid re-rendering pages.
+        self._page_images_cache: dict = {}
+        # Lock to prevent duplicate uploads when parallel graders race on the
+        # same PDF hash (achat runs each call in a thread via asyncio.to_thread).
+        self._upload_lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # DashScope helpers
@@ -101,6 +111,114 @@ class LiteLLMModel:
         currently support document understanding via the Files API.
         """
         return "qwen-long" in self.model.lower()
+
+    def _dashscope_rejects_file_block(self) -> bool:
+        """Return True for DashScope models known not to accept type:'file' blocks.
+
+        DashScope's OpenAI-compatible endpoint only accepts 'text', 'image_url',
+        'video_url' and 'video' as content block types.  Sending a 'file' block
+        causes an immediate 400 BadRequestError.  For models in this list we
+        skip the inline attempt entirely and go straight to local text extraction,
+        avoiding one unnecessary round-trip per grader call.
+        """
+        if not self._is_dashscope():
+            return False
+        # qwen-long uses fileid:// instead; all other Qwen models reject file blocks
+        return not self._supports_fileid()
+
+    def _pdf_to_page_images(self, pdf_data: str, max_pages: Optional[int] = None) -> list:
+        """Render each PDF page to a base64-encoded JPEG using pypdfium2.
+
+        Returns a list of ``data:image/jpeg;base64,...`` strings, one per page.
+        ``max_pages`` overrides ``self.vision_max_pages`` for this call only.
+        Cache key is ``(data_hash, effective_max_pages)`` so different page
+        limits each get their own cached result.
+        """
+        import io
+
+        try:
+            import pypdfium2 as pdfium
+        except ImportError as exc:
+            raise ImportError(
+                "pypdfium2 is required for vision-based PDF processing. "
+                "Install it with:  pip install pypdfium2"
+            ) from exc
+
+        effective_max = max_pages if max_pages is not None else self.vision_max_pages
+        data_hash = hashlib.md5(pdf_data.encode()).hexdigest()
+        cache_key = (data_hash, effective_max)
+        if cache_key in self._page_images_cache:
+            logger.debug(
+                f"Reusing cached page images for hash {data_hash[:8]} "
+                f"(max_pages={effective_max})"
+            )
+            return self._page_images_cache[cache_key]
+
+        b64 = pdf_data.removeprefix("data:application/pdf;base64,")
+        pdf_bytes = base64.b64decode(b64)
+
+        doc = pdfium.PdfDocument(pdf_bytes)
+        total_pages = len(doc)
+        if effective_max is not None and total_pages > effective_max:
+            logger.info(
+                f"PDF has {total_pages} pages; rendering only the first "
+                f"{effective_max} (max_pages limit)"
+            )
+            page_count = effective_max
+        else:
+            page_count = total_pages
+
+        images = []
+        for i in range(page_count):
+            page = doc[i]
+            # Scale 1.5 → ~108 DPI; good balance between readability and token cost
+            bitmap = page.render(scale=1.5)
+            pil_image = bitmap.to_pil()
+            buf = io.BytesIO()
+            pil_image.save(buf, format="JPEG", quality=85)
+            img_b64 = base64.b64encode(buf.getvalue()).decode()
+            images.append(f"data:image/jpeg;base64,{img_b64}")
+        doc.close()
+
+        self._page_images_cache[cache_key] = images
+        logger.info(
+            f"Rendered {len(images)}/{total_pages} page(s) for vision model "
+            f"(max_pages={effective_max})"
+        )
+        return images
+
+    def warmup_vision_cache(self, pdf_data: str, max_pages: Optional[int] = None) -> None:
+        """Pre-render PDF pages into the cache (must be called from the main thread).
+
+        All subsequent grader threads will find the cache populated and skip
+        rendering, avoiding concurrent pypdfium2 access which is unsafe.
+        ``max_pages`` overrides the instance default for this warm-up pass.
+        """
+        self._pdf_to_page_images(pdf_data, max_pages=max_pages)
+
+    def _transform_messages_for_vision_pdf(
+        self, messages: List[dict], pdf_data: str, max_pages: Optional[int] = None
+    ) -> List[dict]:
+        """Replace each ``type:'file'`` block with one ``image_url`` block per page."""
+        page_images = self._pdf_to_page_images(pdf_data, max_pages=max_pages)
+        image_blocks = [
+            {"type": "image_url", "image_url": {"url": img}} for img in page_images
+        ]
+
+        transformed: List[dict] = []
+        for msg in messages:
+            content = msg.get("content")
+            if isinstance(content, list):
+                new_content: list = []
+                for block in content:
+                    if isinstance(block, dict) and block.get("type") == "file":
+                        new_content.extend(image_blocks)
+                    else:
+                        new_content.append(block)
+                transformed.append({**msg, "content": new_content})
+            else:
+                transformed.append(msg)
+        return transformed
 
     def _get_openai_client(self):
         """Return an openai.OpenAI client pointed at self.base_url."""
@@ -125,35 +243,44 @@ class LiteLLMModel:
         (the caller should then fall back to local text extraction).
 
         Results are cached by a hash of the PDF content so the same paper is
-        uploaded at most once per model instance lifetime.
+        uploaded at most once per model instance lifetime.  A threading.Lock
+        prevents parallel grader threads from racing and uploading the same
+        PDF multiple times simultaneously.
         """
         data_hash = hashlib.md5(pdf_data.encode()).hexdigest()
+        # Fast path: check cache without lock first
         if data_hash in self._file_id_cache:
             logger.debug(f"Reusing cached DashScope file_id for hash {data_hash[:8]}")
             return self._file_id_cache[data_hash]
 
-        try:
-            b64 = pdf_data.removeprefix("data:application/pdf;base64,")
-            pdf_bytes = base64.b64decode(b64)
-
-            client = self._get_openai_client()
-
-            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                tmp.write(pdf_bytes)
-                tmp_path = tmp.name
+        with self._upload_lock:
+            # Re-check inside lock: another thread may have uploaded while we waited
+            if data_hash in self._file_id_cache:
+                logger.debug(f"Reusing cached DashScope file_id for hash {data_hash[:8]} (post-lock)")
+                return self._file_id_cache[data_hash]
 
             try:
-                with open(tmp_path, "rb") as f:
-                    file_object = client.files.create(file=f, purpose="file-extract")
-                logger.info(f"Uploaded PDF to DashScope, file_id={file_object.id}")
-                self._file_id_cache[data_hash] = file_object.id
-                return file_object.id
-            finally:
-                os.unlink(tmp_path)
+                b64 = pdf_data.removeprefix("data:application/pdf;base64,")
+                pdf_bytes = base64.b64decode(b64)
 
-        except Exception as e:
-            logger.warning(f"DashScope PDF upload failed ({e}), falling back to text extraction")
-            return None
+                client = self._get_openai_client()
+
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                    tmp.write(pdf_bytes)
+                    tmp_path = tmp.name
+
+                try:
+                    with open(tmp_path, "rb") as f:
+                        file_object = client.files.create(file=f, purpose="file-extract")
+                    logger.info(f"Uploaded PDF to DashScope, file_id={file_object.id}")
+                    self._file_id_cache[data_hash] = file_object.id
+                    return file_object.id
+                finally:
+                    os.unlink(tmp_path)
+
+            except Exception as e:
+                logger.warning(f"DashScope PDF upload failed ({e}), falling back to text extraction")
+                return None
 
     def _transform_messages_for_fileid(self, messages: List[dict], file_id: str) -> List[dict]:
         """Rewrite messages to use DashScope fileid:// instead of inline file blocks.
@@ -222,7 +349,13 @@ class LiteLLMModel:
         return await asyncio.to_thread(self._chat_sync, messages, **kwargs)
 
     def _chat_sync(self, messages: List[dict], **kwargs) -> Any:
-        """Sync chat completion."""
+        """Sync chat completion.
+
+        Accepts a private ``_vision_max_pages`` kwarg (int | None) that
+        overrides ``self.vision_max_pages`` for this call only.  The kwarg is
+        stripped before forwarding to litellm.
+        """
+        vision_max_pages_override: Optional[int] = kwargs.pop("_vision_max_pages", None)
         completion_kwargs = {
             "model": self._get_model_name(),
             "messages": messages,
@@ -254,8 +387,31 @@ class LiteLLMModel:
                     completion_kwargs["messages"] = _transform_messages_for_text_api(messages)
 
         # ------------------------------------------------------------------
-        # General path: try inline file block; fall back to text extraction
+        # General path: try inline file block; fall back to vision or text
         # ------------------------------------------------------------------
+        # For DashScope models other than qwen-long we know upfront that
+        # type:'file' blocks are rejected.  Skip the doomed first attempt.
+        if self._dashscope_rejects_file_block():
+            pdf_data = self._extract_file_data_from_messages(completion_kwargs["messages"])
+            if pdf_data is not None:
+                if self.use_vision_for_pdf:
+                    logger.debug(
+                        "DashScope vision model: rendering PDF pages as images"
+                    )
+                    completion_kwargs["messages"] = self._transform_messages_for_vision_pdf(
+                        completion_kwargs["messages"],
+                        pdf_data,
+                        max_pages=vision_max_pages_override,
+                    )
+                else:
+                    logger.debug(
+                        "DashScope model does not support type:'file' blocks — "
+                        "using local text extraction directly"
+                    )
+                    completion_kwargs["messages"] = _transform_messages_for_text_api(
+                        completion_kwargs["messages"]
+                    )
+
         try:
             response = litellm.completion(**completion_kwargs)
         except litellm.BadRequestError as e:
