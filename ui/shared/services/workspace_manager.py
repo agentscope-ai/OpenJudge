@@ -10,6 +10,7 @@ seeing each other's data, while still allowing workspace sharing
 when needed (by sharing workspace names).
 """
 
+import os
 import re
 import secrets
 from datetime import datetime
@@ -61,8 +62,10 @@ class WorkspaceManager:
     @classmethod
     def get_instance(cls) -> "WorkspaceManager":
         """Get or create the singleton instance."""
+        base_dir = os.environ.get("BASE_DIR", "")
+        base_dir_path = Path(base_dir) if base_dir else None
         if STATE_WORKSPACE_MANAGER not in st.session_state:
-            st.session_state[STATE_WORKSPACE_MANAGER] = cls()
+            st.session_state[STATE_WORKSPACE_MANAGER] = cls(base_dir=base_dir_path)
         return st.session_state[STATE_WORKSPACE_MANAGER]
 
     @staticmethod

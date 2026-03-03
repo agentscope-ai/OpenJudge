@@ -158,9 +158,7 @@ def _render_error_state(error: GraderError) -> None:
                 color: #94A3B8;
                 overflow-x: auto;
                 white-space: pre-wrap;
-            ">
-                {escaped_reason}
-            </div>
+            ">{escaped_reason}</div>
             <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(239, 68, 68, 0.2);">
                 <div style="font-weight: 500; color: #F1F5F9; margin-bottom: 0.5rem;">
                     {t("grader.result.troubleshooting")}
