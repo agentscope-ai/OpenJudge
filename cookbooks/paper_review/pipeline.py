@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Union
 
 from loguru import logger
 
+from cookbooks.paper_review.disciplines import DisciplineConfig, get_discipline
 from cookbooks.paper_review.graders import (
     CorrectnessGrader,
     CriticalityGrader,
@@ -47,6 +48,16 @@ class PipelineConfig:
     enable_bib_verification: bool = True
     crossref_mailto: Optional[str] = None
     progress_callback: Optional[ProgressCallback] = field(default=None)
+    # ── Discipline and venue ──────────────────────────────────────────────────
+    # discipline: a discipline ID string (e.g. "cs", "medicine", "physics") or
+    #             a DisciplineConfig instance for full customization, or None
+    #             to use the original general-purpose CS/ML-oriented prompts.
+    discipline: Optional[Union[str, DisciplineConfig]] = None
+    # venue: a specific conference/journal name the user wants to target
+    #        (e.g. "NeurIPS 2025", "The Lancet", "CVPR 2026").
+    #        The AI will apply that venue's standards on top of discipline criteria.
+    #        Users may pass any custom string — it appears verbatim in the prompt.
+    venue: Optional[str] = None
 
 
 class PaperReviewPipeline:
@@ -73,6 +84,10 @@ class PaperReviewPipeline:
         self._progress_callback = config.progress_callback
         self._progress = ReviewProgress()
 
+        # Resolve discipline (string ID → DisciplineConfig or None)
+        self._discipline = get_discipline(config.discipline)
+        self._venue = config.venue
+
         # Use LiteLLM for native PDF support
         from cookbooks.paper_review.models import LiteLLMModel
 
@@ -86,9 +101,9 @@ class PaperReviewPipeline:
         self._init_graders()
 
     def _init_graders(self):
-        """Initialize all graders."""
-        self.correctness_grader = CorrectnessGrader(self.model)
-        self.review_grader = ReviewGrader(self.model)
+        """Initialize all graders with discipline and venue context."""
+        self.correctness_grader = CorrectnessGrader(self.model, discipline=self._discipline)
+        self.review_grader = ReviewGrader(self.model, discipline=self._discipline, venue=self._venue)
         self.criticality_grader = CriticalityGrader(self.model)
         self.format_grader = FormatGrader(self.model)
         self.jailbreaking_grader = JailbreakingGrader(self.model)
@@ -260,6 +275,10 @@ class PaperReviewPipeline:
             logger.error(f"Pipeline failed: {e}")
             self._notify_failed(str(e))
             raise
+        finally:
+            # Clean up any files uploaded to DashScope during this review run.
+            if hasattr(self.model, "cleanup_files"):
+                self.model.cleanup_files()
 
     async def _run_safety_checks(self, pdf_data: str) -> Dict[str, Any]:
         """Run jailbreaking and format checks."""

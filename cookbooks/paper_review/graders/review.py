@@ -2,8 +2,9 @@
 """Paper review grader for academic papers."""
 
 import re
-from typing import List
+from typing import List, Optional
 
+from cookbooks.paper_review.disciplines.base import DisciplineConfig
 from cookbooks.paper_review.prompts.review import (
     REVIEW_USER_PROMPT,
     get_review_system_prompt,
@@ -35,10 +36,14 @@ def parse_review_response(text: str) -> dict:
     return {"score": score, "review": review}
 
 
-def build_review_messages(pdf_data: str) -> List[dict]:
-    """Build messages with PDF data properly injected."""
+def build_review_messages(
+    pdf_data: str,
+    discipline: Optional[DisciplineConfig] = None,
+    venue: Optional[str] = None,
+) -> List[dict]:
+    """Build messages with PDF data, discipline config, and venue injected."""
     return [
-        {"role": "system", "content": get_review_system_prompt()},
+        {"role": "system", "content": get_review_system_prompt(discipline=discipline, venue=venue)},
         {
             "role": "user",
             "content": [
@@ -61,7 +66,20 @@ class ReviewGrader(LLMGrader):
         6 = Strong Accept
     """
 
-    def __init__(self, model: BaseChatModel | dict):
+    def __init__(
+        self,
+        model: BaseChatModel | dict,
+        discipline: Optional[DisciplineConfig] = None,
+        venue: Optional[str] = None,
+    ):
+        """Initialize the ReviewGrader.
+
+        Args:
+            model: The LLM model to use.
+            discipline: Optional discipline configuration for domain-specific review criteria.
+            venue: Optional specific venue name (e.g. "NeurIPS 2025", "The Lancet").
+                   The AI will review according to this venue's standards.
+        """
         super().__init__(
             name="paper_review",
             mode=GraderMode.POINTWISE,
@@ -69,6 +87,8 @@ class ReviewGrader(LLMGrader):
             model=model,
             template="",  # Placeholder, not used
         )
+        self.discipline = discipline
+        self.venue = venue
 
     async def aevaluate(self, pdf_data: str) -> GraderScore:
         """Evaluate paper and provide review.
@@ -80,7 +100,7 @@ class ReviewGrader(LLMGrader):
             GraderScore with score 1-6 and detailed review
         """
         try:
-            messages = build_review_messages(pdf_data)
+            messages = build_review_messages(pdf_data, discipline=self.discipline, venue=self.venue)
             response = await self.model.achat(messages=messages)
             content = await extract_response_content(response)
             parsed = parse_review_response(content)

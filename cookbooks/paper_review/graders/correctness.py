@@ -2,8 +2,9 @@
 """Correctness detection grader for academic papers."""
 
 import re
-from typing import List
+from typing import List, Optional
 
+from cookbooks.paper_review.disciplines.base import DisciplineConfig
 from cookbooks.paper_review.prompts.correctness import (
     CORRECTNESS_USER_PROMPT,
     get_correctness_system_prompt,
@@ -31,10 +32,13 @@ def parse_correctness_response(text: str) -> dict:
     return {"score": score, "reason": reasoning, "key_issues": key_issues}
 
 
-def build_correctness_messages(pdf_data: str) -> List[dict]:
-    """Build messages with PDF data properly injected."""
+def build_correctness_messages(
+    pdf_data: str,
+    discipline: Optional[DisciplineConfig] = None,
+) -> List[dict]:
+    """Build messages with PDF data and optional discipline config."""
     return [
-        {"role": "system", "content": get_correctness_system_prompt()},
+        {"role": "system", "content": get_correctness_system_prompt(discipline=discipline)},
         {
             "role": "user",
             "content": [
@@ -54,7 +58,17 @@ class CorrectnessGrader(LLMGrader):
         3 = Major errors present
     """
 
-    def __init__(self, model: BaseChatModel | dict):
+    def __init__(
+        self,
+        model: BaseChatModel | dict,
+        discipline: Optional[DisciplineConfig] = None,
+    ):
+        """Initialize the CorrectnessGrader.
+
+        Args:
+            model: The LLM model to use.
+            discipline: Optional discipline configuration for domain-specific error categories.
+        """
         super().__init__(
             name="paper_correctness",
             mode=GraderMode.POINTWISE,
@@ -62,6 +76,7 @@ class CorrectnessGrader(LLMGrader):
             model=model,
             template="",  # Placeholder, not used
         )
+        self.discipline = discipline
 
     async def aevaluate(self, pdf_data: str) -> GraderScore:
         """Evaluate paper correctness.
@@ -73,7 +88,7 @@ class CorrectnessGrader(LLMGrader):
             GraderScore with score 1-3 and identified issues
         """
         try:
-            messages = build_correctness_messages(pdf_data)
+            messages = build_correctness_messages(pdf_data, discipline=self.discipline)
             response = await self.model.achat(messages=messages)
             content = await extract_response_content(response)
             parsed = parse_correctness_response(content)

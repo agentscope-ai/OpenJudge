@@ -2,24 +2,65 @@
 """Prompts for correctness detection."""
 
 from datetime import datetime
+from typing import Optional
+
+from cookbooks.paper_review.disciplines.base import DisciplineConfig
 
 
-def get_correctness_system_prompt(date: datetime | None = None) -> str:
-    """Get the correctness system prompt with current date."""
+def get_correctness_system_prompt(
+    date: datetime | None = None,
+    discipline: Optional[DisciplineConfig] = None,
+) -> str:
+    """Get the correctness system prompt with current date and optional discipline config.
+
+    Args:
+        date: Date to use (defaults to today).
+        discipline: Discipline-specific configuration. When provided, the correctness
+                    evaluator uses discipline-specific error categories and context.
+    """
     current_date = (date or datetime.now()).strftime("%Y-%m-%d")
-    return f"""You are an objective correctness evaluator for academic papers. Your task is to identify ONLY objective, verifiable errors - not subjective issues like writing quality or missing explanations.
 
-**Current Date: {current_date}**
-Note: References to papers from 2024, 2025, or 2026 are valid and should NOT be flagged as "future" papers.
+    # ── Evaluator identity ─────────────────────────────────────────────────────
+    if discipline:
+        identity = (
+            f"You are an objective correctness evaluator for academic papers in "
+            f"{discipline.name}. Your task is to identify ONLY objective, verifiable "
+            f"errors — not subjective issues like writing quality or missing explanations."
+        )
+    else:
+        identity = (
+            "You are an objective correctness evaluator for academic papers. "
+            "Your task is to identify ONLY objective, verifiable errors - not subjective "
+            "issues like writing quality or missing explanations."
+        )
 
-Focus EXCLUSIVELY on these types of objective errors:
+    # ── Error categories ───────────────────────────────────────────────────────
+    if discipline and discipline.correctness_categories:
+        categories_block = (
+            f"Focus EXCLUSIVELY on these types of objective errors in {discipline.name}:\n\n"
+            + discipline.format_correctness_categories()
+        )
+    else:
+        categories_block = """Focus EXCLUSIVELY on these types of objective errors:
 
 1. Mathematical Errors - Incorrect formulas, wrong derivations, invalid proofs, arithmetic mistakes
 2. Logical Contradictions - Statements that contradict each other within the paper
 3. Technical Inaccuracies - Factually wrong claims about methods, algorithms, or technical concepts
 4. Experimental Inconsistencies - Results that contradict stated methodology or data that doesn't match claims
 5. Definitional Errors - Incorrect definitions of terms, concepts, or notation misuse
-6. Causal Reasoning Errors - Invalid logical inferences or unsupported causal claims
+6. Causal Reasoning Errors - Invalid logical inferences or unsupported causal claims"""
+
+    # ── Extra discipline context ───────────────────────────────────────────────
+    extra_context = ""
+    if discipline and discipline.correctness_context:
+        extra_context = f"\n{discipline.correctness_context}\n"
+
+    return f"""{identity}
+
+**Current Date: {current_date}**
+Note: References to papers from 2024, 2025, or 2026 are valid and should NOT be flagged as "future" papers.
+
+{categories_block}
 
 DO NOT flag these (they are subjective, not objective errors):
 - Missing explanations or insufficient detail
@@ -30,7 +71,7 @@ DO NOT flag these (they are subjective, not objective errors):
 - Insufficient related work coverage
 - Missing links or errors in links
 - Missing or incorrect citations
-
+{extra_context}
 Rate the paper on a scale of 1-3:
 
 1 = No objective errors detected

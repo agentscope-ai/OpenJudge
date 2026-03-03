@@ -1,6 +1,21 @@
 # -*- coding: utf-8 -*-
 """Academic Paper Review Cookbook for OpenJudge."""
 
+from cookbooks.paper_review.disciplines import (
+    BIOLOGY,
+    CHEMISTRY,
+    CS,
+    DISCIPLINE_REGISTRY,
+    ECONOMICS,
+    ENVIRONMENTAL_SCIENCE,
+    MATHEMATICS,
+    MEDICINE,
+    PHYSICS,
+    PSYCHOLOGY,
+    SOCIAL_SCIENCES,
+    DisciplineConfig,
+    get_discipline,
+)
 from cookbooks.paper_review.graders import (
     CorrectnessGrader,
     CriticalityGrader,
@@ -47,4 +62,18 @@ __all__ = [
     "ReviewStage",
     "ReviewProgress",
     "ProgressCallback",
+    # Disciplines
+    "DisciplineConfig",
+    "DISCIPLINE_REGISTRY",
+    "get_discipline",
+    "CS",
+    "MEDICINE",
+    "PHYSICS",
+    "CHEMISTRY",
+    "BIOLOGY",
+    "ECONOMICS",
+    "PSYCHOLOGY",
+    "ENVIRONMENTAL_SCIENCE",
+    "MATHEMATICS",
+    "SOCIAL_SCIENCES",
 ]
