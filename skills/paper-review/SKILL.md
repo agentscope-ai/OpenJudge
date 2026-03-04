@@ -22,13 +22,11 @@ Multi-stage academic paper review using the OpenJudge `PaperReviewPipeline`:
 ## Prerequisites
 
 ```bash
-# Install the project
-git clone https://github.com/agentscope-ai/OpenJudge.git
-cd OpenJudge
-pip install -e .
+# Install OpenJudge
+pip install py-openjudge
 
-# Extra dependencies for paper_review
-pip install litellm httpx
+# Extra dependency for paper_review
+pip install litellm
 pip install pypdfium2  # only if using vision mode (use_vision_for_pdf=True)
 ```
 
@@ -46,92 +44,69 @@ pip install pypdfium2  # only if using vision mode (use_vision_for_pdf=True)
 | BibTeX file | No | Required only for reference verification |
 | CrossRef email | No | Improves API rate limits for BibTeX verification |
 
-## Choose the right script
-
-| User has | Run |
-|----------|-----|
-| PDF only | `scripts/review_paper.py` |
-| PDF + .bib | `scripts/review_paper.py` with `--bib` |
-| TeX source package (.tar.gz / .zip) | `scripts/review_tex.py` |
-| BibTeX file only | `scripts/review_tex.py --bib-only` |
-
 ## Quick start
+
+File type is auto-detected: `.pdf` → PDF review, `.tar.gz`/`.zip` → TeX review, `.bib` → BibTeX verification.
 
 ```bash
 # Basic PDF review
-python skills/paper-review/scripts/review_paper.py paper.pdf
+python -m cookbooks.paper_review paper.pdf
 
 # With discipline and venue
-python skills/paper-review/scripts/review_paper.py paper.pdf \
+python -m cookbooks.paper_review paper.pdf \
   --discipline cs --venue "NeurIPS 2025"
 
 # Chinese output
-python skills/paper-review/scripts/review_paper.py paper.pdf --language zh
+python -m cookbooks.paper_review paper.pdf --language zh
 
 # Custom reviewer instructions
-python skills/paper-review/scripts/review_paper.py paper.pdf \
+python -m cookbooks.paper_review paper.pdf \
   --instructions "Focus on experimental design and reproducibility"
 
 # PDF + BibTeX verification
-python skills/paper-review/scripts/review_paper.py paper.pdf \
+python -m cookbooks.paper_review paper.pdf \
   --bib references.bib --email your@email.com
 
 # Vision mode (for models that prefer images over text extraction)
-python skills/paper-review/scripts/review_paper.py paper.pdf \
-  --vision --vision-max-pages 30 --format-vision-max-pages 10
+python -m cookbooks.paper_review paper.pdf \
+  --vision --vision_max_pages 30 --format_vision_max_pages 10
 
 # TeX source package
-python skills/paper-review/scripts/review_tex.py paper_source.tar.gz \
+python -m cookbooks.paper_review paper_source.tar.gz \
   --discipline biology --email your@email.com
 
 # TeX source package with Chinese output and custom instructions
-python skills/paper-review/scripts/review_tex.py paper_source.tar.gz \
+python -m cookbooks.paper_review paper_source.tar.gz \
   --language zh --instructions "This is a short paper, be concise"
+
+# Verify a standalone BibTeX file
+python -m cookbooks.paper_review --bib_only references.bib --email your@email.com
 ```
 
-## All options — review_paper.py
+## All options
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `input` (positional) | — | Path to PDF, TeX package, or .bib file |
+| `--bib_only` | — | Path to .bib file for standalone verification (no review) |
 | `--model` | `gpt-4o` | Model name |
-| `--api-key` | env var | API key |
-| `--base-url` | — | Custom API endpoint |
+| `--api_key` | env var | API key |
+| `--base_url` | — | Custom API endpoint |
 | `--discipline` | — | Academic discipline |
 | `--venue` | — | Target conference/journal |
 | `--instructions` | — | Free-form reviewer guidance |
 | `--language` | `en` | Output language: `en` or `zh` |
-| `--bib` | — | Path to .bib file |
+| `--bib` | — | Path to .bib file (for PDF review + reference verification) |
 | `--email` | — | CrossRef mailto for BibTeX check |
-| `--paper-name` | PDF stem | Paper title in report |
+| `--paper_name` | filename stem | Paper title in report |
 | `--output` | auto | Output .md report path |
-| `--no-safety` | off | Skip safety checks |
-| `--no-correctness` | off | Skip correctness check |
-| `--no-criticality` | off | Skip criticality verification |
-| `--no-bib` | off | Skip BibTeX verification |
+| `--no_safety` | off | Skip safety checks |
+| `--no_correctness` | off | Skip correctness check |
+| `--no_criticality` | off | Skip criticality verification |
+| `--no_bib` | off | Skip BibTeX verification |
 | `--vision` | off | Use vision mode (requires pypdfium2) |
-| `--vision-max-pages` | `30` | Max pages in vision mode (0 = all) |
-| `--format-vision-max-pages` | `10` | Max pages for format check (0 = use `--vision-max-pages`) |
-| `--timeout` | `7500` | API timeout in seconds |
-
-## All options — review_tex.py
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--model` | `gpt-4o` | Model name |
-| `--api-key` | env var | API key |
-| `--base-url` | — | Custom API endpoint |
-| `--discipline` | — | Academic discipline |
-| `--venue` | — | Target conference/journal |
-| `--instructions` | — | Free-form reviewer guidance |
-| `--language` | `en` | Output language: `en` or `zh` |
-| `--email` | — | CrossRef mailto for BibTeX check |
-| `--paper-name` | package stem | Paper title in report |
-| `--output` | auto | Output .md report path |
-| `--no-safety` | off | Skip safety checks |
-| `--no-correctness` | off | Skip correctness check |
-| `--no-criticality` | off | Skip criticality verification |
-| `--no-bib` | off | Skip BibTeX verification |
-| `--bib-only` | — | Verify a standalone .bib file only |
+| `--vision_max_pages` | `30` | Max pages in vision mode (0 = all) |
+| `--format_vision_max_pages` | `10` | Max pages for format check (0 = use `--vision_max_pages`) |
 | `--timeout` | `7500` | API timeout in seconds |
 
 ## Interpreting results
