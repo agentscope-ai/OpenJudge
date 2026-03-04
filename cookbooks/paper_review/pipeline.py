@@ -59,6 +59,15 @@ class PipelineConfig:
     #        The AI will apply that venue's standards on top of discipline criteria.
     #        Users may pass any custom string — it appears verbatim in the prompt.
     venue: Optional[str] = None
+    # instructions: optional free-form reviewer instructions provided by the user
+    #        (e.g. "Focus on experimental design", "This is a short paper").
+    #        Rendered as a dedicated section in the review system prompt, separate
+    #        from the venue block.
+    instructions: Optional[str] = None
+    # language: output language for the review text. Supported values:
+    #        "en" (default) — English
+    #        "zh"           — Simplified Chinese (简体中文)
+    language: Optional[str] = None
     # use_vision_for_pdf: when True, PDF pages are rendered to images and sent
     #   as image_url blocks instead of extracting text.  Suitable for
     #   multi-modal DashScope models such as qwen3.5-plus that support
@@ -106,6 +115,8 @@ class PaperReviewPipeline:
         # Resolve discipline (string ID → DisciplineConfig or None)
         self._discipline = get_discipline(config.discipline)
         self._venue = config.venue
+        self._instructions = config.instructions
+        self._language = config.language
 
         # Use LiteLLM for native PDF support
         from cookbooks.paper_review.models import LiteLLMModel
@@ -124,7 +135,13 @@ class PaperReviewPipeline:
     def _init_graders(self):
         """Initialize all graders with discipline and venue context."""
         self.correctness_grader = CorrectnessGrader(self.model, discipline=self._discipline)
-        self.review_grader = ReviewGrader(self.model, discipline=self._discipline, venue=self._venue)
+        self.review_grader = ReviewGrader(
+            self.model,
+            discipline=self._discipline,
+            venue=self._venue,
+            instructions=self._instructions,
+            language=self._language,
+        )
         self.criticality_grader = CriticalityGrader(self.model)
         self.format_grader = FormatGrader(self.model)
         self.jailbreaking_grader = JailbreakingGrader(self.model)

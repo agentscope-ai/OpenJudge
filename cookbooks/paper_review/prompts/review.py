@@ -11,8 +11,10 @@ def get_review_system_prompt(
     date: datetime | None = None,
     discipline: Optional[DisciplineConfig] = None,
     venue: Optional[str] = None,
+    instructions: Optional[str] = None,
+    language: Optional[str] = None,
 ) -> str:
-    """Get the review system prompt with current date, optional discipline and venue.
+    """Get the review system prompt with current date, optional discipline, venue, instructions and language.
 
     Args:
         date: Date to use (defaults to today).
@@ -21,6 +23,11 @@ def get_review_system_prompt(
         venue: Specific conference or journal name (e.g. "NeurIPS 2025", "The Lancet").
                When provided, the reviewer is instructed to apply that venue's standards
                on top of the discipline criteria. Users can pass any custom venue name.
+        instructions: Optional free-form reviewer instructions provided by the user
+                      (e.g. "Focus on experimental design", "This is a short paper, apply 4-page
+                      format standards"). Appended as a dedicated section after the venue block.
+        language: Output language for the review. Supported values: "en" (default), "zh".
+                  When set to "zh", the model is instructed to write the review in Chinese.
     """
     current_date = (date or datetime.now()).strftime("%Y-%m-%d")
 
@@ -89,11 +96,32 @@ Citations and Related Work: Are relevant prior works properly cited and compared
     else:
         scoring_block = base_scoring
 
+    # ── Special reviewer instructions ─────────────────────────────────────────
+    if instructions and instructions.strip():
+        instructions_block = (
+            f"\n**Special Reviewer Instructions (from submitter):**\n"
+            f"{instructions.strip()}\n"
+            f"Please take the above instructions into account throughout your review."
+        )
+    else:
+        instructions_block = ""
+
+    # ── Output language ────────────────────────────────────────────────────────
+    if language == "zh":
+        language_block = (
+            "\n**Output Language: Chinese (Simplified)**\n"
+            "You MUST write your entire review — including all section headings, "
+            "evaluation text, strengths, weaknesses, and recommendation — in "
+            "Simplified Chinese (简体中文). Do NOT use English in the review body."
+        )
+    else:
+        language_block = ""
+
     return f"""{identity_block}
 
 **Current Date: {current_date}**
 Note: References to papers from 2024, 2025, or 2026 are valid and should NOT be flagged as "future" papers.
-{venue_block}
+{venue_block}{instructions_block}{language_block}
 
 You keep incredibly high standards and only the best papers get accepted.
 

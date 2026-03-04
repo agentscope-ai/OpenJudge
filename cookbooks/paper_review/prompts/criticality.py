@@ -47,15 +47,15 @@ After classifying all issues, assign an overall score (1-3):
 - 3: At least one major error that compromises paper's validity
 
 Return your assessment in JSON format:
-{
+{{
   "score": 1, 2, or 3,
   "reasoning": "Your analysis of each flagged issue",
-  "issues": {
+  "issues": {{
     "major": ["Error: [issue]. Location: [where]", ...],
     "minor": ["Error: [issue]. Location: [where]", ...],
     "false_positives": ["Error: [issue]. Location: [where]", ...]
-  }
-}
+  }}
+}}
 
 Include all three categories, using empty arrays [] if no items in that category."""
 
