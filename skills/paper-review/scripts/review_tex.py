@@ -96,16 +96,25 @@ def resolve_api_key(args_key: str | None, model: str) -> str:
 
 def check_install():
     """Ensure paper review dependencies are importable."""
+    missing = []
+    for pkg in ("litellm", "httpx", "loguru", "pydantic"):
+        try:
+            __import__(pkg)
+        except ImportError:
+            missing.append(pkg)
+
+    if missing:
+        print(f"ERROR: Missing dependencies: {', '.join(missing)}\n")
+        print("Install them with:")
+        print(f"  pip install {' '.join(missing)}")
+        sys.exit(1)
+
     try:
         __import__("cookbooks.paper_review")
-
-        return True
     except ImportError:
-        print("ERROR: OpenJudge paper_review not found.\n")
-        print("Install it first:")
-        print("  git clone https://github.com/agentscope-ai/OpenJudge.git")
-        print("  cd OpenJudge && pip install -e .")
-        print("  pip install litellm httpx")
+        print("ERROR: Cannot import cookbooks.paper_review.\n")
+        print("Make sure you run this script from the OpenJudge repository root,")
+        print("or install OpenJudge with:  pip install -e .")
         sys.exit(1)
 
 

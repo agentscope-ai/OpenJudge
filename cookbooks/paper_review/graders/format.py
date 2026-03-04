@@ -9,9 +9,13 @@ from cookbooks.paper_review.prompts.format import (
     FORMAT_USER_PROMPT,
 )
 from cookbooks.paper_review.utils import extract_response_content
-from openjudge.graders.base_grader import GraderError, GraderMode, GraderScore
-from openjudge.graders.llm_grader import LLMGrader
-from openjudge.models.base_chat_model import BaseChatModel
+from cookbooks.paper_review._compat import (
+    BaseChatModel,
+    GraderError,
+    GraderMode,
+    GraderScore,
+    LLMGrader,
+)
 
 
 def parse_format_response(text: str) -> dict:

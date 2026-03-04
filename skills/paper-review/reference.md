@@ -183,7 +183,8 @@ pipeline = PaperReviewPipeline(config)
 ## Troubleshooting
 
 **`ModuleNotFoundError: No module named 'cookbooks'`**
-Run scripts from the project root, or install with `pip install -e .`
+Run scripts from the project root. Full `pip install -e .` is optional — paper-review
+only requires `pip install litellm httpx loguru pydantic`.
 
 **`ModuleNotFoundError: No module named 'litellm'`**
 ```bash

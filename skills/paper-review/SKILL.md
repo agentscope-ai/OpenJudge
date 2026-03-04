@@ -22,14 +22,9 @@ Multi-stage academic paper review using the OpenJudge `PaperReviewPipeline`:
 ## Prerequisites
 
 ```bash
-# Install the project
 git clone https://github.com/agentscope-ai/OpenJudge.git
 cd OpenJudge
-pip install -e .
-
-# Extra dependencies for paper_review
-pip install litellm httpx
-pip install pypdfium2  # only if using vision mode (use_vision_for_pdf=True)
+pip install litellm httpx loguru pydantic
 ```
 
 ## Gather from user before running

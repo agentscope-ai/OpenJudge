@@ -30,7 +30,7 @@ from cookbooks.paper_review.schema import (
     TexPackageInfo,
 )
 from cookbooks.paper_review.utils import encode_pdf_base64, load_pdf_bytes
-from openjudge.graders.schema import GraderError
+from cookbooks.paper_review._compat import GraderError
 
 
 @dataclass
