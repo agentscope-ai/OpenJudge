@@ -7,10 +7,19 @@ BIOLOGY = DisciplineConfig(
     id="biology",
     name="Biology & Life Sciences",
     venues=[
-        "Cell", "Nature", "Science", "eLife", "PLOS Biology",
-        "Nature Cell Biology", "Nature Genetics", "Molecular Cell",
-        "Current Biology", "PNAS", "Developmental Cell",
-        "Journal of Cell Biology", "Genome Biology",
+        "Cell",
+        "Nature",
+        "Science",
+        "eLife",
+        "PLOS Biology",
+        "Nature Cell Biology",
+        "Nature Genetics",
+        "Molecular Cell",
+        "Current Biology",
+        "PNAS",
+        "Developmental Cell",
+        "Journal of Cell Biology",
+        "Genome Biology",
     ],
     reviewer_context=(
         "You specialize in biology and life sciences, including molecular biology, "
@@ -21,25 +30,18 @@ BIOLOGY = DisciplineConfig(
     evaluation_dimensions=[
         "Biological Significance: Does this work provide fundamental new insights into "
         "biological processes, mechanisms, or evolutionary relationships?",
-
         "Originality: Is this a genuinely new discovery, mechanism, or methodology? "
         "How does it advance the field beyond prior work?",
-
         "Experimental Rigor: Are appropriate controls included? Are experiments "
         "independently replicated? Are sample sizes sufficient for the claims made?",
-
         "Statistical Analysis: Are statistical methods appropriate for the data type? "
         "Are sample sizes, n values, and error statistics clearly reported?",
-
         "Reproducibility: Are methods described in sufficient detail to repeat? "
         "Are reagents, cell lines, and animal models fully specified?",
-
         "Clarity: Are figures clear and properly labeled? Is the manuscript logically "
         "structured? Are key findings clearly stated?",
-
         "Ethics: Is animal/human subject ethics approval mentioned? Are biosafety "
         "considerations addressed where relevant?",
-
         "Citations and Related Work: Are key precedents and competing hypotheses cited?",
     ],
     correctness_categories=[

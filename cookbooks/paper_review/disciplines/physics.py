@@ -7,11 +7,17 @@ PHYSICS = DisciplineConfig(
     id="physics",
     name="Physics",
     venues=[
-        "Physical Review Letters (PRL)", "Physical Review X (PRX)",
-        "Nature Physics", "Nature", "Science",
-        "Journal of High Energy Physics (JHEP)", "Nuclear Physics B",
-        "The Astrophysical Journal (ApJ)", "Astronomy & Astrophysics",
-        "Communications Physics", "New Journal of Physics",
+        "Physical Review Letters (PRL)",
+        "Physical Review X (PRX)",
+        "Nature Physics",
+        "Nature",
+        "Science",
+        "Journal of High Energy Physics (JHEP)",
+        "Nuclear Physics B",
+        "The Astrophysical Journal (ApJ)",
+        "Astronomy & Astrophysics",
+        "Communications Physics",
+        "New Journal of Physics",
     ],
     reviewer_context=(
         "You specialize in physics, covering areas such as condensed matter, "
@@ -22,25 +28,18 @@ PHYSICS = DisciplineConfig(
     evaluation_dimensions=[
         "Physical Validity: Are the physical arguments, derivations, and models correct? "
         "Do the results obey known conservation laws and symmetries?",
-
         "Significance: Does this advance fundamental understanding or open new research directions? "
         "Is it a breakthrough or incremental improvement?",
-
         "Originality: Is this genuinely new physics or a new theoretical framework? "
         "How does it compare to existing models and prior experimental results?",
-
         "Experimental Rigor (if applicable): Are measurements described in sufficient detail? "
         "Are systematic and statistical uncertainties properly quantified and propagated?",
-
         "Theoretical Rigor (if applicable): Are assumptions clearly stated? "
         "Are approximations justified? Are limits and boundary conditions properly handled?",
-
         "Clarity: Is the notation standard and consistent? Are derivations easy to follow? "
         "Are key results highlighted?",
-
         "Reproducibility: Is the experimental setup described in enough detail to reproduce? "
         "Are simulation/computation methods and codes described?",
-
         "Citations and Related Work: Are seminal works cited? Is the relationship to "
         "existing theory and experiment clearly discussed?",
     ],

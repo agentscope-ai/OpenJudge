@@ -7,11 +7,16 @@ MATHEMATICS = DisciplineConfig(
     id="mathematics",
     name="Mathematics",
     venues=[
-        "Annals of Mathematics", "Journal of the American Mathematical Society (JAMS)",
-        "Inventiones Mathematicae", "Acta Mathematica",
-        "Duke Mathematical Journal", "Mathematische Annalen",
-        "Communications in Mathematical Physics", "Advances in Mathematics",
-        "Journal of Differential Geometry", "Compositio Mathematica",
+        "Annals of Mathematics",
+        "Journal of the American Mathematical Society (JAMS)",
+        "Inventiones Mathematicae",
+        "Acta Mathematica",
+        "Duke Mathematical Journal",
+        "Mathematische Annalen",
+        "Communications in Mathematical Physics",
+        "Advances in Mathematics",
+        "Journal of Differential Geometry",
+        "Compositio Mathematica",
         "SIAM Journal on Mathematical Analysis",
     ],
     reviewer_context=(
@@ -23,22 +28,16 @@ MATHEMATICS = DisciplineConfig(
     evaluation_dimensions=[
         "Mathematical Correctness: Are all theorems, lemmas, and propositions correctly stated "
         "and rigorously proved? Are all cases handled? Are there gaps in the arguments?",
-
         "Significance: Does this resolve an open problem, establish a new connection between "
         "fields, or introduce a powerful new technique with broad applicability?",
-
         "Originality: Is the mathematical approach genuinely new? Does it introduce "
         "new concepts, structures, or proof techniques?",
-
         "Clarity and Exposition: Is the paper well-organized? Are definitions precise "
         "and notation consistent? Are key ideas explained before technical details?",
-
         "Completeness: Are all relevant cases and edge cases addressed? "
         "Are counterexamples or limitations of the results discussed?",
-
         "Context and Motivation: Is the mathematical motivation clearly explained? "
         "Is the result placed appropriately in the existing mathematical landscape?",
-
         "Citations and Related Work: Are prior results that are used or generalized properly cited?",
     ],
     correctness_categories=[

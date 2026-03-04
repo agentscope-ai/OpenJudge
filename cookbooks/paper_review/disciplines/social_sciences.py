@@ -7,12 +7,18 @@ SOCIAL_SCIENCES = DisciplineConfig(
     id="social_sciences",
     name="Social Sciences",
     venues=[
-        "American Sociological Review (ASR)", "American Journal of Sociology (AJS)",
-        "American Political Science Review (APSR)", "World Politics",
-        "International Organization", "Administrative Science Quarterly (ASQ)",
-        "Social Forces", "Annual Review of Sociology",
-        "Journal of Communication", "Public Opinion Quarterly",
-        "Demography", "Social Science & Medicine",
+        "American Sociological Review (ASR)",
+        "American Journal of Sociology (AJS)",
+        "American Political Science Review (APSR)",
+        "World Politics",
+        "International Organization",
+        "Administrative Science Quarterly (ASQ)",
+        "Social Forces",
+        "Annual Review of Sociology",
+        "Journal of Communication",
+        "Public Opinion Quarterly",
+        "Demography",
+        "Social Science & Medicine",
     ],
     reviewer_context=(
         "You specialize in social sciences, including sociology, political science, "
@@ -23,28 +29,20 @@ SOCIAL_SCIENCES = DisciplineConfig(
     evaluation_dimensions=[
         "Theoretical Contribution: Does the paper advance sociological or political theory? "
         "Are the theoretical claims clearly derived and tested?",
-
         "Research Design: Is the methodology (quantitative, qualitative, or mixed) "
         "appropriate for the research question? Are sampling strategies justified?",
-
         "Empirical Rigor: For quantitative work: are statistical methods appropriate, "
         "are confounders controlled, are effect sizes reported? "
         "For qualitative work: is the analytic approach systematic and transparent?",
-
         "Generalizability: Are the boundaries of generalizability clearly stated? "
         "Is the sample representative of the intended population?",
-
         "Originality: Does this provide new theoretical insight, study a novel population, "
         "or bring new data to bear on an important question?",
-
         "Clarity: Is the argument logically presented? Are concepts clearly defined? "
         "Are findings presented in a way accessible to the broader social science audience?",
-
         "Ethics: Are research ethics (IRB approval, informed consent, data privacy) "
         "described? Are positionality and potential biases acknowledged in qualitative work?",
-
-        "Citations and Related Work: Is the paper properly grounded in relevant literature "
-        "across subfields?",
+        "Citations and Related Work: Is the paper properly grounded in relevant literature " "across subfields?",
     ],
     correctness_categories=[
         "Statistical Errors - Incorrect statistical models for the outcome type "
@@ -56,8 +54,7 @@ SOCIAL_SCIENCES = DisciplineConfig(
         "correlational data without appropriate identification",
         "Measurement Validity Errors - Using proxies or indicators that clearly do not "
         "measure the intended theoretical concept",
-        "Sampling/Generalizability Errors - Generalizing to populations not represented "
-        "in the sample",
+        "Sampling/Generalizability Errors - Generalizing to populations not represented " "in the sample",
     ],
     correctness_context=(
         "Pay special attention to: appropriateness of statistical models for the data type, "

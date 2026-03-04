@@ -17,15 +17,22 @@ import os
 import sys
 from pathlib import Path
 
-
 DISCIPLINES = [
-    "cs", "medicine", "physics", "chemistry", "biology",
-    "economics", "psychology", "environmental_science",
-    "mathematics", "social_sciences",
+    "cs",
+    "medicine",
+    "physics",
+    "chemistry",
+    "biology",
+    "economics",
+    "psychology",
+    "environmental_science",
+    "mathematics",
+    "social_sciences",
 ]
 
 
 def parse_args():
+    """Parse CLI arguments for PDF paper review."""
     parser = argparse.ArgumentParser(
         description="Review an academic paper PDF with OpenJudge",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -41,7 +48,9 @@ Examples:
     parser.add_argument("pdf", help="Path to the PDF file")
     parser.add_argument("--bib", metavar="BIB_FILE", help="Path to .bib file for reference verification")
     parser.add_argument("--model", default="gpt-4o", metavar="MODEL", help="Model name (default: gpt-4o)")
-    parser.add_argument("--api-key", metavar="KEY", help="API key (falls back to OPENAI_API_KEY / ANTHROPIC_API_KEY env vars)")
+    parser.add_argument(
+        "--api-key", metavar="KEY", help="API key (falls back to OPENAI_API_KEY / ANTHROPIC_API_KEY env vars)"
+    )
     parser.add_argument("--base-url", metavar="URL", help="Custom API base URL for self-hosted or proxy endpoints")
     parser.add_argument(
         "--discipline",
@@ -52,25 +61,47 @@ Examples:
     parser.add_argument("--venue", metavar="VENUE", help="Target venue, e.g. 'NeurIPS 2025' or 'The Lancet'")
     parser.add_argument("--paper-name", metavar="NAME", help="Paper title for the report (default: PDF filename)")
     parser.add_argument("--output", metavar="FILE", help="Output .md report path (default: <paper_name>_review.md)")
-    parser.add_argument("--email", metavar="EMAIL", help="Your email for CrossRef API (better rate limits in BibTeX check)")
+    parser.add_argument(
+        "--email", metavar="EMAIL", help="Your email for CrossRef API (better rate limits in BibTeX check)"
+    )
     parser.add_argument("--no-safety", action="store_true", help="Skip safety checks")
     parser.add_argument("--no-correctness", action="store_true", help="Skip correctness check")
     parser.add_argument("--no-criticality", action="store_true", help="Skip criticality verification")
     parser.add_argument("--no-bib", action="store_true", help="Skip BibTeX verification even if --bib is given")
-    parser.add_argument("--vision", action="store_true", help="Use vision mode (render PDF pages as images). Requires pypdfium2.")
-    parser.add_argument("--vision-max-pages", type=int, default=30, metavar="N",
-                        help="Max pages to send in vision mode (default: 30). Set 0 for all pages.")
-    parser.add_argument("--format-vision-max-pages", type=int, default=10, metavar="N",
-                        help="Max pages for format check in vision mode (default: 10). Set 0 to use --vision-max-pages.")
-    parser.add_argument("--language", metavar="LANG", choices=["en", "zh"],
-                        help="Output language for the review: 'en' (default) or 'zh' (Simplified Chinese)")
-    parser.add_argument("--instructions", metavar="TEXT",
-                        help="Free-form reviewer instructions, e.g. 'Focus on experimental design'")
-    parser.add_argument("--timeout", type=int, default=7500, metavar="SECONDS", help="API timeout in seconds (default: 7500)")
+    parser.add_argument(
+        "--vision", action="store_true", help="Use vision mode (render PDF pages as images). Requires pypdfium2."
+    )
+    parser.add_argument(
+        "--vision-max-pages",
+        type=int,
+        default=30,
+        metavar="N",
+        help="Max pages to send in vision mode (default: 30). Set 0 for all pages.",
+    )
+    parser.add_argument(
+        "--format-vision-max-pages",
+        type=int,
+        default=10,
+        metavar="N",
+        help="Max pages for format check in vision mode (default: 10). Set 0 to use --vision-max-pages.",
+    )
+    parser.add_argument(
+        "--language",
+        metavar="LANG",
+        choices=["en", "zh"],
+        help="Output language for the review: 'en' (default) or 'zh' (Simplified Chinese)",
+    )
+    parser.add_argument(
+        "--instructions", metavar="TEXT", help="Free-form reviewer instructions, e.g. 'Focus on experimental design'"
+    )
+    parser.add_argument(
+        "--timeout", type=int, default=7500, metavar="SECONDS", help="API timeout in seconds (default: 7500)"
+    )
     return parser.parse_args()
 
 
 def resolve_api_key(args_key: str | None, model: str) -> str:
+    """Resolve API key from CLI arg or environment variables."""
     if args_key:
         return args_key
     if model.startswith("claude"):
@@ -86,8 +117,10 @@ def resolve_api_key(args_key: str | None, model: str) -> str:
 
 
 def check_install():
+    """Ensure paper review dependencies are importable."""
     try:
-        from cookbooks.paper_review import PaperReviewPipeline, PipelineConfig, generate_report  # noqa: F401
+        __import__("cookbooks.paper_review")
+
         return True
     except ImportError:
         print("ERROR: OpenJudge paper_review not found.\n")
@@ -99,7 +132,8 @@ def check_install():
 
 
 async def run_review(args):
-    from cookbooks.paper_review import PaperReviewPipeline, PipelineConfig, generate_report
+    """Run review pipeline for a single PDF file."""
+    from cookbooks.paper_review import PaperReviewPipeline, PipelineConfig
 
     pdf_path = Path(args.pdf)
     if not pdf_path.exists():
@@ -171,12 +205,15 @@ async def run_review(args):
     if result.bib_verification:
         for bib_file, summary in result.bib_verification.items():
             rate = summary.verification_rate
-            print(f"BibTeX ({Path(bib_file).name}): {summary.verified}/{summary.total_references} verified ({rate:.0%})")
+            print(
+                f"BibTeX ({Path(bib_file).name}): {summary.verified}/{summary.total_references} verified ({rate:.0%})"
+            )
             if summary.suspect > 0:
                 print(f"  ⚠ {summary.suspect} suspect references — check manually")
 
 
 def main():
+    """Entry point for the review_paper script."""
     check_install()
     args = parse_args()
     asyncio.run(run_review(args))

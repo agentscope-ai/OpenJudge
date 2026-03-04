@@ -10,7 +10,9 @@ from cookbooks.paper_review.disciplines.biology import BIOLOGY
 from cookbooks.paper_review.disciplines.chemistry import CHEMISTRY
 from cookbooks.paper_review.disciplines.cs import CS
 from cookbooks.paper_review.disciplines.economics import ECONOMICS
-from cookbooks.paper_review.disciplines.environmental_science import ENVIRONMENTAL_SCIENCE
+from cookbooks.paper_review.disciplines.environmental_science import (
+    ENVIRONMENTAL_SCIENCE,
+)
 from cookbooks.paper_review.disciplines.mathematics import MATHEMATICS
 from cookbooks.paper_review.disciplines.medicine import MEDICINE
 from cookbooks.paper_review.disciplines.physics import PHYSICS
@@ -53,9 +55,7 @@ def get_discipline(discipline: str | DisciplineConfig | None) -> DisciplineConfi
     result = DISCIPLINE_REGISTRY.get(discipline)
     if result is None:
         valid = ", ".join(DISCIPLINE_REGISTRY.keys())
-        raise ValueError(
-            f"Unknown discipline ID '{discipline}'. Valid options are: {valid}"
-        )
+        raise ValueError(f"Unknown discipline ID '{discipline}'. Valid options are: {valid}")
     return result
 
 

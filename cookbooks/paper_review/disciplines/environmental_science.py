@@ -7,11 +7,18 @@ ENVIRONMENTAL_SCIENCE = DisciplineConfig(
     id="environmental_science",
     name="Environmental Science",
     venues=[
-        "Nature Climate Change", "Nature Sustainability", "Global Change Biology",
-        "Environmental Science & Technology", "Environmental Health Perspectives",
-        "Ecology Letters", "Global Environmental Change", "One Earth",
-        "Earth System Science Data", "Atmospheric Chemistry and Physics",
-        "Water Research", "Journal of Cleaner Production",
+        "Nature Climate Change",
+        "Nature Sustainability",
+        "Global Change Biology",
+        "Environmental Science & Technology",
+        "Environmental Health Perspectives",
+        "Ecology Letters",
+        "Global Environmental Change",
+        "One Earth",
+        "Earth System Science Data",
+        "Atmospheric Chemistry and Physics",
+        "Water Research",
+        "Journal of Cleaner Production",
     ],
     reviewer_context=(
         "You specialize in environmental science, including climate science, ecology, "
@@ -22,25 +29,18 @@ ENVIRONMENTAL_SCIENCE = DisciplineConfig(
     evaluation_dimensions=[
         "Environmental Significance: Does this work address a critical environmental problem? "
         "Are findings relevant to policy, conservation, or mitigation efforts?",
-
         "Methodological Rigor: Are field sampling, remote sensing, or modeling methods "
         "appropriate and well-described? Are uncertainty estimates provided?",
-
         "Data Quality: Are data sources credible and properly validated? "
         "Are spatiotemporal scales appropriate for the conclusions drawn?",
-
         "Model Validity: If models are used, are they validated against observations? "
         "Are assumptions, limitations, and uncertainty ranges clearly stated?",
-
         "Originality: Does this provide new data from underrepresented regions, "
         "new mechanistic understanding, or a novel methodological approach?",
-
         "Interdisciplinary Integration: Does the paper appropriately integrate "
         "physical, biological, chemical, and/or social dimensions where relevant?",
-
         "Clarity: Are maps, figures, and data visualizations clear? "
         "Is the manuscript accessible to a broad environmental science readership?",
-
         "Ethics and Policy Relevance: Are data accessibility and reproducibility addressed? "
         "Are policy implications discussed responsibly?",
     ],

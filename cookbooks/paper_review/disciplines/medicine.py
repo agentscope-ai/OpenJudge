@@ -7,10 +7,18 @@ MEDICINE = DisciplineConfig(
     id="medicine",
     name="Medicine & Health Sciences",
     venues=[
-        "The Lancet", "New England Journal of Medicine (NEJM)", "JAMA",
-        "BMJ", "Nature Medicine", "Cell", "PLOS Medicine",
-        "Annals of Internal Medicine", "Circulation", "CHEST",
-        "Journal of Clinical Oncology", "Radiology",
+        "The Lancet",
+        "New England Journal of Medicine (NEJM)",
+        "JAMA",
+        "BMJ",
+        "Nature Medicine",
+        "Cell",
+        "PLOS Medicine",
+        "Annals of Internal Medicine",
+        "Circulation",
+        "CHEST",
+        "Journal of Clinical Oncology",
+        "Radiology",
     ],
     reviewer_context=(
         "You specialize in medicine and health sciences, including clinical research, "
@@ -20,25 +28,18 @@ MEDICINE = DisciplineConfig(
     evaluation_dimensions=[
         "Clinical Significance: Does the work address an important medical question? "
         "Are the findings likely to change clinical practice or advance patient care?",
-
         "Methodological Rigor: Is the study design appropriate (RCT, cohort, case-control, etc.)? "
         "Are sample sizes adequate? Is randomization and blinding properly implemented?",
-
         "Statistical Validity: Are statistical methods appropriate? Is multiple comparisons "
         "correction applied? Are confidence intervals and p-values correctly interpreted?",
-
         "Reproducibility: Are inclusion/exclusion criteria, interventions, outcomes, "
         "and analysis plans pre-registered or clearly specified?",
-
         "Clarity: Is the manuscript structured following CONSORT/STROBE/PRISMA guidelines? "
         "Are tables and figures clearly presented?",
-
         "Ethics and Patient Safety: Is IRB/ethics approval mentioned? Is informed consent "
         "described? Are potential harms or adverse events reported?",
-
         "Originality: Does this add new knowledge beyond what is already established? "
         "Is it sufficiently different from previous systematic reviews or trials?",
-
         "Limitations: Have the authors honestly acknowledged study limitations, "
         "confounders, and generalizability constraints?",
     ],

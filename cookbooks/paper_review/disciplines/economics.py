@@ -7,11 +7,17 @@ ECONOMICS = DisciplineConfig(
     id="economics",
     name="Economics & Finance",
     venues=[
-        "American Economic Review (AER)", "Quarterly Journal of Economics (QJE)",
-        "Journal of Political Economy (JPE)", "Review of Economic Studies (RES)",
-        "Econometrica", "Journal of Finance", "Review of Financial Studies",
-        "Journal of Financial Economics", "Journal of Economic Perspectives",
-        "RAND Journal of Economics", "Economic Journal",
+        "American Economic Review (AER)",
+        "Quarterly Journal of Economics (QJE)",
+        "Journal of Political Economy (JPE)",
+        "Review of Economic Studies (RES)",
+        "Econometrica",
+        "Journal of Finance",
+        "Review of Financial Studies",
+        "Journal of Financial Economics",
+        "Journal of Economic Perspectives",
+        "RAND Journal of Economics",
+        "Economic Journal",
     ],
     reviewer_context=(
         "You specialize in economics and finance, including microeconomics, macroeconomics, "
@@ -21,26 +27,19 @@ ECONOMICS = DisciplineConfig(
     evaluation_dimensions=[
         "Economic Significance: Does this paper address an important economic question? "
         "Are the findings likely to influence policy, theory, or further research?",
-
         "Identification Strategy: Is the causal identification strategy credible? "
         "Are endogeneity concerns properly addressed (IV, RDD, DiD, natural experiment)?",
-
         "Theoretical Contribution: If theoretical, is the model well-specified? "
         "Are equilibrium conditions and assumptions clearly stated and justified?",
-
         "Empirical Rigor: Are data sources credible and well-described? "
         "Are sample selection and variable construction clearly explained? "
         "Is the econometric specification appropriate?",
-
         "Robustness: Are results robust to alternative specifications, samples, "
         "and functional forms? Are placebo tests or falsification checks provided?",
-
         "Originality: Does this open a new area of inquiry, provide a novel identification "
         "strategy, or substantially revise existing understanding?",
-
         "Clarity: Is the argument logically structured? Are tables and figures informative? "
         "Is the economic intuition clearly explained?",
-
         "Citations and Related Work: Is the paper properly situated in the existing literature?",
     ],
     correctness_categories=[

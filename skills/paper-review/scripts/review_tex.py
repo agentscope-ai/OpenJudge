@@ -16,15 +16,22 @@ import os
 import sys
 from pathlib import Path
 
-
 DISCIPLINES = [
-    "cs", "medicine", "physics", "chemistry", "biology",
-    "economics", "psychology", "environmental_science",
-    "mathematics", "social_sciences",
+    "cs",
+    "medicine",
+    "physics",
+    "chemistry",
+    "biology",
+    "economics",
+    "psychology",
+    "environmental_science",
+    "mathematics",
+    "social_sciences",
 ]
 
 
 def parse_args():
+    """Parse CLI arguments for TeX package or BibTeX review."""
     parser = argparse.ArgumentParser(
         description="Review a LaTeX source package or BibTeX file with OpenJudge",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -58,15 +65,21 @@ Examples:
     parser.add_argument("--no-correctness", action="store_true", help="Skip correctness check")
     parser.add_argument("--no-criticality", action="store_true", help="Skip criticality verification")
     parser.add_argument("--no-bib", action="store_true", help="Skip BibTeX verification")
-    parser.add_argument("--language", metavar="LANG", choices=["en", "zh"],
-                        help="Output language for the review: 'en' (default) or 'zh' (Simplified Chinese)")
-    parser.add_argument("--instructions", metavar="TEXT",
-                        help="Free-form reviewer instructions, e.g. 'Focus on experimental design'")
+    parser.add_argument(
+        "--language",
+        metavar="LANG",
+        choices=["en", "zh"],
+        help="Output language for the review: 'en' (default) or 'zh' (Simplified Chinese)",
+    )
+    parser.add_argument(
+        "--instructions", metavar="TEXT", help="Free-form reviewer instructions, e.g. 'Focus on experimental design'"
+    )
     parser.add_argument("--timeout", type=int, default=7500, metavar="SECONDS", help="API timeout in seconds")
     return parser.parse_args()
 
 
 def resolve_api_key(args_key: str | None, model: str) -> str:
+    """Resolve API key from CLI arg or environment variables."""
     if args_key:
         return args_key
     if model.startswith("claude"):
@@ -82,8 +95,10 @@ def resolve_api_key(args_key: str | None, model: str) -> str:
 
 
 def check_install():
+    """Ensure paper review dependencies are importable."""
     try:
-        from cookbooks.paper_review import PaperReviewPipeline, PipelineConfig  # noqa: F401
+        __import__("cookbooks.paper_review")
+
         return True
     except ImportError:
         print("ERROR: OpenJudge paper_review not found.\n")
@@ -112,7 +127,10 @@ def print_bib_results(bib_verification: dict):
 
 async def run_bib_only(bib_path: str, email: str | None):
     """Verify a standalone .bib file without running a full paper review."""
-    from cookbooks.paper_review.processors.bib_checker import BibChecker, VerificationStatus
+    from cookbooks.paper_review.processors.bib_checker import (
+        BibChecker,
+        VerificationStatus,
+    )
 
     bib_file = Path(bib_path)
     if not bib_file.exists():
@@ -142,6 +160,7 @@ async def run_bib_only(bib_path: str, email: str | None):
 
 
 async def run_tex_review(args):
+    """Run review pipeline for a TeX source package."""
     from cookbooks.paper_review import PaperReviewPipeline, PipelineConfig
     from cookbooks.paper_review.report import generate_report
 
@@ -191,7 +210,7 @@ async def run_tex_review(args):
     result = await pipeline.review_tex_package(str(package_path), package_name=paper_name)
 
     if result.tex_info:
-        print(f"TeX package parsed:")
+        print("TeX package parsed:")
         print(f"  Main file   : {result.tex_info.main_tex}")
         print(f"  Total files : {result.tex_info.total_files}")
         print(f"  BibTeX files: {result.tex_info.bib_files}")
@@ -208,6 +227,7 @@ async def run_tex_review(args):
 
 
 def main():
+    """Entry point for the review_tex script."""
     check_install()
     args = parse_args()
 

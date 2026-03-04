@@ -34,9 +34,7 @@ def get_review_system_prompt(
     # ── Reviewer identity ──────────────────────────────────────────────────────
     if discipline:
         discipline_label = discipline.name
-        reviewer_context = discipline.reviewer_context or (
-            f"You specialize in {discipline_label}."
-        )
+        reviewer_context = discipline.reviewer_context or (f"You specialize in {discipline_label}.")
         identity_block = (
             f"You are an expert academic paper reviewer specializing in {discipline_label}. "
             f"You are the best reviewer in the world.\n"
@@ -55,14 +53,9 @@ def get_review_system_prompt(
         )
     elif discipline and discipline.venues:
         venue_list = discipline.format_venues()
-        venue_block = (
-            f"\nYou typically review for top venues in {discipline.name}, such as: {venue_list}."
-        )
+        venue_block = f"\nYou typically review for top venues in {discipline.name}, such as: {venue_list}."
     else:
-        venue_block = (
-            "\nYou typically review for top venues such as "
-            "NeurIPS, ICLR, ICML, Nature, Science."
-        )
+        venue_block = "\nYou typically review for top venues such as " "NeurIPS, ICLR, ICML, Nature, Science."
 
     # ── Evaluation dimensions ──────────────────────────────────────────────────
     if discipline and discipline.evaluation_dimensions:

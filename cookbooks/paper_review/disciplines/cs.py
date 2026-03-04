@@ -7,10 +7,25 @@ CS = DisciplineConfig(
     id="cs",
     name="Computer Science",
     venues=[
-        "NeurIPS", "ICLR", "ICML", "CVPR", "ICCV", "ECCV",
-        "ACL", "EMNLP", "NAACL", "SIGMOD", "VLDB", "OSDI",
-        "SOSP", "CCS", "IEEE S&P", "USENIX Security",
-        "Nature Machine Intelligence", "JMLR", "TPAMI",
+        "NeurIPS",
+        "ICLR",
+        "ICML",
+        "CVPR",
+        "ICCV",
+        "ECCV",
+        "ACL",
+        "EMNLP",
+        "NAACL",
+        "SIGMOD",
+        "VLDB",
+        "OSDI",
+        "SOSP",
+        "CCS",
+        "IEEE S&P",
+        "USENIX Security",
+        "Nature Machine Intelligence",
+        "JMLR",
+        "TPAMI",
     ],
     reviewer_context=(
         "You specialize in computer science, including areas such as "
@@ -21,23 +36,17 @@ CS = DisciplineConfig(
         "Quality: Is the submission technically sound? Are claims well supported "
         "by theoretical analysis or experimental results? Are the methods appropriate? "
         "Is this a complete piece of work?",
-
         "Clarity: Is the submission clearly written and well organized? Does it "
         "adequately inform the reader with enough information for reproduction?",
-
         "Significance: Are the results impactful for the CS community? Will others "
         "likely use or build on these ideas? Does it address a difficult problem "
         "better than previous work?",
-
         "Originality: Does the work provide new insights or deepen understanding? "
         "Is it clear how this differs from previous contributions?",
-
         "Reproducibility: Does the paper provide sufficient detail for an expert to "
         "reproduce the results? Are code, datasets, and hyperparameters described?",
-
         "Ethics and Limitations: Have the authors adequately addressed limitations, "
         "potential misuse, and societal impact?",
-
         "Citations and Related Work: Are relevant prior works properly cited and compared?",
     ],
     correctness_categories=[

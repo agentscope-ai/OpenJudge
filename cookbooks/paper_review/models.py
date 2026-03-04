@@ -21,7 +21,7 @@ def _pdf_base64_to_text(data_url: str) -> str:
         import pymupdf  # PyMuPDF
 
         if data_url.startswith("data:application/pdf;base64,"):
-            b64 = data_url[len("data:application/pdf;base64,"):]
+            b64 = data_url[len("data:application/pdf;base64,") :]
         else:
             b64 = data_url
         pdf_bytes = base64.b64decode(b64)
@@ -140,18 +140,14 @@ class LiteLLMModel:
             import pypdfium2 as pdfium
         except ImportError as exc:
             raise ImportError(
-                "pypdfium2 is required for vision-based PDF processing. "
-                "Install it with:  pip install pypdfium2"
+                "pypdfium2 is required for vision-based PDF processing. " "Install it with:  pip install pypdfium2"
             ) from exc
 
         effective_max = max_pages if max_pages is not None else self.vision_max_pages
         data_hash = hashlib.md5(pdf_data.encode()).hexdigest()
         cache_key = (data_hash, effective_max)
         if cache_key in self._page_images_cache:
-            logger.debug(
-                f"Reusing cached page images for hash {data_hash[:8]} "
-                f"(max_pages={effective_max})"
-            )
+            logger.debug(f"Reusing cached page images for hash {data_hash[:8]} " f"(max_pages={effective_max})")
             return self._page_images_cache[cache_key]
 
         b64 = pdf_data.removeprefix("data:application/pdf;base64,")
@@ -160,10 +156,7 @@ class LiteLLMModel:
         doc = pdfium.PdfDocument(pdf_bytes)
         total_pages = len(doc)
         if effective_max is not None and total_pages > effective_max:
-            logger.info(
-                f"PDF has {total_pages} pages; rendering only the first "
-                f"{effective_max} (max_pages limit)"
-            )
+            logger.info(f"PDF has {total_pages} pages; rendering only the first " f"{effective_max} (max_pages limit)")
             page_count = effective_max
         else:
             page_count = total_pages
@@ -181,10 +174,7 @@ class LiteLLMModel:
         doc.close()
 
         self._page_images_cache[cache_key] = images
-        logger.info(
-            f"Rendered {len(images)}/{total_pages} page(s) for vision model "
-            f"(max_pages={effective_max})"
-        )
+        logger.info(f"Rendered {len(images)}/{total_pages} page(s) for vision model " f"(max_pages={effective_max})")
         return images
 
     def warmup_vision_cache(self, pdf_data: str, max_pages: Optional[int] = None) -> None:
@@ -201,9 +191,7 @@ class LiteLLMModel:
     ) -> List[dict]:
         """Replace each ``type:'file'`` block with one ``image_url`` block per page."""
         page_images = self._pdf_to_page_images(pdf_data, max_pages=max_pages)
-        image_blocks = [
-            {"type": "image_url", "image_url": {"url": img}} for img in page_images
-        ]
+        image_blocks = [{"type": "image_url", "image_url": {"url": img}} for img in page_images]
 
         transformed: List[dict] = []
         for msg in messages:
@@ -297,8 +285,7 @@ class LiteLLMModel:
             content = msg.get("content")
             if isinstance(content, list):
                 new_content = [
-                    block for block in content
-                    if not (isinstance(block, dict) and block.get("type") == "file")
+                    block for block in content if not (isinstance(block, dict) and block.get("type") == "file")
                 ]
                 had_file_block = len(new_content) < len(content)
 
@@ -377,9 +364,7 @@ class LiteLLMModel:
             if pdf_data:
                 file_id = self._upload_pdf_to_dashscope(pdf_data)
                 if file_id:
-                    completion_kwargs["messages"] = self._transform_messages_for_fileid(
-                        messages, file_id
-                    )
+                    completion_kwargs["messages"] = self._transform_messages_for_fileid(messages, file_id)
                 else:
                     # Upload failed — skip the inline attempt and go straight
                     # to local text extraction (qwen-long doesn't accept
@@ -395,9 +380,7 @@ class LiteLLMModel:
             pdf_data = self._extract_file_data_from_messages(completion_kwargs["messages"])
             if pdf_data is not None:
                 if self.use_vision_for_pdf:
-                    logger.debug(
-                        "DashScope vision model: rendering PDF pages as images"
-                    )
+                    logger.debug("DashScope vision model: rendering PDF pages as images")
                     completion_kwargs["messages"] = self._transform_messages_for_vision_pdf(
                         completion_kwargs["messages"],
                         pdf_data,
@@ -405,12 +388,9 @@ class LiteLLMModel:
                     )
                 else:
                     logger.debug(
-                        "DashScope model does not support type:'file' blocks — "
-                        "using local text extraction directly"
+                        "DashScope model does not support type:'file' blocks — " "using local text extraction directly"
                     )
-                    completion_kwargs["messages"] = _transform_messages_for_text_api(
-                        completion_kwargs["messages"]
-                    )
+                    completion_kwargs["messages"] = _transform_messages_for_text_api(completion_kwargs["messages"])
 
         try:
             response = litellm.completion(**completion_kwargs)
@@ -431,7 +411,9 @@ class LiteLLMModel:
             model = f"gemini/{model}"
         elif "claude" in model.lower() and not model.startswith("anthropic/"):
             model = f"anthropic/{model}"
-        elif self.base_url and not any(model.startswith(p) for p in ("openai/", "anthropic/", "gemini/", "azure/", "bedrock/")):
+        elif self.base_url and not any(
+            model.startswith(p) for p in ("openai/", "anthropic/", "gemini/", "azure/", "bedrock/")
+        ):
             # When using a custom base_url with an OpenAI-compatible API (e.g. DashScope, vLLM),
             # LiteLLM requires the "openai/" prefix to route correctly.
             model = f"openai/{model}"

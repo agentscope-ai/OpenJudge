@@ -45,9 +45,15 @@ def build_review_messages(
 ) -> List[dict]:
     """Build messages with PDF data, discipline config, venue, instructions and language injected."""
     return [
-        {"role": "system", "content": get_review_system_prompt(
-            discipline=discipline, venue=venue, instructions=instructions, language=language,
-        )},
+        {
+            "role": "system",
+            "content": get_review_system_prompt(
+                discipline=discipline,
+                venue=venue,
+                instructions=instructions,
+                language=language,
+            ),
+        },
         {
             "role": "user",
             "content": [
