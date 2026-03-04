@@ -2,7 +2,8 @@
 """
 Tool Parameter Check Grader
 
-Evaluates whether the generated tool call extracts completely correct parameters from the user query.
+Evaluates whether the generated tool call extracts completely correct parameters from the user query and the matching
+tool definition
 """
 
 import json
@@ -22,24 +23,21 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 TOOL_PARAMETER_CHECK_PROMPT_EN = textwrap.dedent(
-    """You are an expert in analyzing tool calls. Your task is to evaluate whether the generated tool call extracts completely correct parameters from the user query. This includes checking if parameters are accurate, complete, and properly formatted.
+    """You are an expert in analyzing tool calls. Your task is to evaluate whether the generated tool call extracts completely correct parameters from the user query and the matching tool definition. This includes checking if parameters are accurate and complete.
 
 <Rubrics>
-1. All required parameters are present and extracted from the query
-2. Parameter values match exactly what was specified in the query
-3. All parameters are grounded in the query (no fabricated values)
-4. Parameter data types and formats are correct
-5. Optional parameters are used appropriately when specified in the query
-6. All parameters mentioned in the query are captured
-7. Parameters are correctly mapped without confusion
+1. All required parameters are present and grounded in the matching tool definition
+2. All required parameter values are extracted from the query
+3. All parameter data types and formats are grounded in the matching tool definition
+4. Optional parameter values are used appropriately when present in the query
+5. It is a completion extraction if a optional parameter value is not present in query and use null/none or equivalent value as a placeholder
+6. Avoid checking tool selection accuracy
 </Rubrics>
 
 <Steps>
-1. Verify parameter completeness: Check if all parameters mentioned in the query are extracted
-2. Verify parameter accuracy: Ensure parameter values match the query exactly
-3. Detect hallucinations: Identify any parameters not present in the query
-4. Check data types: Verify parameters use correct data types and formats
-5. Assess overall correctness: Determine if the tool call is executable with correct parameters
+1. Verify parameter completeness: Check if all required parameter values present in the query are extracted
+2. Verify parameter accuracy: Ensure parameter values match the query exactly if present in the query
+3. Check data types: Ensure the data types and formats of all parameter values are grounded in the matching tool definition
 </Steps>
 
 <Scale>
@@ -75,21 +73,18 @@ TOOL_PARAMETER_CHECK_PROMPT_ZH = textwrap.dedent(
     """你是一名分析工具调用的专家。你的任务是评估生成的工具调用是否从用户查询中提取了完全正确的参数。这包括检查参数是否准确、完整且格式正确。
 
 <评分标准>
-1. 所有必需的参数都存在并从查询中提取
-2. 参数值与查询中指定的完全匹配
-3. 所有参数都基于查询（没有捏造的值）
-4. 参数数据类型和格式正确
-5. 当查询中指定时，适当使用可选参数
-6. 查询中提到的所有参数都被捕获
-7. 参数正确映射，没有混淆
+1. 所有必需参数均已存在，且符合匹配工具的定义
+2. 所有必需参数的值均已从查询中正确提取
+3. 所有参数的数据类型和格式均符合匹配工具的定义
+4. 当查询中包含可选参数时，其值被恰当使用
+5. 若查询中未提供可选参数值，并使用 null/none 或等效值作为占位符，则视为完成提取
+6. 无需检查工具选择的准确性
 </评分标准>
 
 <评估步骤>
-1. 验证参数完整性：检查查询中提到的所有参数是否都被提取
-2. 验证参数准确性：确保参数值与查询完全匹配
-3. 检测幻觉：识别查询中不存在的任何参数
-4. 检查数据类型：验证参数使用正确的数据类型和格式
-5. 评估整体正确性：确定工具调用是否可以用正确的参数执行
+1. 验证参数完整性：检查查询中所有必需参数的值是否均已提取
+2. 验证参数准确性：确保提取的参数值与查询中的内容完全一致（若查询中存在该参数）
+3. 检查数据类型：确保所有参数值的数据类型和格式符合匹配工具的定义
 </评估步骤>
 
 <评分量表>
@@ -144,7 +139,7 @@ class ToolParameterCheckGrader(LLMGrader):
     Tool Parameter Check Grader
 
     Evaluates whether the generated tool call extracts completely correct parameters
-    from the user query.
+    from the user query and the matching tool definition.
 
     Attributes:
         name: Grader name

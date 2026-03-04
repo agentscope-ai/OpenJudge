@@ -62,8 +62,8 @@ appropriate application of the reference response.
 </Constraints>
 
 <Scale>
-- 5: The answer is completely consistent with the reference answer in terms of facts, key details,
-logic, and conclusions. Different wording is acceptable as long as the meaning is equivalent.
+- 5: The answer is exactly consistent with the reference answer in terms of facts, key details,
+logic, and conclusions.
 - 4: The core conclusion of the answer is consistent with the reference answer, but there are
 non-critical omissions, vague statements, or minor errors that do not affect user understanding.
 - 3: The answer contains some correct information, but omits key points, contains verifiable errors,
@@ -142,7 +142,7 @@ CORRECTNESS_PROMPT_ZH = textwrap.dedent(
 </注意事项>
 
 <评分量表>
-- 5: 回答在事实、关键细节、逻辑和结论上与参考回答完全一致，允许措辞不同但语义等价。
+- 5: 回答在事实、关键细节、逻辑和结论上与参考回答完全一致。
 - 4: 回答的核心结论与参考回答一致，但存在非关键性省略、模糊表述或微小误差，不影响用户理解与使用。
 - 3: 回答包含部分正确信息，但遗漏关键点、包含可验证错误，或对参考内容有明显曲解。
 - 2: 回答的核心结论或关键事实与参考回答矛盾，仅含少量表面相关词，整体具有误导性。
