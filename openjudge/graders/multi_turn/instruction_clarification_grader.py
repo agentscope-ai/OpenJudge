@@ -220,6 +220,8 @@ class InstructionClarificationGrader(LLMGrader):
         >>> print(result.score)  # Expected: high score for appropriate clarification
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_INSTRUCTION_CLARIFICATION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -243,7 +245,7 @@ class InstructionClarificationGrader(LLMGrader):
             name="instruction_clarification",
             mode=GraderMode.POINTWISE,
             description="Evaluate instruction clarification ability in multi-turn conversations",
-            template=template or DEFAULT_INSTRUCTION_CLARIFICATION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
             **kwargs,

@@ -225,6 +225,8 @@ class ProactiveInteractionGrader(LLMGrader):
         >>> print(result.score)  # Expected: high score for proactive engagement
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_PROACTIVE_INTERACTION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -248,7 +250,7 @@ class ProactiveInteractionGrader(LLMGrader):
             name="proactive_interaction",
             mode=GraderMode.POINTWISE,
             description="Evaluate proactive interaction ability in multi-turn conversations",
-            template=template or DEFAULT_PROACTIVE_INTERACTION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
             **kwargs,

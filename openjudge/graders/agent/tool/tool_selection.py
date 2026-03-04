@@ -187,10 +187,12 @@ class ToolSelectionGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # Score from 1 to 5
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_TOOL_SELECTION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_TOOL_SELECTION_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -208,7 +210,7 @@ class ToolSelectionGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate tool selection",
             model=model,
-            template=template or DEFAULT_TOOL_SELECTION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

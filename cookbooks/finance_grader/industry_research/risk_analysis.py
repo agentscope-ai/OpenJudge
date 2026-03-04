@@ -208,6 +208,8 @@ class RiskAnalysisGrader(LLMGrader):
         >>> print(result.rank)  # [2, 1] if answer_2 is better
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_RISK_ANALYSIS_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -228,7 +230,7 @@ class RiskAnalysisGrader(LLMGrader):
             mode=GraderMode.LISTWISE,
             description="Evaluate financial risk analysis quality by comparing two responses",
             model=model,
-            template=template or DEFAULT_RISK_ANALYSIS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

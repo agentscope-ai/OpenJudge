@@ -170,10 +170,12 @@ class MemoryDetailPreservationGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -192,7 +194,7 @@ class MemoryDetailPreservationGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate memory detail preservation",
             model=model,
-            template=template or DEFAULT_MEMORY_DETAIL_PRESERVATION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

@@ -173,10 +173,12 @@ class PlanFeasibilityGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_PLAN_FEASIBILITY_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_PLAN_FEASIBILITY_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -195,7 +197,7 @@ class PlanFeasibilityGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate plan feasibility",
             model=model,
-            template=template or DEFAULT_PLAN_FEASIBILITY_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

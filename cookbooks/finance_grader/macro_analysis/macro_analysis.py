@@ -214,6 +214,8 @@ class MacroAnalysisGrader(LLMGrader):
         >>> print(result.rank)  # [2, 1] if answer_2 is better
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_MACRO_ANALYSIS_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -234,7 +236,7 @@ class MacroAnalysisGrader(LLMGrader):
             mode=GraderMode.LISTWISE,
             description="Evaluate macroeconomic analysis quality by comparing two responses",
             model=model,
-            template=template or DEFAULT_MACRO_ANALYSIS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

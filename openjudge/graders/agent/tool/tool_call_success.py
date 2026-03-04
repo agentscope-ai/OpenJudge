@@ -222,10 +222,12 @@ class ToolCallSuccessGrader(LLMGrader):
         1.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE
+
     def __init__(
         self,
         model: Union[BaseChatModel, Dict[str, Any]],
-        template: Optional[PromptTemplate] = DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -245,7 +247,7 @@ class ToolCallSuccessGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluates whether tool calls done by an AI agent includes failures or not",
             model=model,
-            template=template or DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

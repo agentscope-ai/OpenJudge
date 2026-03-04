@@ -222,6 +222,8 @@ class SelfCorrectionGrader(LLMGrader):
         >>> print(result.score)  # Expected: high score for good correction
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_SELF_CORRECTION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -245,7 +247,7 @@ class SelfCorrectionGrader(LLMGrader):
             name="self_correction",
             mode=GraderMode.POINTWISE,
             description="Evaluate self-correction ability in multi-turn conversations",
-            template=template or DEFAULT_SELF_CORRECTION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
             **kwargs,

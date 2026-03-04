@@ -196,6 +196,8 @@ class EventIdentificationGrader(LLMGrader):
         >>> print(result.rank)  # [2, 1] means answer_2 is better
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_EVENT_IDENTIFICATION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -218,7 +220,7 @@ class EventIdentificationGrader(LLMGrader):
             mode=GraderMode.LISTWISE,
             description="Evaluate financial event identification quality by comparing two responses",
             model=model,
-            template=template or DEFAULT_EVENT_IDENTIFICATION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

@@ -193,12 +193,14 @@ class ImageCoherenceGrader(LLMGrader):
         >>> print(result.score)  # 4.8 - image coherent with sales context
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_IMAGE_COHERENCE_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
         max_context_size: int = 500,
         threshold: float = 0.7,
-        template: PromptTemplate = DEFAULT_IMAGE_COHERENCE_TEMPLATE,
+        template: PromptTemplate = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -218,7 +220,7 @@ class ImageCoherenceGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate image-text coherence",
             model=model,
-            template=template or DEFAULT_IMAGE_COHERENCE_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

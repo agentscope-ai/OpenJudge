@@ -212,6 +212,8 @@ class UnderlyingComparisonGrader(LLMGrader):
         >>> print(result.rank)  # [2, 1] if answer_2 is better
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_UNDERLYING_COMPARISON_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -232,7 +234,7 @@ class UnderlyingComparisonGrader(LLMGrader):
             mode=GraderMode.LISTWISE,
             description="Evaluate underlying comparison analysis quality by comparing two responses",
             model=model,
-            template=template or DEFAULT_UNDERLYING_COMPARISON_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

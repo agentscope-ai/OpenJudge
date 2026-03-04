@@ -220,6 +220,8 @@ class AnaphoraResolutionGrader(LLMGrader):
         >>> print(result.score)  # Expected: high score for correct resolution
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_ANAPHORA_RESOLUTION_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -243,7 +245,7 @@ class AnaphoraResolutionGrader(LLMGrader):
             name="anaphora_resolution",
             mode=GraderMode.POINTWISE,
             description="Evaluate anaphora resolution ability in multi-turn conversations",
-            template=template or DEFAULT_ANAPHORA_RESOLUTION_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
             **kwargs,

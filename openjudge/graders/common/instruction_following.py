@@ -259,6 +259,8 @@ class InstructionFollowingGrader(LLMGrader):
         >>> print(result.score)  # 2 - informal tone, poor structure
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -288,7 +290,7 @@ class InstructionFollowingGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate whether response follows the given instructions",
             model=model,
-            template=template or DEFAULT_INSTRUCTION_FOLLOWING_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

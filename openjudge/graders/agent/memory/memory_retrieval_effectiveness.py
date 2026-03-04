@@ -172,6 +172,8 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
         >>> print(f"Score: {result.score}")  # Expected: 1.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
@@ -193,7 +195,7 @@ class MemoryRetrievalEffectivenessGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluate memory retrieval effectiveness",
             model=model,
-            template=template or DEFAULT_MEMORY_RETRIEVAL_EFFECTIVENESS_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )

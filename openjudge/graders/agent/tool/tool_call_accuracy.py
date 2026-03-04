@@ -204,10 +204,12 @@ class ToolCallAccuracyGrader(LLMGrader):
         5.0
     """
 
+    DEFAULT_TEMPLATE = DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE
+
     def __init__(
         self,
         model: BaseChatModel | dict,
-        template: Optional[PromptTemplate] = DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE,
+        template: Optional[PromptTemplate] = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
     ):
@@ -227,7 +229,7 @@ class ToolCallAccuracyGrader(LLMGrader):
             mode=GraderMode.POINTWISE,
             description="Evaluates the accuracy of tool calls made by an agent",
             model=model,
-            template=template or DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE,
+            template=template or self.DEFAULT_TEMPLATE,
             language=language,
             strategy=strategy,
         )
