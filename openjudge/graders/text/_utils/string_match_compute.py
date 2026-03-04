@@ -3,10 +3,13 @@
 String Match Computation Functions
 
 Utility functions for various string matching algorithms.
+Supports both English and CJK (Chinese/Japanese/Korean) text.
 """
 
 import re
 from typing import Any, Dict, List, Optional, Tuple
+
+from openjudge.graders.text._utils.tokenization import word_tokenize
 
 
 # pylint: disable=unused-argument
@@ -300,6 +303,9 @@ def compute_word_overlap(
     """
     Calculate proportion of word overlap between response and reference
 
+    Uses jieba tokenization with punctuation/stop-word removal so that
+    high-frequency function words do not inflate the overlap score.
+
     Args:
         reference: Reference text
         response: Response text
@@ -315,8 +321,8 @@ def compute_word_overlap(
         ref = ref.lower()
         cand = cand.lower()
 
-    ref_words = set(ref.split())
-    cand_words = set(cand.split())
+    ref_words = set(word_tokenize(ref, remove_punctuation=True, remove_stopwords=True))
+    cand_words = set(word_tokenize(cand, remove_punctuation=True, remove_stopwords=True))
 
     if len(ref_words) == 0:
         score = 0.0

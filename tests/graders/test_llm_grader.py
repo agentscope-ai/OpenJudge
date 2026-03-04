@@ -27,7 +27,6 @@ Example:
 """
 
 import os
-from typing import Callable, Dict, Tuple, Union
 from unittest.mock import AsyncMock
 
 import pytest
@@ -43,6 +42,7 @@ from openjudge.graders.base_grader import (
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderError
 from openjudge.models.openai_chat_model import OpenAIChatModel
+from openjudge.models.schema.prompt_template import LanguageEnum
 from openjudge.runner.grading_runner import GraderConfig, GradingRunner
 
 # ==================== UNIT TESTS ====================
@@ -61,20 +61,26 @@ class TestLLMGraderUnit:
                 model=AsyncMock(),
                 name="foo",
             )
+        assert "Missing template argument value" in str(error_obj.value)
+
+    def test_initialization_failure_with_invalid_template_type(self):
+        """Test initialization failure without template"""
+        with pytest.raises(ValueError) as error_obj:
+            LLMGrader(model=AsyncMock(), name="foo", template=AsyncMock())
         assert "Template must be a str, list, dict or PromptTemplate object" in str(error_obj.value)
 
     def test_initialization_with_string_template(self):
         """Test successful initialization with string template"""
         mock_model = AsyncMock()
-        template_str = """You're a LLM query answer relevance grader, you'll received Query/Response:
+        template_str = """You're a LLM query answer relevance grader, you'll receive Query/Response:
     Query: {query}
     Response: {response}
     Please read query/response, if the Response answers the Query, return 1, return 0 if no.
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -99,15 +105,15 @@ class TestLLMGraderUnit:
                     },
                     {
                         "role": "user",
-                        "content": """You'll received Query/Response:
+                        "content": """You'll receive Query/Response:
     Query: {query}
     Response: {response}
     Please read query/response, if the Response answers the Query, return 1, return 0 if no.
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```""",
                     },
@@ -140,15 +146,15 @@ class TestLLMGraderUnit:
             "api_key": "test-key",
         }
 
-        template_str = """You're a LLM query answer relevance grader, you'll received Query/Response:
+        template_str = """You're a LLM query answer relevance grader, you'll receive Query/Response:
     Query: {query}
     Response: {response}
     Please read query/response, if the Response answers the Query, return 1, return 0 if no.
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -159,8 +165,29 @@ class TestLLMGraderUnit:
         )
 
         assert grader.name == "test_llm_grader"
-        assert isinstance(grader.model, OpenAIChatModel)
         # Note: We can't easily check the model config since it's private
+        assert isinstance(grader.model, OpenAIChatModel)
+
+        language_template = grader.get_template()
+        assert len(language_template) == 1
+        assert LanguageEnum.EN in language_template
+        templates = language_template[LanguageEnum.EN]
+        assert len(templates) == 2
+        for t in templates:
+            assert len(t) == 2
+            assert "role" in t
+            assert "content" in t
+
+            if t["role"] == "system":
+                assert (
+                    "You are a professional evaluation assistant. Please evaluate according to the user's requirements."
+                    in t["content"]
+                )
+            elif t["role"] == "user":
+                assert "You're a LLM query answer relevance grader, you'll receive Query/Response" in t["content"]
+
+        default_template = grader.get_default_template()
+        assert len(default_template) == 0
 
     @pytest.mark.asyncio
     async def test_pointwise_evaluation_success(self):
@@ -180,8 +207,8 @@ class TestLLMGraderUnit:
     Return your answer in JSON format:
     ```json
     {{
-        "score": score,
-        "reason": "explanation for scoring"
+        "reason": "explanation for scoring",
+        "score": score
     }}
     ```"""
 
@@ -218,7 +245,7 @@ class TestLLMGraderUnit:
         mock_model.achat = AsyncMock(return_value=mock_response)
 
         # Create grader with template that follows the specification in docs
-        template = """You're a LLM query answer ranking grader, you'll received Query and multiple Responses:
+        template = """You're a LLM query answer ranking grader, you'll receive Query and multiple Responses:
     Query: {query}
     Responses:
     1. {response_1}
@@ -274,8 +301,8 @@ class TestLLMGraderUnit:
     Return your assessment in JSON format with a score from 0-5 and explanation:
     ```json
     {{
-        "score": score,
-        "reason": "detailed explanation for scoring"
+        "reason": "detailed explanation for scoring",
+        "score": score
     }}
     ```"""
 
@@ -309,9 +336,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 RUN_QUALITY_TESTS = bool(OPENAI_API_KEY and OPENAI_BASE_URL)
 
-pytestmark = pytest.mark.skipif(not RUN_QUALITY_TESTS, reason="Requires API keys and base URL to run quality tests")
 
-
+@pytest.mark.skipif(not RUN_QUALITY_TESTS, reason="Requires API keys and base URL to run quality tests")
 @pytest.mark.quality
 class TestLLMGraderQuality:
     """Quality tests for LLMGrader - testing evaluation quality using golden dataset"""
@@ -362,7 +388,7 @@ class TestLLMGraderQuality:
     async def test_discriminative_power_with_runner(self, dataset, model):
         """Test the grader's ability to distinguish between accurate and inaccurate responses (using Runner)"""
         # Create grader with real model following the specification in docs
-        template = """You're a LLM query answer accuracy grader, you'll received Query/Response and Context:
+        template = """You're a LLM query answer accuracy grader, you'll receive Query/Response and Context:
     Query: {query}
     Response: {response}
     Context: {context}
@@ -370,8 +396,8 @@ class TestLLMGraderQuality:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -383,10 +409,7 @@ class TestLLMGraderQuality:
         )
 
         # Use mapper to configure data transformation
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
+        grader_configs = {
             "accuracy": GraderConfig(
                 grader=grader,
                 mapper={
@@ -424,7 +447,7 @@ class TestLLMGraderQuality:
     async def test_consistency_with_runner(self, dataset, model):
         """Test grader evaluation consistency (using Runner)"""
         # Create grader with real model following the specification in docs
-        template = """You're a LLM query answer accuracy grader, you'll received Query/Response and Context:
+        template = """You're a LLM query answer accuracy grader, you'll receive Query/Response and Context:
     Query: {query}
     Response: {response}
     Context: {context}
@@ -432,8 +455,8 @@ class TestLLMGraderQuality:
     Return format, json.
     ```
     {{
-        "score": score,
         "reason": "scoring reason",
+        "score": score,
     }}
     ```"""
 
@@ -445,10 +468,7 @@ class TestLLMGraderQuality:
         )
 
         # Use duplicate configuration to implement consistency testing
-        grader_configs: Dict[
-            str,
-            Union[GraderConfig, BaseGrader, Tuple[BaseGrader, Union[Dict[str, str], Callable, None]]],
-        ] = {
+        grader_configs = {
             "accuracy_run1": GraderConfig(
                 grader=grader,
                 mapper={

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import (
     BaseGrader,
     GraderError,
@@ -45,6 +46,7 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
         strict_mode: bool = True,
         use_jaccard_similarity: bool = True,
         metric_type: str = "recall",
+        strategy: BaseEvaluationStrategy | None = None,
         **kwargs,
     ):
         """
@@ -56,12 +58,14 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
             metric_type: Metric type for step matching when use_jaccard_similarity=False and strict_mode=False.
                 - "recall": matched_count / reference_count (default)
                 - "precision": matched_count / predicted_count
-            **kwargs: Additional arguments passed to BaseGrader
+            strategy: Optional strategy for handling tool call matching
+            kwargs: Additional keyword arguments for the BaseGrader class
         """
         super().__init__(
             name="tool_call_sequence",
             mode=GraderMode.POINTWISE,
             description="Evaluate tool call sequence matching against reference",
+            strategy=strategy,
             **kwargs,
         )
         if metric_type not in ("recall", "precision"):
@@ -115,7 +119,7 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
 
     def extract_reference_tool_sequence(
         self,
-        reference_tool_calls: List[Dict[str, Any]],
+        reference_tool_calls: List[List[Dict[str, Any]]],
     ) -> Dict[int, List[Dict[str, Any]]]:
         """
         Extract reference tool call sequence from reference tool calls, organized by steps.
@@ -350,7 +354,7 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
         score = len(intersection_set) / len(union_set) if union_set else 0.0
         return score, intersection_set, union_set
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
         reference_tool_calls: List[List[Dict[str, Any]]],

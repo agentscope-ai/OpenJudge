@@ -6,6 +6,9 @@ import json
 import re
 from typing import Any
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 
@@ -19,11 +22,20 @@ class ReasoningToolCallFormatGrader(BaseGrader):
     for tool calls.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        strategy: BaseEvaluationStrategy | None = None,
+    ) -> None:
+        """
+        Initialize the ReasoningToolCallFormatGrader.
+        Args:
+            strategy: A BaseEvaluationStrategy object for custom grading logic.
+        """
         super().__init__(
             name="tool_call_format",
             mode=GraderMode.POINTWISE,
             description="Check tool call format including think, answer and tool_call tags with JSON validation.",
+            strategy=strategy,
         )
 
         # patterns for identifiying tags
@@ -40,7 +52,7 @@ class ReasoningToolCallFormatGrader(BaseGrader):
         self._consecutive_end_tool_call_tag_pattern = re.compile(r"</tool_call>\s*</tool_call>")
 
     # pylint: disable=too-many-statements
-    async def aevaluate(self, response: str, **kwargs: Any) -> GraderScore:
+    async def _aevaluate(self, response: str, **kwargs: Any) -> GraderScore:
         """
         Check tool call format and calculate reward score.
 

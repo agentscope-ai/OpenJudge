@@ -6,27 +6,33 @@ for evaluating the quality of responses based on various criteria and returning
 either scores or rankings.
 """
 
+import copy
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.schema import GraderError, GraderMode, GraderRank, GraderScore
+from openjudge.runner.resource_executor.base_resource_executor import (
+    BaseResourceExecutor,
+)
 
 
 class BaseGrader(ABC):
     """Base class for graders.
 
     This abstract base class defines the interface for all graders.
-    Subclasses must implement the aevaluate method.
+    Subclasses must implement the _aevaluate method.
 
     Attributes:
         name (str): The name of the grader.
         mode (GraderMode): The grader mode (pointwise or listwise).
         description (str): Description of what this grader evaluates.
+        strategy (BaseEvaluationStrategy): The evaluation strategy to use.
         kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Example:
         >>> class MyGrader(BaseGrader):
-        ...     async def aevaluate(self, **kwargs):
+        ...     async def _aevaluate(self, **kwargs):
         ...         # Implementation here
         ...         pass
         >>> grader = MyGrader(
@@ -45,6 +51,7 @@ class BaseGrader(ABC):
         name: str = "",
         mode: GraderMode = GraderMode.POINTWISE,
         description: str = "",
+        strategy: BaseEvaluationStrategy | None = None,
         **kwargs: Any,
     ):
         """Initialize a Grader.
@@ -55,6 +62,7 @@ class BaseGrader(ABC):
                   or LISTWISE (joint evaluation of multiple samples).
                   Defaults to POINTWISE.
             description: Human-readable description of what this grader evaluates.
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
             **kwargs: Additional keyword arguments that will be stored and
                      accessible to subclasses.
 
@@ -73,10 +81,11 @@ class BaseGrader(ABC):
         self.name = name
         self.mode = mode
         self.description = description
+        self.strategy = strategy
         self.kwargs = kwargs
 
     @abstractmethod
-    async def aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank | GraderError:
+    async def _aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank | GraderError:
         """Abstract method for performing the actual evaluation logic.
 
         This method must be implemented by all Grader subclasses. It performs
@@ -121,7 +130,7 @@ class BaseGrader(ABC):
             ...             description="Evaluates factual accuracy of answers"
             ...         )
             ...
-            ...     async def aevaluate(self, query: str, response: str, **kwargs):
+            ...     async def _aevaluate(self, query: str, response: str, **kwargs):
             ...         # Implementation would evaluate accuracy
             ...         return GraderScore(
             ...             name=self.name,
@@ -140,6 +149,35 @@ class BaseGrader(ABC):
             ...
             >>> # Implementation would rank answers by relevance
         """
+
+    # === [Core Interface] ===
+    async def aevaluate(self, executor: BaseResourceExecutor | None = None, **kwargs: Any) -> Any:
+        """
+        Called by the Runner to inject the resource.
+        """
+
+        # Wrap the atomic evaluation task to submit to the resource
+        async def managed_fn(**runtime_kwargs):
+            # Submit to executor for execution
+            # pylint: disable=protected-access
+            # Create a deep copy of the grader to prevent top-level state modification.
+            if self.strategy:
+                runtime_self = copy.deepcopy(self)
+            else:
+                runtime_self = self
+
+            bound_method = runtime_self._aevaluate
+            if executor is None:
+                return await bound_method(**runtime_kwargs)
+            else:
+                return await executor.submit(bound_method, **runtime_kwargs)
+
+        # Execute the strategy
+        # The strategy receives a function with resource management capabilities
+        if self.strategy:
+            return await self.strategy.execute(managed_fn, **kwargs)
+        else:
+            return await managed_fn(**kwargs)
 
     @staticmethod
     def get_metadata() -> Dict[str, Any]:

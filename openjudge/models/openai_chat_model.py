@@ -152,9 +152,27 @@ class OpenAIChatModel(BaseChatModel):
                 "OpenAI `messages` field expected type `list`, " f"got `{type(messages)}` instead.",
             )
         messages = [msg.to_dict() if isinstance(msg, ChatMessage) else msg for msg in messages]
-        if not all(isinstance(msg, dict) and "role" in msg and "content" in msg for msg in messages):
+
+        # Validate messages - note that for assistant messages with tool_calls,
+        # content can be None or missing (this is valid OpenAI format)
+        def _is_valid_message(msg: dict) -> bool:
+            if not isinstance(msg, dict) or "role" not in msg:
+                return False
+            role = msg["role"]
+            # Assistant messages with tool_calls don't require content
+            if role == "assistant" and "tool_calls" in msg:
+                return True
+            # Tool messages require tool_call_id and content
+            if role == "tool":
+                return "tool_call_id" in msg and "content" in msg
+            # All other messages require content
+            return "content" in msg
+
+        if not all(_is_valid_message(msg) for msg in messages):
             raise ValueError(
-                "Each message in the 'messages' list must contain a 'role' and 'content' key for OpenAI API.",
+                "Invalid message format. Each message must have 'role' and appropriate fields. "
+                "User/system messages need 'content'. Tool messages need 'tool_call_id' and 'content'. "
+                "Assistant messages with 'tool_calls' don't require 'content'.",
             )
 
         # Qwen-omni requires different base64 audio format from openai
@@ -172,14 +190,18 @@ class OpenAIChatModel(BaseChatModel):
             kwargs["reasoning_effort"] = self.reasoning_effort
 
         # Handle enable_thinking parameter for DashScope/Qwen models
-        # For non-streaming calls with qwen models, enable_thinking must be False
-        # Use extra_body to pass parameters not in OpenAI SDK
+        # For non-streaming calls with qwen models, default enable_thinking to
+        # False unless the caller has already set it explicitly via extra_body.
         if not self.stream and "qwen" in self.model.lower():
             if "extra_body" not in kwargs:
                 kwargs["extra_body"] = {}
             kwargs["extra_body"]["enable_thinking"] = False
 
+        # Add tools and tool_choice to kwargs if provided
+        if tools:
+            kwargs["tools"] = tools
         if tool_choice:
+            kwargs["tool_choice"] = tool_choice
             self._validate_tool_choice(tool_choice, tools)
 
         if structured_model:

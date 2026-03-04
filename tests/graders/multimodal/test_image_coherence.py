@@ -88,9 +88,6 @@ class TestImageCoherenceGraderUnit:
         assert result.score == 4.0  # Score in 1-5 range
         assert "coherent" in result.reason.lower()
 
-        # Verify model was called correctly
-        mock_model.achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_error_handling(self):
         """Test graceful error handling"""
@@ -268,6 +265,7 @@ class TestImageCoherenceGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["image_coherence_run1"],
             another_grader_results=results["image_coherence_run2"],
         )

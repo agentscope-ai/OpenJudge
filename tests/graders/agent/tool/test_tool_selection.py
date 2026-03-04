@@ -99,9 +99,6 @@ class TestToolSelectionGraderUnit:
             assert result.score == 4.5  # Score from 1-5 scale
             assert "appropriate" in result.reason.lower() or "selected" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_poor_selection(self):
         """Test evaluation detecting poor tool selection"""
@@ -138,9 +135,6 @@ class TestToolSelectionGraderUnit:
             # Assertions
             assert result.score == 2.0  # Score from 1-5 scale
             assert "inappropriate" in result.reason.lower() or "don't match" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

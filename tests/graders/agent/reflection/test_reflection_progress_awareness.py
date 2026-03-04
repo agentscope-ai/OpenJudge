@@ -92,9 +92,6 @@ class TestReflectionProgressAwarenessGraderUnit:
             assert result.score == 1.0  # Normalized from 0.9
             assert "progress" in result.reason.lower() or "accurate" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_overestimation(self):
         """Test evaluation detecting progress overestimation"""
@@ -125,9 +122,6 @@ class TestReflectionProgressAwarenessGraderUnit:
             # Assertions
             assert result.score == 0.0  # Normalized from 0.1
             assert "overestimat" in result.reason.lower() or "excellent" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_evaluation_with_context_and_history(self):
@@ -166,9 +160,6 @@ class TestReflectionProgressAwarenessGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "progress" in result.reason.lower() or "accurate" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

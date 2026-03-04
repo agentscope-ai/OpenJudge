@@ -195,7 +195,7 @@ class ToolCallPrecisionRecallMatchGrader(BaseGrader):
             "reference_tools": reference_tools,
         }
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         tool_calls: List[Dict[str, Any]],
         reference_tool_calls: List[Dict[str, Any]],

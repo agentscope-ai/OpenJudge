@@ -15,7 +15,7 @@ Validation compares your grader's judgments against known ground truth. Run your
 
 ### Approach 1: Benchmark Validation
 
-Validate against public benchmarks with standardized ground truth. This approach works well when you need reproducible results, want to compare with published baselines, or need quick validation for general-purpose graders without collecting custom data. We currently support **[RewardBench2](rewardbench2.md)** for multi-domain response quality evaluation, with MT-Bench and AlpacaEval coming soon.
+Validate against public benchmarks with standardized ground truth. This approach works well when you need reproducible results, want to compare with published baselines, or need quick validation for general-purpose graders without collecting custom data. We currently support **[RewardBench2](rewardbench2.md)** for multi-domain response quality evaluation and **[Reference Hallucination Arena](ref_hallucination_arena.md)** for evaluating LLM reference recommendation accuracy, with MT-Bench and AlpacaEval coming soon.
 
 **Example:**
 
@@ -88,6 +88,7 @@ Choose metrics based on your evaluation task:
 ## Next Steps
 
 - [RewardBench2 Validation](rewardbench2.md) — Validate on a multi-domain benchmark
+- [Reference Hallucination Arena](ref_hallucination_arena.md) — Evaluate LLM reference recommendation accuracy
 - [Grader Analysis](../running_graders/grader_analysis.md) — Generate comprehensive validation reports
 - [Create Custom Graders](../building_graders/create_custom_graders.md) — Build custom validation pipelines
 

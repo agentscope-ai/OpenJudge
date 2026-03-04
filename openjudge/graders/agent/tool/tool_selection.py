@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.models.base_chat_model import BaseChatModel
@@ -21,14 +22,9 @@ from openjudge.models.schema.prompt_template import LanguageEnum, PromptTemplate
 
 # English Prompt
 TOOL_SELECTION_PROMPT_EN = textwrap.dedent(
-    """
-You are an expert in analyzing tool selection decisions. Your task is to evaluate the  of tool selection made by an agent to address the user query.
+    """You are an expert in analyzing tool selection decisions. Your task is to evaluate whether the agent selected the most appropriate tool(s) from the available tools to effectively address the user's query. This includes assessing relevance, completeness, and efficiency of tool selection.
 
-<Evaluation Dimension: Tool Selection >
-Evaluate whether the agent selected the most appropriate tool(s) from the available tools to effectively address the user's query. This includes assessing relevance, completeness, and efficiency of tool selection.
-</Evaluation Dimension>
-
-<Rubrics for Evaluation>
+<Rubrics>
 1. The selected tool is highly relevant to the user's query and request
 2. The tool selection directly addresses the core intent of the query
 3. All necessary tools are selected (no critical tools missing)
@@ -38,55 +34,50 @@ Evaluate whether the agent selected the most appropriate tool(s) from the availa
 7. The tool selection demonstrates good understanding of tool capabilities and limitations
 </Rubrics>
 
-<Evaluation Criteria>
-For your analysis:
+<Steps>
 1. Assess relevance: Does the selected tool match the query intent?
 2. Check completeness: Are all necessary tools selected?
 3. Evaluate efficiency: Are there unnecessary or redundant tool selections?
 4. Verify capability: Can the selected tool(s) fulfill the user's request?
 5. Consider alternatives: Are there better tool choices available?
-</Evaluation Criteria>
+</Steps>
 
-<query>
+<Scale>
+- **Score 5**: Optimal tool selection - Accurately identifies the task intent and selects the most direct, efficient, and semantically relevant tool from the available options.
+- **Score 4**: Reasonable tool selection - The selected tool can complete the task, but it is not the optimal choice, or a tool with overlapping but slightly redundant functionality is chosen.
+- **Score 3**: Acceptable tool selection - The selected tool is related to the task but not a direct match.
+- **Score 2**: Poor tool selection - The selected tool is clearly mismatched with the task and cannot directly support achieving the goal.
+- **Score 1**: Completely incorrect tool selection - No tool is selected and the answer is given without using any tools, or a completely irrelevant or non-existent tool is chosen.
+</Scale>
+
+<Query>
 {query}
-</query>
+</Query>
 
-<available_tools>
+<Available Tools>
 {available_tools}
-</available_tools>
+</Available Tools>
 
-<selected_tools>
+<Selected Tools>
 {selected_tools}
-</selected_tools>
+</Selected Tools>
 
-# Scoring Instructions
-Use a scale from 1 to 5:
-- 5: Optimal tool selection - Accurately identifies the task intent and selects the most direct, efficient, and semantically relevant tool from the available options.
-- 4: Reasonable tool selection - The selected tool can complete the task, but it is not the optimal choice, or a tool with overlapping but slightly redundant functionality is chosen.
-- 3: Acceptable tool selection - The selected tool is related to the task but not a direct match.
-- 2: Poor tool selection - The selected tool is clearly mismatched with the task and cannot directly support achieving the goal.
-- 1: Completely incorrect tool selection - No tool is selected and the answer is given without using any tools, or a completely irrelevant or non-existent tool is chosen.
-
+<Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "score": <integer between 1 and 5>,
-    "reason": "<detailed explanation of tool selection quality, including strengths and weaknesses>"
+    "reason": "<detailed explanation of tool selection quality, including strengths and weaknesses>",
+    "score": <integer between 1 and 5>
 }}
-
+</Output Schema>
 JSON:
 """
 ).strip()
 
 # Chinese Prompt
 TOOL_SELECTION_PROMPT_ZH = textwrap.dedent(
-    """
-你是一名分析工具选择决策的专家。你的任务是评估智能体为解决用户查询而做出的工具选择的质量。
+    """你是一名分析工具选择决策的专家。你的任务是评估智能体是否从可用工具中选择了最合适的工具来有效地解决用户的查询。这包括评估工具选择的相关性、完整性和效率。
 
-<评估维度：工具选择质量>
-评估智能体是否从可用工具中选择了最合适的工具来有效地解决用户的查询。这包括评估工具选择的相关性、完整性和效率。
-</评估维度>
-
-<评估准则>
+<评分标准>
 1. 选择的工具与用户的查询和请求高度相关
 2. 工具选择直接针对查询的核心意图
 3. 选择了所有必要的工具（没有遗漏关键工具）
@@ -94,16 +85,23 @@ TOOL_SELECTION_PROMPT_ZH = textwrap.dedent(
 5. 工具选择是高效的（避免冗余的工具调用）
 6. 工具能够提供请求的信息或执行请求的操作
 7. 工具选择表现出对工具能力和局限性的良好理解
-</评估准则>
+</评分标准>
 
-<评估标准>
-进行分析时：
+<评估步骤>
 1. 评估相关性：选择的工具是否与查询意图匹配？
 2. 检查完整性：是否选择了所有必要的工具？
 3. 评估效率：是否有不必要或冗余的工具选择？
 4. 验证能力：选择的工具是否能够满足用户的请求？
 5. 考虑替代方案：是否有更好的工具选择可用？
-</评估标准>
+</评估步骤>
+
+<评分量表>
+- **分数 5**：最优的工具选择 - 精准识别任务意图，从可用工具中选出最直接、高效、语义匹配度最高的工具。
+- **分数 4**：合理的工具选择 - 所选工具能完成任务，但非最优，或选择了功能覆盖但略显冗余的工具。
+- **分数 3**：可接受的工具选择 - 所选工具与任务相关但不直接匹配。
+- **分数 2**：较差的工具选择 - 所选工具与任务明显不匹配，无法直接支持目标达成。
+- **分数 1**：完全错误的工具选择 - 选择工具为空，或选择完全无关或不存在的工具。
+</评分量表>
 
 <查询>
 {query}
@@ -113,24 +111,17 @@ TOOL_SELECTION_PROMPT_ZH = textwrap.dedent(
 {available_tools}
 </可用工具>
 
-<选择工具>
+<选择的工具>
 {selected_tools}
-</选择工具>
+</选择的工具>
 
-# 评分指令
-使用 1 到 5 的评分标准：
-- 5：最优的工具选择 - 精准识别任务意图，从可用工具中选出最直接、高效、语义匹配度最高的工具。
-- 4：合理的工具选择 - 所选工具能完成任务，但非最优，或选择了功能覆盖但略显冗余的工具。
-- 3：可接受的工具选择 - 所选工具与任务相关但不直接匹配。
-- 2：较差的工具选择 - 所选工具与任务明显不匹配，无法直接支持目标达成。
-- 1：完全错误的工具选择 - 选择工具为空，或选择完全无关或不存在的工具。
-
+<输出格式>
 请按以下结构化 JSON 格式提供你的评估：
 {{
-    "score": <1 到 5 之间的整数>,
-    "reason": "<关于工具选择质量的详细解释，包括优点和缺点>"
+    "reason": "<关于工具选择质量的详细解释，包括优点和缺点>",
+    "score": <1 到 5 之间的整数>
 }}
-
+</输出格式>
 JSON:
 """
 ).strip()
@@ -201,7 +192,17 @@ class ToolSelectionGrader(LLMGrader):
         model: BaseChatModel | dict,
         template: Optional[PromptTemplate] = DEFAULT_TOOL_SELECTION_TEMPLATE,
         language: LanguageEnum = LanguageEnum.EN,
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize ToolSelectionGrader.
+
+        Args:
+            model: BaseChatModel instance or dict config for OpenAIChatModel
+            template: PromptTemplate for evaluation prompts (default: DEFAULT_TOOL_SELECTION_TEMPLATE)
+            language: Language for prompts (default: LanguageEnum.EN)
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+        """
         super().__init__(
             name="tool_selection",
             mode=GraderMode.POINTWISE,
@@ -209,9 +210,10 @@ class ToolSelectionGrader(LLMGrader):
             model=model,
             template=template or DEFAULT_TOOL_SELECTION_TEMPLATE,
             language=language,
+            strategy=strategy,
         )
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         query: Union[str, List[Dict[str, Any]]],
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
@@ -268,7 +270,7 @@ class ToolSelectionGrader(LLMGrader):
         selected_tools = json.dumps(tool_calls, indent=2, ensure_ascii=False)
 
         try:
-            result = await super().aevaluate(
+            result = await super()._aevaluate(
                 query=query,
                 available_tools=available_tools,
                 selected_tools=selected_tools,

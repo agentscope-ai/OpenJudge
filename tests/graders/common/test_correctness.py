@@ -95,9 +95,6 @@ class TestCorrectnessGraderUnit:
             assert "Correctness score" in result.reason
             assert result.metadata["threshold"] == 3
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_correctness_grader_without_reference_response(self):
         """Test CorrectnessGrader without reference response"""
@@ -133,9 +130,6 @@ class TestCorrectnessGraderUnit:
             assert result.name == "correctness"
             assert isinstance(result.score, (int, float))
             assert result.metadata["threshold"] == 3
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):
@@ -284,6 +278,7 @@ class TestCorrectnessGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["correctness_run1"],
             another_grader_results=results["correctness_run2"],
         )

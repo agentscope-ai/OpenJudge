@@ -78,6 +78,16 @@ Based on the evaluation purpose, you can choose the appropriate evaluation mode.
 
 - **Listwise evaluation**: Ranks multiple samples relative to each other, comparing several responses to the same query. This approach generates relative rankings rather than absolute scores, producing a [GraderRank](https://github.com/agentscope-ai/OpenJudge/blob/main/openjudge/graders/schema.py) that indicates the relative quality of responses.
 
+### Evaluation Strategy
+
+An [Evaluation Strategy](https://github.com/modelscope/OpenJudge/blob/main/openjudge/evaluation_strategy/base_evaluation_strategy.py) defines how the grader process is executed to enhance reliability and robustness. The main purpose of these strategies is to improve the confidence in grader results by mitigating the effects of randomness, noise, or inconsistencies that can occur in single evaluation runs.
+
+Available strategies include:
+
+- **DirectEvaluationStrategy**: Executes the evaluation once and returns the result directly. This is the default strategy when no strategy is specified.
+- **VotingEvaluationStrategy**: Runs the evaluation multiple times and aggregates results using voting mechanisms (e.g., taking the most frequent score for categorical outputs).
+- **AverageEvaluationStrategy**: Runs the evaluation multiple times and averages the numerical results to reduce noise and improve reliability.
+
 ### Understanding Results
 
 Graders return different result types depending on their mode:

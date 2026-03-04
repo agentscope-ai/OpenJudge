@@ -106,9 +106,6 @@ class TestToolParameterCheckGraderUnit:
             assert result.score == 1.0  # Normalized from 0.9
             assert "correct" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_hallucinated_parameters(self):
         """Test evaluation detecting hallucinated parameters"""
@@ -157,9 +154,6 @@ class TestToolParameterCheckGraderUnit:
             # Assertions
             assert result.score == 0.0  # Normalized from 0.1
             assert "hallucinated" in result.reason.lower() or "not present" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

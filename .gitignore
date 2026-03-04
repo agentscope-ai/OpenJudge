@@ -17,6 +17,7 @@ poetry.lock
 /site
 uv*/
 uv.lock
+local/
 
 # Build and Distribution Files
 /dist
@@ -56,3 +57,6 @@ _del
 
 # Evaluation Results
 /evaluation_results
+
+# Resume / intermediate output
+/resume

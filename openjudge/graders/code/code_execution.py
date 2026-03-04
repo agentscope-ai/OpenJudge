@@ -16,6 +16,7 @@ from typing import Any
 
 from loguru import logger
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 
@@ -34,12 +35,23 @@ class CodeExecutionGrader(BaseGrader):
         timeout: int = 10,
         test_framework_available: bool = True,
         compute_score: Any = None,
+        strategy: BaseEvaluationStrategy | None = None,
         **kwargs: Any,
     ):
+        """
+        CodeExecutionGrader constructor.
+        Args:
+            continuous (bool): Whether to continue executing code after a failure.
+            timeout (int): Timeout for code execution in seconds.
+            test_framework_available (bool): Whether the testing framework is available.
+            compute_score (Any): Function to compute the score.
+            strategy (BaseEvaluationStrategy): Evaluation strategy.
+        """
         super().__init__(
             name="code_execution",
             mode=GraderMode.POINTWISE,
             description="Executes code against test cases and evaluates correctness based on test case results",
+            strategy=strategy,
             **kwargs,
         )
 
@@ -88,7 +100,7 @@ class CodeExecutionGrader(BaseGrader):
         # If no code block markers, assume the entire content is code
         return content
 
-    async def aevaluate(self, response: str) -> GraderScore:
+    async def _aevaluate(self, response: str) -> GraderScore:
         """Evaluate code by executing it against test cases.
 
         Tests the functional correctness of generated code by executing it

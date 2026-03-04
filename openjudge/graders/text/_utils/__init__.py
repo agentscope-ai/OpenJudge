@@ -34,11 +34,16 @@ from openjudge.graders.text._utils.string_match_compute import (
     compute_suffix_match,
     compute_word_overlap,
 )
-from openjudge.graders.text._utils.tokenization import simple_tokenize, word_tokenize
+from openjudge.graders.text._utils.tokenization import (
+    simple_tokenize,
+    smart_tokenize,
+    word_tokenize,
+)
 
 __all__ = [
     "normalize_text",
     "normalize_text_advanced",
+    "smart_tokenize",
     "simple_tokenize",
     "word_tokenize",
     "compute_bleu_score",

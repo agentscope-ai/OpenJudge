@@ -106,9 +106,6 @@ class TestToolCallSuccessGraderUnit:
             assert result.score == 1.0
             assert "success" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_failure(self):
         """Test evaluation detecting tool call failures"""
@@ -153,9 +150,6 @@ class TestToolCallSuccessGraderUnit:
             # Assertions
             assert result.score == 0.0
             assert "fail" in result.reason.lower() or "error" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):

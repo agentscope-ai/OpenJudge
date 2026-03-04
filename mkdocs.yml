@@ -26,6 +26,7 @@ nav:
       - Overview: built_in_graders/overview.md
       - General Graders: built_in_graders/general.md
       - Agent Graders: built_in_graders/agent_graders.md
+      - Multi-turn Graders: built_in_graders/multi_turn.md
       - Multimodal Graders: built_in_graders/multimodal.md
       - Code & Math Graders: built_in_graders/code_math.md
       - Text Graders: built_in_graders/text.md
@@ -44,9 +45,11 @@ nav:
   - Validating Graders:
       - Overview: validating_graders/overview.md
       - Validate on RewardBench2: validating_graders/rewardbench2.md
+      - Reference Hallucination Arena: validating_graders/ref_hallucination_arena.md
 
   - Applications:
-      - Zero-Shot Evaluation: applications/zero_shot_evaluation.md
+      - Auto Arena: applications/auto_arena.md
+      - Paper Review: applications/paper_review.md
       - Refine Data Quality: applications/data_refinement.md
       - Pairwise Model Evaluation: applications/select_rank.md
 

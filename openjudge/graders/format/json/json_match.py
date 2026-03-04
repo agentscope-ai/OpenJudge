@@ -10,6 +10,9 @@ and calculates similarity scores based on structural matching.
 import json
 from typing import Any
 
+from openjudge.evaluation_strategy.base_evaluation_strategy import (
+    BaseEvaluationStrategy,
+)
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 
 
@@ -39,11 +42,23 @@ class JsonMatchGrader(BaseGrader):
         strict_order: bool = True,
         ignore_extra_keys: bool = False,
         description: str = "JSON deep comparison metric",
+        strategy: BaseEvaluationStrategy | None = None,
     ):
+        """
+        Initialize the JsonMatchGrader.
+
+        Args:
+            name: Grader name
+            strict_order: Whether to strictly compare list order
+            ignore_extra_keys: Whether to ignore extra keys in response dict
+            description: Human-readable description of what this grader evaluates.
+            strategy: A strategy object to customize the evaluation process.
+        """
         super().__init__(
             name=name,
             mode=GraderMode.POINTWISE,
             description=description,
+            strategy=strategy,
         )
         self.strict_order = strict_order
         self.ignore_extra_keys = ignore_extra_keys
@@ -128,7 +143,7 @@ class JsonMatchGrader(BaseGrader):
 
         return matched, details
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         reference_response: str,
         response: str,

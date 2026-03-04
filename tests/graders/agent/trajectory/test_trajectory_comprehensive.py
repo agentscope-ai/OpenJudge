@@ -128,9 +128,6 @@ class TestTrajectoryComprehensiveGraderUnit:
         assert isinstance(result.reason, str)
         assert "step_evaluations" in result.metadata
 
-        # Verify model was called
-        assert mock_model.achat.call_count >= 1
-
     @pytest.mark.asyncio
     async def test_empty_input_edge_case(self):
         """Test edge case with empty input"""

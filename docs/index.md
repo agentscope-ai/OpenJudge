@@ -36,13 +36,13 @@ It can also convert grading results into **reward signals** to help you **fine-t
 
 <div class="card-grid">
 
-  <a href="applications/zero_shot_evaluation/" class="feature-card-sm">
+  <a href="applications/auto_arena/" class="feature-card-sm">
     <div class="card-header">
       <img src="https://unpkg.com/lucide-static@latest/icons/zap.svg" class="card-icon card-icon-general">
-      <h3>Zero-Shot Evaluation</h3>
+      <h3>Auto Arena</h3>
     </div>
     <p class="card-desc">
-      <b>Compare models without test data:</b> Generate queries, collect responses, and rank via pairwise evaluation.
+      <b>Compare models/agents without test data:</b> Generate queries, collect responses, and rank via pairwise evaluation.
     </p>
   </a>
 

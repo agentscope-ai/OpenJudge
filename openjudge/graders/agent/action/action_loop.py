@@ -47,7 +47,7 @@ class ActionLoopDetectionGrader(BaseGrader):
         )
         self.similarity_threshold = similarity_threshold
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
     ) -> GraderScore:

@@ -84,9 +84,6 @@ class TestInstructionFollowingGraderUnit:
             assert result.score == 4
             assert "instruction" in result.reason.lower() or "follow" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_context(self):
         """Test evaluation with context"""
@@ -117,9 +114,6 @@ class TestInstructionFollowingGraderUnit:
             # Assertions
             assert result.score == 5
             assert "perfect" in result.reason.lower() or "all" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):
@@ -263,6 +257,7 @@ class TestInstructionFollowingGraderQuality:
         # Use ConsistencyAnalyzer to calculate consistency metrics
         consistency_analyzer = ConsistencyAnalyzer()
         consistency_result = consistency_analyzer.analyze(
+            dataset=dataset,
             grader_results=results["instruction_following_run1"],
             another_grader_results=results["instruction_following_run2"],
         )

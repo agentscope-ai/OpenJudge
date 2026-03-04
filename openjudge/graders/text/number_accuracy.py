@@ -12,6 +12,7 @@ them with a configurable tolerance to determine accuracy scores.
 import re
 from typing import Any, List
 
+from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 
@@ -42,12 +43,18 @@ class NumberAccuracyGrader(BaseGrader):
         0.0
     """
 
-    def __init__(self, tolerance: float = 1e-6, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        tolerance: float = 1e-6,
+        strategy: BaseEvaluationStrategy | None = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize NumberAccuracyGrader.
 
         Args:
             tolerance: Tolerance for number comparison. Default is 1e-6.
+            strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
             **kwargs: Additional keyword arguments passed to BaseGrader.
 
         Example:
@@ -58,6 +65,7 @@ class NumberAccuracyGrader(BaseGrader):
             mode=GraderMode.POINTWISE,
             description="Check numerical calculation accuracy by comparing numbers in response "
             "vs reference_response content",
+            strategy=strategy,
             **kwargs,
         )
         self.tolerance = tolerance
@@ -81,7 +89,7 @@ class NumberAccuracyGrader(BaseGrader):
         numbers = self._number_pattern.findall(text)
         return [float(n) for n in numbers if n]
 
-    async def aevaluate(self, response: str, reference_response: str) -> GraderScore:
+    async def _aevaluate(self, response: str, reference_response: str) -> GraderScore:
         """
         Calculate number accuracy by comparing extracted numbers from both texts.
 

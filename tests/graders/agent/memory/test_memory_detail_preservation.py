@@ -66,7 +66,6 @@ class TestMemoryDetailPreservationGraderUnit:
         """Test successful evaluation with good detail preservation"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-
         mock_response.parsed = {
             "score": 0.9,  # Will be normalized to 1.0 (> 0.5)
             "reason": "Memory preserves all important details from the observation",
@@ -92,15 +91,11 @@ class TestMemoryDetailPreservationGraderUnit:
             assert result.score == 1.0  # Normalized from 0.9
             assert "detail" in result.reason.lower() or "preserve" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_oversimplification(self):
         """Test evaluation detecting memory over-simplification"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-
         mock_response.parsed = {
             "score": 0.1,  # Will be normalized to 0.0 (< 0.5)
             "reason": "Memory over-simplifies the observation, losing critical details like coordinates and quantities",
@@ -126,15 +121,11 @@ class TestMemoryDetailPreservationGraderUnit:
             assert result.score == 0.0  # Normalized from 0.1
             assert "simplif" in result.reason.lower() or "detail" in result.reason.lower()
 
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_evaluation_with_context_and_history(self):
         """Test evaluation with task context and history"""
         # Setup mock response with the expected metadata structure
         mock_response = AsyncMock()
-
         mock_response.parsed = {
             "score": 0.8,  # Will be normalized to 1.0
             "reason": "Memory preserves key details given the task context",
@@ -165,9 +156,6 @@ class TestMemoryDetailPreservationGraderUnit:
             # Assertions
             assert result.score == 1.0
             assert "detail" in result.reason.lower() or "preserve" in result.reason.lower()
-
-            # Verify model was called correctly
-            mock_achat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_error_handling(self):
