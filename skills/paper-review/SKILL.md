@@ -36,7 +36,7 @@ pip install pypdfium2  # only if using vision mode (use_vision_for_pdf=True)
 |------|-----------|-------|
 | Paper file path | Yes | PDF or .tar.gz/.zip TeX package |
 | API key | Yes | Env var preferred: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc. |
-| Model name | No | Default: `gpt-4o`. Claude: `claude-opus-4-5`, Qwen: `qwen-plus` |
+| Model name | No | `dashscope/qwen3.5-plus`, `openai/<latest>`, `anthropic/<latest>`. See **Model selection** below |
 | Discipline | No | If not given, uses general CS/ML-oriented prompts |
 | Venue | No | e.g. `"NeurIPS 2025"`, `"The Lancet"` |
 | Instructions | No | Free-form reviewer guidance, e.g. `"Focus on experimental design"` |
@@ -126,14 +126,29 @@ python -m cookbooks.paper_review --bib_only references.bib --email your@email.co
 - `verified`: found in CrossRef/arXiv/DBLP
 - `suspect`: title/author mismatch or not found — manual check recommended
 
-## API key by model
+## Model selection
 
-| Model prefix | Environment variable |
-|-------------|---------------------|
-| `gpt-*`, `o1-*`, `o3-*` | `OPENAI_API_KEY` |
-| `claude-*` | `ANTHROPIC_API_KEY` |
-| `qwen-*`, `dashscope/*` | `DASHSCOPE_API_KEY` |
-| Custom endpoint | `--api-key` + `--base-url` |
+This pipeline uses [litellm](https://docs.litellm.ai/docs/providers) for model calls.
+The `--model` value must include the **provider prefix** required by litellm.
+
+**IMPORTANT: The model MUST support multimodal (vision) input.** PDF review uses vision mode
+(`--vision`) to render pages as images, which requires a vision-capable model. Text-only models
+will fail or produce empty reviews.
+
+| Provider | Model flag | Env var | Notes |
+|----------|-----------|---------|-------|
+| OpenAI | `openai/gpt-5.2`, `openai/gpt-5.3`, … | `OPENAI_API_KEY` | Must be a vision-capable model; use the latest available; check [OpenAI models](https://platform.openai.com/docs/models) for current options |
+| Anthropic | `anthropic/claude-opus-4-6-thinking`, … | `ANTHROPIC_API_KEY` | Must be a vision-capable model; use the latest available; check [Anthropic models](https://docs.anthropic.com/en/docs/about-claude/models) for current options |
+| DashScope (Qwen) | `dashscope/qwen3.5-plus` | `DASHSCOPE_API_KEY` | Supports vision; recommended Qwen model |
+| Custom endpoint | any litellm-supported name | `--api_key` + `--base_url` | Must support vision/multimodal input |
+
+**If the user does not specify a model**, choose one based on available API keys:
+1. `DASHSCOPE_API_KEY` set → use `dashscope/qwen3.5-plus`
+2. `OPENAI_API_KEY` set → use the latest vision-capable OpenAI model (search web if unsure)
+3. `ANTHROPIC_API_KEY` set → use the latest vision-capable Anthropic model (search web if unsure)
+
+**Always add `--vision` flag for PDF review** to enable vision mode. Without it, the pipeline
+uses text extraction which may lose formatting, figures, and tables.
 
 ## Additional resources
 
