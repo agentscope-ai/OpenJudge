@@ -17,6 +17,8 @@
 | `crossref_mailto` | str \| None | `None` | Email for CrossRef API; improves rate limits |
 | `discipline` | str \| DisciplineConfig \| None | `None` | Discipline ID or custom config |
 | `venue` | str \| None | `None` | Target venue name, applied on top of discipline criteria |
+| `instructions` | str \| None | `None` | Free-form reviewer guidance, e.g. "Focus on experimental design" |
+| `language` | str \| None | `None` | Output language: `"en"` (default) or `"zh"` (Simplified Chinese) |
 | `use_vision_for_pdf` | bool | `False` | Render PDF pages as images (needs `pypdfium2`) |
 | `vision_max_pages` | int \| None | `30` | Max pages when using vision mode |
 | `format_vision_max_pages` | int \| None | `10` | Max pages for Format grader in vision mode |
@@ -70,7 +72,12 @@ options:
   --no-correctness       Skip correctness check
   --no-criticality       Skip criticality verification
   --no-bib               Skip BibTeX verification
+  --language LANG        Output language: en (default) or zh
+  --instructions TEXT    Free-form reviewer guidance
   --vision               Use vision mode (render pages as images)
+  --vision-max-pages N   Max pages in vision mode (default: 30, 0 = all)
+  --format-vision-max-pages N
+                         Max pages for format check in vision mode (default: 10)
   --timeout SECONDS      API timeout (default: 7500)
 ```
 
@@ -92,7 +99,12 @@ options:
   --paper-name NAME      Paper title for report header
   --output FILE          Output .md report file
   --email EMAIL          CrossRef email for BibTeX rate limits
+  --no-safety            Skip safety/jailbreak checks
+  --no-correctness       Skip correctness check
+  --no-criticality       Skip criticality verification
   --no-bib               Skip BibTeX verification
+  --language LANG        Output language: en (default) or zh
+  --instructions TEXT    Free-form reviewer guidance
   --timeout SECONDS      API timeout (default: 7500)
 ```
 

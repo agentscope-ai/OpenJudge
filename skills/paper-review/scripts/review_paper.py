@@ -7,6 +7,8 @@ Usage:
     python review_paper.py paper.pdf --discipline cs --venue "NeurIPS 2025"
     python review_paper.py paper.pdf --bib refs.bib --email you@example.com
     python review_paper.py paper.pdf --model claude-opus-4-5
+    python review_paper.py paper.pdf --language zh
+    python review_paper.py paper.pdf --instructions "Focus on experimental design"
 """
 
 import argparse
@@ -56,6 +58,14 @@ Examples:
     parser.add_argument("--no-criticality", action="store_true", help="Skip criticality verification")
     parser.add_argument("--no-bib", action="store_true", help="Skip BibTeX verification even if --bib is given")
     parser.add_argument("--vision", action="store_true", help="Use vision mode (render PDF pages as images). Requires pypdfium2.")
+    parser.add_argument("--vision-max-pages", type=int, default=30, metavar="N",
+                        help="Max pages to send in vision mode (default: 30). Set 0 for all pages.")
+    parser.add_argument("--format-vision-max-pages", type=int, default=10, metavar="N",
+                        help="Max pages for format check in vision mode (default: 10). Set 0 to use --vision-max-pages.")
+    parser.add_argument("--language", metavar="LANG", choices=["en", "zh"],
+                        help="Output language for the review: 'en' (default) or 'zh' (Simplified Chinese)")
+    parser.add_argument("--instructions", metavar="TEXT",
+                        help="Free-form reviewer instructions, e.g. 'Focus on experimental design'")
     parser.add_argument("--timeout", type=int, default=7500, metavar="SECONDS", help="API timeout in seconds (default: 7500)")
     return parser.parse_args()
 
@@ -111,6 +121,8 @@ async def run_review(args):
         timeout=args.timeout,
         discipline=args.discipline,
         venue=args.venue,
+        instructions=args.instructions,
+        language=args.language,
         enable_safety_checks=not args.no_safety,
         enable_correctness=not args.no_correctness,
         enable_review=True,
@@ -118,6 +130,8 @@ async def run_review(args):
         enable_bib_verification=has_bib,
         crossref_mailto=args.email,
         use_vision_for_pdf=args.vision,
+        vision_max_pages=args.vision_max_pages or None,
+        format_vision_max_pages=args.format_vision_max_pages or None,
     )
 
     pipeline = PaperReviewPipeline(config)

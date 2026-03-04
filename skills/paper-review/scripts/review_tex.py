@@ -6,6 +6,8 @@ Usage:
     python review_tex.py paper_source.tar.gz
     python review_tex.py paper_source.zip --discipline biology
     python review_tex.py --bib-only references.bib --email you@example.com
+    python review_tex.py paper_source.tar.gz --language zh
+    python review_tex.py paper_source.tar.gz --instructions "Focus on methodology"
 """
 
 import argparse
@@ -52,7 +54,14 @@ Examples:
     parser.add_argument("--paper-name", metavar="NAME", help="Paper title for the report")
     parser.add_argument("--output", metavar="FILE", help="Output .md report path")
     parser.add_argument("--email", metavar="EMAIL", help="Your email for CrossRef API (recommended for BibTeX check)")
+    parser.add_argument("--no-safety", action="store_true", help="Skip safety checks")
+    parser.add_argument("--no-correctness", action="store_true", help="Skip correctness check")
+    parser.add_argument("--no-criticality", action="store_true", help="Skip criticality verification")
     parser.add_argument("--no-bib", action="store_true", help="Skip BibTeX verification")
+    parser.add_argument("--language", metavar="LANG", choices=["en", "zh"],
+                        help="Output language for the review: 'en' (default) or 'zh' (Simplified Chinese)")
+    parser.add_argument("--instructions", metavar="TEXT",
+                        help="Free-form reviewer instructions, e.g. 'Focus on experimental design'")
     parser.add_argument("--timeout", type=int, default=7500, metavar="SECONDS", help="API timeout in seconds")
     return parser.parse_args()
 
@@ -158,6 +167,12 @@ async def run_tex_review(args):
         timeout=args.timeout,
         discipline=args.discipline,
         venue=args.venue,
+        instructions=args.instructions,
+        language=args.language,
+        enable_safety_checks=not args.no_safety,
+        enable_correctness=not args.no_correctness,
+        enable_review=True,
+        enable_criticality=not args.no_criticality,
         enable_bib_verification=not args.no_bib,
         crossref_mailto=args.email,
     )
