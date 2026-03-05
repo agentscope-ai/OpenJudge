@@ -58,23 +58,24 @@ def get_image_context(
         ...     max_context_size=500
         ... )
     """
-    context_above = None
-    context_below = None
+    # Collect all text segments above the image (in order)
+    above_parts = [content_list[i] for i in range(image_index) if isinstance(content_list[i], str)]
+    context_above = "\n".join(above_parts) if above_parts else None
+    if context_above and max_context_size is not None:
+        if max_context_size == 0:
+            context_above = ""
+        elif len(context_above) > max_context_size:
+            context_above = context_above[-max_context_size:]
 
-    # Find context above (last text before image)
-    for i in range(image_index - 1, -1, -1):
-        if isinstance(content_list[i], str):
-            context_above = content_list[i]
-            if max_context_size and len(context_above) > max_context_size:
-                context_above = context_above[-max_context_size:]
-            break
-
-    # Find context below (first text after image)
-    for i in range(image_index + 1, len(content_list)):
-        if isinstance(content_list[i], str):
-            context_below = content_list[i]
-            if max_context_size and len(context_below) > max_context_size:
-                context_below = context_below[:max_context_size]
-            break
+    # Collect all text segments below the image (in order)
+    below_parts = [
+        content_list[i] for i in range(image_index + 1, len(content_list)) if isinstance(content_list[i], str)
+    ]
+    context_below = "\n".join(below_parts) if below_parts else None
+    if context_below and max_context_size is not None:
+        if max_context_size == 0:
+            context_below = ""
+        elif len(context_below) > max_context_size:
+            context_below = context_below[:max_context_size]
 
     return context_above, context_below
