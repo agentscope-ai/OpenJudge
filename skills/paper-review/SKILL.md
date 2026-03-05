@@ -104,7 +104,7 @@ python -m cookbooks.paper_review --bib_only references.bib --email your@email.co
 | `--no_correctness` | off | Skip correctness check |
 | `--no_criticality` | off | Skip criticality verification |
 | `--no_bib` | off | Skip BibTeX verification |
-| `--vision` | off | Use vision mode (requires pypdfium2) |
+| `--vision` | **on** | Use vision mode (requires pypdfium2); enabled by default |
 | `--vision_max_pages` | `30` | Max pages in vision mode (0 = all) |
 | `--format_vision_max_pages` | `10` | Max pages for format check (0 = use `--vision_max_pages`) |
 | `--timeout` | `7500` | API timeout in seconds |
@@ -147,8 +147,9 @@ will fail or produce empty reviews.
 2. `OPENAI_API_KEY` set → use the latest vision-capable OpenAI model (search web if unsure)
 3. `ANTHROPIC_API_KEY` set → use the latest vision-capable Anthropic model (search web if unsure)
 
-**Always add `--vision` flag for PDF review** to enable vision mode. Without it, the pipeline
-uses text extraction which may lose formatting, figures, and tables.
+**Vision mode is enabled by default for PDF review.** Pages are rendered as images, which
+preserves formatting, figures, and tables. To disable, pass `--no_vision` (not recommended).
+The model **must** support multimodal (vision) input.
 
 ## Additional resources
 

@@ -270,7 +270,7 @@ def main(
     no_correctness: bool = False,
     no_criticality: bool = False,
     no_bib: bool = False,
-    vision: bool = False,
+    vision: bool = True,
     vision_max_pages: int = 30,
     format_vision_max_pages: int = 10,
     timeout: int = 7500,
@@ -299,7 +299,7 @@ def main(
         no_correctness: Skip correctness check.
         no_criticality: Skip criticality verification.
         no_bib: Skip BibTeX verification.
-        vision: Use vision mode for PDF (requires pypdfium2).
+        vision: Use vision mode for PDF (default: True, requires pypdfium2).
         vision_max_pages: Max pages in vision mode (default: 30, 0 = all).
         format_vision_max_pages: Max pages for format check in vision mode (default: 10).
         timeout: API timeout in seconds (default: 7500).
