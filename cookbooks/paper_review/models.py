@@ -101,8 +101,11 @@ class LiteLLMModel:
     # ------------------------------------------------------------------
 
     def _is_dashscope(self) -> bool:
-        """Return True when base_url points to a DashScope endpoint."""
-        return bool(self.base_url and "dashscope" in self.base_url.lower())
+        """Return True when base_url points to a DashScope endpoint, or the model
+        uses the ``dashscope/`` provider prefix (e.g. ``dashscope/qwen3.5-plus``)."""
+        if self.base_url and "dashscope" in self.base_url.lower():
+            return True
+        return self.model.startswith("dashscope/")
 
     def _supports_fileid(self) -> bool:
         """Return True for models that support DashScope fileid:// document analysis.
@@ -209,10 +212,14 @@ class LiteLLMModel:
         return transformed
 
     def _get_openai_client(self):
-        """Return an openai.OpenAI client pointed at self.base_url."""
+        """Return an openai.OpenAI client pointed at self.base_url (or the default
+        DashScope endpoint when the model uses the ``dashscope/`` prefix)."""
         from openai import OpenAI
 
-        return OpenAI(api_key=self.api_key, base_url=self.base_url)
+        base_url = self.base_url
+        if base_url is None and self.model.startswith("dashscope/"):
+            base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        return OpenAI(api_key=self.api_key, base_url=base_url)
 
     def _extract_file_data_from_messages(self, messages: List[dict]) -> Optional[str]:
         """Return the first PDF base64 data URL found in a 'file' content block."""
@@ -353,8 +360,14 @@ class LiteLLMModel:
 
         if self.api_key:
             completion_kwargs["api_key"] = self.api_key
-        if self.base_url:
-            completion_kwargs["api_base"] = self.base_url
+        # When the user specifies a dashscope/ model prefix but no explicit
+        # base_url, automatically wire up the DashScope OpenAI-compatible endpoint
+        # so litellm (routed as openai/) can reach the correct API.
+        effective_base_url = self.base_url
+        if effective_base_url is None and self.model.startswith("dashscope/"):
+            effective_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        if effective_base_url:
+            completion_kwargs["api_base"] = effective_base_url
 
         # ------------------------------------------------------------------
         # DashScope + qwen-long: upload PDF and use fileid:// in system msg
@@ -404,8 +417,23 @@ class LiteLLMModel:
         return _LiteLLMResponse(response.choices[0].message.content)
 
     def _get_model_name(self) -> str:
-        """Get model name with provider prefix if needed."""
+        """Get model name with provider prefix if needed.
+
+        litellm does not have a built-in ``dashscope/`` provider prefix.
+        DashScope is accessed via an OpenAI-compatible endpoint, so the model
+        name must be routed with the ``openai/`` prefix when going through
+        litellm.  We strip the ``dashscope/`` prefix here and let the
+        ``api_base`` / ``api_key`` kwargs direct the request to DashScope.
+        """
         model = self.model
+
+        # Strip the convenience ``dashscope/`` prefix that users (and SKILL.md)
+        # use to express intent — litellm has no such provider and it must be
+        # replaced with ``openai/`` to use the OpenAI-compatible route.
+        if model.startswith("dashscope/"):
+            model = "openai/" + model[len("dashscope/"):]
+            return model
+
         # Add provider prefix for litellm routing
         if "gemini" in model.lower() and not model.startswith("gemini/"):
             model = f"gemini/{model}"

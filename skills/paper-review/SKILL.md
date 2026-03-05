@@ -36,7 +36,7 @@ pip install pypdfium2  # only if using vision mode (use_vision_for_pdf=True)
 |------|-----------|-------|
 | Paper file path | Yes | PDF or .tar.gz/.zip TeX package |
 | API key | Yes | Env var preferred: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc. |
-| Model name | No | `dashscope/qwen3.5-plus`, `openai/<latest>`, `anthropic/<latest>`. See **Model selection** below |
+| Model name | No | `gpt-5.2`, `anthropic/claude-opus-4-6`, `dashscope/qwen-vl-plus`. See **Model selection** below |
 | Discipline | No | If not given, uses general CS/ML-oriented prompts |
 | Venue | No | e.g. `"NeurIPS 2025"`, `"The Lancet"` |
 | Instructions | No | Free-form reviewer guidance, e.g. `"Focus on experimental design"` |
@@ -91,7 +91,7 @@ python -m cookbooks.paper_review --bib_only references.bib --email your@email.co
 | `--bib_only` | — | Path to .bib file for standalone verification (no review) |
 | `--model` | `gpt-4o` | Model name |
 | `--api_key` | env var | API key |
-| `--base_url` | — | Custom API endpoint |
+| `--base_url` | — | Custom API endpoint — must end at `/v1`, **not** `/v1/chat/completions` (litellm appends the path automatically) |
 | `--discipline` | — | Academic discipline |
 | `--venue` | — | Target conference/journal |
 | `--instructions` | — | Free-form reviewer guidance |
@@ -129,23 +129,30 @@ python -m cookbooks.paper_review --bib_only references.bib --email your@email.co
 ## Model selection
 
 This pipeline uses [litellm](https://docs.litellm.ai/docs/providers) for model calls.
-The `--model` value must include the **provider prefix** required by litellm.
+Provider prefixes are handled automatically by the pipeline — see the table below.
 
 **IMPORTANT: The model MUST support multimodal (vision) input.** PDF review uses vision mode
 (`--vision`) to render pages as images, which requires a vision-capable model. Text-only models
 will fail or produce empty reviews.
 
-| Provider | Model flag | Env var | Notes |
-|----------|-----------|---------|-------|
-| OpenAI | `openai/gpt-5.2`, `openai/gpt-5.3`, … | `OPENAI_API_KEY` | Must be a vision-capable model; use the latest available; check [OpenAI models](https://platform.openai.com/docs/models) for current options |
-| Anthropic | `anthropic/claude-opus-4-6-thinking`, … | `ANTHROPIC_API_KEY` | Must be a vision-capable model; use the latest available; check [Anthropic models](https://docs.anthropic.com/en/docs/about-claude/models) for current options |
-| DashScope (Qwen) | `dashscope/qwen3.5-plus` | `DASHSCOPE_API_KEY` | Supports vision; recommended Qwen model |
-| Custom endpoint | any litellm-supported name | `--api_key` + `--base_url` | Must support vision/multimodal input |
+The `--model` value uses a `provider/model-name` convention so the pipeline knows
+which API endpoint to call.  The table below shows the exact string to pass:
+
+| Provider | `--model` value | Env var | Notes |
+|----------|----------------|---------|-------|
+| OpenAI | `gpt-5.2`, `gpt-5-mini`, … | `OPENAI_API_KEY` | No prefix needed; `gpt-5.2` is the current flagship vision model; check [OpenAI models](https://platform.openai.com/docs/models) for the latest |
+| Anthropic | `anthropic/claude-opus-4-6`, `anthropic/claude-sonnet-4-6`, … | `ANTHROPIC_API_KEY` | Use `anthropic/` prefix; `claude-opus-4-6` is the current flagship; check [Anthropic models](https://docs.anthropic.com/en/docs/about-claude/models) for the latest |
+| DashScope (Qwen) | `dashscope/qwen-vl-plus`, `dashscope/qwen-vl-max`, … | `DASHSCOPE_API_KEY` | Use `dashscope/` prefix; the pipeline auto-routes to DashScope’s OpenAI-compatible endpoint |
+| Custom endpoint | bare model name | `--api_key` + `--base_url` | Use the model name your endpoint expects; no prefix needed when `--base_url` is set |
+
+> **Note on prefixes**: The `dashscope/` and `anthropic/` prefixes are interpreted by
+> the pipeline itself — do **not** add them to the actual API key or base URL.
+> For OpenAI models the bare model name (e.g. `gpt-5.2`) is sufficient.
 
 **If the user does not specify a model**, choose one based on available API keys:
-1. `DASHSCOPE_API_KEY` set → use `dashscope/qwen3.5-plus`
-2. `OPENAI_API_KEY` set → use the latest vision-capable OpenAI model (search web if unsure)
-3. `ANTHROPIC_API_KEY` set → use the latest vision-capable Anthropic model (search web if unsure)
+1. `DASHSCOPE_API_KEY` set → use `dashscope/qwen-vl-plus` (vision-capable)
+2. `OPENAI_API_KEY` set → search web for the latest vision-capable OpenAI model and use it (currently `gpt-5.2`)
+3. `ANTHROPIC_API_KEY` set → search web for the latest vision-capable Anthropic model and use it with `anthropic/` prefix (currently `anthropic/claude-opus-4-6`)
 
 **Vision mode is enabled by default for PDF review.** Pages are rendered as images, which
 preserves formatting, figures, and tables. To disable, pass `--no_vision` (not recommended).
@@ -155,3 +162,42 @@ The model **must** support multimodal (vision) input.
 
 - Full `PipelineConfig` options: [reference.md](reference.md)
 - Discipline details and venues: [reference.md](reference.md#disciplines)
+
+## Troubleshooting API errors
+
+**CRITICAL: When the pipeline fails with an API error, you MUST diagnose and fix the root cause.
+Do NOT fall back to reading the PDF as plain text yourself and calling the API manually —
+this bypasses the entire review pipeline and produces incorrect, incomplete results.**
+
+Diagnose by reading the full error message, then follow the checklist below:
+
+### AuthenticationError / 401
+- The API key is wrong or not set.
+- Check the correct env var for the provider (see **Model selection** table).
+- For DashScope: `echo $DASHSCOPE_API_KEY` — must be non-empty.
+- Fix: export the correct key and re-run.
+
+### NotFoundError / 404 — model not found
+- The model name string is wrong.
+- Search the web for the provider's current model list and use the exact API ID.
+- Common mistakes: using a ChatGPT UI name instead of the API ID, outdated snapshot suffix.
+- Fix: correct `--model` and re-run.
+
+### BadRequestError / 400
+- Often caused by `--base_url` ending with `/v1/chat/completions` instead of `/v1`.
+  litellm appends the path automatically — strip everything after `/v1`.
+- May also indicate the model does not support vision/image input.
+  Use a vision-capable model (see **Model selection**) or omit `--vision`.
+- Fix: correct `--base_url` or switch to a vision-capable model and re-run.
+
+### Connection error / endpoint not reachable
+- `--base_url` points to the wrong host or port.
+- Test the endpoint first: `curl <base_url>/models -H "Authorization: Bearer <key>"`
+- Fix: correct `--base_url` to the reachable endpoint and re-run.
+
+### Timeout
+- The model is taking too long (common for long PDFs with vision mode).
+- Fix: increase `--timeout` (default 7500 s) or reduce `--vision_max_pages`.
+
+### After fixing, always re-run the full pipeline command.
+Never summarise or interpret the paper yourself as a substitute for a failed pipeline run.
