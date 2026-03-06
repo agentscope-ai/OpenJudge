@@ -431,7 +431,7 @@ class LiteLLMModel:
         # use to express intent — litellm has no such provider and it must be
         # replaced with ``openai/`` to use the OpenAI-compatible route.
         if model.startswith("dashscope/"):
-            model = "openai/" + model[len("dashscope/"):]
+            model = "openai/" + model[len("dashscope/") :]
             return model
 
         # Add provider prefix for litellm routing
