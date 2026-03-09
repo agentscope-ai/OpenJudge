@@ -1,4 +1,5 @@
 import copy
+import json
 import logging
 import os
 from dataclasses import dataclass, field
@@ -502,43 +503,155 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
         INSTRUCTION_FOLLOWING_PROMPT_EN = self._import_with_fallback(
             "openjudge.graders.common.instruction_following",
             "INSTRUCTION_FOLLOWING_PROMPT_EN",
-            "Evaluate the instruction_following of the response to the query. Query: {query}, Response: {response}",
+            "Evaluate the instruction following of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        ACTION_ALIGNMENT_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.action.action_alignment",
+            "ACTION_ALIGNMENT_PROMPT_EN",
+            "Evaluate the action alignment of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        PLAN_FEASIBILITY_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.plan.plan_feasibility",
+            "PLAN_FEASIBILITY_PROMPT_EN",
+            "Evaluate the plan feasibility of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        REFLECTION_ACCURACY_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.reflection.reflection_accuracy",
+            "REFLECTION_ACCURACY_PROMPT_EN",
+            "Evaluate the reflection accuracy of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.reflection.reflection_outcome_understanding",
+            "REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_EN",
+            "Evaluate the reflection outcome understanding of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        REFLECTION_PROGRESS_AWARENESS_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.reflection.reflection_progress_awareness",
+            "REFLECTION_PROGRESS_AWARENESS_PROMPT_EN",
+            "Evaluate the reflection progress awareness of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        TOOL_CALL_ACCURACY_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.tool.tool_call_accuracy",
+            "TOOL_CALL_ACCURACY_PROMPT_EN",
+            "Evaluate the tool call accuracy of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        TOOL_CALL_SUCCESS_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.tool.tool_call_success",
+            "TOOL_CALL_SUCCESS_PROMPT_EN",
+            "Evaluate the tool call success of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        TOOL_PARAMETER_CHECK_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.tool.tool_parameter_check",
+            "TOOL_PARAMETER_CHECK_PROMPT_EN",
+            "Evaluate the tool parameter check of the response to the query. Query: {query}, Response: {response}",
+        )
+
+        TOOL_SELECTION_PROMPT_EN = self._import_with_fallback(
+            "openjudge.graders.agent.tool.tool_selection",
+            "TOOL_SELECTION_PROMPT_EN",
+            "Evaluate the tool selection of the response to the query. Query: {query}, Response: {response}",
         )
 
         task_type = example.get("task_type", "unknown")
 
-        if task_type == "correctness":
+        if "correctness" in task_type:
             grader_template = CORRECTNESS_PROMPT_EN
-        elif task_type == "hallucination":
+        elif "hallucination" in task_type:
             grader_template = HALLUCINATION_PROMPT_EN
-        elif task_type == "relevance":
+        elif "relevance" in task_type:
             grader_template = RELEVANCE_PROMPT_EN
-        elif task_type == "harmlessness":
+        elif "harmlessness" in task_type:
             grader_template = HARMFULNESS_PROMPT_EN
-        elif task_type == "instruction_following":
+        elif "instruction_following" in task_type:
             grader_template = INSTRUCTION_FOLLOWING_PROMPT_EN
+        elif "action_alignment" in task_type:
+            grader_template = ACTION_ALIGNMENT_PROMPT_EN
+        elif "plan_feasibility" in task_type:
+            grader_template = PLAN_FEASIBILITY_PROMPT_EN
+        elif "reflection_accuracy" in task_type:
+            grader_template = REFLECTION_ACCURACY_PROMPT_EN
+        elif "reflection_outcome_understanding" in task_type:
+            grader_template = REFLECTION_OUTCOME_UNDERSTANDING_PROMPT_EN
+        elif "reflection_progress_awareness" in task_type:
+            grader_template = REFLECTION_PROGRESS_AWARENESS_PROMPT_EN
+        elif "tool_call_accuracy" in task_type:
+            grader_template = TOOL_CALL_ACCURACY_PROMPT_EN
+        elif "tool_call" in task_type:
+            grader_template = TOOL_CALL_SUCCESS_PROMPT_EN
+        elif "tool_parameter" in task_type:
+            grader_template = TOOL_PARAMETER_CHECK_PROMPT_EN
+        elif "tool_selection" in task_type:
+            grader_template = TOOL_SELECTION_PROMPT_EN
         else:
             # Default to correctness if unknown template
             pprint(f"task type: {task_type}")
             raise ValueError(
                 f"Unknown task type: {task_type}. Valid types: correctness, hallucination, relevance, "
-                f"harmlessness, instruction_following"
+                f"harmlessness, instruction_following, action_alignment, plan_feasibility, reflection_accuracy, "
+                f"reflection_outcome_understanding, reflection_progress_awareness, "
+                f"tool_call_accuracy, tool_call_success, tool_parameter_check, tool_selection, "
             )
         return self._format_grader_template(messages, example, grader_template)
 
     def _format_grader_template(self, messages: List[dict], example: dict, grader_prompt: str) -> str:
         """Format correctness evaluation template using openjudge prompt."""
+        context = ""
+        response = ""
+        reference_response = ""
+        tool_calls = ""
+        tool_definitions = ""
+        tool_responses = ""
+        observation = ""
+        plan = ""
+        history = ""
+        memory = ""
+        action = ""
+        reflection = ""
         if "input" in example and isinstance(example["input"], dict) and "query" in example["input"]:
             # New JSON format
             query = example["input"].get("query", "")
-            context = example["input"].get("context") or ""  # Handle null value
-            reference_response = example["input"].get("reference", "")
+            context = example["input"].get("context", "")
+            if context:
+                if isinstance(context, dict):
+                    # Extract fields directly if context is already a dictionary
+                    context = context.get("task_context", "")
+                    tool_definitions = context.get("tool_definitions", "")
+                    history = context.get("history", "")
+                elif isinstance(context, str):
+                    try:
+                        # Attempt to parse JSON string into a dictionary
+                        parsed_data = json.loads(context)
 
-            response = ""
+                        # Ensure the parsed result is actually a dictionary before accessing keys
+                        if isinstance(parsed_data, dict):
+                            context = parsed_data.get("task_context", "")
+                            tool_definitions = parsed_data.get("tool_definitions", "")
+                            history = parsed_data.get("history", "")
+
+                    except (json.JSONDecodeError, TypeError, Exception):
+                        # If parsing fails, continue without raising an error (keep default values)
+                        pass
+
+            reference_response = example["input"].get("reference", "")
             if "answer" in example and isinstance(example["answer"], dict):
                 answer_response = example["answer"].get("response", {})
                 if isinstance(answer_response, dict):
                     response = answer_response.get("content", "")
+                    tool_calls = answer_response.get("tool_calls", "")
+                    tool_responses = answer_response.get("tool_responses", "")
+                    plan = answer_response.get("plan", "")
+                    observation = answer_response.get("observation", "")
+                    memory = answer_response.get("memory", "")
+                    action = answer_response.get("action", "")
+                    reflection = answer_response.get("reflection", "")
             # Also try 'response' field as fallback
             elif "response" in example and isinstance(example["response"], dict):
                 response = example["response"].get("content", "")
@@ -546,17 +659,28 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
             # Old format - extract from messages
             query = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
             response = self._get_response_content(example)
-            reference_response = None
-            context = None
 
         instruction = query
+        available_tools = tool_definitions
+        selected_tools = tool_calls
         # Replace placeholders in the grader prompt
         formatted_prompt = grader_prompt.format(
-            query=query or "",
-            response=response or "",
-            reference_response=reference_response or "",
-            context=str(context) or "",
-            instruction=instruction or "",
+            query=query,
+            response=response,
+            reference_response=reference_response,
+            context=str(context),
+            instruction=instruction,
+            tool_calls=str(tool_calls),
+            tool_definitions=str(tool_definitions),
+            tool_responses=str(tool_responses),
+            available_tools=str(available_tools),
+            selected_tools=str(selected_tools),
+            history=history,
+            observation=observation,
+            plan=plan,
+            memory=memory,
+            action=action,
+            reflection=reflection,
         )
 
         return [{"role": "user", "content": formatted_prompt}]

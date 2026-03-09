@@ -235,7 +235,7 @@ class OpenAIChatModel(BaseChatModel):
             kwargs.pop("tool_choice", None)
 
             # Use simple json_object format for models that don't support complex JSON schema
-            if "qwen" in self.model.lower() or "gemini" in self.model.lower():
+            if "qwen" in self.model.lower() or "gemini" in self.model.lower() or "pai-judge" in self.model.lower():
                 logger.info(
                     f"Model '{self.model}' detected: Automatically switching to "
                     "'json_object' response_format for compatibility"

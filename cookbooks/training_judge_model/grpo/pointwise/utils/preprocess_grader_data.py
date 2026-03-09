@@ -119,6 +119,28 @@ def process_single_file(data_file: str, split_ratio: float, seed: int, sample_nu
             # Extract task_type from item if available, otherwise use "unknown"
             task_type = item.get("task_type", "unknown")
 
+            try:
+                if (
+                    item["chosen"]
+                    and item["chosen"]["response"]
+                    and "tool_calls" in item["chosen"]["response"]
+                    and isinstance(item["chosen"]["response"].get("tool_calls", []), list)
+                ):
+                    item["chosen"]["response"]["tool_calls"] = json.dumps(item["chosen"]["response"]["tool_calls"])
+
+                if (
+                    item["rejected"]
+                    and item["rejected"]["response"]
+                    and "tool_calls" in item["rejected"]["response"]
+                    and isinstance(item["rejected"]["response"].get("tool_calls", []), list)
+                ):
+                    item["rejected"]["response"]["tool_calls"] = json.dumps(item["rejected"]["response"]["tool_calls"])
+
+                if item["input"] and item["input"].get("context", "") and not isinstance(item["input"]["context"], str):
+                    item["input"]["context"] = json.dumps(item["input"]["context"])
+            except Exception as e:
+                raise e
+
             output_data.append(
                 {
                     "input": item["input"],
