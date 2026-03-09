@@ -9,17 +9,18 @@ Each check receives a CheckInput and returns a CheckResult with pass/fail and de
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
-
 
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CheckInput:
     """All data needed to run the 9 authenticity checks."""
+
     response_json: str = ""
     signature: str = ""
     signature_source: str = ""
@@ -32,6 +33,7 @@ class CheckInput:
 @dataclass
 class CheckResult:
     """Result of a single check."""
+
     id: str
     label: str
     weight: int
@@ -42,6 +44,7 @@ class CheckResult:
 # ---------------------------------------------------------------------------
 # Internal helpers (mirrors checks.ts helpers)
 # ---------------------------------------------------------------------------
+
 
 def _parse_json_safe(text: str) -> Optional[Dict[str, Any]]:
     if not text or not text.strip():
@@ -88,7 +91,9 @@ def extract_signature_from_response(raw_text: str) -> tuple[str, str]:
 # The 9 checks (mirrors checksConfig in checks.ts)
 # ---------------------------------------------------------------------------
 
+
 def check_signature(inp: CheckInput) -> CheckResult:
+    """Check that the response signature meets the minimum length threshold."""
     length = len(inp.signature.strip())
     passed = length >= inp.signature_min
     return CheckResult(
@@ -101,6 +106,7 @@ def check_signature(inp: CheckInput) -> CheckResult:
 
 
 def check_answer_identity(inp: CheckInput) -> CheckResult:
+    """Check that the answer text contains Claude Code / CLI identity keywords."""
     keywords = ["claude code", "cli", "命令行", "command", "terminal"]
     text = inp.answer_text.lower()
     passed = any(k in text for k in keywords)
@@ -114,6 +120,7 @@ def check_answer_identity(inp: CheckInput) -> CheckResult:
 
 
 def check_thinking_output(inp: CheckInput) -> CheckResult:
+    """Check that the response includes non-empty extended thinking content."""
     text = inp.thinking_text.strip()
     passed = bool(text)
     detail = f"检测到 thinking 输出（{len(text)} 字符）" if passed else "响应中无 thinking 内容"
@@ -127,6 +134,7 @@ def check_thinking_output(inp: CheckInput) -> CheckResult:
 
 
 def check_thinking_identity(inp: CheckInput) -> CheckResult:
+    """Check that the thinking text references Claude Code / CLI identity keywords."""
     if not inp.thinking_text.strip():
         return CheckResult(
             id="thinkingIdentity",
@@ -148,6 +156,7 @@ def check_thinking_identity(inp: CheckInput) -> CheckResult:
 
 
 def check_response_structure(inp: CheckInput) -> CheckResult:
+    """Check that the raw response JSON contains required Anthropic API fields."""
     data = _parse_json_safe(inp.response_json)
     if data is None:
         return CheckResult(
@@ -180,6 +189,7 @@ def check_response_structure(inp: CheckInput) -> CheckResult:
 
 
 def check_system_prompt(inp: CheckInput) -> CheckResult:
+    """Check that neither the answer nor thinking text contains prompt-injection patterns."""
     risky = ["system prompt", "ignore previous", "override", "越权"]
     text = f"{inp.answer_text} {inp.thinking_text}".lower()
     hit = any(k in text for k in risky)
@@ -194,6 +204,7 @@ def check_system_prompt(inp: CheckInput) -> CheckResult:
 
 
 def check_tool_support(inp: CheckInput) -> CheckResult:
+    """Check that the answer text describes file/command tool capabilities."""
     keywords = ["file", "command", "bash", "shell", "read", "write", "execute", "编辑", "读取", "写入", "执行"]
     text = inp.answer_text.lower()
     passed = any(k in text for k in keywords)
@@ -207,6 +218,7 @@ def check_tool_support(inp: CheckInput) -> CheckResult:
 
 
 def check_multi_turn(inp: CheckInput) -> CheckResult:
+    """Check that Claude Code / CLI identity is confirmed in multiple places across answer and thinking."""
     keywords = ["claude code", "cli", "command line", "工具"]
     text = f"{inp.answer_text}\n{inp.thinking_text}".lower()
     hits = sum(1 for k in keywords if k in text)
@@ -221,6 +233,7 @@ def check_multi_turn(inp: CheckInput) -> CheckResult:
 
 
 def check_output_config(inp: CheckInput) -> CheckResult:
+    """Check that the raw response JSON contains Anthropic output-config fields (cache / service tier)."""
     data = _parse_json_safe(inp.response_json)
     if data is None:
         return CheckResult(

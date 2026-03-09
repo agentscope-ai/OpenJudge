@@ -54,7 +54,6 @@ from openjudge.graders.authenticity.checks import (
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderError, GraderMode, GraderScore
 
-
 # ---------------------------------------------------------------------------
 # Probe prompt — same intent as claude-verify's identity probe
 # ---------------------------------------------------------------------------
@@ -170,9 +169,7 @@ class ClaudeAuthenticityGrader(BaseGrader):
             resp = await client.post(self.api_endpoint, headers=headers, json=body)
             raw_text = resp.text
             if resp.status_code >= 400:
-                raise RuntimeError(
-                    f"API returned HTTP {resp.status_code}: {raw_text[:300]}"
-                )
+                raise RuntimeError(f"API returned HTTP {resp.status_code}: {raw_text[:300]}")
 
         data = json.loads(raw_text)
         response_json = json.dumps(data, ensure_ascii=False, indent=2)
@@ -193,11 +190,7 @@ class ClaudeAuthenticityGrader(BaseGrader):
         if self.api_type == "anthropic":
             content = data.get("content", [])
             if isinstance(content, list):
-                return "\n".join(
-                    item.get("text", "")
-                    for item in content
-                    if item.get("type") == "text"
-                )
+                return "\n".join(item.get("text", "") for item in content if item.get("type") == "text")
             return data.get("text", "")
         choices = data.get("choices", [])
         if choices:
@@ -256,9 +249,7 @@ class ClaudeAuthenticityGrader(BaseGrader):
         try:
             # Auto-call API if configured and no data supplied
             if not response_json and self.api_endpoint and self.api_key:
-                logger.info(
-                    "ClaudeAuthenticityGrader: calling API at {}", self.api_endpoint
-                )
+                logger.info("ClaudeAuthenticityGrader: calling API at {}", self.api_endpoint)
                 fetched = await self._call_api()
                 response_json = fetched["response_json"]
                 answer_text = fetched["answer_text"]
@@ -268,9 +259,7 @@ class ClaudeAuthenticityGrader(BaseGrader):
 
             # If signature not provided explicitly, try to extract from JSON
             if not signature and response_json:
-                signature, signature_source = extract_signature_from_response(
-                    response_json
-                )
+                signature, signature_source = extract_signature_from_response(response_json)
 
             inp = CheckInput(
                 response_json=response_json,
@@ -348,15 +337,15 @@ class ClaudeAuthenticityGrader(BaseGrader):
                 "score >= 0.85 → genuine; >= 0.60 → suspected; < 0.60 → likely_fake."
             ),
             "checks": [
-                {"id": "signature",         "label": "Signature 长度检测",   "weight": 12},
-                {"id": "answerIdentity",    "label": "身份回答检测",          "weight": 12},
-                {"id": "thinkingOutput",    "label": "Thinking 输出检测",    "weight": 14},
-                {"id": "thinkingIdentity",  "label": "Thinking 身份检测",    "weight":  8},
-                {"id": "responseStructure", "label": "响应结构检测",          "weight": 14},
-                {"id": "systemPrompt",      "label": "系统提示词检测",        "weight": 10},
-                {"id": "toolSupport",       "label": "工具支持检测",          "weight": 12},
-                {"id": "multiTurn",         "label": "多轮对话检测",          "weight": 10},
-                {"id": "config",            "label": "Output Config 检测",  "weight": 10},
+                {"id": "signature", "label": "Signature 长度检测", "weight": 12},
+                {"id": "answerIdentity", "label": "身份回答检测", "weight": 12},
+                {"id": "thinkingOutput", "label": "Thinking 输出检测", "weight": 14},
+                {"id": "thinkingIdentity", "label": "Thinking 身份检测", "weight": 8},
+                {"id": "responseStructure", "label": "响应结构检测", "weight": 14},
+                {"id": "systemPrompt", "label": "系统提示词检测", "weight": 10},
+                {"id": "toolSupport", "label": "工具支持检测", "weight": 12},
+                {"id": "multiTurn", "label": "多轮对话检测", "weight": 10},
+                {"id": "config", "label": "Output Config 检测", "weight": 10},
             ],
             "reference": "https://github.com/molloryn/claude-verify",
         }
