@@ -52,13 +52,13 @@ It can also convert grading results into **reward signals** to help you **fine-t
 
 ## News
 
+- **2026-03-10** - 🛠️ **New Skills** - Claude authenticity verification, find skills combo, and more. 👉 [Browse Skills](https://openjudge.me/skills)
+
 - **2026-02-12** - 📚 **Reference Hallucination Arena** - Benchmark for evaluating LLM academic reference hallucination. 👉 [Documentation](./docs/validating_graders/ref_hallucination_arena.md) | 📊 [Leaderboard](https://openjudge.me/leaderboard)
 
 - **2026-01-27** - 🆕 **Paper Review** - Automatically review academic papers using LLM-powered evaluation. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/paper_review/)
 
 - **2026-01-27** - 🖥️ **OpenJudge UI** - A Streamlit-based visual interface for grader testing and Auto Arena. 👉 [Try Online](https://openjudge.me/app/) | Run locally: `streamlit run ui/app.py`
-
-- **2026-01-05** - 🏟️ **Auto Arena** - Automatically evaluate and compare multiple models without pre-existing test data. 👉 [Documentation](https://agentscope-ai.github.io/OpenJudge/applications/auto_arena/)
 
 ---
 
