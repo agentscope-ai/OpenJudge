@@ -46,23 +46,34 @@ result = await grader.aevaluate(
 
 | Class | Import | Key inputs | What it measures |
 |-------|--------|------------|-----------------|
-| `StringMatchGrader` | `openjudge.graders.text.string_match` | `response`, `reference_response`, `algorithm` | Exact/regex/overlap matching |
+| `StringMatchGrader` | `openjudge.graders.text.string_match` | `response`, `reference_response` | Exact/regex/overlap matching |
 | `SimilarityGrader` | `openjudge.graders.text.similarity` | `response`, `reference` | ROUGE / BM25 / embedding similarity |
 | `NumberAccuracyGrader` | `openjudge.graders.text.number_accuracy` | `response`, `reference` | Numerical value accuracy |
 
 **StringMatchGrader algorithms:** `exact_match`, `prefix_match`, `suffix_match`, `regex_match`,
 `substring_match`, `contains_all`, `contains_any`, `word_overlap`, `char_overlap`
 
+> **Important:** The algorithm must be set at **init time** via the `algorithm=` constructor
+> argument. Passing `algorithm` in `aevaluate()` has **no effect** — the init value is always used.
+
 ```python
 from openjudge.graders.text.string_match import StringMatchGrader
 
-grader = StringMatchGrader()
+# Set algorithm at init time
+grader = StringMatchGrader(algorithm="substring_match")
 result = await grader.aevaluate(
     response="The capital is Paris.",
     reference_response="Paris",
-    algorithm="substring_match",
 )
 # result.score: 1.0 (match) or 0.0 (no match)
+
+# Different algorithm — create a new grader instance
+grader_overlap = StringMatchGrader(algorithm="word_overlap")
+result2 = await grader_overlap.aevaluate(
+    response="The quick brown fox",
+    reference_response="quick fox",
+)
+# result2.score: overlap ratio (0.0–1.0)
 ```
 
 ---
