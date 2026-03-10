@@ -149,17 +149,17 @@ config = IterativeListwiseRubricsGeneratorConfig(
 
 ### Dataset format
 
-**Pointwise dataset** — each sample needs `query`, `response`, and optionally `score`:
+**Pointwise dataset** — each sample needs `query`, `response`, and optionally `label_score` (for validation):
 
 ```python
 pointwise_dataset = [
-    {"query": "What causes rain?", "response": "Water vapour condenses...", "score": 1},
-    {"query": "What is DNA?",      "response": "DNA is a molecule...",       "score": 1},
-    {"query": "What is DNA?",      "response": "I don't know.",              "score": 0},
+    {"query": "What causes rain?", "response": "Water vapour condenses...", "label_score": 1},
+    {"query": "What is DNA?",      "response": "DNA is a molecule...",       "label_score": 1},
+    {"query": "What is DNA?",      "response": "I don't know.",              "label_score": 0},
 ]
 ```
 
-**Listwise dataset** — each sample needs `query`, `responses` list, and optionally `rank`:
+**Listwise dataset** — each sample needs `query`, `responses` list, and optionally `label_rank` (for validation):
 
 ```python
 listwise_dataset = [
@@ -169,7 +169,7 @@ listwise_dataset = [
             "Plants use sunlight, CO₂, and water to produce glucose.",
             "Plants need sunlight.",
         ],
-        "rank": [1, 2],   # 1 = best
+        "label_rank": [1, 2],   # 1 = best
     },
 ]
 ```
@@ -197,10 +197,10 @@ generator = IterativeRubricsGenerator(config)
 
 async def main():
     train_data = [
-        {"query": "What is gravity?",  "response": "A force attracting masses.", "score": 1},
-        {"query": "What is gravity?",  "response": "Something heavy.",           "score": 0},
-        {"query": "What is entropy?",  "response": "Measure of disorder.",       "score": 1},
-        {"query": "What is entropy?",  "response": "A type of energy.",          "score": 0},
+        {"query": "What is gravity?",  "response": "A force attracting masses.", "label_score": 1},
+        {"query": "What is gravity?",  "response": "Something heavy.",           "label_score": 0},
+        {"query": "What is entropy?",  "response": "Measure of disorder.",       "label_score": 1},
+        {"query": "What is entropy?",  "response": "A type of energy.",          "label_score": 0},
     ]
 
     # Generate grader — may take several minutes for large datasets

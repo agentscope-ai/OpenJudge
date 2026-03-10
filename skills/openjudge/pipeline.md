@@ -61,7 +61,7 @@ from openjudge.runner.grading_runner import GraderConfig
 configs = {"correctness": CorrectnessGrader(model=model)}
 
 # Format 2: tuple (grader, mapper)
-configs = {"correctness": (CorrectnessGrader(model=model), {"q": "query", "a": "response"})}
+configs = {"correctness": (CorrectnessGrader(model=model), {"query": "q", "response": "a"})}
 
 # Format 3: GraderConfig object
 configs = {"correctness": GraderConfig(grader=CorrectnessGrader(model=model), mapper=...)}
@@ -78,13 +78,15 @@ Use a mapper when your dataset field names differ from what the grader expects.
 
 ### Dict mapper (field rename)
 
+Mapping: **key = grader kwarg name**, **value = path in dataset** to read from.
+
 ```python
 # Dataset has "question" / "answer" but grader expects "query" / "response"
 configs = {
     "correctness": GraderConfig(
         grader=CorrectnessGrader(model=model),
-        mapper={"question": "query", "answer": "response"},
-        #        dataset key → grader kwarg
+        mapper={"query": "question", "response": "answer"},
+        #        grader kwarg → dataset key
     )
 }
 ```
@@ -282,7 +284,7 @@ runner = GradingRunner(
         "relevance":   RelevanceGrader(model=model, strategy=voting),
         "exact_match": GraderConfig(
             grader=StringMatchGrader(),
-            mapper={"response": "response", "reference": "reference"},
+            mapper={"response": "response", "reference_response": "reference"},
         ),
     },
     aggregators=WeightedSumAggregator(

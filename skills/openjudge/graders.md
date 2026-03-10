@@ -46,7 +46,7 @@ result = await grader.aevaluate(
 
 | Class | Import | Key inputs | What it measures |
 |-------|--------|------------|-----------------|
-| `StringMatchGrader` | `openjudge.graders.text.string_match` | `response`, `reference`, `algorithm` | Exact/regex/overlap matching |
+| `StringMatchGrader` | `openjudge.graders.text.string_match` | `response`, `reference_response`, `algorithm` | Exact/regex/overlap matching |
 | `SimilarityGrader` | `openjudge.graders.text.similarity` | `response`, `reference` | ROUGE / BM25 / embedding similarity |
 | `NumberAccuracyGrader` | `openjudge.graders.text.number_accuracy` | `response`, `reference` | Numerical value accuracy |
 
@@ -59,7 +59,7 @@ from openjudge.graders.text.string_match import StringMatchGrader
 grader = StringMatchGrader()
 result = await grader.aevaluate(
     response="The capital is Paris.",
-    reference="Paris",
+    reference_response="Paris",
     algorithm="substring_match",
 )
 # result.score: 1.0 (match) or 0.0 (no match)
@@ -71,7 +71,7 @@ result = await grader.aevaluate(
 
 | Class | Import | Key inputs | What it measures |
 |-------|--------|------------|-----------------|
-| `CodeExecutionGrader` | `openjudge.graders.code.code_execution` | `response`, `test_cases` | Test case pass rate |
+| `CodeExecutionGrader` | `openjudge.graders.code.code_execution` | `response` | Test case pass rate (test cases from harness/metadata) |
 | `SyntaxCheckGrader` | `openjudge.graders.code.syntax_checker` | `response` | Syntax validity |
 | `CodeStyleGrader` | `openjudge.graders.code.code_style` | `response` | Style/lint quality |
 | `PatchSimilarityGrader` | `openjudge.graders.code.patch_similarity` | `response`, `reference` | Patch/diff similarity |
@@ -80,11 +80,9 @@ result = await grader.aevaluate(
 from openjudge.graders.code.code_execution import CodeExecutionGrader
 
 grader = CodeExecutionGrader(timeout=10)
-result = await grader.aevaluate(
-    response="def add(a, b): return a + b",
-    test_cases=[{"input": [1, 2], "expected_output": 3}],
-)
-# result.score: fraction of passed test cases (0.0–1.0)
+result = await grader.aevaluate(response="def add(a, b): return a + b")
+# result.score: fraction of passed test cases (0.0–1.0).
+# Test cases must be provided via sample metadata or external harness; see grader docs.
 ```
 
 ---
@@ -142,9 +140,10 @@ from openjudge.graders.agent import ToolCallAccuracyGrader
 grader = ToolCallAccuracyGrader(model=model)
 result = await grader.aevaluate(
     query="Search for today's weather",
+    tool_definitions=[{"name": "web_search", "description": "Search the web", "parameters": {}}],
     tool_calls=[{"name": "web_search", "arguments": {"query": "today weather"}}],
-    reference_tool_calls=[{"name": "web_search", "arguments": {"query": "weather today"}}],
 )
+# result.score: 1–5 (tool call accuracy)
 ```
 
 ---
@@ -166,7 +165,7 @@ from openjudge.graders.multi_turn import ContextMemoryGrader
 
 grader = ContextMemoryGrader(model=model)
 result = await grader.aevaluate(
-    conversation_history=[
+    history=[
         {"role": "user", "content": "My name is Alice."},
         {"role": "assistant", "content": "Nice to meet you, Alice!"},
         {"role": "user", "content": "What's my name?"},
@@ -187,13 +186,14 @@ result = await grader.aevaluate(
 
 ```python
 from openjudge.models.qwen_vl_model import QwenVLModel
+from openjudge.models.schema.qwen.mllmImage import MLLMImage
 from openjudge.graders.multimodal.text_to_image import TextToImageGrader
 
 vl_model = QwenVLModel(model="qwen-vl-plus", api_key="sk-xxx")
 grader = TextToImageGrader(model=vl_model)
 result = await grader.aevaluate(
-    prompt="A red apple on a wooden table",
-    image_url="https://example.com/image.jpg",
+    query="A red apple on a wooden table",
+    response=MLLMImage(url="https://example.com/image.jpg"),
 )
 ```
 
