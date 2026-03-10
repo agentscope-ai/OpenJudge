@@ -48,65 +48,37 @@
 | Azure OpenAI | `azure/gpt-4o` | `AZURE_API_KEY` + `AZURE_API_BASE` |
 | Local (Ollama) | `ollama/llama3.1` | — (use `--base-url http://localhost:11434`) |
 
-## Script CLI Reference
+## CLI Reference
 
-### review_paper.py
+All file types use a single entry point. File type is auto-detected.
 
-```
-positional:
-  pdf                    Path to the PDF file
-
-options:
-  --bib BIB_FILE         .bib file for BibTeX verification
-  --model MODEL          Model name (default: gpt-4o)
-  --api-key KEY          API key
-  --base-url URL         Custom API base URL
-  --discipline DISC      One of: cs medicine physics chemistry biology
-                         economics psychology environmental_science
-                         mathematics social_sciences
-  --venue VENUE          Target venue, e.g. "NeurIPS 2025"
-  --paper-name NAME      Paper title for report header
-  --output FILE          Output .md file (default: <name>_review.md)
-  --email EMAIL          CrossRef email for BibTeX rate limits
-  --no-safety            Skip safety/jailbreak checks
-  --no-correctness       Skip correctness check
-  --no-criticality       Skip criticality verification
-  --no-bib               Skip BibTeX verification
-  --language LANG        Output language: en (default) or zh
-  --instructions TEXT    Free-form reviewer guidance
-  --vision               Use vision mode (render pages as images)
-  --vision-max-pages N   Max pages in vision mode (default: 30, 0 = all)
-  --format-vision-max-pages N
-                         Max pages for format check in vision mode (default: 10)
-  --timeout SECONDS      API timeout (default: 7500)
+```bash
+python -m cookbooks.paper_review [--input FILE] [options]
 ```
 
-### review_tex.py
-
-```
-positional:
-  PACKAGE                Path to .tar.gz or .zip TeX source package
-
-or:
-  --bib-only BIB_FILE    Verify a standalone .bib file only (no review)
-
-options:
-  --model MODEL          Model name (default: gpt-4o)
-  --api-key KEY          API key
-  --base-url URL         Custom API base URL
-  --discipline DISC      Academic discipline
-  --venue VENUE          Target venue
-  --paper-name NAME      Paper title for report header
-  --output FILE          Output .md report file
-  --email EMAIL          CrossRef email for BibTeX rate limits
-  --no-safety            Skip safety/jailbreak checks
-  --no-correctness       Skip correctness check
-  --no-criticality       Skip criticality verification
-  --no-bib               Skip BibTeX verification
-  --language LANG        Output language: en (default) or zh
-  --instructions TEXT    Free-form reviewer guidance
-  --timeout SECONDS      API timeout (default: 7500)
-```
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--input` | — | Path to PDF, .tar.gz/.zip, or .bib file |
+| `--bib_only` | — | Path to .bib file for standalone BibTeX-only verification |
+| `--model` | `gpt-4o` | Model name (LiteLLM format, see table above) |
+| `--api_key` | env var | API key |
+| `--base_url` | — | Custom API base URL (must end at `/v1`, not `/v1/chat/completions`) |
+| `--discipline` | — | Academic discipline ID |
+| `--venue` | — | Target venue, e.g. `"NeurIPS 2025"` |
+| `--instructions` | — | Free-form reviewer guidance |
+| `--language` | `en` | Output language: `en` or `zh` |
+| `--paper_name` | filename stem | Paper title in report |
+| `--output` | auto | Output `.md` report path |
+| `--bib` | — | `.bib` file for reference verification alongside PDF review |
+| `--email` | — | CrossRef mailto for better rate limits |
+| `--no_safety` | `False` | Skip safety checks |
+| `--no_correctness` | `False` | Skip correctness check |
+| `--no_criticality` | `False` | Skip criticality verification |
+| `--no_bib` | `False` | Skip BibTeX verification |
+| `--vision` | `True` | Use vision mode for PDF (requires `pypdfium2`); pass `--vision=False` to disable |
+| `--vision_max_pages` | `30` | Max pages in vision mode (0 = all) |
+| `--format_vision_max_pages` | `10` | Max pages for format check in vision mode |
+| `--timeout` | `7500` | API timeout in seconds |
 
 ## Output: PaperReviewResult Fields
 
@@ -196,7 +168,7 @@ Provide `--email your@email.com` to avoid CrossRef rate limiting.
 **Timeout errors on long papers**
 Increase `--timeout 15000` or enable vision mode with page limits:
 ```bash
-python review_paper.py long_paper.pdf --vision --timeout 15000
+python -m cookbooks.paper_review paper.pdf --vision --timeout 15000
 ```
 
 **Vision mode: `ModuleNotFoundError: No module named 'pypdfium2'`**

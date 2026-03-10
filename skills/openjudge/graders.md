@@ -263,6 +263,7 @@ result = await ranking_grader.aevaluate(
 Use when the scoring logic is deterministic and requires no LLM.
 
 ```python
+from functools import partial
 from openjudge.graders.function_grader import FunctionGrader
 from openjudge.graders.schema import GraderScore, GraderMode
 
@@ -275,14 +276,20 @@ def length_check(response: str, min_words: int = 10) -> GraderScore:
         reason=f"Response has {word_count} words (min: {min_words})",
     )
 
+# Option A: use functools.partial to bake in extra params
 grader = FunctionGrader(
-    func=length_check,
+    func=partial(length_check, min_words=20),
     name="length_check",
     mode=GraderMode.POINTWISE,
-    min_words=20,          # extra kwargs passed to func
 )
 result = await grader.aevaluate(response="Short answer.")
+
+# Option B: pass extra params directly in aevaluate()
+grader2 = FunctionGrader(func=length_check, name="length_check", mode=GraderMode.POINTWISE)
+result2 = await grader2.aevaluate(response="Short answer.", min_words=20)
 ```
+
+> **Note:** Extra `**kwargs` passed to `FunctionGrader(...)` at construction time are stored in `grader.kwargs` but are **not** automatically forwarded to `func`. Use `functools.partial` (Option A) or pass them directly to `aevaluate()` (Option B).
 
 ### Decorator syntax
 
