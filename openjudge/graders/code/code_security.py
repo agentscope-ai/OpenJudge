@@ -96,7 +96,9 @@ Do not penalize code for missing features that were not requested in the query.
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "reason": "<concise explanation of security findings. If issues exist, list each with: vulnerability type, affected code pattern, and severity. If no issues, confirm the code is secure.>",
+    "reason": "<concise explanation of security findings. If issues exist,
+    list each with: vulnerability type, affected code pattern,
+    and severity. If no issues, confirm the code is secure.>",
     "score": <integer between 1 and 5, where 5 means no security issues and 1 means critical vulnerabilities>
 }}
 </Output Schema>

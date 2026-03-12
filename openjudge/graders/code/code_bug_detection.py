@@ -101,7 +101,9 @@ inputs, not purely hypothetical scenarios.
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "reason": "<concise explanation of findings. For each bug found, describe: what the bug is, which input or condition triggers it, and its likely impact. If no bugs are found, confirm correctness.>",
+    "reason": "<concise explanation of findings. For each bug found,
+    describe: what the bug is, which input or condition triggers it,
+    and its likely impact. If no bugs are found, confirm correctness.>",
     "score": <integer between 1 and 5, where 5 means no bugs detected and 1 means critical bugs>
 }}
 </Output Schema>

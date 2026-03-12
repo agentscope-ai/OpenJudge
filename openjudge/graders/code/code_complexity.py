@@ -109,8 +109,13 @@ functions that genuinely improve clarity. Focus on over-engineering, not under-e
 <Output Schema>
 Provide your evaluation in the following structured JSON format:
 {{
-    "reason": "<concise explanation. Describe the ideal complexity for this task, then identify specific over-engineering patterns found (e.g., unnecessary classes, redundant variables, deep nesting, reimplemented builtins). If the code is appropriately simple, confirm that.>",
-    "score": <integer between 1 and 5, where 5 means perfectly appropriate complexity and 1 means extremely over-engineered>
+    "reason": "<concise explanation. Describe the ideal complexity for this task,
+    then identify specific over-engineering patterns found
+    (e.g., unnecessary classes, redundant variables, deep nesting,
+    reimplemented builtins).
+    If the code is appropriately simple, confirm that.>",
+    "score": <integer between 1 and 5, where 5 means perfectly
+    appropriate complexity and 1 means extremely over-engineered>
 }}
 </Output Schema>
 
@@ -123,7 +128,10 @@ CODE_COMPLEXITY_PROMPT_ZH = textwrap.dedent(
     """
 你是一名专业的软件工程师，负责评估AI生成的代码相对于其解决的任务是否过于复杂、冗长或过度设计。
 
-AI模型经常表现出一种系统性失败模式：它们产生正确的代码，但远比问题所需要的复杂——添加不必要的抽象、过多的类层次结构、冗余的中间变量、深度嵌套逻辑、过度泛化，以及掩盖实际逻辑的样板代码。你的工作是检测这种失败并根据代码复杂性与任务需求的匹配程度对代码进行评分。
+AI模型经常表现出一种系统性失败模式：它们产生正确的代码，但远比问题所需要的复杂——
+添加不必要的抽象、过多的类层次结构、冗余的中间变量、深度嵌套逻辑、过度泛化，
+以及掩盖实际逻辑的样板代码。
+你的工作是检测这种失败并根据代码复杂性与任务需求的匹配程度对代码进行评分。
 
 <评分标准>
 适当简洁的代码应该：
@@ -162,7 +170,10 @@ AI模型经常表现出一种系统性失败模式：它们产生正确的代码
 </评估步骤>
 
 <注意事项>
-相对于任务而非绝对地评估复杂性。复杂的任务（例如，实现完整的状态机）需要复杂的代码——只有当复杂性超过任务合理要求时才扣分。不要因真正提高清晰度的正确、命名良好的辅助函数而扣分。专注于过度设计，而不是设计不足（缺少功能是正确性问题，不是复杂性问题）。
+相对于任务而非绝对地评估复杂性。复杂的任务（例如，实现完整的状态机）需要复杂的代码——
+只有当复杂性超过任务合理要求时才扣分。
+不要因真正提高清晰度的正确、命名良好的辅助函数而扣分。
+专注于过度设计，而不是设计不足（缺少功能是正确性问题，不是复杂性问题）。
 </注意事项>
 
 <评分量表>
