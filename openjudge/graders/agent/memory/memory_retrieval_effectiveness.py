@@ -65,6 +65,7 @@ Provide your evaluation in the following structured JSON format:
     "score": <0.0 or 1.0>
 }}
 </Output Schema>
+
 JSON:
 """
 ).strip()
@@ -114,6 +115,7 @@ MEMORY_RETRIEVAL_EFFECTIVENESS_PROMPT_ZH = textwrap.dedent(
     "score": <0.0 或 1.0>
 }}
 </输出格式>
+
 JSON:
 """
 ).strip()
