@@ -177,7 +177,7 @@ def process_single_file(data_file: str, split_ratio: float, seed: int, sample_nu
                         "input": item["input"],
                         "answer": item["rejected"],
                         "label": 0,  # negative example
-                        "score": 0 if is_bin else 1.0,
+                        "score": 0.0 if is_bin else 1.0,
                         "task_type": task_type,
                     }
                 )
