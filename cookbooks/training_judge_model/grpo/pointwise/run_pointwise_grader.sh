@@ -1,6 +1,7 @@
 #!/bin/bash
 # OpenJudge GRPO Pointwise Training Script
 # Train judge models using GRPO reinforcement learning for scoring
+# Support LoRA and full fine-tuning
 
 set -x
 TIMESTAMP=$(date "+%m%dT%H%M")
@@ -15,87 +16,111 @@ N_NODES=${N_NODES:-1}
 # ============================================================================
 # Path Configuration
 # ============================================================================
-# Model: Use HuggingFace model ID or local path
 MODEL_PATH=${MODEL_PATH:-Qwen/Qwen3-8B}
-
-# Data: Download from HuggingFace or use local parquet files
 TRAIN_FILE=${TRAIN_FILE:-./data/rewardbench2_pointwise_train.parquet}
 VAL_FILE=${VAL_FILE:-./data/rewardbench2_pointwise_val.parquet}
-
-# Output directory
 SAVE_PATH=${SAVE_PATH:-./checkpoints/grpo/pointwise}
-
-# Set env variables
-# export SAVE_PATH=/workspace/output
-# export MODEL_PATH=/models/Qwen/Qwen3-0.6B
-# export TRAIN_FILE=/data/train_rm/grpo/pointwise/train.parquet
-# export VAL_FILE=/data/train_rm/grpo/pointwise/val.parquet
-
-# Grader data files
-# export TRAIN_FILE='["/data/text/correctness/correctness_eval_v1_train.jsonl","/data/text/hallucination/hallucination_eval_v1_train.jsonl","/data/text/relevance/relevance_eval_v1_train.jsonl","/data/text/harmlessness/harmlessness_eval_v1_train.jsonl","/data/text/instruction_following/instruction_following_eval_v1_train.jsonl"]'
-# export VAL_FILE='["/data/text/correctness/correctness_eval_v1_val.jsonl","/data/text/hallucination/hallucination_eval_v1_val.jsonl","/data/text/relevance/relevance_eval_v1_val.jsonl","/data/text/harmlessness/harmlessness_eval_v1_val.jsonl","/data/text/instruction_following/instruction_following_eval_v1_val.jsonl"]'
 
 # Get script directory for relative paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GRPO_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Custom modules
-CUSTOM_REWARD_FUNCTION_PATH=${SCRIPT_DIR}/grader_reward_fn.py
-CUSTOM_CHAT_RL_DATASET_PATH=${GRPO_DIR}/grader_rl_dataset.py
-RUNTIME_ENV_PATH=${GRPO_DIR}/runtime_env.yaml
+# Custom modules (relative to script location)
+CUSTOM_REWARD_FUNCTION_PATH=${CUSTOM_REWARD_FUNCTION_PATH:-${SCRIPT_DIR}/grader_reward_fn.py}
+CUSTOM_CHAT_RL_DATASET_PATH=${CUSTOM_CHAT_RL_DATASET_PATH:-${GRPO_DIR}/grader_rl_dataset.py}
+RUNTIME_ENV_PATH=${RUNTIME_ENV_PATH:-${GRPO_DIR}/runtime_env.yaml}
 
 # ============================================================================
 # Training Configuration
 # ============================================================================
-PROJECT_NAME=OpenJudge
-EXPERIMENT_NAME=grpo-pointwise-${TIMESTAMP}
+PROJECT_NAME=${PROJECT_NAME:-OpenJudge}
+EXPERIMENT_NAME=${EXPERIMENT_NAME:-grpo-pointwise-${TIMESTAMP}}
 
 # ============================================================================
-# Hyperparameters
+# Hyperparameters (all support env var override)
 # ============================================================================
 # Data settings
-# TRAIN_BATCH_SIZE=96
-# VAL_BATCH_SIZE=192
-TRAIN_BATCH_SIZE=48
-VAL_BATCH_SIZE=48
-
-MAX_PROMPT_LENGTH=4096
-MAX_RESPONSE_LENGTH=2048
+TRAIN_BATCH_SIZE=${TRAIN_BATCH_SIZE:-48}
+VAL_BATCH_SIZE=${VAL_BATCH_SIZE:-48}
+MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH:-4096}
+MAX_RESPONSE_LENGTH=${MAX_RESPONSE_LENGTH:-2048}
 
 # Optimizer settings
-LR=1e-6
-KL_LOSS_COEF=0.001
+LR=${LR:-1e-6}
+KL_LOSS_COEF=${KL_LOSS_COEF:-0.001}
 
 # GRPO settings
-ROLLOUT_N=4  # Number of samples per prompt
+ROLLOUT_N=${ROLLOUT_N:-4}
 
 # Training settings
-TOTAL_EPOCHS=1
-SAVE_FREQ=20
-TEST_FREQ=10
+TOTAL_EPOCHS=${TOTAL_EPOCHS:-1}
+SAVE_FREQ=${SAVE_FREQ:-5}
+TEST_FREQ=${TEST_FREQ:-5}
+VAL_BEFORE_TRAIN=${VAL_BEFORE_TRAIN:-False}
+
+# Actor/Rollout settings
+PPO_MINI_BATCH_SIZE=${PPO_MINI_BATCH_SIZE:-24}
+GPU_MEMORY_UTILIZATION=${GPU_MEMORY_UTILIZATION:-0.6}
+
+# ============================================================================
+# LoRA Configuration
+# ============================================================================
+USE_LORA=${USE_LORA:-False}
+LORA_RANK=${LORA_RANK:-64}
+LORA_ALPHA=${LORA_ALPHA:-128}
+LORA_DROPOUT=${LORA_DROPOUT:-0.05}
+LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-[q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj]}
+
+# ============================================================================
+# Logger Configuration
+# ============================================================================
+LOGGER=${LOGGER:-"['console','swanlab']"}
 
 # ============================================================================
 # Environment Setup
 # ============================================================================
-# Disable PyTorch expandable segments for vLLM compatibility
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:False
+
+# ============================================================================
+# Configuration Summary
+# ============================================================================
+echo -e "\n=== GRPO Pointwise Training Configuration ==="
+echo "RAY_ADDRESS:          $RAY_ADDRESS"
+echo "MODEL_PATH:           $MODEL_PATH"
+echo "TRAIN_FILE:           $TRAIN_FILE"
+echo "VAL_FILE:             $VAL_FILE"
+echo "SAVE_PATH:            $SAVE_PATH"
+echo "N_GPUS_PER_NODE:      $N_GPUS_PER_NODE"
+echo "N_NODES:              $N_NODES"
+echo "MAX_PROMPT_LENGTH:    $MAX_PROMPT_LENGTH"
+echo "MAX_RESPONSE_LENGTH:  $MAX_RESPONSE_LENGTH"
+echo "LR:                   $LR"
+echo "KL_LOSS_COEF:         $KL_LOSS_COEF"
+echo "ROLLOUT_N:            $ROLLOUT_N"
+echo "TOTAL_EPOCHS:         $TOTAL_EPOCHS"
+echo "PPO_MINI_BATCH_SIZE:  $PPO_MINI_BATCH_SIZE"
+echo "GPU_MEMORY_UTIL:      $GPU_MEMORY_UTILIZATION"
+echo ""
+echo "=== LoRA Configuration ==="
+echo "USE_LORA:             $USE_LORA"
+echo "LORA_RANK:            $LORA_RANK"
+echo "LORA_ALPHA:           $LORA_ALPHA"
+echo "LORA_DROPOUT:         $LORA_DROPOUT"
+echo "LORA_TARGET_MODULES:  $LORA_TARGET_MODULES"
+echo ""
+echo "=== Validation & Logging ==="
+echo "VAL_BEFORE_TRAIN:     $VAL_BEFORE_TRAIN"
+echo "SAVE_FREQ:            $SAVE_FREQ"
+echo "TEST_FREQ:            $TEST_FREQ"
+echo "LOGGER:               $LOGGER"
+echo "==============================================\n"
+
+# Change to GRPO directory for correct relative path resolution
+cd "${GRPO_DIR}" || { echo "Failed to cd to $GRPO_DIR"; exit 1; }
 
 # ============================================================================
 # Run Training with Ray
 # ============================================================================
-echo "=== GRPO Pointwise Training Configuration ==="
-echo "RAY_ADDRESS: $RAY_ADDRESS"
-echo "MODEL_PATH: $MODEL_PATH"
-echo "TRAIN_FILE: $TRAIN_FILE"
-echo "N_GPUS_PER_NODE: $N_GPUS_PER_NODE"
-echo "N_NODES: $N_NODES"
-echo "SCRIPT_DIR: $SCRIPT_DIR"
-echo "GRPO_DIR: $GRPO_DIR"
-echo "=============================================="
-
-# Change to GRPO directory to ensure runtime_env.yaml working_dir resolves correctly
-cd "${GRPO_DIR}"
-
 ray job submit --address="${RAY_ADDRESS}" \
     --runtime-env="${RUNTIME_ENV_PATH}" \
     -- \
@@ -118,7 +143,7 @@ ray job submit --address="${RAY_ADDRESS}" \
     actor_rollout_ref.model.path="${MODEL_PATH}" \
     actor_rollout_ref.actor.optim.lr=$LR \
     actor_rollout_ref.model.use_remove_padding=True \
-    actor_rollout_ref.actor.ppo_mini_batch_size=24 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=$PPO_MINI_BATCH_SIZE \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.actor.use_kl_loss=True \
     actor_rollout_ref.actor.kl_loss_coef=$KL_LOSS_COEF \
@@ -130,13 +155,13 @@ ray job submit --address="${RAY_ADDRESS}" \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=$N_GPUS_PER_NODE \
     actor_rollout_ref.rollout.name=vllm \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=$GPU_MEMORY_UTILIZATION \
     actor_rollout_ref.rollout.n=$ROLLOUT_N \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
-    trainer.logger=['console','swanlab'] \
+    trainer.logger=$LOGGER \
     trainer.project_name=${PROJECT_NAME} \
     trainer.experiment_name=${EXPERIMENT_NAME} \
     trainer.n_gpus_per_node=${N_GPUS_PER_NODE} \
@@ -144,7 +169,21 @@ ray job submit --address="${RAY_ADDRESS}" \
     trainer.save_freq=$SAVE_FREQ \
     trainer.test_freq=$TEST_FREQ \
     trainer.total_epochs=$TOTAL_EPOCHS \
-    trainer.val_before_train=False \
-    trainer.default_local_dir="${SAVE_PATH}/${EXPERIMENT_NAME}"
+    trainer.val_before_train=$VAL_BEFORE_TRAIN \
+    trainer.default_local_dir="${SAVE_PATH}/${EXPERIMENT_NAME}" \
+    actor_rollout_ref.actor.use_lora=$USE_LORA \
+    actor_rollout_ref.actor.lora_rank=$LORA_RANK \
+    actor_rollout_ref.actor.lora_alpha=$LORA_ALPHA \
+    actor_rollout_ref.actor.lora_dropout=$LORA_DROPOUT \
+    actor_rollout_ref.actor.lora_target_modules="$LORA_TARGET_MODULES"
 
-echo "Training completed! Checkpoints saved to: ${SAVE_PATH}/${EXPERIMENT_NAME}"
+EXIT_CODE=$?
+
+if [[ $EXIT_CODE -eq 0 ]]; then
+    echo -e "\nTraining completed successfully!"
+    echo "Checkpoints saved to: ${SAVE_PATH}/${EXPERIMENT_NAME}"
+else
+    echo -e "\nTraining failed with exit code $EXIT_CODE"
+fi
+
+exit $EXIT_CODE
