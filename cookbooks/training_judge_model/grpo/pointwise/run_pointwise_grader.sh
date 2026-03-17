@@ -17,8 +17,10 @@ N_NODES=${N_NODES:-1}
 # Path Configuration
 # ============================================================================
 MODEL_PATH=${MODEL_PATH:-Qwen/Qwen3-8B}
-TRAIN_FILE=${TRAIN_FILE:-./data/rewardbench2_pointwise_train.parquet}
-VAL_FILE=${VAL_FILE:-./data/rewardbench2_pointwise_val.parquet}
+# Data: Multiple jsonl files for different evaluation dimensions
+TRAIN_FILE=${TRAIN_FILE:-'["/data/text/correctness/correctness_eval_v1_train.jsonl","/data/text/hallucination/hallucination_eval_v1_train.jsonl","/data/text/relevance/relevance_eval_v1_train.jsonl","/data/text/harmlessness/harmlessness_eval_v1_train.jsonl","/data/text/instruction_following/instruction_following_eval_v1_train.jsonl"]'}
+VAL_FILE=${VAL_FILE:-'["/data/text/correctness/correctness_eval_v1_val.jsonl","/data/text/hallucination/hallucination_eval_v1_val.jsonl","/data/text/relevance/relevance_eval_v1_val.jsonl","/data/text/harmlessness/harmlessness_eval_v1_val.jsonl","/data/text/instruction_following/instruction_following_eval_v1_val.jsonl"]'}
+
 SAVE_PATH=${SAVE_PATH:-./checkpoints/grpo/pointwise}
 
 # Get script directory for relative paths
