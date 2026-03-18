@@ -1,6 +1,6 @@
-import json
 import re
 from pprint import pprint
+
 from openjudge.utils.utils import trim_and_load_json
 
 
@@ -51,7 +51,7 @@ def extract_score(response_text):
                 score = int(numbers[0])  # Take the first number as score
                 if 0 <= score <= 5:  # Assume score range can be 0-1 (binary) or 1-5 (multi-class)
                     return score
-            except Exception:
+            except Exception as e:
                 pprint(f"Failed to convert score {numbers[0]} to integer in the grader reward fn: {e}")
     else:
         try:
