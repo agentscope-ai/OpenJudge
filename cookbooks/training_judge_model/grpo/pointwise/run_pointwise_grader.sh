@@ -67,11 +67,10 @@ GPU_MEMORY_UTILIZATION=${GPU_MEMORY_UTILIZATION:-0.6}
 # ============================================================================
 # LoRA Configuration
 # ============================================================================
-USE_LORA=${USE_LORA:-False}
-LORA_RANK=${LORA_RANK:-64}
-LORA_ALPHA=${LORA_ALPHA:-128}
-LORA_DROPOUT=${LORA_DROPOUT:-0.05}
-LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-[q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj]}
+# Default lora rank is 0. Set to a positive integer to enable LoRA. e.g. 64
+LORA_RANK=${LORA_RANK:-0}
+LORA_ALPHA=${LORA_ALPHA:-32}
+LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-all-linear}
 
 # ============================================================================
 # Logger Configuration
@@ -104,10 +103,8 @@ echo "PPO_MINI_BATCH_SIZE:  $PPO_MINI_BATCH_SIZE"
 echo "GPU_MEMORY_UTIL:      $GPU_MEMORY_UTILIZATION"
 echo ""
 echo "=== LoRA Configuration ==="
-echo "USE_LORA:             $USE_LORA"
 echo "LORA_RANK:            $LORA_RANK"
 echo "LORA_ALPHA:           $LORA_ALPHA"
-echo "LORA_DROPOUT:         $LORA_DROPOUT"
 echo "LORA_TARGET_MODULES:  $LORA_TARGET_MODULES"
 echo ""
 echo "=== Validation & Logging ==="
@@ -143,6 +140,9 @@ ray job submit --address="${RAY_ADDRESS}" \
     custom_reward_function.path="${CUSTOM_REWARD_FUNCTION_PATH}" \
     custom_reward_function.name='compute_score' \
     actor_rollout_ref.model.path="${MODEL_PATH}" \
+    actor_rollout_ref.model.lora_rank=$LORA_RANK \
+    actor_rollout_ref.model.lora_alpha=$LORA_ALPHA \
+    actor_rollout_ref.model.target_modules="${LORA_TARGET_MODULES}" \
     actor_rollout_ref.actor.optim.lr=$LR \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=$PPO_MINI_BATCH_SIZE \
@@ -172,12 +172,7 @@ ray job submit --address="${RAY_ADDRESS}" \
     trainer.test_freq=$TEST_FREQ \
     trainer.total_epochs=$TOTAL_EPOCHS \
     trainer.val_before_train=$VAL_BEFORE_TRAIN \
-    trainer.default_local_dir="${SAVE_PATH}/${EXPERIMENT_NAME}" \
-    actor_rollout_ref.actor.use_lora=$USE_LORA \
-    actor_rollout_ref.actor.lora_rank=$LORA_RANK \
-    actor_rollout_ref.actor.lora_alpha=$LORA_ALPHA \
-    actor_rollout_ref.actor.lora_dropout=$LORA_DROPOUT \
-    actor_rollout_ref.actor.lora_target_modules="$LORA_TARGET_MODULES"
+    trainer.default_local_dir="${SAVE_PATH}/${EXPERIMENT_NAME}"
 
 EXIT_CODE=$?
 
