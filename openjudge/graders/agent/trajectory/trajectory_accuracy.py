@@ -45,7 +45,6 @@ provided, infer it from the content of the first message), as well as the output
 Once you understand the goal, evaluate the trajectory based on how effectively it achieves that goal.
 </Steps>
 
-
 <Scale>
 - Score 3: Successfully achieves the task goal without any steps totally unrelated to the task \
     (reasonable extensions to improve task quality are acceptable).
@@ -54,20 +53,18 @@ Once you understand the goal, evaluate the trajectory based on how effectively i
 - Score 1: Fails to achieve the task goal.
 </Scale>
 
-
 <trajectory>
 TRAJECTORY: {messages}
 </trajectory>
 
 <Output Schema>
 Your output should be a JSON object with the following format:
-```json
 {{
     "reason": [Reason for the score],
     "score": [Trajectory Accuracy Score],
 }}
-```
 </Output Schema>
+
 JSON:
 """
 ).strip()
@@ -91,13 +88,11 @@ TRAJECTORY_ACCURACY_PROMPT_ZH = textwrap.dedent(
 确定轨迹的目标。一旦理解了目标，就根据轨迹实现该目标的有效程度进行评估。
 </评估步骤>
 
-
 <评分量表>
 - 3分：成功实现任务目标，且没有任何与任务完全无关的步骤（为提高任务质量而进行的合理扩展是可以接受的）。
 - 2分：成功实现任务目标，但包含与任务明显无关的不必要步骤。
 - 1分：未能实现任务目标。
 </评分量表>
-
 
 <轨迹>
 轨迹内容：{messages}
@@ -112,6 +107,7 @@ TRAJECTORY_ACCURACY_PROMPT_ZH = textwrap.dedent(
 }}
 ```
 </输出格式>
+
 JSON:
 """
 ).strip()

@@ -584,9 +584,9 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
             grader_template = REFLECTION_PROGRESS_AWARENESS_PROMPT_EN
         elif "tool_call_accuracy" in task_type:
             grader_template = TOOL_CALL_ACCURACY_PROMPT_EN
-        elif "tool_call" in task_type:
+        elif "tool_call_success" in task_type:
             grader_template = TOOL_CALL_SUCCESS_PROMPT_EN
-        elif "tool_parameter" in task_type:
+        elif "tool_parameter_check" in task_type:
             grader_template = TOOL_PARAMETER_CHECK_PROMPT_EN
         elif "tool_selection" in task_type:
             grader_template = TOOL_SELECTION_PROMPT_EN

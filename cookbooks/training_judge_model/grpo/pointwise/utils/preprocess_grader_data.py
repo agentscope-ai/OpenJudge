@@ -113,11 +113,27 @@ def process_single_file(data_file: str, split_ratio: float, seed: int, sample_nu
 
             # Check if required keys exist
             if "input" not in item or "chosen" not in item or "rejected" not in item:
-                print(f"Warning: Missing required keys in item from {data_file}. Skipping item.")
+                print(f"Warning: Missing required keys in item {item} from {data_file}. Skipping item.")
                 continue
 
             # Extract task_type from item if available, otherwise use "unknown"
             task_type = item.get("task_type", "unknown")
+            bin_tasks = [
+                "action_alignment",
+                "plan_feasibility",
+                "tool_call_success",
+                "tool_parameter_check",
+                "reflection_accuracy",
+                "reflection_outcome_understanding",
+                "reflection_progress_awareness",
+                "memory_accuracy",
+                "memory_detail_preservation",
+                "memory_retrieval_effectiveness",
+            ]
+
+            is_bin = False
+            if any(t in task_type for t in bin_tasks):
+                is_bin = True
 
             try:
                 if (
@@ -140,25 +156,31 @@ def process_single_file(data_file: str, split_ratio: float, seed: int, sample_nu
                     item["input"]["context"] = json.dumps(item["input"]["context"])
             except Exception as e:
                 raise e
+            if "chosen" not in item or not item["chosen"]:
+                print(f"Warning: Missing chosen answer in item {item} from {data_file}. Skipping item.")
+            else:
+                output_data.append(
+                    {
+                        "input": item["input"],
+                        "answer": item["chosen"],
+                        "label": 1,  # positive example
+                        "score": 1.0 if is_bin else 5.0,
+                        "task_type": task_type,
+                    }
+                )
 
-            output_data.append(
-                {
-                    "input": item["input"],
-                    "answer": item["chosen"],
-                    "label": 1,  # positive example
-                    "score": 5.0,
-                    "task_type": task_type,
-                }
-            )
-            output_data.append(
-                {
-                    "input": item["input"],
-                    "answer": item["rejected"],
-                    "label": 0,  # negative example
-                    "score": 1.0,
-                    "task_type": task_type,
-                }
-            )
+            if "rejected" not in item or not item["rejected"]:
+                print(f"Warning: Missing rejected answer in item {item} from {data_file}. Skipping item.")
+            else:
+                output_data.append(
+                    {
+                        "input": item["input"],
+                        "answer": item["rejected"],
+                        "label": 0,  # negative example
+                        "score": 0.0 if is_bin else 1.0,
+                        "task_type": task_type,
+                    }
+                )
     except KeyError as e:
         print(f"Error: Missing required key {e} in file {data_file}")
         return False

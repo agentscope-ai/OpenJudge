@@ -75,6 +75,7 @@ Generate a JSON object with the following structure:
   "score": 1.0 for success or 0.0 for failure
 }}
 </Output Schema>
+
 JSON:
 """
 ).strip()
@@ -134,6 +135,7 @@ TOOL_CALL_SUCCESS_PROMPT_ZH = textwrap.dedent(
   "score": 成功为 1.0，失败为 0.0
 }}
 </输出格式>
+
 JSON:
 """
 ).strip()

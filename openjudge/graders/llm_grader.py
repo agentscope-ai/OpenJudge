@@ -339,7 +339,7 @@ class LLMGrader(BaseGrader):
             )
         elif self.mode == GraderMode.POINTWISE:
             score = parsed.pop("score")
-            reason = parsed.pop("reason")
+            reason = str(parsed.pop("reason"))
             result = GraderScore(
                 name=self.name,
                 score=score,  # type: ignore

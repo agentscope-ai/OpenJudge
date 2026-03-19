@@ -69,6 +69,7 @@ Provide your evaluation in the following structured JSON format:
     "score": <integer between 1 and 5>
 }}
 </Output Schema>
+
 JSON:
 """
 ).strip()
@@ -122,6 +123,7 @@ TOOL_SELECTION_PROMPT_ZH = textwrap.dedent(
     "score": <1 到 5 之间的整数>
 }}
 </输出格式>
+
 JSON:
 """
 ).strip()
