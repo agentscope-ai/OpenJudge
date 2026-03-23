@@ -243,7 +243,7 @@ class OpenAIChatModel(BaseChatModel):
                 )
                 structured_model = {"type": "json_object"}
 
-            # kwargs["response_format"] = structured_model
+            kwargs["response_format"] = structured_model
 
             if not self.stream:
                 kwargs.pop("stream", None)
