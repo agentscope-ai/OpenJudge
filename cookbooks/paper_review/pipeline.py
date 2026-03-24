@@ -14,6 +14,8 @@ from cookbooks.paper_review.graders import (
     CriticalityGrader,
     FormatGrader,
     JailbreakingGrader,
+    RebuttalAssessmentGrader,
+    RebuttalGenerationGrader,
     ReviewGrader,
 )
 from cookbooks.paper_review.processors import BibChecker, TexPackageProcessor
@@ -24,6 +26,10 @@ from cookbooks.paper_review.schema import (
     CriticalityResult,
     PaperReviewResult,
     ProgressCallback,
+    RebuttalAssessmentResult,
+    RebuttalConcern,
+    RebuttalPointAssessment,
+    RebuttalResult,
     ReviewProgress,
     ReviewResult,
     ReviewStage,
@@ -86,6 +92,9 @@ class PipelineConfig:
     #   avoids connection errors on long papers.  Defaults to 10.
     #   Set to None to fall back to vision_max_pages.
     format_vision_max_pages: Optional[int] = 10
+    # ── Rebuttal ─────────────────────────────────────────────────────────────
+    enable_rebuttal_generation: bool = False
+    enable_rebuttal_assessment: bool = False
 
 
 class PaperReviewPipeline:
@@ -102,6 +111,14 @@ class PaperReviewPipeline:
         ReviewStage.BIB_VERIFICATION: (
             "paper_review.progress.bib_verification",
             "paper_review.progress.bib_verification_desc",
+        ),
+        ReviewStage.REBUTTAL_GENERATION: (
+            "paper_review.progress.rebuttal_generation",
+            "paper_review.progress.rebuttal_generation_desc",
+        ),
+        ReviewStage.REBUTTAL_ASSESSMENT: (
+            "paper_review.progress.rebuttal_assessment",
+            "paper_review.progress.rebuttal_assessment_desc",
         ),
         ReviewStage.COMPLETED: ("paper_review.progress.completed", "paper_review.progress.completed_desc"),
         ReviewStage.FAILED: ("paper_review.progress.failed", "paper_review.progress.failed_desc"),
@@ -145,6 +162,17 @@ class PaperReviewPipeline:
         self.criticality_grader = CriticalityGrader(self.model)
         self.format_grader = FormatGrader(self.model)
         self.jailbreaking_grader = JailbreakingGrader(self.model)
+        self.rebuttal_generation_grader = RebuttalGenerationGrader(
+            self.model,
+            discipline=self._discipline,
+            venue=self._venue,
+            language=self._language,
+        )
+        self.rebuttal_assessment_grader = RebuttalAssessmentGrader(
+            self.model,
+            discipline=self._discipline,
+            language=self._language,
+        )
 
     def _count_enabled_stages(self, has_bib: bool = False) -> int:
         """Count total enabled stages for progress tracking."""
@@ -334,6 +362,151 @@ class PaperReviewPipeline:
             if hasattr(self.model, "cleanup_files"):
                 self.model.cleanup_files()
 
+    async def generate_rebuttal(
+        self,
+        pdf_input: Union[str, Path, bytes],
+        review_text: Optional[str] = None,
+        review_result: Optional[PaperReviewResult] = None,
+    ) -> RebuttalResult:
+        """Generate a rebuttal draft for the author.
+
+        Items that require new experiments or proofs will contain [TODO: ...]
+        placeholders for the author to fill in.
+
+        Args:
+            pdf_input: Path to PDF file or PDF bytes
+            review_text: Reviewer comments text. If None, extracted from review_result.
+            review_result: Previous review_paper() result to extract review_text from.
+
+        Returns:
+            RebuttalResult with structured rebuttal draft
+        """
+        if not review_text and review_result and review_result.review:
+            review_text = review_result.review.review
+        if not review_text:
+            raise ValueError("Either review_text or review_result with review must be provided")
+
+        self._progress.reset(2)
+        try:
+            self._notify_progress(ReviewStage.LOADING_PDF, 0, 2)
+            pdf_data = self._load_pdf(pdf_input)
+
+            self._notify_progress(ReviewStage.REBUTTAL_GENERATION, 1, 2)
+            logger.info("Generating rebuttal draft...")
+            gen_result = await self.rebuttal_generation_grader.aevaluate(
+                pdf_data=pdf_data,
+                review_text=review_text,
+            )
+
+            if isinstance(gen_result, GraderError):
+                logger.error(f"Rebuttal generation error: {gen_result.error}")
+                self._notify_failed(f"Rebuttal generation failed: {gen_result.error}")
+                return RebuttalResult(rebuttal_text="")
+
+            concerns = [RebuttalConcern(**c) for c in gen_result.metadata.get("concerns", [])]
+
+            result = RebuttalResult(
+                rebuttal_text=gen_result.reason,
+                concerns=concerns,
+                general_suggestions=gen_result.metadata.get("general_suggestions", []),
+            )
+
+            self._notify_completed()
+            return result
+        except Exception as e:
+            logger.error(f"Rebuttal generation failed: {e}")
+            self._notify_failed(str(e))
+            raise
+        finally:
+            if hasattr(self.model, "cleanup_files"):
+                self.model.cleanup_files()
+
+    async def assess_rebuttal(
+        self,
+        pdf_input: Union[str, Path, bytes],
+        rebuttal_text: str,
+        review_text: Optional[str] = None,
+        original_score: Optional[int] = None,
+        review_result: Optional[PaperReviewResult] = None,
+    ) -> RebuttalAssessmentResult:
+        """Assess whether a rebuttal adequately addresses reviewer concerns.
+
+        Args:
+            pdf_input: Path to PDF file or PDF bytes
+            rebuttal_text: The author's rebuttal text
+            review_text: Reviewer comments. If None, extracted from review_result.
+            original_score: Original recommendation score (1-6). If None, extracted from review_result.
+            review_result: Previous review_paper() result.
+
+        Returns:
+            RebuttalAssessmentResult with point-by-point assessment and updated score
+        """
+        if not review_text and review_result and review_result.review:
+            review_text = review_result.review.review
+        if original_score is None and review_result and review_result.review:
+            original_score = review_result.review.score
+        if not review_text:
+            raise ValueError("Either review_text or review_result with review must be provided")
+        if original_score is None:
+            original_score = 3
+
+        self._progress.reset(2)
+        try:
+            self._notify_progress(ReviewStage.LOADING_PDF, 0, 2)
+            pdf_data = self._load_pdf(pdf_input)
+
+            self._notify_progress(ReviewStage.REBUTTAL_ASSESSMENT, 1, 2)
+            logger.info("Assessing rebuttal...")
+            assess_result = await self.rebuttal_assessment_grader.aevaluate(
+                pdf_data=pdf_data,
+                review_text=review_text,
+                rebuttal_text=rebuttal_text,
+                original_score=original_score,
+            )
+
+            if isinstance(assess_result, GraderError):
+                logger.error(f"Rebuttal assessment error: {assess_result.error}")
+                self._notify_failed(f"Rebuttal assessment failed: {assess_result.error}")
+                return RebuttalAssessmentResult(
+                    updated_score=original_score,
+                    original_score=original_score,
+                )
+
+            point_assessments = [
+                RebuttalPointAssessment(**p) for p in assess_result.metadata.get("point_assessments", [])
+            ]
+
+            result = RebuttalAssessmentResult(
+                updated_score=assess_result.score,
+                original_score=original_score,
+                score_change_reasoning=assess_result.metadata.get("score_change_reasoning", ""),
+                overall_assessment=assess_result.reason,
+                point_assessments=point_assessments,
+                unresolved_concerns=assess_result.metadata.get("unresolved_concerns", []),
+                rebuttal_strengths=assess_result.metadata.get("rebuttal_strengths", []),
+            )
+
+            self._notify_completed()
+            return result
+        except Exception as e:
+            logger.error(f"Rebuttal assessment failed: {e}")
+            self._notify_failed(str(e))
+            raise
+        finally:
+            if hasattr(self.model, "cleanup_files"):
+                self.model.cleanup_files()
+
+    def _load_pdf(self, pdf_input: Union[str, Path, bytes]) -> str:
+        """Load and encode PDF input to base64 data URL."""
+        if isinstance(pdf_input, bytes):
+            pdf_bytes = pdf_input
+        else:
+            pdf_bytes = load_pdf_bytes(pdf_input)
+        pdf_data = encode_pdf_base64(pdf_bytes)
+        if self.config.use_vision_for_pdf:
+            self.model.warmup_vision_cache(pdf_data)
+        return pdf_data
+
     async def _run_safety_checks(self, pdf_data: str) -> Dict[str, Any]:
         """Run jailbreaking and format checks in parallel."""
         issues = []
@@ -485,18 +658,40 @@ class PaperReviewPipeline:
         paper_name: str = "Paper",
         bib_path: Optional[str] = None,
         output_path: Optional[Union[str, Path]] = None,
+        rebuttal_text: Optional[str] = None,
     ) -> tuple[PaperReviewResult, str]:
-        """Review a paper and generate a Markdown report.
+        """Review a paper, optionally handle rebuttal, and generate a Markdown report.
+
+        When ``enable_rebuttal_generation`` is on and no *rebuttal_text* is supplied,
+        a rebuttal draft is generated after the review and attached to the result.
+
+        When ``enable_rebuttal_assessment`` is on and *rebuttal_text* is supplied,
+        the rebuttal is assessed and the assessment is attached to the result.
 
         Args:
             pdf_input: Path to PDF file or PDF bytes
             paper_name: Name of the paper for the report
             bib_path: Optional path to .bib file
             output_path: Optional path to save the report (.md file)
+            rebuttal_text: Optional author rebuttal text. When provided together
+                with ``enable_rebuttal_assessment``, the pipeline will assess it.
 
         Returns:
             Tuple of (PaperReviewResult, markdown_report_string)
         """
         result = await self.review_paper(pdf_input, bib_path)
+
+        if rebuttal_text and self.config.enable_rebuttal_assessment:
+            result.rebuttal_assessment = await self.assess_rebuttal(
+                pdf_input,
+                rebuttal_text=rebuttal_text,
+                review_result=result,
+            )
+        elif not rebuttal_text and self.config.enable_rebuttal_generation and result.review:
+            result.rebuttal = await self.generate_rebuttal(
+                pdf_input,
+                review_result=result,
+            )
+
         report = generate_report(result, paper_name, output_path)
         return result, report

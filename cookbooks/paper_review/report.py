@@ -185,6 +185,105 @@ def generate_report(
                     lines.append(f"- ... and {len(summary.suspect_references) - 10} more")
                 lines.append("")
 
+    # Rebuttal Draft
+    if result.rebuttal:
+        lines.extend(
+            [
+                "---",
+                "",
+                "## Rebuttal Draft",
+                "",
+            ]
+        )
+        if result.rebuttal.concerns:
+            lines.append("### Concerns Identified")
+            lines.append("")
+            lines.append("| # | Severity | Type | Concern |")
+            lines.append("|---|----------|------|---------|")
+            for i, c in enumerate(result.rebuttal.concerns, 1):
+                sev_icon = "\U0001f534" if c.severity == "major" else "\U0001f7e1"
+                type_label = (
+                    "\U0001f527 Action Required" if c.response_type == "action_required" else "\U0001f4ac Clarification"
+                )
+                lines.append(f"| {i} | {sev_icon} {c.severity.title()} | {type_label} | {c.concern} |")
+            lines.append("")
+
+            lines.append("### Point-by-Point Responses")
+            lines.append("")
+            for i, c in enumerate(result.rebuttal.concerns, 1):
+                lines.append(f"**Concern {i}** ({c.severity}): {c.concern}")
+                lines.append("")
+                lines.append(f"> {c.draft_response}")
+                lines.append("")
+        if result.rebuttal.rebuttal_text:
+            lines.append("### Full Rebuttal Text")
+            lines.append("")
+            lines.append(result.rebuttal.rebuttal_text)
+            lines.append("")
+        if result.rebuttal.general_suggestions:
+            lines.append("### Suggestions for Revision")
+            lines.append("")
+            for s in result.rebuttal.general_suggestions:
+                lines.append(f"- {s}")
+            lines.append("")
+
+    # Rebuttal Assessment
+    if result.rebuttal_assessment:
+        ra = result.rebuttal_assessment
+        score_delta = ra.updated_score - ra.original_score
+        if score_delta > 0:
+            delta_str = f" (+{score_delta})"
+        elif score_delta < 0:
+            delta_str = f" ({score_delta})"
+        else:
+            delta_str = " (unchanged)"
+
+        lines.extend(
+            [
+                "---",
+                "",
+                "## Rebuttal Assessment",
+                "",
+                f"**Original Score**: {ra.original_score}/6 \u2192 **Updated Score**: {ra.updated_score}/6{delta_str}",
+                "",
+                _score_bar(ra.updated_score, 6),
+                "",
+            ]
+        )
+        if ra.score_change_reasoning:
+            lines.extend(["**Score Change Reasoning**: " + ra.score_change_reasoning, ""])
+        if ra.overall_assessment:
+            lines.extend(["### Overall Assessment", "", ra.overall_assessment, ""])
+
+        if ra.point_assessments:
+            lines.append("### Point-by-Point Assessment")
+            lines.append("")
+            lines.append("| # | Concern | Adequacy | Reasoning |")
+            lines.append("|---|---------|----------|-----------|")
+            adequacy_icons = {
+                "fully_addressed": "\u2705 Fully Addressed",
+                "partially_addressed": "\u26a0\ufe0f Partially Addressed",
+                "not_addressed": "\u274c Not Addressed",
+            }
+            for i, p in enumerate(ra.point_assessments, 1):
+                icon = adequacy_icons.get(p.adequacy, p.adequacy)
+                lines.append(f"| {i} | {p.concern} | {icon} | {p.reasoning} |")
+            lines.append("")
+
+        if ra.rebuttal_strengths:
+            lines.append("### Rebuttal Strengths")
+            lines.append("")
+            for s in ra.rebuttal_strengths:
+                lines.append(f"- {s}")
+            lines.append("")
+
+        if ra.unresolved_concerns:
+            lines.append("### Unresolved Concerns")
+            lines.append("")
+            for c in ra.unresolved_concerns:
+                lines.append(f"- {c}")
+            lines.append("")
+
     # TeX Package Info
     if result.tex_info:
         lines.extend(

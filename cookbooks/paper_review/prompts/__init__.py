@@ -17,6 +17,14 @@ from cookbooks.paper_review.prompts.jailbreaking import (
     JAILBREAKING_SYSTEM_PROMPT,
     JAILBREAKING_USER_PROMPT,
 )
+from cookbooks.paper_review.prompts.rebuttal_assessment import (
+    REBUTTAL_ASSESSMENT_USER_PROMPT,
+    get_rebuttal_assessment_system_prompt,
+)
+from cookbooks.paper_review.prompts.rebuttal_generation import (
+    REBUTTAL_GENERATION_USER_PROMPT,
+    get_rebuttal_generation_system_prompt,
+)
 from cookbooks.paper_review.prompts.review import (
     REVIEW_USER_PROMPT,
     get_review_system_prompt,
@@ -33,4 +41,8 @@ __all__ = [
     "FORMAT_USER_PROMPT",
     "JAILBREAKING_SYSTEM_PROMPT",
     "JAILBREAKING_USER_PROMPT",
+    "get_rebuttal_generation_system_prompt",
+    "REBUTTAL_GENERATION_USER_PROMPT",
+    "get_rebuttal_assessment_system_prompt",
+    "REBUTTAL_ASSESSMENT_USER_PROMPT",
 ]

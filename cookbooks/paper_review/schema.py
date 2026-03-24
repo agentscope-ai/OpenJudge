@@ -25,6 +25,8 @@ class ReviewStage(str, Enum):
     REVIEW = "review"
     CRITICALITY = "criticality"
     BIB_VERIFICATION = "bib_verification"
+    REBUTTAL_GENERATION = "rebuttal_generation"
+    REBUTTAL_ASSESSMENT = "rebuttal_assessment"
     COMPLETED = "completed"
     FAILED = "failed"
 
@@ -156,6 +158,44 @@ class TexPackageInfo(BaseModel):
     figures: List[str] = Field(default_factory=list)
 
 
+class RebuttalConcern(BaseModel):
+    """A single reviewer concern extracted during rebuttal generation."""
+
+    concern: str
+    severity: str = "minor"
+    response_type: str = "clarification"
+    draft_response: str = ""
+
+
+class RebuttalResult(BaseModel):
+    """Result of rebuttal generation."""
+
+    rebuttal_text: str
+    concerns: List[RebuttalConcern] = Field(default_factory=list)
+    general_suggestions: List[str] = Field(default_factory=list)
+
+
+class RebuttalPointAssessment(BaseModel):
+    """Assessment of how a rebuttal addresses a single reviewer concern."""
+
+    concern: str
+    author_response_summary: str = ""
+    adequacy: str = "not_addressed"
+    reasoning: str = ""
+
+
+class RebuttalAssessmentResult(BaseModel):
+    """Result of rebuttal assessment."""
+
+    updated_score: int = Field(ge=1, le=6)
+    original_score: int = Field(ge=1, le=6)
+    score_change_reasoning: str = ""
+    overall_assessment: str = ""
+    point_assessments: List[RebuttalPointAssessment] = Field(default_factory=list)
+    unresolved_concerns: List[str] = Field(default_factory=list)
+    rebuttal_strengths: List[str] = Field(default_factory=list)
+
+
 class PaperReviewResult(BaseModel):
     """Complete paper review result."""
 
@@ -167,4 +207,6 @@ class PaperReviewResult(BaseModel):
     format_compliant: Optional[bool] = None
     bib_verification: Optional[Dict[str, BibVerificationSummary]] = None
     tex_info: Optional[TexPackageInfo] = None
+    rebuttal: Optional[RebuttalResult] = None
+    rebuttal_assessment: Optional[RebuttalAssessmentResult] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
