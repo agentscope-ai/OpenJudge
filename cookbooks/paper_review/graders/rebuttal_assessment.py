@@ -59,6 +59,7 @@ def build_rebuttal_assessment_messages(
     rebuttal_text: str,
     original_score: int,
     discipline: Optional[DisciplineConfig] = None,
+    venue: Optional[str] = None,
     language: Optional[str] = None,
 ) -> List[dict]:
     """Build messages for rebuttal assessment."""
@@ -72,6 +73,7 @@ def build_rebuttal_assessment_messages(
             "role": "system",
             "content": get_rebuttal_assessment_system_prompt(
                 discipline=discipline,
+                venue=venue,
                 language=language,
             ),
         },
@@ -95,6 +97,7 @@ class RebuttalAssessmentGrader(LLMGrader):
         self,
         model: BaseChatModel | dict,
         discipline: Optional[DisciplineConfig] = None,
+        venue: Optional[str] = None,
         language: Optional[str] = None,
     ):
         super().__init__(
@@ -105,6 +108,7 @@ class RebuttalAssessmentGrader(LLMGrader):
             template="",
         )
         self.discipline = discipline
+        self.venue = venue
         self.language = language
 
     async def aevaluate(
@@ -132,6 +136,7 @@ class RebuttalAssessmentGrader(LLMGrader):
                 rebuttal_text,
                 original_score,
                 discipline=self.discipline,
+                venue=self.venue,
                 language=self.language,
             )
             response = await self.model.achat(messages=messages)

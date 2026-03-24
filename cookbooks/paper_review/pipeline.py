@@ -166,11 +166,13 @@ class PaperReviewPipeline:
             self.model,
             discipline=self._discipline,
             venue=self._venue,
+            instructions=self._instructions,
             language=self._language,
         )
         self.rebuttal_assessment_grader = RebuttalAssessmentGrader(
             self.model,
             discipline=self._discipline,
+            venue=self._venue,
             language=self._language,
         )
 

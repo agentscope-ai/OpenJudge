@@ -52,6 +52,7 @@ def build_rebuttal_generation_messages(
     review_text: str,
     discipline: Optional[DisciplineConfig] = None,
     venue: Optional[str] = None,
+    instructions: Optional[str] = None,
     language: Optional[str] = None,
 ) -> List[dict]:
     """Build messages for rebuttal generation."""
@@ -62,6 +63,7 @@ def build_rebuttal_generation_messages(
             "content": get_rebuttal_generation_system_prompt(
                 discipline=discipline,
                 venue=venue,
+                instructions=instructions,
                 language=language,
             ),
         },
@@ -87,6 +89,7 @@ class RebuttalGenerationGrader(LLMGrader):
         model: BaseChatModel | dict,
         discipline: Optional[DisciplineConfig] = None,
         venue: Optional[str] = None,
+        instructions: Optional[str] = None,
         language: Optional[str] = None,
     ):
         super().__init__(
@@ -98,6 +101,7 @@ class RebuttalGenerationGrader(LLMGrader):
         )
         self.discipline = discipline
         self.venue = venue
+        self.instructions = instructions
         self.language = language
 
     async def aevaluate(self, pdf_data: str, review_text: str) -> GraderScore:
@@ -116,6 +120,7 @@ class RebuttalGenerationGrader(LLMGrader):
                 review_text,
                 discipline=self.discipline,
                 venue=self.venue,
+                instructions=self.instructions,
                 language=self.language,
             )
             response = await self.model.achat(messages=messages)
