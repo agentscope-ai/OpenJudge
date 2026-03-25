@@ -145,11 +145,19 @@ DEFAULT_TOOL_CALL_SUCCESS_TEMPLATE = PromptTemplate(
     messages={
         LanguageEnum.EN: [
             ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
                 role="user",
                 content=TOOL_CALL_SUCCESS_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
             ChatMessage(
                 role="user",
                 content=TOOL_CALL_SUCCESS_PROMPT_ZH,

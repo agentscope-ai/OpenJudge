@@ -116,11 +116,19 @@ DEFAULT_TOOL_CALL_ACCURACY_TEMPLATE = PromptTemplate(
     messages={
         LanguageEnum.EN: [
             ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
                 role="user",
                 content=TOOL_CALL_ACCURACY_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
             ChatMessage(
                 role="user",
                 content=TOOL_CALL_ACCURACY_PROMPT_ZH,
