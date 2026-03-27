@@ -56,6 +56,14 @@ class LLMGrader(BaseGrader):
     # The default template value is just a placeholder.
     # Extended classes must set proper value to DEFAULT_TEMPLATE
     DEFAULT_TEMPLATE = PromptTemplate(messages={})
+    SYSTEM_PROMPT_EN = """
+    You are an evaluation assistant. Output ONLY a valid JSON object with this exact structure:
+    {{"reason":"<brief explanation for the assigned score>","score":<integer>}}
+    """
+    SYSTEM_PROMPT_ZH = """
+    你是一个评估助手。仅输出一个符合此精确结构的有效 JSON 对象：
+    {{"reason":"<对所评分数的简要解释>","score":<整数>}}
+    """
 
     def __init__(
         self,

@@ -66,15 +66,15 @@ class TestHallucinationGraderUnit:
         assert "prompt" in meta
         prompt = meta["prompt"]
         assert len(prompt) == 2
-        assert len(prompt[LanguageEnum.EN.value]) == 1
-        assert prompt[LanguageEnum.EN.value][0]["role"] == "user"
+        assert len(prompt[LanguageEnum.EN.value]) == 2
+        assert prompt[LanguageEnum.EN.value][1]["role"] == "user"
         assert (
             "evaluating whether the model response contains hallucinations"
-            in prompt[LanguageEnum.EN.value][0]["content"]
+            in prompt[LanguageEnum.EN.value][1]["content"]
         )
-        assert len(prompt[LanguageEnum.ZH.value]) == 1
-        assert prompt[LanguageEnum.ZH.value][0]["role"] == "user"
-        assert "负责评估模型输出是否包含幻觉" in prompt[LanguageEnum.ZH.value][0]["content"]
+        assert len(prompt[LanguageEnum.ZH.value]) == 2
+        assert prompt[LanguageEnum.ZH.value][1]["role"] == "user"
+        assert "负责评估模型输出是否包含幻觉" in prompt[LanguageEnum.ZH.value][1]["content"]
 
     @pytest.mark.asyncio
     async def test_successful_evaluation(self):

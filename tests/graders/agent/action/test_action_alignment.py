@@ -65,10 +65,10 @@ class TestActionAlignmentGraderUnit:
         assert len(language_template) == 1
         assert "zh" in language_template
         template = language_template["zh"]
-        assert len(template) == 1
-        assert len(template[0]) == 2
-        assert template[0]["role"] == "user"
-        assert template[0]["content"].startswith(
+        assert len(template) == 2
+        assert len(template[1]) == 2
+        assert template[1]["role"] == "user"
+        assert template[1]["content"].startswith(
             "你是一名分析智能体行为的专家。你的任务是评估智能体是否执行了与其声明的计划或推理一致的动作。"
         )
 
@@ -76,10 +76,10 @@ class TestActionAlignmentGraderUnit:
         assert len(language_template) == 1
         assert "en" in language_template
         template = language_template["en"]
-        assert len(template) == 1
-        assert len(template[0]) == 2
-        assert template[0]["role"] == "user"
-        assert template[0]["content"].startswith(
+        assert len(template) == 2
+        assert len(template[1]) == 2
+        assert template[1]["role"] == "user"
+        assert template[1]["content"].startswith(
             "You are an expert in analyzing agent behavior. Your task is to evaluate whether the agent executes an action that aligns with its stated plan or reasoning."
         )
 

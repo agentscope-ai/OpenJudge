@@ -208,9 +208,10 @@ class OpenAIChatModel(BaseChatModel):
             kwargs["reasoning_effort"] = self.reasoning_effort
 
         # Handle enable_thinking parameter for DashScope/Qwen models
-        # For non-streaming calls with qwen models, default enable_thinking to
+        # For non-streaming calls with qwen/pai-judge models, default enable_thinking to
         # False unless the caller has already set it explicitly via extra_body.
-        if not self.stream and "qwen" in self.model.lower():
+
+        if not self.stream and ("qwen" in self.model.lower() or "pai-judge" in self.model.lower()):
             if "extra_body" not in kwargs:
                 kwargs["extra_body"] = {}
             kwargs["extra_body"]["enable_thinking"] = False
@@ -230,7 +231,7 @@ class OpenAIChatModel(BaseChatModel):
                     "ignored. The model will only perform structured output "
                     "generation without calling any other tools.",
                 )
-            kwargs.pop("stream", None)
+
             kwargs.pop("tools", None)
             kwargs.pop("tool_choice", None)
 
@@ -245,9 +246,10 @@ class OpenAIChatModel(BaseChatModel):
             kwargs["response_format"] = structured_model
 
             if not self.stream:
+                kwargs.pop("stream", None)
                 response = await self.client.chat.completions.parse(**kwargs)
             else:
-                response = self.client.chat.completions.stream(**kwargs)
+                response = await self.client.chat.completions.create(**kwargs)
         else:
             response = await self.client.chat.completions.create(**kwargs)
 

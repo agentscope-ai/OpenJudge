@@ -21,6 +21,8 @@ from cookbooks.paper_review.graders import (
     CriticalityGrader,
     FormatGrader,
     JailbreakingGrader,
+    RebuttalAssessmentGrader,
+    RebuttalGenerationGrader,
     ReviewGrader,
 )
 from cookbooks.paper_review.pipeline import PaperReviewPipeline, PipelineConfig
@@ -32,6 +34,10 @@ from cookbooks.paper_review.schema import (
     CriticalityResult,
     PaperReviewResult,
     ProgressCallback,
+    RebuttalAssessmentResult,
+    RebuttalConcern,
+    RebuttalPointAssessment,
+    RebuttalResult,
     ReviewProgress,
     ReviewResult,
     ReviewStage,
@@ -49,6 +55,8 @@ __all__ = [
     "CriticalityGrader",
     "FormatGrader",
     "JailbreakingGrader",
+    "RebuttalGenerationGrader",
+    "RebuttalAssessmentGrader",
     # Processors
     "BibChecker",
     "TexPackageProcessor",
@@ -58,6 +66,10 @@ __all__ = [
     "ReviewResult",
     "CriticalityResult",
     "BibVerificationSummary",
+    "RebuttalResult",
+    "RebuttalConcern",
+    "RebuttalAssessmentResult",
+    "RebuttalPointAssessment",
     # Progress
     "ReviewStage",
     "ReviewProgress",

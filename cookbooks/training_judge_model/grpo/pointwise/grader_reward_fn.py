@@ -1,6 +1,7 @@
-import json
 import re
 from pprint import pprint
+
+from openjudge.utils.utils import trim_and_load_json
 
 
 def filter_thinking_parts(text):
@@ -40,7 +41,7 @@ def extract_score(response_text):
     # Extract score from <score> tag
     score_pattern = r"<score>(.*?)</score>"
     match = re.search(score_pattern, response_text, re.DOTALL)
-    pprint(f"response_text: {response_text}")
+    # pprint(f"response_text: {response_text}")
     if match:
         score_content = match.group(1).strip()
         # Extract numbers from content
@@ -50,14 +51,23 @@ def extract_score(response_text):
                 score = int(numbers[0])  # Take the first number as score
                 if 0 <= score <= 5:  # Assume score range can be 0-1 (binary) or 1-5 (multi-class)
                     return score
-            except Exception:
-                pass
+            except Exception as e:
+                pprint(f"Failed to convert score {numbers[0]} to integer in the grader reward fn: {e}")
     else:
         try:
-            response_dict = json.loads(response_text)
-            return response_dict.get("score", 0)
-        except Exception:
-            pass
+            response_dict = trim_and_load_json(response_text)
+            return int(response_dict.get("score", 0))
+        except Exception as e:
+            pprint(f"response_text: {response_text}")
+            pprint(f"Failed to extract score from response in the grader reward fn: {e}")
+            try:
+                match = re.search(r'"score"\s*:\s*(\d+)', response_text)
+                if match:
+                    score = int(match.group(1))
+                    pprint(f"Found score by searching: {score}")
+                    return score
+            except Exception as e:
+                pprint(f"Failed to search score from response in the grader reward fn: {e}")
 
     return 0  # Default to 0 if extraction fails
 
