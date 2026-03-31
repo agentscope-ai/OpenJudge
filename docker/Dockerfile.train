@@ -123,8 +123,20 @@ RUN pip install --no-cache-dir --prefer-binary \
 # =============================================================================
 RUN pip install --no-cache-dir --no-deps git+https://github.com/agentscope-ai/OpenJudge.git
 
+# =============================================================================
+# 9. Copy Training Scripts to Root
+# =============================================================================
+# Create target directory structure at root level
+RUN mkdir -p /grpo/pointwise
+
+# Copy GRPO training scripts to simplified root paths
+COPY cookbooks/training_judge_model/grpo/grader_rl_dataset.py /grpo/grader_rl_dataset.py
+COPY cookbooks/training_judge_model/grpo/pointwise/grader_reward_fn.py /grpo/pointwise/grader_reward_fn.py
+COPY cookbooks/training_judge_model/grpo/pointwise/run.sh /grpo/pointwise/run.sh
+
 # Clean up cache
 RUN pip cache purge
 
 # Set default command
 CMD ["/bin/bash"]
+
