@@ -73,7 +73,7 @@ ENVIRONMENT VARIABLES (with defaults):
     TOTAL_EPOCHS         Total training epochs (default: 3)
     SAVE_FREQ            Save frequency (default: 2)
     TEST_FREQ            Test frequency (default: 2)
-    VAL_BEFORE_TRAIN     Validate before training (default: False)
+    VAL_BEFORE_TRAIN     Validate before training (default: True)
 
   Actor/Rollout:
     PPO_MINI_BATCH_SIZE       PPO mini batch size (default: 24)
@@ -157,7 +157,7 @@ ROLLOUT_N=${ROLLOUT_N:-4}
 TOTAL_EPOCHS=${TOTAL_EPOCHS:-3}
 SAVE_FREQ=${SAVE_FREQ:-2}
 TEST_FREQ=${TEST_FREQ:-2}
-VAL_BEFORE_TRAIN=${VAL_BEFORE_TRAIN:-False}
+VAL_BEFORE_TRAIN=${VAL_BEFORE_TRAIN:-True}
 
 # Actor/Rollout settings
 PPO_MINI_BATCH_SIZE=${PPO_MINI_BATCH_SIZE:-24}
