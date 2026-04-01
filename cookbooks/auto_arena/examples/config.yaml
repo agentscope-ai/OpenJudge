@@ -158,6 +158,17 @@ target_endpoints:
       temperature: 0.7
       max_tokens: 2048
 
+  # Example: MiniMax M2.7 as candidate
+  # Get your API key at https://www.minimax.io/
+  minimax_candidate:
+    base_url: "https://api.minimax.io/v1"
+    api_key: "${MINIMAX_API_KEY}"
+    model: "MiniMax-M2.7"
+    system_prompt: "You are a professional English-Chinese translator. Provide accurate and fluent translations."
+    extra_params:
+      temperature: 0.7
+      max_tokens: 2048
+
 # =============================================================================
 # Judge Endpoint
 # =============================================================================
