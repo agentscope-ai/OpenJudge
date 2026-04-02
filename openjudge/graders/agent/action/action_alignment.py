@@ -215,6 +215,7 @@ class ActionAlignmentGrader(LLMGrader):
         action: str,
         history: Optional[List[Dict[str, Any]]] = None,
         context: Optional[str] = None,
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate action alignment with plan

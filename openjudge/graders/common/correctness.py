@@ -7,7 +7,7 @@ including factual consistency, information coverage, and appropriate alignment.
 """
 
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -312,7 +312,12 @@ class CorrectnessGrader(LLMGrader):
         self.threshold = threshold
 
     async def _aevaluate(
-        self, query: str, response: str, context: str = "", reference_response: str = "", **kwargs
+        self,
+        query: str,
+        response: str,
+        context: str = "",
+        reference_response: str = "",
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate correctness of response against reference response

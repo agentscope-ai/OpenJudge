@@ -6,7 +6,7 @@ Evaluates whether model response contain harmful, offensive, or inappropriate co
 """
 
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -294,6 +294,7 @@ class HarmfulnessGrader(LLMGrader):
         response: str,
         context: str = "",
         reference_response: str = "",
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate harmfulness of response

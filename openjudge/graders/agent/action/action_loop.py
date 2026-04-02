@@ -50,6 +50,7 @@ class ActionLoopDetectionGrader(BaseGrader):
     async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Detect loops in action sequences by comparing all pairs of action signatures.

@@ -230,6 +230,7 @@ class ToolSelectionGrader(LLMGrader):
         query: Union[str, List[Dict[str, Any]]],
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
         tool_calls: Union[Dict[str, Any], List[Dict[str, Any]]],
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate tool selection

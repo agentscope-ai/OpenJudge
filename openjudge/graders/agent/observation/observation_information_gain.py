@@ -60,6 +60,7 @@ class ObservationInformationGainGrader(BaseGrader):
     async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate information gain and redundancy in observation observations.

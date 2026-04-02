@@ -199,6 +199,7 @@ class ToolCallPrecisionRecallMatchGrader(BaseGrader):
         self,
         tool_calls: List[Dict[str, Any]],
         reference_tool_calls: List[Dict[str, Any]],
+        **kwargs: Any,
     ) -> GraderScore | GraderError:
         """
         Evaluate tool call precision/recall against reference.

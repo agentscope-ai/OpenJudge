@@ -545,6 +545,7 @@ class TrajectoryComprehensiveGrader(LLMGrader):
         messages: List[Dict[str, Any]],
         query: Optional[str] = None,
         response: Optional[str | Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> GraderScore | GraderError:
         """
         Evaluate complete agent trajectory comprehensively.

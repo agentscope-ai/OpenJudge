@@ -7,7 +7,7 @@ content requirements, format constraints, style guidelines, and other specified 
 """
 
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -309,6 +309,7 @@ class InstructionFollowingGrader(LLMGrader):
         instruction: str,
         response: str,
         query: str = "",
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate instruction following in response

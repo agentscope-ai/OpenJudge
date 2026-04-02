@@ -280,6 +280,7 @@ class ToolCallAccuracyGrader(LLMGrader):
         tool_definitions: Dict[str, Any] | List[Dict[str, Any]],
         tool_calls: Dict[str, Any] | List[Dict[str, Any]] | None = None,
         response: str | List[Dict[str, Any]] | None = None,
+        **kwargs: Any,
     ) -> GraderScore | GraderError:
         """
         Evaluate tool call accuracy

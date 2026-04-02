@@ -14,14 +14,13 @@ Run all tests (requires API key):
 """
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from openjudge.models import MiniMaxChatModel
 from openjudge.models.minimax_chat_model import MINIMAX_MODELS, _strip_think_tags
 from openjudge.models.schema.oai.response import ChatResponse
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -247,9 +246,7 @@ class TestMiniMaxChatModelIntegration:
     @pytest.mark.asyncio
     async def test_basic_chat(self):
         model = MiniMaxChatModel(model="MiniMax-M2.7")
-        response = await model.achat(
-            messages=[{"role": "user", "content": "Reply with the single word: hello"}]
-        )
+        response = await model.achat(messages=[{"role": "user", "content": "Reply with the single word: hello"}])
         assert isinstance(response, ChatResponse)
         assert response.content
         # Think-tags should be stripped
@@ -258,16 +255,12 @@ class TestMiniMaxChatModelIntegration:
     @pytest.mark.asyncio
     async def test_temperature_clamping_does_not_error(self):
         model = MiniMaxChatModel(model="MiniMax-M2.7", temperature=0.0)
-        response = await model.achat(
-            messages=[{"role": "user", "content": "Say: ok"}]
-        )
+        response = await model.achat(messages=[{"role": "user", "content": "Say: ok"}])
         assert isinstance(response, ChatResponse)
 
     @pytest.mark.asyncio
     async def test_highspeed_model(self):
         model = MiniMaxChatModel(model="MiniMax-M2.7-highspeed")
-        response = await model.achat(
-            messages=[{"role": "user", "content": "Reply with the single word: hello"}]
-        )
+        response = await model.achat(messages=[{"role": "user", "content": "Reply with the single word: hello"}])
         assert isinstance(response, ChatResponse)
         assert response.content

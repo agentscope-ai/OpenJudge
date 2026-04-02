@@ -300,6 +300,7 @@ class HallucinationGrader(LLMGrader):
         response: str,
         context: str = "",
         reference_response: str = "",
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate hallucination in response

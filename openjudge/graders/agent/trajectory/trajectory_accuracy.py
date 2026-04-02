@@ -270,6 +270,7 @@ class TrajectoryAccuracyGrader(LLMGrader):
     async def _aevaluate(
         self,
         messages: List[Dict[str, Any]],
+        **kwargs: Any,
     ) -> GraderScore | GraderError:
         """
         Evaluate trajectory accuracy

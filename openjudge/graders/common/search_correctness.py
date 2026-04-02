@@ -8,7 +8,7 @@ Uses ReAct-style autonomous tool calling.
 
 import os
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -272,7 +272,7 @@ class SearchCorrectnessGrader(AgenticGrader):
         self,
         query: str = "",
         response: str = "",
-        **kwargs,
+        **kwargs: Any,
     ) -> "GraderScore | GraderError":
         """Evaluate the factual accuracy of a response using web search.
 

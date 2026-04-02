@@ -267,6 +267,7 @@ class ToolCallSuccessGrader(LLMGrader):
         tool_definitions: Union[Dict[str, Any], List[Dict[str, Any]]],
         tool_calls: Union[Dict[str, Any], List[Dict[str, Any]]],
         tool_responses: Union[str, List[str]],
+        **kwargs: Any,
     ) -> GraderScore:
         """
         Evaluate tool call success

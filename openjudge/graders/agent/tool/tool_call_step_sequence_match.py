@@ -358,6 +358,7 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
         self,
         messages: List[Dict[str, Any]],
         reference_tool_calls: List[List[Dict[str, Any]]],
+        **kwargs: Any,
     ) -> GraderScore | GraderError:
         """
         Evaluate tool call sequence matching against reference.

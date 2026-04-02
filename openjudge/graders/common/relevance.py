@@ -6,7 +6,7 @@ Evaluates how relevant a response is to the user's query in the conversation his
 """
 
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -310,7 +310,7 @@ class RelevanceGrader(LLMGrader):
         response: str,
         context: str = "",
         reference_response: str = "",
-        **kwargs,
+        **kwargs: Any,
     ) -> GraderScore | GraderError:
         """
         Evaluate relevance of response to query
