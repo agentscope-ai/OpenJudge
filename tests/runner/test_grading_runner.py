@@ -14,6 +14,7 @@ from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderError, GraderScore
 from openjudge.runner.aggregator.weighted_sum_aggregator import WeightedSumAggregator
 from openjudge.runner.grading_runner import GradingRunner
+from openjudge.utils.timer import TimingCollector
 
 
 class MockGrader(BaseGrader):
@@ -280,6 +281,98 @@ class TestGradingRunner:
             for result in grader_results:
                 assert isinstance(result, (GraderScore, GraderError))
                 assert result.metadata["call_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_grading_runner_collects_timing_summary(self):
+        """Should expose timing summaries when timing is enabled."""
+        runner = GradingRunner(
+            grader_configs={
+                "accuracy": MockGrader(name="accuracy_grader", score_value=0.9),
+                "relevance": MockGrader(name="relevance_grader", score_value=0.8),
+            },
+            show_progress=False,
+            enable_timing=True,
+        )
+
+        dataset = [
+            {"query": "What is the capital of France?", "answer": "Paris"},
+            {"query": "What is the capital of Germany?", "answer": "Berlin"},
+        ]
+
+        await runner.arun(dataset)
+
+        summary = runner.get_timing_summary()
+        assert "grading_runner.dataset" in summary
+        assert "grading_runner.single_evaluation" in summary
+        assert summary["grading_runner.dataset"]["count"] == 1
+        assert summary["grading_runner.single_evaluation"]["count"] == 4
+
+        records = runner.get_timing_records("grading_runner.single_evaluation")
+        assert len(records) == 4
+        assert all(record.metadata["grader_name"] in {"accuracy_grader", "relevance_grader"} for record in records)
+        assert {record.metadata["sample_index"] for record in records} == {0, 1}
+
+    @pytest.mark.asyncio
+    async def test_grading_runner_uses_injected_timing_collector(self):
+        """Should support externally managed timing collectors."""
+        collector = TimingCollector()
+        runner = GradingRunner(
+            grader_configs={
+                "accuracy": MockGrader(name="accuracy_grader", score_value=0.9),
+            },
+            show_progress=False,
+            timing_collector=collector,
+        )
+
+        dataset = [{"query": "What is 2+2?", "answer": "4"}]
+        await runner.arun(dataset)
+
+        assert runner.timing_collector is collector
+        assert len(collector.get_records("grading_runner.dataset")) == 1
+        assert len(collector.get_records("grading_runner.single_evaluation")) == 1
+
+    @pytest.mark.asyncio
+    async def test_grading_runner_multiple_datasets_collects_batch_timing(self):
+        """Should record batch-level timing for multiple datasets."""
+        runner = GradingRunner(
+            grader_configs={
+                "accuracy": MockGrader(name="accuracy_grader", score_value=0.9),
+            },
+            show_progress=False,
+            enable_timing=True,
+        )
+
+        datasets = [
+            [{"query": "What is 2+2?", "answer": "4"}],
+            [{"query": "What is the sky color?", "answer": "blue"}],
+        ]
+
+        await runner.arun_multiple_datasets(datasets)
+
+        summary = runner.get_timing_summary()
+        assert summary["grading_runner.multi_dataset"]["count"] == 1
+        assert summary["grading_runner.dataset"]["count"] == 2
+        assert summary["grading_runner.single_evaluation"]["count"] == 2
+
+    @pytest.mark.asyncio
+    async def test_grading_runner_clear_timing_records(self):
+        """Should clear collected timing data on demand."""
+        runner = GradingRunner(
+            grader_configs={
+                "accuracy": MockGrader(name="accuracy_grader", score_value=0.9),
+            },
+            show_progress=False,
+            enable_timing=True,
+        )
+
+        dataset = [{"query": "What is 2+2?", "answer": "4"}]
+        await runner.arun(dataset)
+        assert runner.get_timing_records()
+
+        runner.clear_timing_records()
+
+        assert runner.get_timing_records() == []
+        assert runner.get_timing_summary() == {}
 
     @pytest.mark.asyncio
     async def test_grading_runner_multiple_datasets(self):
