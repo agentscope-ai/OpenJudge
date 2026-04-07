@@ -96,7 +96,7 @@ repos:
     hooks:
       - id: pytest
         name: Run pytest
-        entry: .venv/bin/python -m pytest
+        entry: python -m pytest
         language: system
         pass_filenames: false
         always_run: true
