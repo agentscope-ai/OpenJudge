@@ -25,12 +25,12 @@ sys.path.insert(0, str(_ROOT))
 
 load_dotenv(_ROOT / ".env")
 
-from openjudge.models.openai_chat_model import OpenAIChatModel  # noqa: E402
 from cookbooks.skills_evaluation.runner import (  # noqa: E402
-    SkillsGradingRunner,
     SkillGradingResult,
+    SkillsGradingRunner,
     build_markdown_report,
 )
+from openjudge.models.openai_chat_model import OpenAIChatModel  # noqa: E402
 
 
 def _build_model() -> OpenAIChatModel:
@@ -113,8 +113,6 @@ async def main(skills_dir: str, task_description: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    target = sys.argv[1] if len(sys.argv) > 1 else str(
-        _ROOT / ".agents" / "skills" / "financial-consulting-research"
-    )
+    target = sys.argv[1] if len(sys.argv) > 1 else str(_ROOT / ".agents" / "skills" / "financial-consulting-research")
     task_desc = sys.argv[2] if len(sys.argv) > 2 else None
     asyncio.run(main(target, task_description=task_desc))

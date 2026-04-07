@@ -32,10 +32,12 @@ from loguru import logger
 
 from cookbooks.skills_evaluation.skill_models import SkillLoader, SkillPackage
 from openjudge.graders.base_grader import GraderError, GraderScore
-from openjudge.graders.skills.declaration_alignment import SkillDeclarationAlignmentGrader
 from openjudge.graders.skills.completeness import SkillCompletenessGrader
-from openjudge.graders.skills.relevance import SkillRelevanceGrader
+from openjudge.graders.skills.declaration_alignment import (
+    SkillDeclarationAlignmentGrader,
+)
 from openjudge.graders.skills.design import SkillDesignGrader
+from openjudge.graders.skills.relevance import SkillRelevanceGrader
 from openjudge.graders.skills.threat_analysis import SkillThreatAnalysisGrader
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
@@ -150,23 +152,18 @@ class SkillGradingResult:
         ]
         _dim_labels = {
             "threat_analysis": "Threat Analysis",
-            "alignment":       "Alignment",
-            "completeness":    "Completeness",
-            "relevance":       "Relevance",
-            "structure":       "Structure",
+            "alignment": "Alignment",
+            "completeness": "Completeness",
+            "relevance": "Relevance",
+            "structure": "Structure",
         }
         for dim_name, d in self.dimension_scores.items():
             label = _dim_labels.get(dim_name, dim_name.replace("_", " ").title())
             if d.error:
-                lines.append(
-                    f"| {label} | — | — | {d.weight:.1f} | ⚠️ Error |"
-                )
+                lines.append(f"| {label} | — | — | {d.weight:.1f} | ⚠️ Error |")
             else:
                 status = "✅ Pass" if d.passed else "❌ Fail"
-                lines.append(
-                    f"| {label} | {d.score:.0f} | {d.normalized_score:.2f}"
-                    f" | {d.weight:.1f} | {status} |"
-                )
+                lines.append(f"| {label} | {d.score:.0f} | {d.normalized_score:.2f}" f" | {d.weight:.1f} | {status} |")
         lines.append("")
 
         # ── Per-dimension detail ───────────────────────────────────────────
@@ -231,10 +228,10 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
 
 DEFAULT_THRESHOLDS: Dict[str, float] = {
     "threat_analysis": 3.0,  # [1, 4]: LOW severity or better → pass
-    "alignment": 2.0,        # [1, 3]: Uncertain or better → pass
-    "completeness": 2.0,     # [1, 3]: Partially complete or better → pass
-    "relevance": 2.0,        # [1, 3]: Partial match or better → pass
-    "structure": 2.0,        # [1, 3]: Partially sound or better → pass
+    "alignment": 2.0,  # [1, 3]: Uncertain or better → pass
+    "completeness": 2.0,  # [1, 3]: Partially complete or better → pass
+    "relevance": 2.0,  # [1, 3]: Partial match or better → pass
+    "structure": 2.0,  # [1, 3]: Partially sound or better → pass
 }
 
 
@@ -398,9 +395,7 @@ class SkillsGradingRunner(GradingRunner):
         )
         return self._to_dimension_score("alignment", result, grader.name)
 
-    async def _grade_completeness(
-        self, skill: SkillPackage, task_description: Optional[str] = None
-    ) -> DimensionScore:
+    async def _grade_completeness(self, skill: SkillPackage, task_description: Optional[str] = None) -> DimensionScore:
         grader = self.grader_configs["completeness"].grader
         task_desc = task_description or skill.description
         result = await grader.aevaluate(
@@ -413,9 +408,7 @@ class SkillsGradingRunner(GradingRunner):
         )
         return self._to_dimension_score("completeness", result, grader.name)
 
-    async def _grade_relevance(
-        self, skill: SkillPackage, task_description: Optional[str] = None
-    ) -> DimensionScore:
+    async def _grade_relevance(self, skill: SkillPackage, task_description: Optional[str] = None) -> DimensionScore:
         grader = self.grader_configs["relevance"].grader
         task_desc = task_description or skill.description
         result = await grader.aevaluate(
@@ -478,16 +471,12 @@ class SkillsGradingRunner(GradingRunner):
         total_weight = sum(d.weight for d in dimension_scores.values() if d.error is None)
         if total_weight == 0.0:
             return 0.0
-        weighted_sum = sum(
-            d.weighted_contribution for d in dimension_scores.values() if d.error is None
-        )
+        weighted_sum = sum(d.weighted_contribution for d in dimension_scores.values() if d.error is None)
         return weighted_sum / total_weight
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    async def agrade_skill(
-        self, skill: SkillPackage, task_description: Optional[str] = None
-    ) -> SkillGradingResult:
+    async def agrade_skill(self, skill: SkillPackage, task_description: Optional[str] = None) -> SkillGradingResult:
         """Grade a single :class:`SkillPackage` across all enabled dimensions.
 
         Dimensions are evaluated concurrently (bounded by *concurrency*).

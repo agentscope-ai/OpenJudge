@@ -15,10 +15,12 @@ For multi-dimensional skill evaluation using all graders combined, see
 ``cookbooks/skills_evaluation/runner.py`` (SkillsGradingRunner).
 """
 
-from openjudge.graders.skills.declaration_alignment import SkillDeclarationAlignmentGrader
 from openjudge.graders.skills.completeness import SkillCompletenessGrader
-from openjudge.graders.skills.relevance import SkillRelevanceGrader
+from openjudge.graders.skills.declaration_alignment import (
+    SkillDeclarationAlignmentGrader,
+)
 from openjudge.graders.skills.design import SkillDesignGrader
+from openjudge.graders.skills.relevance import SkillRelevanceGrader
 from openjudge.graders.skills.threat_analysis import SkillThreatAnalysisGrader
 
 __all__ = [

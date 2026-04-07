@@ -166,10 +166,7 @@ class SkillPackage:
         attribute findings to specific files.  Passed as the ``scripts`` argument
         to :class:`SkillThreatAnalysisGrader`.
         """
-        parts = [
-            f"=== {sf.relative_path} ===\n{sf.content}"
-            for sf in self.get_scripts()
-        ]
+        parts = [f"=== {sf.relative_path} ===\n{sf.content}" for sf in self.get_scripts()]
         return "\n\n".join(parts)
 
     @property
@@ -180,10 +177,7 @@ class SkillPackage:
         *not* executable scripts.  Passed as the ``referenced_files`` argument to
         :class:`SkillThreatAnalysisGrader`.
         """
-        ref_files = [
-            f for f in self.files
-            if f.relative_path in self.referenced_files and not f.is_script
-        ]
+        ref_files = [f for f in self.files if f.relative_path in self.referenced_files and not f.is_script]
         parts = [f"=== {sf.relative_path} ===\n{sf.content}" for sf in ref_files]
         return "\n\n".join(parts)
 
@@ -195,10 +189,7 @@ class SkillPackage:
     @property
     def reference_contents(self) -> List[str]:
         """Return text content of each non-script referenced file."""
-        return [
-            f.content for f in self.files
-            if f.relative_path in self.referenced_files and not f.is_script
-        ]
+        return [f.content for f in self.files if f.relative_path in self.referenced_files and not f.is_script]
 
 
 # ── Skill Loader ───────────────────────────────────────────────────────────────
@@ -244,7 +235,7 @@ class SkillLoader:
             return None, skill_md_content
 
         raw_yaml = m.group(1)
-        instruction_body = skill_md_content[m.end():]
+        instruction_body = skill_md_content[m.end() :]
 
         try:
             data = yaml.safe_load(raw_yaml) or {}
@@ -257,20 +248,21 @@ class SkillLoader:
         if not name:
             return None, instruction_body
 
-        return SkillManifest(
-            name=name,
-            description=description,
-            license=data.get("license"),
-            compatibility=data.get("compatibility"),
-            allowed_tools=data.get("allowed-tools") or data.get("allowed_tools") or [],
-            metadata=data.get("metadata"),
-            raw_yaml=raw_yaml,
-        ), instruction_body
+        return (
+            SkillManifest(
+                name=name,
+                description=description,
+                license=data.get("license"),
+                compatibility=data.get("compatibility"),
+                allowed_tools=data.get("allowed-tools") or data.get("allowed_tools") or [],
+                metadata=data.get("metadata"),
+                raw_yaml=raw_yaml,
+            ),
+            instruction_body,
+        )
 
     @classmethod
-    def _collect_files(
-        cls, skill_dir: Path, skill_md_path: Path
-    ) -> tuple[List[SkillFile], List[str]]:
+    def _collect_files(cls, skill_dir: Path, skill_md_path: Path) -> tuple[List[SkillFile], List[str]]:
         """Collect all non-SKILL.md files from a skill directory."""
         files: List[SkillFile] = []
         referenced_files: List[str] = []
