@@ -405,21 +405,14 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
     def _build_messages(self, example: dict) -> List[dict]:
         """Build chat messages from example - Pointwise mode with text format only."""
         messages = []
-
-        # Check if it's the new JSON structure (has 'input' key with nested structure)
-        if "input" in example and isinstance(example["input"], dict) and "query" in example["input"]:
-            # New JSON format
+        # Check if example has 'query' directly at top level
+        if "query" in example and isinstance(example["query"], str) and example["query"]:
+            query = example["query"]
+            messages.append({"role": "user", "content": query})
+        # Check if example has 'input' key with nested structure
+        elif "input" in example and isinstance(example["input"], dict) and "query" in example["input"]:
             query = example["input"].get("query", "")
-            if query:
-                messages.append({"role": "user", "content": query})
-
-            # Get chosen response (positive example)
-            if "chosen" in example and isinstance(example["chosen"], dict):
-                response_data = example["chosen"].get("response", {})
-                if isinstance(response_data, dict):
-                    response_content = response_data.get("content", "")
-                    if response_content:
-                        messages.append({"role": "assistant", "content": response_content})
+            messages.append({"role": "user", "content": query})
         else:
             # Old format - handle standard structure
             messages = self._build_old_format_messages(example)
@@ -615,8 +608,37 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
         memory = ""
         action = ""
         reflection = ""
-        if "input" in example and isinstance(example["input"], dict) and "query" in example["input"]:
-            # New JSON format
+        query = ""
+
+        # Check if example has fields directly at top level
+        if "query" in example and isinstance(example["query"], str):
+            query = example.get("query", "")
+            if "context" in example:
+                context = example.get("context", "")
+                if isinstance(context, str):
+                    try:
+                        parsed_data = json.loads(context)
+                        if isinstance(parsed_data, dict):
+                            context = parsed_data.get("task_context", "")
+                            tool_definitions = parsed_data.get("tool_definitions", "")
+                            history = parsed_data.get("history", "")
+                    except (json.JSONDecodeError, TypeError, Exception):
+                        pass
+                elif isinstance(context, dict):
+                    context = context.get("task_context", "")
+                    tool_definitions = context.get("tool_definitions", "")
+                    history = context.get("history", "")
+            reference_response = example.get("reference_response", "")
+            # Extract fields directly from example top level
+            response = example.get("response", "")
+            tool_calls = example.get("tool_calls", "")
+            tool_responses = example.get("tool_responses", "")
+            plan = example.get("plan", "")
+            observation = example.get("observation", "")
+            memory = example.get("memory", "")
+            action = example.get("action", "")
+            reflection = example.get("reflection", "")
+        elif "input" in example and isinstance(example["input"], dict) and "query" in example["input"]:
             query = example["input"].get("query", "")
             context = example["input"].get("context", "")
             if context:

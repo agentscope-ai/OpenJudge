@@ -136,51 +136,53 @@ def process_single_file(data_file: str, split_ratio: float, seed: int, sample_nu
                 is_bin = True
 
             try:
-                if (
-                    item["chosen"]
-                    and item["chosen"]["response"]
-                    and "tool_calls" in item["chosen"]["response"]
-                    and isinstance(item["chosen"]["response"].get("tool_calls", []), list)
-                ):
-                    item["chosen"]["response"]["tool_calls"] = json.dumps(item["chosen"]["response"]["tool_calls"])
+                # Process chosen response
+                if item["chosen"] and item["chosen"].get("response"):
+                    chosen_response = item["chosen"]["response"]
+                    if "tool_calls" in chosen_response and isinstance(chosen_response.get("tool_calls", []), list):
+                        chosen_response["tool_calls"] = json.dumps(chosen_response["tool_calls"])
+                    if "content" in chosen_response:
+                        chosen_response["response"] = chosen_response.pop("content")
 
-                if (
-                    item["rejected"]
-                    and item["rejected"]["response"]
-                    and "tool_calls" in item["rejected"]["response"]
-                    and isinstance(item["rejected"]["response"].get("tool_calls", []), list)
-                ):
-                    item["rejected"]["response"]["tool_calls"] = json.dumps(item["rejected"]["response"]["tool_calls"])
+                # Process rejected response
+                if item["rejected"] and item["rejected"].get("response"):
+                    rejected_response = item["rejected"]["response"]
+                    if "tool_calls" in rejected_response and isinstance(rejected_response.get("tool_calls", []), list):
+                        rejected_response["tool_calls"] = json.dumps(rejected_response["tool_calls"])
+                    if "content" in rejected_response:
+                        rejected_response["response"] = rejected_response.pop("content")
 
                 if item["input"] and item["input"].get("context", "") and not isinstance(item["input"]["context"], str):
                     item["input"]["context"] = json.dumps(item["input"]["context"])
             except Exception as e:
                 raise e
+
+            # Create new_item with response key removed
             if "chosen" not in item or not item["chosen"]:
                 print(f"Warning: Missing chosen answer in item {item} from {data_file}. Skipping item.")
             else:
-                output_data.append(
-                    {
-                        "input": item["input"],
-                        "answer": item["chosen"],
-                        "label": 1,  # positive example
-                        "score": 1.0 if is_bin else 5.0,
-                        "task_type": task_type,
-                    }
-                )
+                chosen_response = item["chosen"].get("response", item["chosen"])
+                new_item_chosen = {
+                    **item["input"],
+                    **chosen_response,
+                    "label": 1,  # positive example
+                    "score": 1.0 if is_bin else 5.0,
+                    "task_type": task_type,
+                }
+                output_data.append(new_item_chosen)
 
             if "rejected" not in item or not item["rejected"]:
                 print(f"Warning: Missing rejected answer in item {item} from {data_file}. Skipping item.")
             else:
-                output_data.append(
-                    {
-                        "input": item["input"],
-                        "answer": item["rejected"],
-                        "label": 0,  # negative example
-                        "score": 0.0 if is_bin else 1.0,
-                        "task_type": task_type,
-                    }
-                )
+                rejected_response = item["rejected"].get("response", item["rejected"])
+                new_item_rejected = {
+                    **item["input"],
+                    **rejected_response,
+                    "label": 0,  # negative example
+                    "score": 0.0 if is_bin else 1.0,
+                    "task_type": task_type,
+                }
+                output_data.append(new_item_rejected)
     except KeyError as e:
         print(f"Error: Missing required key {e} in file {data_file}")
         return False
