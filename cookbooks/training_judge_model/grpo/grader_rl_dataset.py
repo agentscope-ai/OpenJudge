@@ -206,9 +206,14 @@ class BaseChatRLDataset(Dataset):
                 if prompt is None and prompt_key in doc:
                     prompt = doc[prompt_key]
 
-                # Keep samples where prompt can't be extracted (safer than dropping data)
+                # Fallback to top-level 'query' field (common in new training data format)
+                if prompt is None and "query" in doc and isinstance(doc["query"], str):
+                    prompt = doc["query"]
+
+                # Log warning if prompt cannot be extracted (for debugging)
                 if not prompt or not isinstance(prompt, str):
-                    return True
+                    logger.warning(f"Cannot extract prompt from doc keys: {list(doc.keys())}")
+                    return True  # Keep sample as fallback
 
                 # Check token length
                 return len(tokenizer.encode(prompt)) <= max_length
@@ -406,8 +411,8 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
         """Build chat messages from example - Pointwise mode with text format only."""
         messages = []
         # Check if example has 'query' directly at top level
-        if "query" in example and isinstance(example["query"], str) and example["query"]:
-            query = example["query"]
+        if "query" in example:
+            query = example.get("query", "")
             messages.append({"role": "user", "content": query})
         # Check if example has 'input' key with nested structure
         elif "input" in example and isinstance(example["input"], dict) and "query" in example["input"]:
@@ -611,7 +616,7 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
         query = ""
 
         # Check if example has fields directly at top level
-        if "query" in example and isinstance(example["query"], str):
+        if "query" in example:
             query = example.get("query", "")
             if "context" in example:
                 context = example.get("context", "")
@@ -625,10 +630,10 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
                     except (json.JSONDecodeError, TypeError, Exception):
                         pass
                 elif isinstance(context, dict):
-                    context = context.get("task_context", "")
                     tool_definitions = context.get("tool_definitions", "")
                     history = context.get("history", "")
-            reference_response = example.get("reference_response", "")
+                    context = context.get("task_context", "")
+            reference_response = example.get("reference", "")
             # Extract fields directly from example top level
             response = example.get("response", "")
             tool_calls = example.get("tool_calls", "")
@@ -644,9 +649,9 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
             if context:
                 if isinstance(context, dict):
                     # Extract fields directly if context is already a dictionary
-                    context = context.get("task_context", "")
                     tool_definitions = context.get("tool_definitions", "")
                     history = context.get("history", "")
+                    context = context.get("task_context", "")
                 elif isinstance(context, str):
                     try:
                         # Attempt to parse JSON string into a dictionary
@@ -736,11 +741,12 @@ class PointwiseChatRLDataset(BaseChatRLDataset):
         """Extract pointwise ground truth label with configurable fields."""
         try:
             score_value = 0
-            # Check if it's the new JSON structure
-            if "input" in row_dict and isinstance(row_dict["input"], dict) and "query" in row_dict["input"]:
-                # New JSON format - extract score value
-                if "score" in row_dict:
-                    score_value = row_dict["score"]
+            # Check if score is directly at top level of row_dict
+            if "score" in row_dict and (
+                "query" in row_dict
+                or ("input" in row_dict and isinstance(row_dict["input"], dict) and "query" in row_dict["input"])
+            ):
+                score_value = row_dict["score"]
             else:
                 # Old format - use original logic
                 output_key = self.dataset_config.output_field
