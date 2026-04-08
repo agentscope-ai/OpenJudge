@@ -137,6 +137,16 @@ It can also convert grading results into **reward signals** to help you **fine-t
     </p>
   </a>
 
+  <a href="built_in_graders/skills/" class="feature-card">
+    <div class="card-header">
+      <img src="https://unpkg.com/lucide-static@latest/icons/shield-check.svg" class="card-icon card-icon-agent">
+      <h3>Skill</h3>
+    </div>
+    <p class="card-desc">
+      Evaluate AI Agent Skill packages across security, design, and task-fit dimensions. Assess threat analysis, declaration alignment, completeness, relevance, and structural design quality.
+    </p>
+  </a>
+
 </div>
 
 
