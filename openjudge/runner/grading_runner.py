@@ -191,9 +191,7 @@ class GradingRunner(BaseRunner):
         self.show_progress = show_progress
         self.executor = executor or SemaphoreResourceExecutor(max_concurrency)
         self.enable_timing = enable_timing or timing_collector is not None
-        self.timing_collector = timing_collector or (
-            TimingCollector() if self.enable_timing else None
-        )
+        self.timing_collector = timing_collector or (TimingCollector() if self.enable_timing else None)
 
         # Handle aggregators
         if not aggregators:
@@ -438,10 +436,7 @@ class GradingRunner(BaseRunner):
                     grader_results[aggregator_name] = [None] * len(dataset)
                     for i in range(len(dataset)):
                         grader_results[aggregator_name][i] = aggregator(
-                            {
-                                grader_name: grader_results[grader_name][i]
-                                for grader_name in self.grader_configs.keys()
-                            },
+                            {grader_name: grader_results[grader_name][i] for grader_name in self.grader_configs.keys()},
                         )
             return grader_results
 
