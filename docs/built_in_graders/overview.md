@@ -168,7 +168,7 @@ Evaluate vision-language tasks and image quality. [→ Detailed Documentation](m
 Evaluate AI Agent Skill packages across security, design, and task-fit dimensions. [→ Detailed Documentation](skills.md)
 
 || Grader | Description | Type | Score Range |
-|||--------|-------------|------|-------------|
+||--------|-------------|------|-------------|
 || `SkillThreatAnalysisGrader` | Security threat scanner using AITech taxonomy | LLM-Based | 1-4 |
 || `SkillDeclarationAlignmentGrader` | Detects mismatches between declared and actual behavior | LLM-Based | 1-3 |
 || `SkillCompletenessGrader` | Checks if skill provides sufficient detail to act on | LLM-Based | 1-3 |

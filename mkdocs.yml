@@ -31,6 +31,7 @@ nav:
       - Code & Math Graders: built_in_graders/code_math.md
       - Text Graders: built_in_graders/text.md
       - Format Graders: built_in_graders/format.md
+      - Skill Graders: built_in_graders/skills.md
 
   - Building Graders:
       - Overview: building_graders/overview.md
