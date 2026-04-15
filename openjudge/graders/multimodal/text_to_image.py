@@ -17,6 +17,7 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
     BaseEvaluationStrategy,
 )
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
+from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.multimodal._internal import MLLMImage, format_image_content
 from openjudge.graders.schema import GraderScoreCallback
 from openjudge.models.base_chat_model import BaseChatModel
@@ -210,11 +211,19 @@ DEFAULT_TEXT_TO_IMAGE_SEMANTIC_TEMPLATE = PromptTemplate(
     messages={
         LanguageEnum.EN: [
             ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
                 role="user",
                 content=TEXT_TO_IMAGE_SEMANTIC_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
             ChatMessage(
                 role="user",
                 content=TEXT_TO_IMAGE_SEMANTIC_PROMPT_ZH,
@@ -227,11 +236,19 @@ DEFAULT_TEXT_TO_IMAGE_PERCEPTUAL_TEMPLATE = PromptTemplate(
     messages={
         LanguageEnum.EN: [
             ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
                 role="user",
                 content=TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_EN,
             ),
         ],
         LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
             ChatMessage(
                 role="user",
                 content=TEXT_TO_IMAGE_PERCEPTUAL_PROMPT_ZH,

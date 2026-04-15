@@ -14,6 +14,7 @@ from loguru import logger
 
 from openjudge.agentic import BaseTool, ReActAgent, ToolResult
 from openjudge.graders.agentic_grader import AgenticGrader
+from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderError, GraderMode, GraderScore
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.schema.oai.message import ChatMessage
@@ -203,10 +204,24 @@ SEARCH_CORRECTNESS_PROMPT_ZH = textwrap.dedent(
 DEFAULT_SEARCH_CORRECTNESS_TEMPLATE = PromptTemplate(
     messages={
         LanguageEnum.EN: [
-            ChatMessage(role="user", content=SEARCH_CORRECTNESS_PROMPT_EN),
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
+                role="user",
+                content=SEARCH_CORRECTNESS_PROMPT_EN,
+            ),
         ],
         LanguageEnum.ZH: [
-            ChatMessage(role="user", content=SEARCH_CORRECTNESS_PROMPT_ZH),
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
+            ChatMessage(
+                role="user",
+                content=SEARCH_CORRECTNESS_PROMPT_ZH,
+            ),
         ],
     },
 )
