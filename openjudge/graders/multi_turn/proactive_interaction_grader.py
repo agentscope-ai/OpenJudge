@@ -145,11 +145,25 @@ JSON:
 
 DEFAULT_PROACTIVE_INTERACTION_TEMPLATE = PromptTemplate(
     messages={
-        LanguageEnum.ZH: [
-            ChatMessage(role="user", content=PROACTIVE_INTERACTION_PROMPT_ZH),
-        ],
         LanguageEnum.EN: [
-            ChatMessage(role="user", content=PROACTIVE_INTERACTION_PROMPT_EN),
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
+                role="user",
+                content=PROACTIVE_INTERACTION_PROMPT_EN,
+            ),
+        ],
+        LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
+            ChatMessage(
+                role="user",
+                content=PROACTIVE_INTERACTION_PROMPT_ZH,
+            ),
         ],
     },
 )

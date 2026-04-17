@@ -148,11 +148,25 @@ JSON:
 
 DEFAULT_RESPONSE_REPETITION_TEMPLATE = PromptTemplate(
     messages={
-        LanguageEnum.ZH: [
-            ChatMessage(role="user", content=RESPONSE_REPETITION_PROMPT_ZH),
-        ],
         LanguageEnum.EN: [
-            ChatMessage(role="user", content=RESPONSE_REPETITION_PROMPT_EN),
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
+                role="user",
+                content=RESPONSE_REPETITION_PROMPT_EN,
+            ),
+        ],
+        LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
+            ChatMessage(
+                role="user",
+                content=RESPONSE_REPETITION_PROMPT_ZH,
+            ),
         ],
     },
 )

@@ -143,11 +143,25 @@ JSON:
 
 DEFAULT_TOPIC_SWITCH_TEMPLATE = PromptTemplate(
     messages={
-        LanguageEnum.ZH: [
-            ChatMessage(role="user", content=TOPIC_SWITCH_PROMPT_ZH),
-        ],
         LanguageEnum.EN: [
-            ChatMessage(role="user", content=TOPIC_SWITCH_PROMPT_EN),
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
+                role="user",
+                content=TOPIC_SWITCH_PROMPT_EN,
+            ),
+        ],
+        LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
+            ChatMessage(
+                role="user",
+                content=TOPIC_SWITCH_PROMPT_ZH,
+            ),
         ],
     },
 )

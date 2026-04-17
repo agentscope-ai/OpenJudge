@@ -140,11 +140,25 @@ JSON:
 
 DEFAULT_CONTEXT_MEMORY_TEMPLATE = PromptTemplate(
     messages={
-        LanguageEnum.ZH: [
-            ChatMessage(role="user", content=CONTEXT_MEMORY_PROMPT_ZH),
-        ],
         LanguageEnum.EN: [
-            ChatMessage(role="user", content=CONTEXT_MEMORY_PROMPT_EN),
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_EN,
+            ),
+            ChatMessage(
+                role="user",
+                content=CONTEXT_MEMORY_PROMPT_EN,
+            ),
+        ],
+        LanguageEnum.ZH: [
+            ChatMessage(
+                role="system",
+                content=LLMGrader.SYSTEM_PROMPT_ZH,
+            ),
+            ChatMessage(
+                role="user",
+                content=CONTEXT_MEMORY_PROMPT_ZH,
+            ),
         ],
     },
 )
