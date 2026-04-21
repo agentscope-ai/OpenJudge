@@ -9,8 +9,6 @@ redundant tool calls, and wasteful exploration.
 
 from typing import Any, Dict, List, Optional
 
-from loguru import logger
-
 from openjudge.evaluation_strategy.base_evaluation_strategy import (
     BaseEvaluationStrategy,
 )
