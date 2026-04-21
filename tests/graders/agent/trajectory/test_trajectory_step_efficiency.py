@@ -20,7 +20,6 @@ Example:
 """
 
 import os
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -439,7 +438,12 @@ class TestTrajectoryStepEfficiencyGraderUnit:
                     }
                 ],
             },
-            {"role": "tool", "tool_call_id": "call_1", "name": "search", "content": "Weather in Beijing is sunny and warm"},
+            {
+                "role": "tool",
+                "tool_call_id": "call_1",
+                "name": "search",
+                "content": "Weather in Beijing is sunny and warm",
+            },
             {
                 "role": "assistant",
                 "content": "",
@@ -451,7 +455,12 @@ class TestTrajectoryStepEfficiencyGraderUnit:
                     }
                 ],
             },
-            {"role": "tool", "tool_call_id": "call_2", "name": "search", "content": "Weather in Beijing is sunny and warm"},
+            {
+                "role": "tool",
+                "tool_call_id": "call_2",
+                "name": "search",
+                "content": "Weather in Beijing is sunny and warm",
+            },
             {"role": "assistant", "content": "Beijing is sunny."},
         ]
 
@@ -553,7 +562,11 @@ class TestTrajectoryStepEfficiencyGraderQuality:
                 "role": "assistant",
                 "content": "",
                 "tool_calls": [
-                    {"id": "call_1", "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'}, "type": "function"}
+                    {
+                        "id": "call_1",
+                        "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "tool_call_id": "call_1", "name": "get_weather", "content": "Sunny, 20°C"},
@@ -566,7 +579,11 @@ class TestTrajectoryStepEfficiencyGraderQuality:
                 "role": "assistant",
                 "content": "",
                 "tool_calls": [
-                    {"id": "call_1", "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'}, "type": "function"}
+                    {
+                        "id": "call_1",
+                        "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "tool_call_id": "call_1", "name": "get_weather", "content": "Sunny, 20°C"},
@@ -574,7 +591,11 @@ class TestTrajectoryStepEfficiencyGraderQuality:
                 "role": "assistant",
                 "content": "",
                 "tool_calls": [
-                    {"id": "call_2", "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'}, "type": "function"}
+                    {
+                        "id": "call_2",
+                        "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "tool_call_id": "call_2", "name": "get_weather", "content": "Sunny, 20°C"},
@@ -582,7 +603,11 @@ class TestTrajectoryStepEfficiencyGraderQuality:
                 "role": "assistant",
                 "content": "",
                 "tool_calls": [
-                    {"id": "call_3", "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'}, "type": "function"}
+                    {
+                        "id": "call_3",
+                        "function": {"name": "get_weather", "arguments": '{"city": "Beijing"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "tool_call_id": "call_3", "name": "get_weather", "content": "Sunny, 20°C"},

@@ -158,7 +158,11 @@ class TestTrajectoryErrorRecoveryGraderUnit:
             result = await grader.aevaluate(messages=messages)
 
             assert result.score == 0.0
-            assert "repeat" in result.reason.lower() or "ignore" in result.reason.lower() or "adapt" in result.reason.lower()
+            assert (
+                "repeat" in result.reason.lower()
+                or "ignore" in result.reason.lower()
+                or "adapt" in result.reason.lower()
+            )
 
     @pytest.mark.asyncio
     async def test_empty_messages(self):
@@ -432,7 +436,11 @@ class TestTrajectoryErrorRecoveryGraderQuality:
                 "role": "assistant",
                 "content": "I'll search in /etc directory.",
                 "tool_calls": [
-                    {"id": "call_1", "function": {"name": "search", "arguments": '{"path": "/etc"}'}, "type": "function"}
+                    {
+                        "id": "call_1",
+                        "function": {"name": "search", "arguments": '{"path": "/etc"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "name": "search", "content": "Error: Permission denied"},
@@ -440,7 +448,11 @@ class TestTrajectoryErrorRecoveryGraderQuality:
                 "role": "assistant",
                 "content": "Permission denied. Let me try the user directory instead.",
                 "tool_calls": [
-                    {"id": "call_2", "function": {"name": "search", "arguments": '{"path": "/home/user"}'}, "type": "function"}
+                    {
+                        "id": "call_2",
+                        "function": {"name": "search", "arguments": '{"path": "/home/user"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "name": "search", "content": "Found: /home/user/config.yaml"},
@@ -463,7 +475,11 @@ class TestTrajectoryErrorRecoveryGraderQuality:
                 "role": "assistant",
                 "content": "I'll search for the file.",
                 "tool_calls": [
-                    {"id": "call_1", "function": {"name": "search", "arguments": '{"path": "/etc"}'}, "type": "function"}
+                    {
+                        "id": "call_1",
+                        "function": {"name": "search", "arguments": '{"path": "/etc"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "name": "search", "content": "Error: Permission denied"},
@@ -471,7 +487,11 @@ class TestTrajectoryErrorRecoveryGraderQuality:
                 "role": "assistant",
                 "content": "Let me try again.",
                 "tool_calls": [
-                    {"id": "call_2", "function": {"name": "search", "arguments": '{"path": "/etc"}'}, "type": "function"}
+                    {
+                        "id": "call_2",
+                        "function": {"name": "search", "arguments": '{"path": "/etc"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "name": "search", "content": "Error: Permission denied"},
@@ -479,7 +499,11 @@ class TestTrajectoryErrorRecoveryGraderQuality:
                 "role": "assistant",
                 "content": "Trying once more.",
                 "tool_calls": [
-                    {"id": "call_3", "function": {"name": "search", "arguments": '{"path": "/etc"}'}, "type": "function"}
+                    {
+                        "id": "call_3",
+                        "function": {"name": "search", "arguments": '{"path": "/etc"}'},
+                        "type": "function",
+                    }
                 ],
             },
             {"role": "tool", "name": "search", "content": "Error: Permission denied"},

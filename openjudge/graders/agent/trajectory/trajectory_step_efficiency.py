@@ -121,10 +121,7 @@ class TrajectoryStepEfficiencyGrader(BaseGrader):
             # Check observation redundancy
             obs_redundant = False
             if previous_observations:
-                max_sim = max(
-                    calculate_text_similarity(observation, prev_obs)
-                    for prev_obs in previous_observations
-                )
+                max_sim = max(calculate_text_similarity(observation, prev_obs) for prev_obs in previous_observations)
                 if max_sim >= self.redundancy_threshold:
                     obs_redundant = True
 
@@ -143,11 +140,13 @@ class TrajectoryStepEfficiencyGrader(BaseGrader):
 
             if obs_redundant and action_redundant:
                 redundant_steps += 1
-                redundant_details.append({
-                    "step": i,
-                    "signature": current_signature,
-                    "reason": "Both action and observation are redundant",
-                })
+                redundant_details.append(
+                    {
+                        "step": i,
+                        "signature": current_signature,
+                        "reason": "Both action and observation are redundant",
+                    }
+                )
             else:
                 productive_steps += 1
 
