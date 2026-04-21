@@ -259,7 +259,7 @@ class TrajectoryErrorRecoveryGrader(LLMGrader):
             context: Optional task context
 
         Returns:
-            GraderScore: Score with binary value (1.0 = good recovery, 0.0 = poor recovery)
+            GraderScore: Score indicating error recovery quality
         """
         if not messages:
             return GraderScore(
@@ -279,22 +279,19 @@ class TrajectoryErrorRecoveryGrader(LLMGrader):
             )
             score = result.score
             reason = result.reason
-            normalized_score = 1.0 if score > 0.5 else 0.0
 
         except Exception as e:
             logger.error(f"Error evaluating trajectory error recovery: {e}")
-            normalized_score = 0.0
             score = 0.0
             reason = f"Evaluation error: {str(e)}"
 
         metadata = {
-            "raw_score": score,
             "evaluation_type": "trajectory_error_recovery",
         }
 
         return GraderScore(
             name=self.name,
-            score=normalized_score,
+            score=score,
             reason=reason,
             metadata=metadata,
         )

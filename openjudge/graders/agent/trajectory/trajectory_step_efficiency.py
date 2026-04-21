@@ -165,7 +165,7 @@ class TrajectoryStepEfficiencyGrader(BaseGrader):
         else:
             combined_score = efficiency_ratio
 
-        normalized_score = max(0.0, min(1.0, combined_score))
+        score = max(0.0, min(1.0, combined_score))
 
         # Build reason
         reason_parts = [
@@ -182,7 +182,7 @@ class TrajectoryStepEfficiencyGrader(BaseGrader):
 
         return GraderScore(
             name=self.name,
-            score=normalized_score,
+            score=score,
             reason="; ".join(reason_parts),
             metadata={
                 "total_steps": total_steps,

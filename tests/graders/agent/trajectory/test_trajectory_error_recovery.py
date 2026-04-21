@@ -246,59 +246,6 @@ class TestTrajectoryErrorRecoveryGraderUnit:
 
             assert result.score == 1.0
 
-    @pytest.mark.asyncio
-    async def test_score_normalization(self):
-        """Test that scores are normalized to binary (0.0 or 1.0)"""
-        mock_response = AsyncMock()
-        mock_response.parsed = {
-            "score": 0.7,
-            "reason": "Moderate error recovery",
-        }
-
-        with patch("openjudge.graders.llm_grader.BaseChatModel.achat", new_callable=AsyncMock) as mock_achat:
-            mock_achat.return_value = mock_response
-
-            mock_model = AsyncMock()
-            grader = TrajectoryErrorRecoveryGrader(model=mock_model)
-            grader.model.achat = mock_achat
-
-            messages = [
-                {"role": "user", "content": "Test query"},
-                {"role": "assistant", "content": "Test response"},
-            ]
-
-            result = await grader.aevaluate(messages=messages)
-
-            # Score > 0.5 should be normalized to 1.0
-            assert result.score == 1.0
-            assert result.metadata["raw_score"] == 0.7
-
-    @pytest.mark.asyncio
-    async def test_score_normalization_below_threshold(self):
-        """Test that score <= 0.5 is normalized to 0.0"""
-        mock_response = AsyncMock()
-        mock_response.parsed = {
-            "score": 0.3,
-            "reason": "Poor error recovery",
-        }
-
-        with patch("openjudge.graders.llm_grader.BaseChatModel.achat", new_callable=AsyncMock) as mock_achat:
-            mock_achat.return_value = mock_response
-
-            mock_model = AsyncMock()
-            grader = TrajectoryErrorRecoveryGrader(model=mock_model)
-            grader.model.achat = mock_achat
-
-            messages = [
-                {"role": "user", "content": "Test query"},
-                {"role": "assistant", "content": "Test response"},
-            ]
-
-            result = await grader.aevaluate(messages=messages)
-
-            assert result.score == 0.0
-            assert result.metadata["raw_score"] == 0.3
-
     def test_format_messages_string_content(self):
         """Test _format_messages with string content"""
         mock_model = AsyncMock()
@@ -393,7 +340,6 @@ class TestTrajectoryErrorRecoveryGraderUnit:
 
             result = await grader.aevaluate(messages=messages)
 
-            assert "raw_score" in result.metadata
             assert "evaluation_type" in result.metadata
             assert result.metadata["evaluation_type"] == "trajectory_error_recovery"
 
