@@ -20,6 +20,7 @@ DEFAULT_API_ENDPOINTS: dict[str, str] = {
     "DashScope": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "OpenAI": "https://api.openai.com/v1",
     "DeepSeek": "https://api.deepseek.com/v1",
+    "Qiniu": "https://api.qnaigc.com/v1",
     "Custom": "",
 }
 
@@ -39,6 +40,7 @@ DEFAULT_MODELS: list[str] = [
     "o3-mini",
     "o4-mini",
     # DeepSeek
+    "deepseek-v3",
     "deepseek-v3.2",
     "deepseek-r1",
 ]
