@@ -197,7 +197,6 @@ class PlanFeasibilityGrader(LLMGrader):
 
         Args:
             model: BaseChatModel instance or dict config for OpenAIChatModel
-            threshold: Success threshold [1, 5] (default: 3)
             template: PromptTemplate for evaluation prompts (default: DEFAULT_PLAN_FEASIBILITY_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
             strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
