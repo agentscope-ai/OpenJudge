@@ -280,18 +280,23 @@ class TrajectoryErrorRecoveryGrader(LLMGrader):
             score = result.score
             reason = result.reason
 
+            # Ensure score is binary (0.0 or 1.0)
+            normalized_score = 1.0 if score > 0.5 else 0.0
+
         except Exception as e:
             logger.error(f"Error evaluating trajectory error recovery: {e}")
+            normalized_score = 0.0
             score = 0.0
             reason = f"Evaluation error: {str(e)}"
 
         metadata = {
+            "raw_score": score,
             "evaluation_type": "trajectory_error_recovery",
         }
 
         return GraderScore(
             name=self.name,
-            score=score,
+            score=normalized_score,
             reason=reason,
             metadata=metadata,
         )
