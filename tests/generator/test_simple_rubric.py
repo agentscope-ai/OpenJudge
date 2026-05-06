@@ -30,6 +30,7 @@ Example:
 """
 
 import asyncio
+import os
 
 import pytest
 from loguru import logger
@@ -43,6 +44,15 @@ from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderMode, GraderScore
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
+RUN_INTEGRATION_TESTS = bool(OPENAI_API_KEY and OPENAI_BASE_URL)
+
+pytestmark = pytest.mark.skipif(
+    not RUN_INTEGRATION_TESTS,
+    reason="Requires OPENAI_API_KEY and OPENAI_BASE_URL environment variables",
+)
 
 # =============================================================================
 # Test Data

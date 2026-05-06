@@ -33,6 +33,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from loguru import logger
+
 
 class Language(Enum):
     """Language enum for prompt validation."""
@@ -453,7 +455,7 @@ class PromptFormatChecker:
         try:
             tree = ast.parse(content)
         except SyntaxError as e:
-            print(f"  ⚠️ Syntax error in {file_path}: {e}")
+            logger.warning(f"Syntax error in {file_path}: {e}")
             return prompts
 
         for node in ast.walk(tree):
@@ -473,7 +475,7 @@ class PromptFormatChecker:
                                     if extracted:
                                         prompts[var_name] = extracted
                             except Exception:
-                                pass
+                                logger.debug(f"Failed to extract prompt from variable {var_name} in {file_path}")
 
         return prompts
 
