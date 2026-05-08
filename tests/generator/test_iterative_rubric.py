@@ -33,6 +33,7 @@ Example:
 """
 
 import asyncio
+import os
 from copy import deepcopy
 
 import pytest
@@ -47,6 +48,15 @@ from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.schema import GraderRank, GraderScore
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
+RUN_INTEGRATION_TESTS = bool(OPENAI_API_KEY and OPENAI_BASE_URL)
+
+pytestmark = pytest.mark.skipif(
+    not RUN_INTEGRATION_TESTS,
+    reason="Requires OPENAI_API_KEY and OPENAI_BASE_URL environment variables",
+)
 
 # pylint: disable=line-too-long
 
