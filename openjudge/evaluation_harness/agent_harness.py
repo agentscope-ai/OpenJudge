@@ -479,6 +479,7 @@ def build_harness(grader_name: str, **overrides) -> GraderHarness:
     config = {**AGENT_HARNESS_REGISTRY[grader_name], **overrides}
     grader_class = _import_grader_class(config.pop("grader_class_import"))
     extract_fn = config.pop("extract_fn")
+    config.pop("category", None)
 
     harness = GraderHarness(
         grader_class=grader_class,
