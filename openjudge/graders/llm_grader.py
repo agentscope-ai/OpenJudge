@@ -337,8 +337,8 @@ class LLMGrader(BaseGrader):
         parsed = getattr(chat_response, "parsed", {}) or {}
 
         if self.mode == GraderMode.LISTWISE:
-            rank = parsed.pop("rank")
-            reason = parsed.pop("reason")
+            rank = parsed.pop("rank", [])
+            reason = parsed.pop("reason", "")
             result = GraderRank(
                 name=self.name,
                 rank=rank,  # type: ignore
@@ -346,8 +346,8 @@ class LLMGrader(BaseGrader):
                 metadata=parsed,  # type: ignore
             )
         elif self.mode == GraderMode.POINTWISE:
-            score = parsed.pop("score")
-            reason = str(parsed.pop("reason"))
+            score = parsed.pop("score", 0)
+            reason = str(parsed.pop("reason", ""))
             result = GraderScore(
                 name=self.name,
                 score=score,  # type: ignore
