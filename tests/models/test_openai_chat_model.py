@@ -297,6 +297,77 @@ class TestOpenAIChatModel:
             "data:;base64,",
         )
 
+    @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
+    def test_qwen_enable_thinking_user_value_preserved(self, mock_async_openai):
+        """Test that user-provided enable_thinking in extra_body is not overwritten for Qwen models."""
+        mock_instance = mock_async_openai.return_value
+        mock_instance.chat.completions.create = AsyncMock(
+            return_value=ChatCompletion(
+                id="test-id",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        message=ChatCompletionMessage(content="OK", role="assistant"),
+                    ),
+                ],
+                created=1234567890,
+                model="qwen3-32b",
+                object="chat.completion",
+            )
+        )
+
+        with patch("openjudge.models.openai_chat_model.AsyncOpenAI") as mock_ctor:
+            mock_ctor.return_value = mock_instance
+            model = OpenAIChatModel(
+                model="qwen3-32b",
+                api_key="test-key",
+                base_url="https://api.openai.com/v1",
+                extra_body={"enable_thinking": True},
+            )
+
+            messages = [{"role": "user", "content": "Hello"}]
+            asyncio.run(model.achat(messages=messages))
+
+            call_kwargs = mock_instance.chat.completions.create.call_args[1]
+            # User's value should be preserved
+            assert call_kwargs["extra_body"]["enable_thinking"] is True
+
+    @patch("openjudge.models.openai_chat_model.AsyncOpenAI")
+    def test_qwen_enable_thinking_default_when_not_provided(self, mock_async_openai):
+        """Test that enable_thinking defaults to False for Qwen models when not provided."""
+        mock_instance = mock_async_openai.return_value
+        mock_instance.chat.completions.create = AsyncMock(
+            return_value=ChatCompletion(
+                id="test-id",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        message=ChatCompletionMessage(content="OK", role="assistant"),
+                    ),
+                ],
+                created=1234567890,
+                model="qwen3-32b",
+                object="chat.completion",
+            )
+        )
+
+        with patch("openjudge.models.openai_chat_model.AsyncOpenAI") as mock_ctor:
+            mock_ctor.return_value = mock_instance
+            model = OpenAIChatModel(
+                model="qwen3-32b",
+                api_key="test-key",
+                base_url="https://api.openai.com/v1",
+            )
+
+            messages = [{"role": "user", "content": "Hello"}]
+            asyncio.run(model.achat(messages=messages))
+
+            call_kwargs = mock_instance.chat.completions.create.call_args[1]
+            # Default should be False
+            assert call_kwargs["extra_body"]["enable_thinking"] is False
+
     @pytest.mark.parametrize(
         "init_kwargs, expected_in_call, not_expected_in_call",
         [

@@ -214,7 +214,8 @@ class OpenAIChatModel(BaseChatModel):
         if not self.stream and ("qwen" in self.model.lower() or "pai-judge" in self.model.lower()):
             if "extra_body" not in kwargs:
                 kwargs["extra_body"] = {}
-            kwargs["extra_body"]["enable_thinking"] = False
+            if "enable_thinking" not in kwargs["extra_body"]:
+                kwargs["extra_body"]["enable_thinking"] = False
 
         # Add tools and tool_choice to kwargs if provided
         if tools:
