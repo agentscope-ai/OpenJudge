@@ -195,7 +195,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "memory",
     },
     "memory_detail_preservation": {
-        "grader_class_import": "openjudge.graders.agent.memory.memory_detail_preservation:MemoryDetailPreservationGrader",
+        "grader_class_import": "openjudge.graders.agent.memory.memory_detail_preservation:"
+        "MemoryDetailPreservationGrader",
         "data_file": "memory_detail_preservation.json",
         "hf_subdir": "agent/memory",
         "eval_mode": "pairwise",
@@ -205,7 +206,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "memory",
     },
     "memory_retrieval_effectiveness": {
-        "grader_class_import": "openjudge.graders.agent.memory.memory_retrieval_effectiveness:MemoryRetrievalEffectivenessGrader",
+        "grader_class_import": "openjudge.graders.agent.memory.memory_retrieval_effectiveness:"
+        "MemoryRetrievalEffectivenessGrader",
         "data_file": "memory_retrieval_effectiveness.json",
         "hf_subdir": "agent/memory",
         "eval_mode": "pairwise",
@@ -216,7 +218,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
     },
     # === Observation ===
     "observation_information_gain": {
-        "grader_class_import": "openjudge.graders.agent.observation.observation_information_gain:ObservationInformationGainGrader",
+        "grader_class_import": "openjudge.graders.agent.observation.observation_information_gain:"
+        "ObservationInformationGainGrader",
         "data_file": "observation_information_gain.json",
         "hf_subdir": "agent/observation",
         "eval_mode": "pairwise",
@@ -279,7 +282,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "reflection",
     },
     "reflection_outcome_understanding": {
-        "grader_class_import": "openjudge.graders.agent.reflection.reflection_outcome_understanding:ReflectionOutcomeUnderstandingGrader",
+        "grader_class_import": "openjudge.graders.agent.reflection.reflection_outcome_understanding:"
+        "ReflectionOutcomeUnderstandingGrader",
         "data_file": "reflection_outcome_understanding.json",
         "hf_subdir": "agent/reflection",
         "eval_mode": "pairwise",
@@ -289,7 +293,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "reflection",
     },
     "reflection_progress_awareness": {
-        "grader_class_import": "openjudge.graders.agent.reflection.reflection_progress_awareness:ReflectionProgressAwarenessGrader",
+        "grader_class_import": "openjudge.graders.agent.reflection.reflection_progress_awareness:"
+        "ReflectionProgressAwarenessGrader",
         "data_file": "reflection_progress_awareness.json",
         "hf_subdir": "agent/reflection",
         "eval_mode": "pairwise",
@@ -361,7 +366,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "tool",
     },
     "tool_call_precision_recall_match": {
-        "grader_class_import": "openjudge.graders.agent.tool.tool_call_precision_recall_match:ToolCallPrecisionRecallMatchGrader",
+        "grader_class_import": "openjudge.graders.agent.tool.tool_call_precision_recall_match:"
+        "ToolCallPrecisionRecallMatchGrader",
         "data_file": "tool_call_precision_recall_match.json",
         "hf_subdir": "agent/tool",
         "eval_mode": "pairwise",
@@ -371,7 +377,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "tool",
     },
     "tool_call_step_sequence_match": {
-        "grader_class_import": "openjudge.graders.agent.tool.tool_call_step_sequence_match:ToolCallStepSequenceMatchGrader",
+        "grader_class_import": "openjudge.graders.agent.tool.tool_call_step_sequence_match:"
+        "ToolCallStepSequenceMatchGrader",
         "data_file": "tool_call_step_sequence_match.json",
         "hf_subdir": "agent/tool",
         "eval_mode": "pairwise",
@@ -402,7 +409,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "trajectory",
     },
     "trajectory_error_recovery": {
-        "grader_class_import": "openjudge.graders.agent.trajectory.trajectory_error_recovery:TrajectoryErrorRecoveryGrader",
+        "grader_class_import": "openjudge.graders.agent.trajectory.trajectory_error_recovery:"
+        "TrajectoryErrorRecoveryGrader",
         "data_file": "trajectory_error_recovery.json",
         "hf_subdir": "agent/trajectory",
         "eval_mode": "pairwise",
@@ -412,7 +420,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "trajectory",
     },
     "trajectory_step_efficiency": {
-        "grader_class_import": "openjudge.graders.agent.trajectory.trajectory_step_efficiency:TrajectoryStepEfficiencyGrader",
+        "grader_class_import": "openjudge.graders.agent.trajectory.trajectory_step_efficiency:"
+        "TrajectoryStepEfficiencyGrader",
         "data_file": "trajectory_step_efficiency.json",
         "hf_subdir": "agent/trajectory",
         "eval_mode": "pairwise",
@@ -422,7 +431,8 @@ AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "trajectory",
     },
     "trajectory_comprehensive": {
-        "grader_class_import": "openjudge.graders.agent.trajectory.trajectory_comprehensive:TrajectoryComprehensiveGrader",
+        "grader_class_import": "openjudge.graders.agent.trajectory.trajectory_comprehensive:"
+        "TrajectoryComprehensiveGrader",
         "data_file": "trajectory_comprehensive.json",
         "hf_subdir": "agent/trajectory",
         "eval_mode": "pairwise",
@@ -469,7 +479,6 @@ def build_harness(grader_name: str, **overrides) -> GraderHarness:
     config = {**AGENT_HARNESS_REGISTRY[grader_name], **overrides}
     grader_class = _import_grader_class(config.pop("grader_class_import"))
     extract_fn = config.pop("extract_fn")
-    category = config.pop("category")
 
     harness = GraderHarness(
         grader_class=grader_class,

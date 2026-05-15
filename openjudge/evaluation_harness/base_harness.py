@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
 
 from openjudge.graders.base_grader import BaseGrader
-from openjudge.graders.schema import GraderError, GraderScore
+from openjudge.graders.schema import GraderError
 
 
 @dataclass
@@ -405,7 +405,7 @@ class GraderHarness:
 
         # Print summary
         print(f"\n{'=' * 60}")
-        print(f"EVALUATION RESULTS")
+        print("EVALUATION RESULTS")
         print(f"{'=' * 60}")
         print(f"Grader: {self.grader_class.__name__}")
         print(f"Model: {model_name or 'N/A (rule-based)'}")
