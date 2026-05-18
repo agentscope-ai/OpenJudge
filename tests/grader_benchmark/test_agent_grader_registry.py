@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Tests for agent_harness module — extraction functions, registry, and build_harness.
+Tests for agent_grader_registry module — extraction functions, registry, and build_benchmark.
 """
 
 import pytest
 
-from openjudge.evaluation_harness.agent_harness import (
-    AGENT_HARNESS_REGISTRY,
+from openjudge.grader_benchmark.agent_grader_registry import (
+    AGENT_GRADER_REGISTRY,
     _extract_messages_inputs,
     _extract_response_inputs,
     _extract_step_inputs,
@@ -14,11 +14,11 @@ from openjudge.evaluation_harness.agent_harness import (
     _extract_tool_sequence_inputs,
     _extract_trajectory_inputs,
     _import_grader_class,
-    build_harness,
+    build_benchmark,
     get_all_categories,
     get_graders_by_category,
 )
-from openjudge.evaluation_harness.base_harness import GraderHarness
+from openjudge.grader_benchmark.benchmark import GraderBenchmark
 from openjudge.graders.agent.action.action_loop import ActionLoopDetectionGrader
 
 # ============================================================
@@ -406,20 +406,20 @@ class TestImportGraderClass:
 # ============================================================
 
 
-class TestAgentHarnessRegistry:
-    """Tests for AGENT_HARNESS_REGISTRY and query functions."""
+class TestAgentGraderRegistry:
+    """Tests for AGENT_GRADER_REGISTRY and query functions."""
 
     def test_registry_not_empty(self):
-        assert len(AGENT_HARNESS_REGISTRY) > 0
+        assert len(AGENT_GRADER_REGISTRY) > 0
 
     def test_registry_required_fields(self):
         required = ["grader_class_import", "data_file", "eval_mode", "needs_model", "category", "extract_fn"]
-        for name, config in AGENT_HARNESS_REGISTRY.items():
+        for name, config in AGENT_GRADER_REGISTRY.items():
             for field in required:
                 assert field in config, f"Missing '{field}' in '{name}'"
 
     def test_all_grader_classes_importable(self):
-        for name, config in AGENT_HARNESS_REGISTRY.items():
+        for name, config in AGENT_GRADER_REGISTRY.items():
             cls = _import_grader_class(config["grader_class_import"])
             assert cls is not None, f"Failed to import grader class for '{name}'"
 
@@ -459,60 +459,60 @@ class TestAgentHarnessRegistry:
 
 
 # ============================================================
-# build_harness
+# build_benchmark
 # ============================================================
 
 
-class TestBuildHarness:
-    """Tests for build_harness."""
+class TestBuildBenchmark:
+    """Tests for build_benchmark."""
 
-    def test_build_rule_based_harness(self):
-        harness = build_harness("action_loop_detection")
-        assert isinstance(harness, GraderHarness)
-        assert harness.needs_model is False
-        assert harness.grader_class == ActionLoopDetectionGrader
+    def test_build_rule_based_benchmark(self):
+        benchmark = build_benchmark("action_loop_detection")
+        assert isinstance(benchmark, GraderBenchmark)
+        assert benchmark.needs_model is False
+        assert benchmark.grader_class == ActionLoopDetectionGrader
 
-    def test_build_harness_extracts_correct_fn(self):
-        harness = build_harness("action_loop_detection")
-        # The harness should have the messages extraction function assigned
-        assert harness.extract_inputs is _extract_messages_inputs
+    def test_build_benchmark_extracts_correct_fn(self):
+        benchmark = build_benchmark("action_loop_detection")
+        # The benchmark should have the messages extraction function assigned
+        assert benchmark.extract_inputs is _extract_messages_inputs
 
-    def test_build_harness_with_overrides(self):
-        harness = build_harness("action_loop_detection", data_file="custom.json")
-        assert harness.data_file == "custom.json"
+    def test_build_benchmark_with_overrides(self):
+        benchmark = build_benchmark("action_loop_detection", data_file="custom.json")
+        assert benchmark.data_file == "custom.json"
 
-    def test_build_harness_unknown_grader(self):
+    def test_build_benchmark_unknown_grader(self):
         with pytest.raises(KeyError, match="Unknown grader"):
-            build_harness("nonexistent_grader")
+            build_benchmark("nonexistent_grader")
 
-    def test_build_harness_extract_fn_for_step_graders(self):
-        harness = build_harness("action_alignment")
-        assert harness.extract_inputs is _extract_step_inputs
+    def test_build_benchmark_extract_fn_for_step_graders(self):
+        benchmark = build_benchmark("action_alignment")
+        assert benchmark.extract_inputs is _extract_step_inputs
 
-    def test_build_harness_extract_fn_for_tool_graders(self):
-        harness = build_harness("tool_selection")
-        assert harness.extract_inputs is _extract_tool_inputs
+    def test_build_benchmark_extract_fn_for_tool_graders(self):
+        benchmark = build_benchmark("tool_selection")
+        assert benchmark.extract_inputs is _extract_tool_inputs
 
-    def test_build_harness_extract_fn_for_trajectory_graders(self):
-        harness = build_harness("trajectory_accuracy")
-        assert harness.extract_inputs is _extract_trajectory_inputs
+    def test_build_benchmark_extract_fn_for_trajectory_graders(self):
+        benchmark = build_benchmark("trajectory_accuracy")
+        assert benchmark.extract_inputs is _extract_trajectory_inputs
 
-    def test_build_harness_extract_fn_for_response_graders(self):
-        harness = build_harness("response_completeness")
-        assert harness.extract_inputs is _extract_response_inputs
+    def test_build_benchmark_extract_fn_for_response_graders(self):
+        benchmark = build_benchmark("response_completeness")
+        assert benchmark.extract_inputs is _extract_response_inputs
 
-    def test_build_harness_extract_fn_for_tool_sequence_graders(self):
-        harness = build_harness("tool_call_step_sequence_match")
-        assert harness.extract_inputs is _extract_tool_sequence_inputs
+    def test_build_benchmark_extract_fn_for_tool_sequence_graders(self):
+        benchmark = build_benchmark("tool_call_step_sequence_match")
+        assert benchmark.extract_inputs is _extract_tool_sequence_inputs
 
-    def test_build_harness_grader_kwargs(self):
-        harness = build_harness("action_loop_detection")
-        assert harness.grader_kwargs == {"similarity_threshold": 1.0}
+    def test_build_benchmark_grader_kwargs(self):
+        benchmark = build_benchmark("action_loop_detection")
+        assert benchmark.grader_kwargs == {"similarity_threshold": 1.0}
 
-    def test_build_harness_each_category_has_graders(self):
+    def test_build_benchmark_each_category_has_graders(self):
         for category in get_all_categories():
             graders = get_graders_by_category(category)
             assert len(graders) > 0, f"Category '{category}' has no graders"
             for name in graders:
-                harness = build_harness(name)
-                assert isinstance(harness, GraderHarness)
+                benchmark = build_benchmark(name)
+                assert isinstance(benchmark, GraderBenchmark)

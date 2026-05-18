@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Base Evaluation Harness for OpenJudge Graders.
+Base Grader Benchmark for OpenJudge Graders.
 
-Provides the GraderHarness class — a reusable framework for running
-grader evaluations against benchmark datasets with support for both
-pairwise (chosen vs rejected) and pointwise (score vs threshold) modes.
+Provides the GraderBenchmark class — a reusable framework for running grader
+evaluations against benchmark datasets with support for both pairwise
+(chosen vs rejected) and pointwise (score vs threshold) modes.
 """
 
 import json
@@ -19,8 +19,8 @@ from openjudge.graders.schema import GraderError
 
 
 @dataclass
-class EvalResult:
-    """Result of a grader evaluation run."""
+class BenchmarkResult:
+    """Result of a grader benchmark run."""
 
     grader_name: str
     model_name: str
@@ -33,8 +33,8 @@ class EvalResult:
     error_output: str = ""
 
 
-class GraderHarness:
-    """Base harness for running grader evaluations.
+class GraderBenchmark:
+    """Base benchmark for running grader evaluations.
 
     Provides reusable evaluation logic including:
     - Dataset loading (local JSON or HuggingFace)
@@ -47,12 +47,12 @@ class GraderHarness:
     to customize per-grader behavior.
 
     Example:
-        >>> harness = GraderHarness(
+        >>> benchmark = GraderBenchmark(
         ...     grader_class=ActionLoopDetectionGrader,
         ...     data_file="action_loop_detection.json",
         ...     eval_mode="pairwise",
         ... )
-        >>> result = await harness.evaluate(model_name="qwen3-max")
+        >>> result = await benchmark.evaluate(model_name="qwen3-max")
         >>> print(f"Accuracy: {result.accuracy:.2%}")
     """
 
@@ -67,7 +67,7 @@ class GraderHarness:
         hf_subdir: str = "",
         grader_kwargs: Optional[Dict[str, Any]] = None,
     ):
-        """Initialize GraderHarness.
+        """Initialize GraderBenchmark.
 
         Args:
             grader_class: The grader class to evaluate.
@@ -172,7 +172,7 @@ class GraderHarness:
         grader: BaseGrader,
         dataset: List[dict],
         verbose: bool = False,
-    ) -> EvalResult:
+    ) -> BenchmarkResult:
         """Run pairwise evaluation (chosen > rejected).
 
         Args:
@@ -181,7 +181,7 @@ class GraderHarness:
             verbose: Whether to print per-sample results.
 
         Returns:
-            EvalResult with pairwise accuracy.
+            BenchmarkResult with pairwise accuracy.
         """
         start_time = time.time()
         correct_count = 0
@@ -247,7 +247,7 @@ class GraderHarness:
         accuracy = correct_count / total_count if total_count > 0 else 0.0
         elapsed = time.time() - start_time
 
-        return EvalResult(
+        return BenchmarkResult(
             grader_name=grader.name,
             model_name="",
             accuracy=accuracy,
@@ -264,7 +264,7 @@ class GraderHarness:
         dataset: List[dict],
         score_threshold: float = 0.5,
         verbose: bool = False,
-    ) -> EvalResult:
+    ) -> BenchmarkResult:
         """Run pointwise evaluation (score vs threshold).
 
         For each sample, checks if the grader score meets the expected
@@ -278,7 +278,7 @@ class GraderHarness:
             verbose: Whether to print per-sample results.
 
         Returns:
-            EvalResult with pointwise accuracy.
+            BenchmarkResult with pointwise accuracy.
         """
         start_time = time.time()
         correct_count = 0
@@ -329,7 +329,7 @@ class GraderHarness:
         accuracy = correct_count / total_count if total_count > 0 else 0.0
         elapsed = time.time() - start_time
 
-        return EvalResult(
+        return BenchmarkResult(
             grader_name=grader.name,
             model_name="",
             accuracy=accuracy,
@@ -345,7 +345,7 @@ class GraderHarness:
         model_name: str = "",
         local_dir: Optional[str] = None,
         verbose: bool = False,
-    ) -> EvalResult:
+    ) -> BenchmarkResult:
         """Run the full evaluation.
 
         Args:
@@ -354,13 +354,13 @@ class GraderHarness:
             verbose: Whether to print per-sample results.
 
         Returns:
-            EvalResult with evaluation metrics.
+            BenchmarkResult with evaluation metrics.
         """
         # Load dataset
         try:
             dataset = await self.load_dataset(local_dir)
         except Exception as e:
-            return EvalResult(
+            return BenchmarkResult(
                 grader_name=self.grader_class.__name__,
                 model_name=model_name,
                 status=f"load_error: {e}",
@@ -376,7 +376,7 @@ class GraderHarness:
             api_key = os.getenv("OPENAI_API_KEY")
             base_url = os.getenv("OPENAI_BASE_URL")
             if not api_key:
-                return EvalResult(
+                return BenchmarkResult(
                     grader_name=self.grader_class.__name__,
                     model_name=model_name,
                     status="missing_api_key",
@@ -405,7 +405,7 @@ class GraderHarness:
 
         # Print summary
         print(f"\n{'=' * 60}")
-        print("EVALUATION RESULTS")
+        print("BENCHMARK RESULTS")
         print(f"{'=' * 60}")
         print(f"Grader: {self.grader_class.__name__}")
         print(f"Model: {model_name or 'N/A (rule-based)'}")
@@ -416,11 +416,11 @@ class GraderHarness:
 
         return result
 
-    def print_results(self, result: EvalResult) -> None:
+    def print_results(self, result: BenchmarkResult) -> None:
         """Print detailed results including error cases.
 
         Args:
-            result: The evaluation result to print.
+            result: The benchmark result to print.
         """
         errors = [r for r in result.results if not r.get("is_correct", False)]
         if errors:

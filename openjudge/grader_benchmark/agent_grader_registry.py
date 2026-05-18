@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Agent Grader Harness Registry.
+Agent Grader Benchmark Registry.
 
-Maps grader names to their harness configurations, specifying
+Maps grader names to their benchmark configurations, specifying
 grader class, data file, evaluation mode, and input extraction logic.
 """
 
 from typing import Any, Dict, List, Optional
 
-from openjudge.evaluation_harness.base_harness import GraderHarness
+from openjudge.grader_benchmark.benchmark import GraderBenchmark
 
 
 def _extract_step_inputs(sample: dict, side: str = "chosen") -> Optional[dict]:
@@ -159,8 +159,8 @@ def _extract_tool_sequence_inputs(sample: dict, side: str = "chosen") -> Optiona
     return kwargs
 
 
-# Registry of all agent grader harness configurations
-AGENT_HARNESS_REGISTRY: Dict[str, Dict[str, Any]] = {
+# Registry of all agent grader benchmark configurations
+AGENT_GRADER_REGISTRY: Dict[str, Dict[str, Any]] = {
     # === Action ===
     "action_alignment": {
         "grader_class_import": "openjudge.graders.agent.action.action_alignment:ActionAlignmentGrader",
@@ -460,28 +460,28 @@ def _import_grader_class(import_path: str):
     return getattr(module, class_name)
 
 
-def build_harness(grader_name: str, **overrides) -> GraderHarness:
-    """Build a GraderHarness instance from the registry.
+def build_benchmark(grader_name: str, **overrides) -> GraderBenchmark:
+    """Build a GraderBenchmark instance from the registry.
 
     Args:
         grader_name: Name of the grader in the registry.
         **overrides: Override any registry config fields.
 
     Returns:
-        A configured GraderHarness instance.
+        A configured GraderBenchmark instance.
 
     Raises:
         KeyError: If grader_name is not in the registry.
     """
-    if grader_name not in AGENT_HARNESS_REGISTRY:
-        raise KeyError(f"Unknown grader: {grader_name}. " f"Available: {sorted(AGENT_HARNESS_REGISTRY.keys())}")
+    if grader_name not in AGENT_GRADER_REGISTRY:
+        raise KeyError(f"Unknown grader: {grader_name}. " f"Available: {sorted(AGENT_GRADER_REGISTRY.keys())}")
 
-    config = {**AGENT_HARNESS_REGISTRY[grader_name], **overrides}
+    config = {**AGENT_GRADER_REGISTRY[grader_name], **overrides}
     grader_class = _import_grader_class(config.pop("grader_class_import"))
     extract_fn = config.pop("extract_fn")
     config.pop("category", None)
 
-    harness = GraderHarness(
+    benchmark = GraderBenchmark(
         grader_class=grader_class,
         data_file=config.pop("data_file"),
         eval_mode=config.pop("eval_mode", "pairwise"),
@@ -492,9 +492,9 @@ def build_harness(grader_name: str, **overrides) -> GraderHarness:
         **config,
     )
     # Override extract_inputs with the custom extraction function
-    harness.extract_inputs = extract_fn
+    benchmark.extract_inputs = extract_fn
 
-    return harness
+    return benchmark
 
 
 def get_graders_by_category(category: str) -> List[str]:
@@ -506,12 +506,12 @@ def get_graders_by_category(category: str) -> List[str]:
     Returns:
         List of grader names in that category.
     """
-    return [name for name, config in AGENT_HARNESS_REGISTRY.items() if config.get("category") == category]
+    return [name for name, config in AGENT_GRADER_REGISTRY.items() if config.get("category") == category]
 
 
 def get_all_categories() -> List[str]:
     """Get all unique categories."""
     categories = set()
-    for config in AGENT_HARNESS_REGISTRY.values():
+    for config in AGENT_GRADER_REGISTRY.values():
         categories.add(config.get("category", ""))
     return sorted(categories)
