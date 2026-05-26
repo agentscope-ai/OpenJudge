@@ -27,7 +27,11 @@ from openjudge.graders.base_grader import (
     GraderRank,
     GraderScore,
 )
-from openjudge.graders.schema import GraderRankCallback, GraderScoreCallback
+from openjudge.graders.schema import (
+    EvalFeedback,
+    GraderRankCallback,
+    GraderScoreCallback,
+)
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.oai.message import ChatMessage
@@ -336,6 +340,17 @@ class LLMGrader(BaseGrader):
 
         parsed = getattr(chat_response, "parsed", {}) or {}
 
+        # Extract common fields before creating result objects
+        eval_feedback_data = parsed.pop("eval_feedback", None)
+
+        # Build EvalFeedback from raw data
+        eval_feedback = None
+        if eval_feedback_data is not None:
+            if isinstance(eval_feedback_data, EvalFeedback):
+                eval_feedback = eval_feedback_data
+            elif isinstance(eval_feedback_data, dict):
+                eval_feedback = EvalFeedback(**eval_feedback_data)
+
         if self.mode == GraderMode.LISTWISE:
             rank = parsed.pop("rank", [])
             reason = parsed.pop("reason", "")
@@ -352,6 +367,7 @@ class LLMGrader(BaseGrader):
                 name=self.name,
                 score=score,  # type: ignore
                 reason=reason,  # type: ignore
+                eval_feedback=eval_feedback,
                 metadata=parsed,  # type: ignore
             )
         else:

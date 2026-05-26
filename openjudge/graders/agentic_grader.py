@@ -255,6 +255,19 @@ class AgenticGrader(BaseGrader):
         # Parse result
         parsed = self._parse_agent_output(agent_result.content)
 
+        # Extract common fields before creating result objects
+        eval_feedback_data = parsed.pop("eval_feedback", None)
+
+        # Build EvalFeedback from raw data
+        from openjudge.graders.schema import EvalFeedback
+
+        eval_feedback = None
+        if eval_feedback_data is not None:
+            if isinstance(eval_feedback_data, EvalFeedback):
+                eval_feedback = eval_feedback_data
+            elif isinstance(eval_feedback_data, dict):
+                eval_feedback = EvalFeedback(**eval_feedback_data)
+
         # Build result based on mode
         if self.mode == GraderMode.LISTWISE:
             rank = parsed.pop("rank")
@@ -272,6 +285,7 @@ class AgenticGrader(BaseGrader):
                 name=self.name,
                 score=float(score),
                 reason=reason,
+                eval_feedback=eval_feedback,
                 metadata=parsed,
             )
 
