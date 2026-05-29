@@ -3,11 +3,11 @@
 Schemas for grading tasks.
 
 This module defines the data schemas used in grading tasks, including grader modes,
-result structures, and error handling.
+result structures, eval feedback, and error handling.
 """
 
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -34,6 +34,48 @@ class GraderMode(str, Enum):
 
     POINTWISE = "pointwise"
     LISTWISE = "listwise"
+
+
+class EvalSuggestion(BaseModel):
+    """A suggestion for improving the evaluation itself.
+
+    Used when the grader detects weak assertions, missing coverage,
+    or assertions that would pass for clearly wrong outputs.
+
+    Attributes:
+        assertion: The original assertion text this relates to (optional).
+        reason: Why this suggestion is needed.
+
+    Example:
+        >>> s = EvalSuggestion(
+        ...     assertion="The output includes the name 'John Smith'",
+        ...     reason="A hallucinated document would also pass this check"
+        ... )
+    """
+
+    assertion: Optional[str] = Field(default=None, description="The assertion this relates to")
+    reason: str = Field(description="Why this suggestion is needed")
+
+
+class EvalFeedback(BaseModel):
+    """Feedback on the quality of the evaluation itself.
+
+    Follows the principle that a passing grade on a weak assertion is worse
+    than useless — it creates false confidence.
+
+    Attributes:
+        suggestions: List of concrete improvement suggestions.
+        overall: Brief assessment of the eval quality.
+
+    Example:
+        >>> f = EvalFeedback(
+        ...     suggestions=[EvalSuggestion(reason="No assertion checks correctness")],
+        ...     overall="Assertions check presence but not correctness"
+        ... )
+    """
+
+    suggestions: List[EvalSuggestion] = Field(default_factory=list, description="Improvement suggestions")
+    overall: str = Field(default="No suggestions, evals look solid", description="Brief assessment")
 
 
 class GraderResult(BaseModel):
@@ -90,6 +132,9 @@ class GraderScore(GraderResult):
 
     reason: str = Field(description="reason")
     score: float = Field(description="score")
+    eval_feedback: Optional[EvalFeedback] = Field(
+        default=None, description="Feedback on the quality of the evaluation itself"
+    )
 
 
 class GraderScoreCallback(BaseModel):

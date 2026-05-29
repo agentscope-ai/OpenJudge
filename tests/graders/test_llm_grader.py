@@ -40,7 +40,7 @@ from openjudge.graders.base_grader import (
     GraderScore,
 )
 from openjudge.graders.llm_grader import LLMGrader
-from openjudge.graders.schema import GraderError
+from openjudge.graders.schema import EvalFeedback, GraderError
 from openjudge.models.openai_chat_model import OpenAIChatModel
 from openjudge.models.schema.prompt_template import LanguageEnum
 from openjudge.runner.grading_runner import GraderConfig, GradingRunner
@@ -326,6 +326,109 @@ class TestLLMGraderUnit:
         # Test from_config
         reconstructed_grader = LLMGrader.from_config(config)
         assert reconstructed_grader.name == "serialization_test"
+
+    @pytest.mark.asyncio
+    async def test_pointwise_with_eval_feedback(self):
+        """Test pointwise evaluation extracts eval_feedback from LLM output"""
+        mock_response = AsyncMock()
+        mock_response.parsed = {
+            "score": 4.0,
+            "reason": "Mostly accurate",
+            "eval_feedback": {
+                "suggestions": [{"reason": "Add numeric accuracy check"}],
+                "overall": "Assertions check presence but not correctness",
+            },
+        }
+
+        mock_model = AsyncMock()
+        mock_model.achat = AsyncMock(return_value=mock_response)
+
+        grader = LLMGrader(
+            model=mock_model,
+            name="test_grader",
+            template="Query: {query}\nResponse: {response}",
+            mode=GraderMode.POINTWISE,
+        )
+
+        result = await grader.aevaluate(query="Q", response="R")
+
+        assert isinstance(result, GraderScore)
+        assert result.eval_feedback is not None
+        assert result.eval_feedback.overall == "Assertions check presence but not correctness"
+        assert len(result.eval_feedback.suggestions) == 1
+
+    @pytest.mark.asyncio
+    async def test_pointwise_without_eval_feedback(self):
+        """Test pointwise evaluation when LLM output has no eval_feedback"""
+        mock_response = AsyncMock()
+        mock_response.parsed = {
+            "score": 3.0,
+            "reason": "Average response",
+        }
+
+        mock_model = AsyncMock()
+        mock_model.achat = AsyncMock(return_value=mock_response)
+
+        grader = LLMGrader(
+            model=mock_model,
+            name="test_grader",
+            template="Query: {query}\nResponse: {response}",
+            mode=GraderMode.POINTWISE,
+        )
+
+        result = await grader.aevaluate(query="Q", response="R")
+
+        assert isinstance(result, GraderScore)
+        assert result.eval_feedback is None
+
+    @pytest.mark.asyncio
+    async def test_pointwise_eval_feedback_not_in_metadata(self):
+        """Test that eval_feedback is popped from parsed and not leaked into metadata"""
+        mock_response = AsyncMock()
+        mock_response.parsed = {
+            "score": 5.0,
+            "reason": "Perfect",
+            "eval_feedback": {"overall": "Good", "suggestions": []},
+        }
+
+        mock_model = AsyncMock()
+        mock_model.achat = AsyncMock(return_value=mock_response)
+
+        grader = LLMGrader(
+            model=mock_model,
+            name="test_grader",
+            template="Query: {query}\nResponse: {response}",
+            mode=GraderMode.POINTWISE,
+        )
+
+        result = await grader.aevaluate(query="Q", response="R")
+
+        assert "eval_feedback" not in result.metadata
+
+    @pytest.mark.asyncio
+    async def test_listwise_ignores_eval_feedback(self):
+        """Test that listwise mode does not pass eval_feedback to GraderRank"""
+        mock_response = AsyncMock()
+        mock_response.parsed = {
+            "rank": [1, 2],
+            "reason": "First is better",
+            "eval_feedback": {"overall": "OK"},
+        }
+
+        mock_model = AsyncMock()
+        mock_model.achat = AsyncMock(return_value=mock_response)
+
+        grader = LLMGrader(
+            model=mock_model,
+            name="test_grader",
+            template="Query: {query}\nR1: {response_1}\nR2: {response_2}",
+            mode=GraderMode.LISTWISE,
+        )
+
+        result = await grader.aevaluate(query="Q", response_1="R1", response_2="R2")
+
+        assert isinstance(result, GraderRank)
+        assert not hasattr(result, "eval_feedback")
 
 
 # ==================== QUALITY TESTS ====================
