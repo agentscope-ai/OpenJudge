@@ -56,6 +56,8 @@ dependencies = [
     "rouge-score>=0.1.2",
     "python-Levenshtein>=0.20.0",
     "scikit-learn>=1.0.0",
+    "PyYAML>=6.0.0",
+    "python-dotenv",
 ]
 
 [project.optional-dependencies]

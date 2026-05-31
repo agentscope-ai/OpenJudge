@@ -116,8 +116,8 @@ skill-name/
 | 属性 | 说明 |
 |------|------|
 | **类** | `SkillDesignGrader` |
-| **量表** | 1–3（3 = 优秀，1 = 较差） |
-| **默认通过阈值** | ≥ 2（Partially sound 或更好） |
+| **量表** | 1–5（5 = 优秀，1 = 较差） |
+| **默认通过阈值** | ≥ 3（Adequate 或更好） |
 
 从 **7 个子维度**评估技能包的内部设计质量：
 
@@ -140,7 +140,7 @@ skill-name/
 安装依赖：
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 在项目根目录的 `.env` 文件中配置模型：
@@ -255,8 +255,8 @@ Time  : 5.0s
     reason: The skill provides clear goals, explicit steps via Python code snippets…
   [relevance        ] ✅  score=3  norm=1.00  w=1.0
     reason: The skill's name, description, and content directly address the task…
-  [structure        ] ✅  score=2  norm=0.50  w=1.0
-    reason: The skill fails significantly on Knowledge Delta (D1)…
+  [structure        ] ✅  score=3  norm=0.50  w=1.0
+    reason: The skill is adequate but has gaps in Knowledge Delta (D1)…
 ```
 
 ### Markdown 报告
@@ -289,7 +289,7 @@ _Total skills evaluated: **1** — Passed: **1** / 1_
 | Alignment | 3 | 1.00 | 1.0 | ✅ Pass |
 | Completeness | 3 | 1.00 | 1.0 | ✅ Pass |
 | Relevance | 3 | 1.00 | 1.0 | ✅ Pass |
-| Structure | 2 | 0.50 | 1.0 | ✅ Pass |
+| Structure | 3 | 0.50 | 1.0 | ✅ Pass |
 
 ## Dimension Details
 
@@ -319,9 +319,9 @@ The skill's name, description, and content directly address the task of improvin
 
 ### Structure
 
-- **Score:** 2  |  **Normalised:** 0.50  |  **Weight:** 1.0  |  **Result:** ✅ Pass
+- **Score:** 3  |  **Normalised:** 0.50  |  **Weight:** 1.0  |  **Result:** ✅ Pass
 
-The skill fails on Knowledge Delta (D1) and Mindset + Procedures (D2). The content consists of generic tutorial patterns that an AI agent already knows. The description (D3) is weak, missing specific KEYWORDS and concrete trigger scenarios. Practical Usability (D6) is low because code examples rely on undefined dependencies (`llm`, `run_tests`). There is no Anti-Pattern (D7) section.
+The skill is adequate but has gaps in Knowledge Delta (D1) and Mindset + Procedures (D2). Some content consists of generic tutorial patterns that an AI agent already knows. The description (D3) could use stronger KEYWORDS and concrete trigger scenarios. Practical Usability (D6) is limited because code examples rely on undefined dependencies (`llm`, `run_tests`). There is no Anti-Pattern (D7) section.
 
 ---
 

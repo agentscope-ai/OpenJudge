@@ -203,7 +203,7 @@ class SkillGradingResult:
 _SCORE_RANGES: Dict[str, tuple[float, float]] = {
     "skill_completeness": (1.0, 3.0),
     "skill_relevance": (1.0, 3.0),
-    "skill_structure": (1.0, 3.0),
+    "skill_design": (1.0, 5.0),
     "skill_alignment": (1.0, 3.0),
     "skill_threat_analysis": (1.0, 4.0),
 }
@@ -231,7 +231,7 @@ DEFAULT_THRESHOLDS: Dict[str, float] = {
     "alignment": 2.0,  # [1, 3]: Uncertain or better → pass
     "completeness": 2.0,  # [1, 3]: Partially complete or better → pass
     "relevance": 2.0,  # [1, 3]: Partial match or better → pass
-    "structure": 2.0,  # [1, 3]: Partially sound or better → pass
+    "structure": 3.0,  # [1, 5]: Adequate or better → pass
 }
 
 
@@ -255,7 +255,7 @@ class SkillsGradingRunner(GradingRunner):
       For multi-script skills the worst per-script score is used.
     - **completeness** (scale 1–3): Whether the skill provides enough detail to act on.
     - **relevance** (scale 1–3): How well the skill matches a task description.
-    - **structure** (scale 1–3): Structural design quality (NEVER list, description, etc.).
+    - **structure** (scale 1–5): Structural design quality (NEVER list, description, etc.).
 
     All raw scores are normalised to ``[0, 1]`` before weighting.
 
@@ -530,7 +530,7 @@ class SkillsGradingRunner(GradingRunner):
                 errors.append(f"{dim_name}: {dim_score.error}")
 
         weighted_score = self._compute_weighted_score(dimension_scores)
-        passed = all(d.passed for d in dimension_scores.values() if d.error is None)
+        passed = not errors and all(d.passed for d in dimension_scores.values())
 
         return SkillGradingResult(
             skill_name=skill.name,
