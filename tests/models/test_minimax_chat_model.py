@@ -47,11 +47,11 @@ class TestMiniMaxChatModelInit:
 
     def test_default_model(self):
         model = MiniMaxChatModel(api_key="test-key")
-        assert model.model == "MiniMax-M2.7"
+        assert model.model == "MiniMax-M3"
 
     def test_custom_model(self):
-        model = MiniMaxChatModel(model="MiniMax-M2.5", api_key="test-key")
-        assert model.model == "MiniMax-M2.5"
+        model = MiniMaxChatModel(model="MiniMax-M2.7", api_key="test-key")
+        assert model.model == "MiniMax-M2.7"
 
     def test_all_supported_models(self):
         for name in MINIMAX_MODELS:
@@ -221,7 +221,10 @@ class TestMiniMaxChatModelInheritance:
         assert Imported is MiniMaxChatModel
 
     def test_minimax_models_list_not_empty(self):
-        assert len(MINIMAX_MODELS) >= 4
+        assert len(MINIMAX_MODELS) >= 3
+
+    def test_minimax_models_contain_m3(self):
+        assert "MiniMax-M3" in MINIMAX_MODELS
 
     def test_minimax_models_contain_m27(self):
         assert "MiniMax-M2.7" in MINIMAX_MODELS
@@ -245,7 +248,7 @@ class TestMiniMaxChatModelIntegration:
 
     @pytest.mark.asyncio
     async def test_basic_chat(self):
-        model = MiniMaxChatModel(model="MiniMax-M2.7")
+        model = MiniMaxChatModel(model="MiniMax-M3")
         response = await model.achat(messages=[{"role": "user", "content": "Reply with the single word: hello"}])
         assert isinstance(response, ChatResponse)
         assert response.content
@@ -254,7 +257,7 @@ class TestMiniMaxChatModelIntegration:
 
     @pytest.mark.asyncio
     async def test_temperature_clamping_does_not_error(self):
-        model = MiniMaxChatModel(model="MiniMax-M2.7", temperature=0.0)
+        model = MiniMaxChatModel(model="MiniMax-M3", temperature=0.0)
         response = await model.achat(messages=[{"role": "user", "content": "Say: ok"}])
         assert isinstance(response, ChatResponse)
 

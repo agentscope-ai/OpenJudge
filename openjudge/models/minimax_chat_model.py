@@ -13,10 +13,9 @@ from openjudge.models.schema.oai.response import ChatResponse
 
 # MiniMax-supported models with 204K context window
 MINIMAX_MODELS = [
+    "MiniMax-M3",
     "MiniMax-M2.7",
     "MiniMax-M2.7-highspeed",
-    "MiniMax-M2.5",
-    "MiniMax-M2.5-highspeed",
 ]
 
 _THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
@@ -31,10 +30,9 @@ class MiniMaxChatModel(OpenAIChatModel):
     """MiniMax chat model, using the OpenAI-compatible API at api.minimax.io.
 
     Supported models (all with 204K context window):
-        - ``MiniMax-M2.7`` — latest generation, best quality
-        - ``MiniMax-M2.7-highspeed`` — latest generation, faster inference
-        - ``MiniMax-M2.5`` — previous generation
-        - ``MiniMax-M2.5-highspeed`` — previous generation, faster inference
+        - ``MiniMax-M3`` — latest generation, best quality (default)
+        - ``MiniMax-M2.7`` — previous generation
+        - ``MiniMax-M2.7-highspeed`` — previous generation, faster inference
 
     .. note::
         MiniMax requires ``temperature`` to be in the range ``(0.0, 1.0]``.
@@ -45,7 +43,7 @@ class MiniMaxChatModel(OpenAIChatModel):
         >>> from openjudge.models import MiniMaxChatModel
         >>> from openjudge.graders.common.correctness import CorrectnessGrader
         >>>
-        >>> model = MiniMaxChatModel(model="MiniMax-M2.7")
+        >>> model = MiniMaxChatModel(model="MiniMax-M3")
         >>> grader = CorrectnessGrader(model=model)
         >>> result = asyncio.run(grader.aevaluate(
         ...     query="What is the capital of France?",
@@ -59,7 +57,7 @@ class MiniMaxChatModel(OpenAIChatModel):
 
     def __init__(
         self,
-        model: str = "MiniMax-M2.7",
+        model: str = "MiniMax-M3",
         api_key: str | None = None,
         base_url: str | None = None,
         stream: bool = False,
@@ -71,9 +69,9 @@ class MiniMaxChatModel(OpenAIChatModel):
         """Initialize the MiniMax chat model.
 
         Args:
-            model: MiniMax model name. Defaults to ``"MiniMax-M2.7"``.
-                Available models: ``MiniMax-M2.7``, ``MiniMax-M2.7-highspeed``,
-                ``MiniMax-M2.5``, ``MiniMax-M2.5-highspeed``.
+            model: MiniMax model name. Defaults to ``"MiniMax-M3"``.
+                Available models: ``MiniMax-M3``, ``MiniMax-M2.7``,
+                ``MiniMax-M2.7-highspeed``.
             api_key: MiniMax API key. Falls back to the ``MINIMAX_API_KEY``
                 environment variable.
             base_url: API base URL. Defaults to ``https://api.minimax.io/v1``.
@@ -118,7 +116,7 @@ class MiniMaxChatModel(OpenAIChatModel):
         Wraps :meth:`OpenAIChatModel.achat` with MiniMax-specific adjustments:
 
         * ``temperature`` values outside ``(0.0, 1.0]`` are clamped.
-        * ``<think>…</think>`` reasoning blocks produced by M2.5/M2.7 models
+        * ``<think>…</think>`` reasoning blocks produced by M2.7/M3 models
           are stripped from non-streaming responses so downstream graders always
           receive clean text.
 

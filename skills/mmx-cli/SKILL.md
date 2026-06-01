@@ -2,7 +2,7 @@
 name: mmx-cli
 description: >
   Generate text, images, video, speech, and music via the MiniMax AI platform.
-  Covers text generation (MiniMax-M2.7 model), image generation (image-01),
+  Covers text generation (MiniMax-M3 model), image generation (image-01),
   video generation (Hailuo-2.3), speech synthesis (speech-2.8-hd, 300+ voices),
   music generation (music-2.6 with lyrics, cover, and instrumental), and web search.
   Use when the user needs to create AI-generated multimedia content, produce
@@ -36,7 +36,7 @@ export MINIMAX_API_KEY=your_api_key_here
 
 | Capability | Command | Model |
 |------------|---------|-------|
-| Text generation | `mmx text generate` | MiniMax-M2.7 |
+| Text generation | `mmx text generate` | MiniMax-M3 |
 | Image generation | `mmx image generate` | image-01 |
 | Video generation | `mmx video generate` | Hailuo-2.3 |
 | Speech synthesis | `mmx speech generate` | speech-2.8-hd |
