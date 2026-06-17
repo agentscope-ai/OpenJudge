@@ -202,7 +202,7 @@ class GraderBenchmark:
                         chosen_score = result.score
                 except Exception as e:
                     if verbose:
-                        print(f"  [{i+1}] Error evaluating chosen: {e}")
+                        print(f"  [{i + 1}] Error evaluating chosen: {e}")
 
             if rejected_inputs is not None:
                 try:
@@ -211,7 +211,7 @@ class GraderBenchmark:
                         rejected_score = result.score
                 except Exception as e:
                     if verbose:
-                        print(f"  [{i+1}] Error evaluating rejected: {e}")
+                        print(f"  [{i + 1}] Error evaluating rejected: {e}")
 
             # Determine correctness
             if chosen_score is not None and rejected_score is not None:
@@ -240,9 +240,9 @@ class GraderBenchmark:
                 status = "✓" if is_correct else "✗"
                 c_str = f"{chosen_score:.2f}" if chosen_score is not None else "N/A"
                 r_str = f"{rejected_score:.2f}" if rejected_score is not None else "N/A"
-                print(f"  [{i+1}/{len(dataset)}] {status} chosen={c_str} vs rejected={r_str}")
+                print(f"  [{i + 1}/{len(dataset)}] {status} chosen={c_str} vs rejected={r_str}")
             elif (i + 1) % 5 == 0:
-                print(f"  Processed {i+1}/{len(dataset)} samples...")
+                print(f"  Processed {i + 1}/{len(dataset)} samples...")
 
         accuracy = correct_count / total_count if total_count > 0 else 0.0
         elapsed = time.time() - start_time
@@ -324,7 +324,7 @@ class GraderBenchmark:
 
             if verbose:
                 status = "✓" if is_correct else "✗"
-                print(f"  [{i+1}/{len(dataset)}] {status} score={score:.2f}")
+                print(f"  [{i + 1}/{len(dataset)}] {status} score={score:.2f}")
 
         accuracy = correct_count / total_count if total_count > 0 else 0.0
         elapsed = time.time() - start_time

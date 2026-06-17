@@ -17,8 +17,9 @@
 [![Documentation](https://img.shields.io/badge/docs-online-blue?logo=readthedocs&logoColor=white)](https://agentscope-ai.github.io/OpenJudge/)
 [![Website](https://img.shields.io/badge/website-openjudge.me-blue?logo=googlechrome&logoColor=white)](https://openjudge.me/)
 [![Try Online](https://img.shields.io/badge/try%20online-free-brightgreen?logo=rocket&logoColor=white)](https://openjudge.me/app/)
+[![PawBench](https://img.shields.io/badge/PawBench-Model%20×%20Harness%20Benchmark-orange?logo=github)](https://github.com/agentscope-ai/PawBench)
 
-[🌐 Website](https://openjudge.me/) | [🚀 Try Online](https://openjudge.me/app/) | [📖 Documentation](https://agentscope-ai.github.io/OpenJudge/) | [🤝 Contributing](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [中文](./README_zh.md)
+[🌐 Website](https://openjudge.me/) | [🚀 Try Online](https://openjudge.me/app/) | [📖 Documentation](https://agentscope-ai.github.io/OpenJudge/) | [🤝 Contributing](https://agentscope-ai.github.io/OpenJudge/community/contributing/) | [🐾 PawBench](https://github.com/agentscope-ai/PawBench) | [中文](./README_zh.md)
 
 </div>
 
@@ -44,6 +45,7 @@ It can also convert grading results into **reward signals** to help you **fine-t
 - [Installation](#-installation)
 - [Quickstart](#-quickstart)
 - [Integrations](#-integrations)
+- [Ecosystem](#-ecosystem)
 - [Contributing](#-contributing)
 - [Community](#-community)
 - [Citation](#-citation)
@@ -51,6 +53,8 @@ It can also convert grading results into **reward signals** to help you **fine-t
 ---
 
 ## News
+
+- **2026-06-17** - 🐾 **PawBench v1.0** - A Model × Harness co-evaluation benchmark for agentic AI: 150 tasks · 9 models · 3 harnesses, with public prompts, graders, task labels, submissions, and leaderboard slices. 👉 [GitHub](https://github.com/agentscope-ai/PawBench) | [Leaderboard](https://agentscope-ai.github.io/PawBench/)
 
 - **2026-04-07** - 🔒 **Skill Graders** - 5 new LLM-based graders for evaluating AI Agent Skill packages: threat analysis (AITech taxonomy), declaration alignment, completeness, relevance, and design quality. 👉 [Documentation](./docs/built_in_graders/skills.md) | [Cookbook](./cookbooks/skills_evaluation/README.md)
 
@@ -337,6 +341,28 @@ Seamlessly connect OpenJudge with mainstream observability and training platform
 | | [Trinity-RFT](https://github.com/modelscope/Trinity-RFT) | 🔵 Planned | — |
 
 > 💬 Have a framework you'd like us to prioritize? [Open an Issue](https://github.com/agentscope-ai/OpenJudge/issues)!
+
+---
+
+## 🌍 Ecosystem
+
+OpenJudge is the foundation of a growing evaluation ecosystem. These projects share OpenJudge's philosophy of **evaluation-driven optimization** while targeting specific verticals.
+
+### 🐾 [PawBench](https://github.com/agentscope-ai/PawBench) — Model × Harness Co-Evaluation Benchmark
+
+The same model can behave very differently depending on which agent runtime (harness) it runs inside. PawBench evaluates **the model and the harness together**, keeping enough metadata to analyze both dimensions independently:
+
+$$\text{Agent Performance} = f(\text{Model}, \text{Harness})$$
+
+| Dimension | Coverage |
+|:----------|:---------|
+| **Tasks** | 150 tasks from 6 sources (ClawEval, QwenClawBench, PinchBench, SkillsBench, WildClawBench, self-built) |
+| **Models** | 9 models (Qwen, Claude, GLM, etc.) |
+| **Harnesses** | 3 harnesses (QwenPaw, OpenClaw, Hermes) |
+| **Task labels** | 5 dimensions: scenario, capability, complexity, modality, environment |
+
+Key findings from v1.0: harness design alone can shift a model's score by **10+ points** — a gap comparable to many model upgrades. PawBench provides slice diagnostics to pinpoint whether regressions come from the model, the harness, or the grader.
+👉 [GitHub](https://github.com/agentscope-ai/PawBench) | [Leaderboard](https://agentscope-ai.github.io/PawBench/) | [Documentation](https://github.com/agentscope-ai/PawBench#readme)
 
 ---
 
