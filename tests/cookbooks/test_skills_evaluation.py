@@ -11,7 +11,6 @@ import ast
 import tomllib
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER_PATH = REPO_ROOT / "cookbooks" / "skills_evaluation" / "runner.py"
 
@@ -48,8 +47,7 @@ def test_dimension_errors_fail_overall_result() -> None:
 def test_cookbook_runtime_dependencies_are_declared() -> None:
     pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     dependencies = {
-        dep.split("[", 1)[0].split(">=", 1)[0].split("<", 1)[0].lower()
-        for dep in pyproject["project"]["dependencies"]
+        dep.split("[", 1)[0].split(">=", 1)[0].split("<", 1)[0].lower() for dep in pyproject["project"]["dependencies"]
     }
 
     assert "pyyaml" in dependencies
