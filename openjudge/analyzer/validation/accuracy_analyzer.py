@@ -120,6 +120,8 @@ class AccuracyAnalyzer(BaseValidationAnalyzer):
                 },
             )
 
+        self._validate_alignment(dataset, grader_results)
+
         # Counters for correct predictions and total predictions
         correct_predictions = 0
         total_predictions = 0
@@ -156,6 +158,6 @@ class AccuracyAnalyzer(BaseValidationAnalyzer):
             name=self.name,
             accuracy=accuracy_score,
             metadata={
-                "explanation": explanation,
+                **self._coverage_metadata(grader_results, total_predictions, explanation),
             },
         )

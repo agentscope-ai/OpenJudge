@@ -13,9 +13,10 @@ Classes:
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
+from loguru import logger
 from pydantic import BaseModel, Field
 
-from openjudge.graders.schema import GraderResult
+from openjudge.graders.schema import GraderError, GraderResult
 
 
 class AnalysisResult(BaseModel):
@@ -89,6 +90,84 @@ class BaseAnalyzer(ABC):
     """
 
     name: str = "Base Analysis"
+
+    def _validate_alignment(self, dataset: List[dict], grader_results: List[GraderResult]) -> None:
+        """Raise if dataset and grader results cannot be paired positionally.
+
+        Analyzers pair samples with results by position, so a length mismatch
+        would silently drop the tail of the longer list.
+
+        Args:
+            dataset: The data samples that were evaluated.
+            grader_results: The grader results, one per sample.
+
+        Raises:
+            ValueError: If the two lists have different lengths.
+
+        Example:
+            >>> analyzer = AccuracyAnalyzer()
+            >>> analyzer._validate_alignment([{"label": 1}], [])
+            Traceback (most recent call last):
+                ...
+            ValueError: dataset and grader_results must have the same length, got 1 and 0
+        """
+        if len(dataset) != len(grader_results):
+            raise ValueError(
+                f"dataset and grader_results must have the same length, got {len(dataset)} and {len(grader_results)}",
+            )
+
+    def _coverage_metadata(
+        self,
+        grader_results: List[GraderResult],
+        valid_results: int,
+        explanation: str,
+    ) -> Dict[str, Any]:
+        """Build metadata that states how many results actually entered the metric.
+
+        Failed (``GraderError``) or otherwise unusable results are excluded from
+        the metric itself, but the exclusion must be visible: the counts are
+        returned as metadata and the explanation is extended when coverage is
+        incomplete.
+
+        Args:
+            grader_results: All results that were submitted to the analyzer.
+            valid_results: How many of them the analyzer actually used.
+            explanation: The analyzer's explanation of the computed metric.
+
+        Returns:
+            Dict[str, Any]: ``explanation`` plus ``total_samples``, ``valid_results``,
+            ``error_results``, ``skipped_results`` and ``coverage_rate``.
+
+        Example:
+            >>> from openjudge.graders.schema import GraderError, GraderScore
+            >>> results = [
+            ...     GraderScore(name="judge", score=1.0, reason="ok"),
+            ...     GraderError(name="judge", reason="timeout", error="timeout"),
+            ... ]
+            >>> analyzer = DistributionAnalyzer()
+            >>> metadata = analyzer._coverage_metadata(results, valid_results=1, explanation="Mean score: 1.0")
+            >>> print(metadata["explanation"])
+            Mean score: 1.0; computed from 1 of 2 results (1 errors, 0 skipped)
+            >>> print(metadata["coverage_rate"])
+            0.5
+        """
+        total = len(grader_results)
+        errors = sum(isinstance(result, GraderError) for result in grader_results)
+        skipped = max(0, total - valid_results - errors)
+        if valid_results < total:
+            explanation = (
+                f"{explanation}; computed from {valid_results} of {total} results "
+                f"({errors} errors, {skipped} skipped)"
+            )
+            logger.warning(f"{self.name}: only {valid_results} of {total} grader results were usable")
+        return {
+            "explanation": explanation,
+            "total_samples": total,
+            "valid_results": valid_results,
+            "error_results": errors,
+            "skipped_results": skipped,
+            "coverage_rate": valid_results / total if total else 0.0,
+        }
 
     @abstractmethod
     def analyze(

@@ -200,3 +200,17 @@ class TestCorrelationAnalyzer:
         assert result.correlation == 0.0  # Insufficient data
         assert "explanation" in result.metadata
         assert "Insufficient data points for correlation calculation" in result.metadata["explanation"]
+
+    def test_analyze_length_mismatch_raises(self):
+        """Test analyze method rejects a results list that does not match the dataset length."""
+        dataset = [
+            {"label": 1},
+            {"label": 0},
+        ]
+        grader_results = [
+            GraderScore(name="test", score=1.0, reason="Correct"),
+        ]
+
+        analyzer = CorrelationAnalyzer()
+        with pytest.raises(ValueError, match="same length"):
+            analyzer.analyze(dataset, grader_results)

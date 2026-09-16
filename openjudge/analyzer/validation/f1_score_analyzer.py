@@ -154,6 +154,9 @@ class F1ScoreAnalyzer(BaseValidationAnalyzer):
                 },
             )
 
+        self._validate_alignment(dataset, grader_results)
+        valid_results = 0
+
         # Counters for TP, FP, FN
         total_tp = 0  # True positives
         total_fp = 0  # False positives
@@ -167,6 +170,7 @@ class F1ScoreAnalyzer(BaseValidationAnalyzer):
 
             if not grader_result:
                 continue
+            valid_results += 1
 
             # Extract predicted set from grader result
             predicted_set = set()
@@ -223,7 +227,7 @@ class F1ScoreAnalyzer(BaseValidationAnalyzer):
             recall=recall,
             f1_score=f1_score,
             metadata={
-                "explanation": explanation,
+                **self._coverage_metadata(grader_results, valid_results, explanation),
                 "true_positives": total_tp,
                 "false_positives": total_fp,
                 "false_negatives": total_fn,

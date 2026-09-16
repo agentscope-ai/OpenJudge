@@ -8,7 +8,7 @@ from openjudge.analyzer.statistical.distribution_analyzer import (
     DistributionAnalysisResult,
     DistributionAnalyzer,
 )
-from openjudge.graders.schema import GraderScore
+from openjudge.graders.schema import GraderError, GraderScore
 
 
 @pytest.mark.unit
@@ -120,3 +120,23 @@ class TestDistributionAnalyzer:
         assert "explanation" in result.metadata
         assert "total_samples" in result.metadata
         assert result.metadata["total_samples"] == 3
+
+    def test_analyze_reports_partial_coverage(self):
+        """Test analyze method excludes failed results from the statistics but reports them."""
+        grader_results = [
+            GraderScore(name="test", score=1.0, reason="Good"),
+            GraderError(name="test", reason="timeout", error="timeout"),
+            GraderError(name="test", reason="rate limited", error="429"),
+        ]
+
+        analyzer = DistributionAnalyzer()
+        result = analyzer.analyze([], grader_results)
+
+        assert isinstance(result, DistributionAnalysisResult)
+        assert result.mean == 1.0
+        assert result.metadata["total_samples"] == 3
+        assert result.metadata["valid_results"] == 1
+        assert result.metadata["error_results"] == 2
+        assert result.metadata["skipped_results"] == 0
+        assert result.metadata["coverage_rate"] == pytest.approx(1 / 3)
+        assert "computed from 1 of 3 results (2 errors, 0 skipped)" in result.metadata["explanation"]

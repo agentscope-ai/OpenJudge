@@ -118,12 +118,15 @@ class PairwiseAnalyzer(BaseAnalyzer):
             >>> analyzer = PairwiseAnalyzer(model_names=["gpt-4", "claude"])
             >>> analysis = analyzer.analyze(dataset, results)
         """
+        self._validate_alignment(dataset, grader_results)
+
         # Pre-extract all metadata to avoid repeated dict lookups
         metadata_list = [sample.get("metadata", {}) for sample in dataset]
 
         # Initialize win counts (use integers for counting)
         win_counts = self._initialize_model_matrix()
         comparison_counts = self._initialize_model_matrix()
+        valid_results = 0
 
         # Use zip to pair results with metadata in one pass
         for metadata, result in zip(metadata_list, grader_results):
@@ -132,6 +135,7 @@ class PairwiseAnalyzer(BaseAnalyzer):
 
             if not model_a or not model_b or not isinstance(result, GraderScore):
                 continue
+            valid_results += 1
 
             # score >= 0.5 means model_a wins, otherwise model_b wins
             if result.score >= 0.5:
@@ -175,13 +179,15 @@ class PairwiseAnalyzer(BaseAnalyzer):
             win_rates=win_rates,
             win_matrix=win_matrix,
             rankings=rankings,
-            total_comparisons=len(grader_results),
+            total_comparisons=valid_results,
             best_model=rankings[0][0] if rankings else "",
             worst_model=rankings[-1][0] if rankings else "",
             metadata={
                 "num_models": len(self.model_names),
-                "explanation": (
-                    f"Analyzed {len(grader_results)} pairwise comparisons " f"across {len(self.model_names)} models"
+                **self._coverage_metadata(
+                    grader_results,
+                    valid_results,
+                    f"Analyzed {valid_results} pairwise comparisons across {len(self.model_names)} models",
                 ),
             },
         )

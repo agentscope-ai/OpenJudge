@@ -145,3 +145,17 @@ class TestFalsePositiveAnalyzer:
         assert (
             "No data or grader results provided for false positive rate calculation" in result.metadata["explanation"]
         )
+
+    def test_analyze_length_mismatch_raises(self):
+        """Test analyze method rejects a results list that does not match the dataset length."""
+        dataset = [
+            {"label": 1},
+            {"label": 0},
+        ]
+        grader_results = [
+            GraderScore(name="test", score=1.0, reason="Correct"),
+        ]
+
+        analyzer = FalsePositiveAnalyzer()
+        with pytest.raises(ValueError, match="same length"):
+            analyzer.analyze(dataset, grader_results)

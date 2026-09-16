@@ -144,10 +144,12 @@ class FalsePositiveAnalyzer(BaseValidationAnalyzer):
                 },
             )
 
+        self._validate_alignment(dataset, grader_results)
+        valid_results = 0
+
         # Counters for false positives and true negatives
         false_positives = 0
         true_negatives = 0
-
         # Iterate over each sample and compare grader results with label values
         for sample, grader_result in zip(dataset, grader_results):
             label = self._extract(sample, label_path)
@@ -158,6 +160,7 @@ class FalsePositiveAnalyzer(BaseValidationAnalyzer):
                 continue
 
             if isinstance(grader_result, GraderScore) and hasattr(grader_result, "score"):
+                valid_results += 1
                 predicted_value = grader_result.score
                 prediction = 1 if predicted_value >= self.prediction_threshold else 0
 
@@ -183,7 +186,7 @@ class FalsePositiveAnalyzer(BaseValidationAnalyzer):
             name=self.name,
             false_positive_rate=fp_rate,
             metadata={
-                "explanation": explanation,
+                **self._coverage_metadata(grader_results, valid_results, explanation),
                 "false_positives": false_positives,
                 "true_negatives": true_negatives,
             },
