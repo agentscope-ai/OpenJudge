@@ -79,7 +79,8 @@ def compute_prefix_match(
         ref = ref.lower()
         cand = cand.lower()
 
-    matched = cand.startswith(ref)
+    # An empty prefix would trivially match any response
+    matched = bool(ref) and cand.startswith(ref)
 
     details = {
         "matched": matched,
@@ -114,7 +115,8 @@ def compute_suffix_match(
         ref = ref.lower()
         cand = cand.lower()
 
-    matched = cand.endswith(ref)
+    # An empty suffix would trivially match any response
+    matched = bool(ref) and cand.endswith(ref)
 
     details = {
         "matched": matched,
@@ -150,7 +152,8 @@ def compute_regex_match(
 
     try:
         regex = re.compile(pattern_str, flags)
-        match = regex.search(response)
+        # An empty pattern would trivially match any response
+        match = regex.search(response) if pattern_str else None
         matched = match is not None
 
         details = {
@@ -192,8 +195,11 @@ def compute_substring_match(
         ref = ref.lower()
         cand = cand.lower()
 
-    if bidirectional:
-        matched = ref in cand or cand in ref
+    # Empty strings are trivially contained in any text, so they never count as a match
+    if not ref:
+        matched = False
+    elif bidirectional:
+        matched = ref in cand or (bool(cand) and cand in ref)
     else:
         matched = ref in cand
 
@@ -226,8 +232,8 @@ def compute_contains_all(
     Returns:
         Tuple of (score, details) - score is proportion of contained substrings
     """
-    # Use substrings if provided, otherwise use reference
-    target_substrings = substrings if substrings else [reference]
+    # Use substrings if provided, otherwise use reference (an empty reference yields no targets)
+    target_substrings = substrings if substrings else ([reference] if reference else [])
 
     cand = response
     if not case_sensitive:
@@ -235,7 +241,7 @@ def compute_contains_all(
         target_substrings = [s.lower() for s in target_substrings]
 
     contains = [substring in cand for substring in target_substrings]
-    matched = all(contains)
+    matched = bool(contains) and all(contains)
 
     details = {
         "matched": matched,
@@ -271,8 +277,8 @@ def compute_contains_any(
     Returns:
         Tuple of (score, details)
     """
-    # Use substrings if provided, otherwise use reference
-    target_substrings = substrings if substrings else [reference]
+    # Use substrings if provided, otherwise use reference (an empty reference yields no targets)
+    target_substrings = substrings if substrings else ([reference] if reference else [])
 
     cand = response
     if not case_sensitive:
