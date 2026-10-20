@@ -121,6 +121,8 @@ class CorrelationAnalyzer(BaseValidationAnalyzer):
                 },
             )
 
+        self._validate_alignment(dataset, grader_results)
+
         # Collect predicted scores and ground truth labels
         predicted_scores = []
         ground_truth_labels = []
@@ -169,7 +171,7 @@ class CorrelationAnalyzer(BaseValidationAnalyzer):
             name=self.name,
             correlation=correlation_score,
             metadata={
-                "explanation": explanation,
+                **self._coverage_metadata(grader_results, len(predicted_scores), explanation),
                 "data_points": len(predicted_scores),
             },
         )

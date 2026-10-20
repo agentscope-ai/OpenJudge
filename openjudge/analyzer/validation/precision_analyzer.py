@@ -145,10 +145,12 @@ class PrecisionAnalyzer(BaseValidationAnalyzer):
                 },
             )
 
+        self._validate_alignment(dataset, grader_results)
+        valid_results = 0
+
         # Counters for true positives and false positives
         true_positives = 0
         false_positives = 0
-
         # Iterate over each sample and compare grader results with label values
         for sample, grader_result in zip(dataset, grader_results):
             label = self._extract(sample, label_path)
@@ -159,6 +161,7 @@ class PrecisionAnalyzer(BaseValidationAnalyzer):
                 continue
 
             if isinstance(grader_result, GraderScore) and hasattr(grader_result, "score"):
+                valid_results += 1
                 predicted_value = grader_result.score
                 prediction = 1 if predicted_value >= self.prediction_threshold else 0
 
@@ -184,7 +187,7 @@ class PrecisionAnalyzer(BaseValidationAnalyzer):
             name=self.name,
             precision=precision_score,
             metadata={
-                "explanation": explanation,
+                **self._coverage_metadata(grader_results, valid_results, explanation),
                 "true_positives": true_positives,
                 "false_positives": false_positives,
             },

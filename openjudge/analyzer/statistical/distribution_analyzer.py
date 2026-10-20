@@ -181,7 +181,6 @@ class DistributionAnalyzer(BaseAnalyzer):
             min_score=min_score,
             max_score=max_score,
             metadata={
-                "explanation": explanation,
-                "total_samples": len(scores),
+                **self._coverage_metadata(grader_results, len(scores), explanation),
             },
         )

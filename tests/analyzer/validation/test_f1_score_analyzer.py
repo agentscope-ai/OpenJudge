@@ -4,7 +4,7 @@
 import pytest
 
 from openjudge.analyzer.validation import F1ScoreAnalysisResult, F1ScoreAnalyzer
-from openjudge.graders.schema import GraderScore
+from openjudge.graders.schema import GraderError, GraderScore
 
 
 @pytest.mark.unit
@@ -111,3 +111,44 @@ class TestF1ScoreAnalyzer:
         assert result.f1_score == 0.0
         assert "explanation" in result.metadata
         assert "No data or grader results provided for F1 score calculation" in result.metadata["explanation"]
+
+    def test_analyze_length_mismatch_raises(self):
+        """Test analyze method rejects a results list that does not match the dataset length."""
+        dataset = [
+            {"label": 1},
+            {"label": 0},
+        ]
+        grader_results = [
+            GraderScore(name="test", score=1.0, reason="Correct"),
+        ]
+
+        analyzer = F1ScoreAnalyzer()
+        with pytest.raises(ValueError, match="same length"):
+            analyzer.analyze(dataset, grader_results)
+
+    def test_analyze_counts_failed_results_as_used(self):
+        """Test analyze method reports that a failed result entered the F1 calculation.
+
+        F1 treats a result without predictions as an empty prediction set, so a
+        GraderError is not excluded: it contributes false negatives and is
+        counted as used, while error_results still reports it.
+        """
+        dataset = [
+            {"label": {"a"}},
+            {"label": {"b"}},
+        ]
+        grader_results = [
+            GraderScore(name="test", score=1.0, reason="Predicted", metadata={"predictions": {"a"}}),
+            GraderError(name="test", reason="timeout", error="timeout"),
+        ]
+
+        analyzer = F1ScoreAnalyzer()
+        result = analyzer.analyze(dataset, grader_results)
+
+        assert isinstance(result, F1ScoreAnalysisResult)
+        assert result.metadata["false_negatives"] == 1
+        assert result.metadata["total_samples"] == 2
+        assert result.metadata["valid_results"] == 2
+        assert result.metadata["error_results"] == 1
+        assert result.metadata["skipped_results"] == 0
+        assert "computed from" not in result.metadata["explanation"]

@@ -4,7 +4,7 @@
 import pytest
 
 from openjudge.analyzer.validation import AccuracyAnalysisResult, AccuracyAnalyzer
-from openjudge.graders.schema import GraderScore
+from openjudge.graders.schema import GraderError, GraderScore
 
 
 @pytest.mark.unit
@@ -112,3 +112,60 @@ class TestAccuracyAnalyzer:
         assert result.name == "Accuracy Analysis"
         assert result.accuracy == pytest.approx(2 / 3)  # 2 out of 3 correct
         assert "explanation" in result.metadata
+
+    def test_analyze_reports_partial_coverage(self):
+        """Test analyze method excludes failed results from accuracy but reports them."""
+        dataset = [
+            {"label": 1},
+            {"label": 0},
+            {"label": 0},
+        ]
+        grader_results = [
+            GraderScore(name="test", score=1, reason="Correct"),
+            GraderError(name="test", reason="timeout", error="timeout"),
+            GraderError(name="test", reason="rate limited", error="429"),
+        ]
+
+        analyzer = AccuracyAnalyzer()
+        result = analyzer.analyze(dataset, grader_results)
+
+        assert isinstance(result, AccuracyAnalysisResult)
+        assert result.accuracy == 1.0
+        assert result.metadata["total_samples"] == 3
+        assert result.metadata["valid_results"] == 1
+        assert result.metadata["error_results"] == 2
+        assert result.metadata["coverage_rate"] == pytest.approx(1 / 3)
+        assert "computed from 1 of 3 results" in result.metadata["explanation"]
+
+    def test_analyze_full_coverage_keeps_explanation(self):
+        """Test analyze method leaves the explanation untouched when every result was used."""
+        dataset = [
+            {"label": 1},
+            {"label": 0},
+        ]
+        grader_results = [
+            GraderScore(name="test", score=1, reason="Correct"),
+            GraderScore(name="test", score=0, reason="Correct"),
+        ]
+
+        analyzer = AccuracyAnalyzer()
+        result = analyzer.analyze(dataset, grader_results)
+
+        assert result.metadata["valid_results"] == 2
+        assert result.metadata["error_results"] == 0
+        assert result.metadata["coverage_rate"] == 1.0
+        assert "computed from" not in result.metadata["explanation"]
+
+    def test_analyze_length_mismatch_raises(self):
+        """Test analyze method rejects a results list that does not match the dataset length."""
+        dataset = [
+            {"label": 1},
+            {"label": 0},
+        ]
+        grader_results = [
+            GraderScore(name="test", score=1.0, reason="Correct"),
+        ]
+
+        analyzer = AccuracyAnalyzer()
+        with pytest.raises(ValueError, match="same length"):
+            analyzer.analyze(dataset, grader_results)
