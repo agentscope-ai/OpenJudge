@@ -69,7 +69,7 @@ class NumberAccuracyGrader(BaseGrader):
             **kwargs,
         )
         self.tolerance = tolerance
-        self._number_pattern = re.compile(r"-?\d+\.?\d*")
+        self._number_pattern = re.compile(r"-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
 
     def _extract_numbers(self, text: str) -> List[float]:
         """
