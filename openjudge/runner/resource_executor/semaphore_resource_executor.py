@@ -26,13 +26,18 @@ class SemaphoreResourceExecutor(BaseResourceExecutor):
         >>> result = await executor.submit(async_function, arg1="value1")
     """
 
-    def __init__(self, max_concurrency: int = 32):
+    def __init__(self, max_concurrency: int = 32) -> None:
         """Initialize the local execution resource.
 
         Args:
             max_concurrency: Maximum number of concurrent operations allowed.
-                           Defaults to 32.
+                           Must be greater than 0. Defaults to 32.
+
+        Raises:
+            ValueError: If max_concurrency is not positive.
         """
+        if max_concurrency <= 0:
+            raise ValueError("max_concurrency must be greater than 0")
         self._semaphore = asyncio.Semaphore(max_concurrency)
 
     async def submit(self, fn: Callable[..., Awaitable[R]], **kwargs: Any) -> R:
