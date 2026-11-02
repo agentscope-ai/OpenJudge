@@ -8,6 +8,7 @@ and calculates similarity scores based on structural matching.
 """
 
 import json
+from collections import deque
 from typing import Any
 
 from openjudge.evaluation_strategy.base_evaluation_strategy import (
@@ -89,22 +90,51 @@ class JsonMatchGrader(BaseGrader):
             if self.strict_order:
                 return all(self._json_match(s, c) for s, c in zip(sampled, correct))
             else:
-                if len(sampled) == 0:
-                    return True
-
-                used = [False] * len(correct)
-                for s_item in sampled:
-                    found_match = False
-                    for i, c_item in enumerate(correct):
-                        if not used[i] and self._json_match(s_item, c_item):
-                            used[i] = True
-                            found_match = True
-                            break
-                    if not found_match:
-                        return False
-                return True
+                return self._match_unordered(sampled, correct)
 
         return sampled == correct
+
+    def _match_unordered(self, sampled: list[Any], correct: list[Any]) -> bool:
+        """Find a one-to-one assignment, allowing earlier matches to move.
+
+        Args:
+            sampled: Response elements, already checked to have equal length.
+            correct: Reference elements using the existing directional comparison.
+
+        Returns:
+            Whether every response element has a distinct compatible reference.
+        """
+        compatible = [
+            [i for i, reference in enumerate(correct) if self._json_match(response, reference)] for response in sampled
+        ]
+        reference_matches: dict[int, int] = {}
+        response_matches: dict[int, int] = {}
+        for start in range(len(sampled)):
+            pending = deque([start])
+            predecessors: dict[int, int] = {}
+            free_reference = None
+            while pending:
+                response = pending.popleft()
+                for reference in compatible[response]:
+                    if reference in predecessors:
+                        continue
+                    predecessors[reference] = response
+                    if reference not in reference_matches:
+                        free_reference = reference
+                        break
+                    pending.append(reference_matches[reference])
+                if free_reference is not None:
+                    break
+            if free_reference is None:
+                return False
+            # Flip the augmenting path without recursing through the list length.
+            while free_reference is not None:
+                response = predecessors[free_reference]
+                previous = response_matches.get(response)
+                reference_matches[free_reference] = response
+                response_matches[response] = free_reference
+                free_reference = previous
+        return True
 
     def _compute(self, reference: str, response: str) -> tuple[bool, dict]:
         """

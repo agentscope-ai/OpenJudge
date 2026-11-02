@@ -6,6 +6,7 @@ Tests for JsonMatchGrader and JsonValidatorGrader.
 """
 
 import json
+from itertools import permutations
 
 import pytest
 
@@ -246,3 +247,54 @@ class TestJsonMatchGrader:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestUnorderedJsonMatching:
+    """Unordered matching must assign distinct compatible reference records."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("reference_order", list(permutations(range(3))))
+    @pytest.mark.parametrize("response_order", list(permutations(range(3))))
+    async def test_overlapping_records_are_order_independent(self, reference_order, response_order):
+        """Every permutation of the same multiset must receive full credit."""
+        records = [{}, {"a": 1}, {"a": 1, "b": 2}]
+        reference = json.dumps([records[i] for i in reference_order])
+        response = json.dumps([records[i] for i in response_order])
+        result = await JsonMatchGrader(strict_order=False, ignore_extra_keys=True).aevaluate(
+            reference_response=reference, response=response
+        )
+        assert result.score == 1.0
+        assert result.metadata == {"matched": True, "strict_order": False, "ignore_extra_keys": True}
+        assert records == [{}, {"a": 1}, {"a": 1, "b": 2}]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "reference,response,expected",
+        [
+            ([{"a": 1}, {"a": 1, "b": 2}], [{"a": 1, "b": 2}, {"a": 1}], 1.0),
+            ([{"a": 1}, {"a": 1}], [{"a": 1}, {"a": 2}], 0.0),
+            ([{}, {"a": 1}, {"a": 1}], [{"a": 1}, {"a": 2}, {"a": 2}], 0.0),
+            ([{"a": 1}, {"a": 1}], [{"a": 1}, {"a": 1}], 1.0),
+            ([{"a": 1}], [{"a": 1}, {"a": 1}], 0.0),
+            ({"items": [[{"a": 1}, {"a": 1, "b": 2}]]}, {"items": [[{"a": 1, "b": 2}, {"a": 1}]]}, 1.0),
+            ([], [], 1.0),
+        ],
+    )
+    async def test_nested_duplicates_and_impossible_assignments(self, reference, response, expected):
+        """Keep multiplicity, nested matching and genuine mismatch behavior."""
+        result = await JsonMatchGrader(strict_order=False, ignore_extra_keys=True).aevaluate(
+            reference_response=json.dumps(reference), response=json.dumps(response)
+        )
+        assert result.score == expected
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "strict_order,ignore_extra_keys,expected", [(True, True, 0.0), (False, False, 0.0), (False, True, 1.0)]
+    )
+    async def test_order_and_extra_key_flags(self, strict_order, ignore_extra_keys, expected):
+        """Only explicitly unordered subset matching permits reassignment."""
+        result = await JsonMatchGrader(strict_order=strict_order, ignore_extra_keys=ignore_extra_keys).aevaluate(
+            reference_response='[{"a":1},{"a":1,"b":2}]',
+            response='[{"a":1,"b":2,"extra":3},{"a":1}]',
+        )
+        assert result.score == expected
