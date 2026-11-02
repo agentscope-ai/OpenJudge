@@ -215,6 +215,17 @@ class TestStringMatchGrader:
         # All characters in "hello" {h, e, l, o} are in "helo"
         assert result.score == 1.0
 
+    @pytest.mark.parametrize("algorithm", ["prefix_match", "substring_match", "contains_all"])
+    async def test_empty_reference_does_not_match(self, algorithm):
+        """Test that an empty reference does not produce a perfect score"""
+        grader = StringMatchGrader(algorithm=algorithm)
+        result = await grader.aevaluate(
+            reference_response="",
+            response="completely wrong answer",
+        )
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
     async def test_invalid_algorithm(self):
         """Test invalid algorithm"""
         with pytest.raises(ValueError) as exc_info:
