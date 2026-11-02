@@ -218,6 +218,63 @@ class TestJsonMatchGrader:
         assert result.metadata["matched"] is True
 
     @pytest.mark.asyncio
+    async def test_boolean_vs_number_not_matched(self):
+        """Test that booleans are not matched against numbers.
+
+        JSON treats booleans as a distinct type from numbers, but Python's
+        ``==`` considers True == 1 and False == 0. The grader must not let
+        {"a": true} match {"a": 1}.
+        """
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"active": true, "deleted": false}',
+            response='{"active": 1, "deleted": 0}',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_number_vs_boolean_not_matched(self):
+        """Test the mirrored case: numbers must not match booleans"""
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"count": 1}',
+            response='{"count": true}',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_boolean_vs_number_in_list_not_matched(self):
+        """Test bool/number confusion inside lists with strict order"""
+        grader = JsonMatchGrader(strict_order=True)
+
+        result = await grader.aevaluate(
+            reference_response='[true, 1]',
+            response='[1, true]',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_int_vs_float_numeric_equivalence(self):
+        """Test that numerically equal ints and floats still match"""
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"value": 1}',
+            response='{"value": 1.0}',
+        )
+
+        assert result.score == 1.0
+        assert result.metadata["matched"] is True
+
+    @pytest.mark.asyncio
     async def test_number_types(self):
         """Test different number types"""
         grader = JsonMatchGrader()

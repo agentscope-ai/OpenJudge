@@ -104,6 +104,12 @@ class JsonMatchGrader(BaseGrader):
                         return False
                 return True
 
+        # JSON treats booleans as a distinct type from numbers, but Python's ==
+        # considers True == 1 (and False == 0), so guard the leaf comparison by
+        # bool-ness to avoid matching e.g. {"a": true} against {"a": 1}.
+        if isinstance(sampled, bool) != isinstance(correct, bool):
+            return False
+
         return sampled == correct
 
     def _compute(self, reference: str, response: str) -> tuple[bool, dict]:
