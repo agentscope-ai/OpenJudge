@@ -5,7 +5,7 @@ This module provides an analyzer for computing the consistency of grader evaluat
 by comparing results from repeated runs of the same grader on identical inputs.
 """
 
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from loguru import logger
@@ -65,7 +65,7 @@ class ConsistencyAnalyzer(BaseAnalyzer):
         self,
         dataset: List[dict],
         grader_results: List[GraderResult],
-        another_grader_results: List[GraderResult],
+        another_grader_results: Optional[List[GraderResult]] = None,
         **kwargs,
     ) -> ConsistencyAnalysisResult:
         """Compute the consistency of a grader based on repeated evaluation results.
@@ -75,9 +75,12 @@ class ConsistencyAnalyzer(BaseAnalyzer):
         correlation between the two sets of scores.
 
         Args:
-            dataset: The collection of data samples that were evaluated.
-            grader_results: The first evaluation results from graders.
-            another_grader_results: The second evaluation results from graders
+            dataset: The collection of data samples that were evaluated. In the legacy
+                two-argument call, this is the first run's results instead.
+            grader_results: The first run's results, or the second run's results in
+                the legacy two-argument call.
+            another_grader_results: The second run's results. Omit this argument
+                to use the legacy two-argument call.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -85,40 +88,29 @@ class ConsistencyAnalyzer(BaseAnalyzer):
             consistency score and metadata with explanation.
 
         Example:
-            >>> from openjudge.graders.schema import GraderResult, GraderScore
+            >>> from openjudge.graders.schema import GraderScore
             >>> first_run = [
-            ...     GraderResult(name="grader1", score=0.8, reason="High quality"),
-            ...     GraderResult(name="grader1", score=0.3, reason="Low quality")
+            ...     GraderScore(name="grader1", score=0.8, reason="High quality"),
+            ...     GraderScore(name="grader1", score=0.3, reason="Low quality")
             ... ]
             >>> second_run = [
-            ...     GraderResult(name="grader1", score=0.75, reason="High quality"),
-            ...     GraderResult(name="grader1", score=0.35, reason="Low quality")
+            ...     GraderScore(name="grader1", score=0.75, reason="High quality"),
+            ...     GraderScore(name="grader1", score=0.35, reason="Low quality")
             ... ]
             >>> analyzer = ConsistencyAnalyzer()
             >>> result = analyzer.analyze(first_run, second_run)
             >>> print(result.name)
             Consistency Analysis
             >>> print(f"Consistency: {result.consistency:.2f}")
-            Consistency: 0.99
+            Consistency: 1.00
         """
-        # Need to support old 2-argment call signagure: analyze(first_run_results, second_run_results)
-        # Need to determine which argment is the 1st run result and which is the 2nd run result.
-        if grader_results and another_grader_results:
-            # current call signature
-            first_run_results = grader_results
-            second_run_results = another_grader_results
-        elif dataset and grader_results:
-            # The first two argments contain values but the 3rd does not.
-            # Treat this as a call following the old 2-argument signature.
+        # Select the call signature by argument presence, not whether a run is empty.
+        if another_grader_results is None:
             first_run_results = dataset
             second_run_results = grader_results
         else:
-            # 1. Insufficient argments for the current call signature:
-            # dataset and another grader result exist,
-            # but the 2nd argment (grader result) does not have value.
-            # Or 2. none of dataset, grader_results, another_grader_results exists.
-            first_run_results = []
-            second_run_results = []
+            first_run_results = grader_results
+            second_run_results = another_grader_results
 
         if not first_run_results or not second_run_results:
             logger.warning(
