@@ -254,8 +254,8 @@ class TestJsonMatchGrader:
         grader = JsonMatchGrader(strict_order=True)
 
         result = await grader.aevaluate(
-            reference_response='[true, 1]',
-            response='[1, true]',
+            reference_response="[true, 1]",
+            response="[1, true]",
         )
 
         assert result.score == 0.0
