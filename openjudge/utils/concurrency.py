@@ -20,7 +20,17 @@ class ConcurrencyManager:
         >>> result = await mgr.run_with_concurrency_control(some_coro())
     """
 
-    def __init__(self, max_concurrency: int = 10):
+    def __init__(self, max_concurrency: int = 10) -> None:
+        """Initialize the manager with a positive concurrency limit.
+
+        Args:
+            max_concurrency: Maximum number of concurrent tasks. Must be greater than 0.
+
+        Raises:
+            ValueError: If max_concurrency is not positive.
+        """
+        if max_concurrency <= 0:
+            raise ValueError("max_concurrency must be greater than 0")
         self._max_concurrency = max_concurrency
         self._semaphore = asyncio.Semaphore(max_concurrency)
 
@@ -28,8 +38,13 @@ class ConcurrencyManager:
         """Update the max concurrency limit.
 
         Args:
-            max_concurrency: Maximum number of concurrent tasks.
+            max_concurrency: Maximum number of concurrent tasks. Must be greater than 0.
+
+        Raises:
+            ValueError: If max_concurrency is not positive. The existing limit is unchanged.
         """
+        if max_concurrency <= 0:
+            raise ValueError("max_concurrency must be greater than 0")
         self._max_concurrency = max_concurrency
         self._semaphore = asyncio.Semaphore(max_concurrency)
 
