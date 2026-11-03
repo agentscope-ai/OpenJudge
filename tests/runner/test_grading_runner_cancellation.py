@@ -8,6 +8,9 @@ import pytest
 from openjudge.evaluation_strategy.average_evaluation_strategy import (
     AverageEvaluationStrategy,
 )
+from openjudge.evaluation_strategy.voting_evaluation_strategy import (
+    VotingEvaluationStrategy,
+)
 from openjudge.graders.function_grader import FunctionGrader
 from openjudge.graders.schema import GraderScore
 from openjudge.runner.grading_runner import GradingRunner
@@ -34,6 +37,7 @@ async def test_cancellation_drains_active_and_queued_grades(
         task = asyncio.current_task()
         active.add(task)
         started.append(index)
+        invocation = len(started)
         if len(active) == 2:
             two_started.set()
         try:
@@ -41,7 +45,7 @@ async def test_cancellation_drains_active_and_queued_grades(
             finished.append(index)
             return GraderScore(name="local", score=float(index), reason="Local grade")
         finally:
-            await asyncio.sleep(0)
+            await asyncio.sleep(0 if invocation == 1 else 0.01)
             active.remove(task)
             cleaned.append(index)
 
@@ -75,15 +79,19 @@ async def test_cancellation_drains_active_and_queued_grades(
 
 @pytest.mark.parametrize("show_progress", [False, True])
 @pytest.mark.parametrize("multiple_datasets", [False, True])
-async def test_cancelled_grader_drains_sibling_work(show_progress: bool, multiple_datasets: bool) -> None:
+@pytest.mark.parametrize("strategy", [None, AverageEvaluationStrategy(2), VotingEvaluationStrategy(2)])
+async def test_cancelled_grader_drains_sibling_work(show_progress: bool, multiple_datasets: bool, strategy) -> None:
     """An individual cancelled grader does not orphan its siblings or other datasets."""
     existing_tasks = asyncio.all_tasks()
     sibling_started = asyncio.Event()
     release = asyncio.Event()
     active = set()
+    cancelled_once = False
 
     async def grade(index: int) -> GraderScore:
-        if index == 0:
+        nonlocal cancelled_once
+        if index == 0 and not cancelled_once:
+            cancelled_once = True
             await sibling_started.wait()
             raise asyncio.CancelledError()
         task = asyncio.current_task()
@@ -96,7 +104,9 @@ async def test_cancelled_grader_drains_sibling_work(show_progress: bool, multipl
             await asyncio.sleep(0)
             active.remove(task)
 
-    runner = GradingRunner({"local": FunctionGrader(grade, name="local")}, show_progress=show_progress)
+    runner = GradingRunner(
+        {"local": FunctionGrader(grade, name="local", strategy=strategy)}, show_progress=show_progress
+    )
     dataset = [{"index": 0}, {"index": 1}]
     try:
         with pytest.raises(asyncio.CancelledError):
@@ -112,3 +122,42 @@ async def test_cancelled_grader_drains_sibling_work(show_progress: bool, multipl
         for task in pending:
             task.cancel()
         await asyncio.gather(*pending, return_exceptions=True)
+
+
+@pytest.mark.parametrize("show_progress", [False, True])
+@pytest.mark.parametrize("multiple_datasets", [False, True])
+async def test_repeated_cancellation_waits_for_async_cleanup(show_progress: bool, multiple_datasets: bool) -> None:
+    """Repeated caller cancellation cannot interrupt a grader's resource cleanup."""
+    started = asyncio.Event()
+    cleaning = asyncio.Event()
+    allow_cleanup = asyncio.Event()
+    cleaned = asyncio.Event()
+
+    async def grade(index: int) -> GraderScore:
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cleaning.set()
+            await allow_cleanup.wait()
+            cleaned.set()
+
+    runner = GradingRunner({"local": FunctionGrader(grade, name="local")}, show_progress=show_progress)
+    dataset = [{"index": 0}]
+    run = asyncio.create_task(runner.arun_multiple_datasets([dataset]) if multiple_datasets else runner.arun(dataset))
+    try:
+        await asyncio.wait_for(started.wait(), timeout=2)
+        run.cancel()
+        await asyncio.wait_for(cleaning.wait(), timeout=2)
+        run.cancel()
+        await asyncio.sleep(0)
+        assert not run.done()
+        allow_cleanup.set()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(run, timeout=2)
+        assert cleaned.is_set()
+    finally:
+        allow_cleanup.set()
+        if not run.done():
+            run.cancel()
+        await asyncio.gather(run, return_exceptions=True)

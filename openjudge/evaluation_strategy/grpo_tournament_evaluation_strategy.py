@@ -2,7 +2,6 @@
 
 # -*- coding: utf-8 -*-
 
-import asyncio
 from itertools import combinations
 from typing import Any, Awaitable, Callable, List
 
@@ -10,6 +9,7 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
     BaseEvaluationStrategy,
 )
 from openjudge.graders.schema import GraderRank, GraderScore
+from openjudge.utils.concurrency import _gather_with_cleanup
 
 
 class GRPOTournamentEvaluationStrategy(BaseEvaluationStrategy):
@@ -82,7 +82,7 @@ class GRPOTournamentEvaluationStrategy(BaseEvaluationStrategy):
             0 if resp_i wins (consistent), 1 if resp_j wins (consistent),
             None if results are inconsistent or errored.
         """
-        ab, ba = await asyncio.gather(
+        ab, ba = await _gather_with_cleanup(
             call_fn(query=query, response_1=resp_i, response_2=resp_j),
             call_fn(query=query, response_1=resp_j, response_2=resp_i),
         )
@@ -132,7 +132,9 @@ class GRPOTournamentEvaluationStrategy(BaseEvaluationStrategy):
         pairs = list(combinations(range(n), 2))
         compare_fn = self._compare_pair_debiased if self.debiased else self._compare_pair
 
-        outcomes = await asyncio.gather(*[compare_fn(call_fn, query, responses[i], responses[j]) for i, j in pairs])
+        outcomes = await _gather_with_cleanup(
+            *[compare_fn(call_fn, query, responses[i], responses[j]) for i, j in pairs]
+        )
 
         wins = [0] * n
         valid_comparisons = [0] * n

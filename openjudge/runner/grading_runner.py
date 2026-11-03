@@ -10,7 +10,6 @@ Classes:
     GradingRunner: Main runner class for executing evaluators.
 """
 
-import asyncio
 import copy
 from contextlib import nullcontext
 from dataclasses import dataclass
@@ -29,6 +28,7 @@ from openjudge.runner.resource_executor.base_resource_executor import (
 from openjudge.runner.resource_executor.semaphore_resource_executor import (
     SemaphoreResourceExecutor,
 )
+from openjudge.utils.concurrency import _gather_with_cleanup
 from openjudge.utils.mapping import parse_data_with_mapper
 from openjudge.utils.timer import TimingCollector
 
@@ -46,19 +46,8 @@ async def _gather_grading_tasks(
     Returns:
         Results in the same order as the input operations.
     """
-    tasks = [asyncio.create_task(coroutine) for coroutine in coroutines]
-    with tqdm_asyncio(total=len(tasks), desc=description, disable=not show_progress) as progress:
-        if show_progress:
-            for task in tasks:
-                task.add_done_callback(lambda _: progress.update())
-        try:
-            return await asyncio.gather(*tasks)
-        except BaseException:
-            for task in tasks:
-                if not task.done():
-                    task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
-            raise
+    with tqdm_asyncio(total=len(coroutines), desc=description, disable=not show_progress) as progress:
+        return await _gather_with_cleanup(*coroutines, on_complete=progress.update if show_progress else None)
 
 
 @dataclass

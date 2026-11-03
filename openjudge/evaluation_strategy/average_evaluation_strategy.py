@@ -2,13 +2,13 @@
 
 # -*- coding: utf-8 -*-
 
-import asyncio
 from typing import Any, Awaitable, Callable, List
 
 from openjudge.evaluation_strategy.base_evaluation_strategy import (
     BaseEvaluationStrategy,
 )
 from openjudge.graders.schema import GraderScore
+from openjudge.utils.concurrency import _gather_with_cleanup
 
 
 class AverageEvaluationStrategy(BaseEvaluationStrategy):
@@ -59,7 +59,7 @@ class AverageEvaluationStrategy(BaseEvaluationStrategy):
         for _ in range(self.num_evaluations):
             coroutines.append(call_fn(**kwargs))
 
-        results = await asyncio.gather(*coroutines)
+        results = await _gather_with_cleanup(*coroutines)
 
         # Handle empty results
         if not results:

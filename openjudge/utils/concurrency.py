@@ -6,9 +6,40 @@ the number of concurrent coroutines.
 """
 
 import asyncio
-from typing import Any, Coroutine, TypeVar
+from typing import Any, Awaitable, Callable, Coroutine, TypeVar
 
 T = TypeVar("T")
+
+
+async def _gather_with_cleanup(*coroutines: Awaitable[T], on_complete: Callable[[], Any] | None = None) -> list[T]:
+    """Gather owned operations in order, cancelling and draining siblings on failure.
+
+    Args:
+        *coroutines: Operations whose lifetime belongs to this call.
+        on_complete: Optional callback invoked once for each completed operation.
+
+    Returns:
+        Results in the same order as the supplied operations.
+    """
+    tasks = [asyncio.ensure_future(coroutine) for coroutine in coroutines]
+    if on_complete is not None:
+        for task in tasks:
+            task.add_done_callback(lambda _: on_complete())
+    group = asyncio.gather(*tasks)
+    try:
+        # This scope owns cancellation, including while children perform async cleanup.
+        return await asyncio.shield(group)
+    except BaseException:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        cleanup = asyncio.gather(group, *tasks, return_exceptions=True)
+        while not cleanup.done():
+            try:
+                await asyncio.shield(cleanup)
+            except asyncio.CancelledError:
+                continue
+        raise
 
 
 class ConcurrencyManager:
