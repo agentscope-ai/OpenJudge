@@ -53,8 +53,11 @@ async def test_strategy_failure_drains_other_evaluations(strategy, failure) -> N
             active.remove(task)
 
     try:
-        with pytest.raises(failure, match="evaluation stopped"):
+        with pytest.raises(failure) as raised:
             await asyncio.wait_for(strategy.execute(evaluate, query="q", responses=["a", "b", "c"]), timeout=2)
+        # Python 3.10's asyncio.gather drops a child's CancelledError message.
+        if failure is RuntimeError:
+            assert str(raised.value) == "evaluation stopped"
         assert not active
     finally:
         release.set()
