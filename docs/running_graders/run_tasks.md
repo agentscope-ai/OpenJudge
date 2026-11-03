@@ -174,6 +174,7 @@ The GradingRunner is designed for high-performance evaluation by managing execut
 
 - **Multi-Grader concurrency**: Multiple different graders execute concurrently for each data item, improving evaluation speed
 - **Data concurrency**: Multiple data items are processed concurrently across all graders
+- **Cancellation**: Cancelling `arun()` or `arun_multiple_datasets()` cancels their pending asynchronous grading tasks and waits for cleanup before returning, with or without progress bars. Cancellation propagates as `asyncio.CancelledError`. A synchronous grader already running in an executor thread cannot be forcibly stopped; remote operations already accepted by a service may also continue.
 - **Concurrency limits**: With the default semaphore executor, `max_concurrency` must be greater than 0; invalid values raise `ValueError` during initialization. Custom executors manage their own capacity. The `max_concurrency` parameter controls the maximum number of concurrent operations to prevent system overload. In our example, `max_concurrency=5` limits the system to processing 5 items simultaneously.
 
 Concurrency control enables efficient processing of large datasets while maintaining system stability.

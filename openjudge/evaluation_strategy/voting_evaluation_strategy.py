@@ -2,7 +2,6 @@
 
 # -*- coding: utf-8 -*-
 
-import asyncio
 from collections import Counter
 from typing import Any, Awaitable, Callable, List
 
@@ -10,6 +9,7 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
     BaseEvaluationStrategy,
 )
 from openjudge.graders.schema import GraderScore
+from openjudge.utils.concurrency import _gather_with_cleanup
 
 MIN = "min"
 MAX = "max"
@@ -110,7 +110,7 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
         for _ in range(self.num_votes):
             coroutines.append(call_fn(**kwargs))
 
-        results = await asyncio.gather(*coroutines)
+        results = await _gather_with_cleanup(*coroutines)
 
         values = [result.score for result in results if hasattr(result, "score")]
         if len(values) == 0:

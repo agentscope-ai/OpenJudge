@@ -10,11 +10,10 @@ Classes:
     GradingRunner: Main runner class for executing evaluators.
 """
 
-import asyncio
 import copy
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Coroutine, Dict, List, Tuple, Union
 
 from loguru import logger
 from tqdm.asyncio import tqdm_asyncio
@@ -29,8 +28,26 @@ from openjudge.runner.resource_executor.base_resource_executor import (
 from openjudge.runner.resource_executor.semaphore_resource_executor import (
     SemaphoreResourceExecutor,
 )
+from openjudge.utils.concurrency import _gather_with_cleanup
 from openjudge.utils.mapping import parse_data_with_mapper
 from openjudge.utils.timer import TimingCollector
+
+
+async def _gather_grading_tasks(
+    coroutines: List[Coroutine[Any, Any, Any]], show_progress: bool, description: str
+) -> List[Any]:
+    """Collect results in input order and drain owned tasks if the run fails or is cancelled.
+
+    Args:
+        coroutines: Grading or dataset operations owned by this run.
+        show_progress: Whether to display completed operation counts.
+        description: Label for the progress bar.
+
+    Returns:
+        Results in the same order as the input operations.
+    """
+    with tqdm_asyncio(total=len(coroutines), desc=description, disable=not show_progress) as progress:
+        return await _gather_with_cleanup(*coroutines, on_complete=progress.update if show_progress else None)
 
 
 @dataclass
@@ -412,14 +429,7 @@ class GradingRunner(BaseRunner):
                     )  # Record grader name and sample index
 
             # Execute all evaluator-sample coroutines concurrently
-            if self.show_progress:
-                all_results = await tqdm_asyncio.gather(
-                    *all_coroutines,
-                    desc="Evaluating a dataset",
-                    total=len(all_coroutines),
-                )
-            else:
-                all_results = await asyncio.gather(*all_coroutines)
+            all_results = await _gather_grading_tasks(all_coroutines, self.show_progress, "Evaluating a dataset")
 
             # Initialize lists for all graders
             for name in self.grader_configs.keys():
@@ -549,14 +559,9 @@ class GradingRunner(BaseRunner):
                 tasks = [self.arun(dataset, *args, **kwargs) for dataset in datasets]
 
                 # Execute all dataset tasks concurrently with progress bar
-                if original_show_progress:
-                    all_results = await tqdm_asyncio.gather(
-                        *tasks,
-                        desc=f"Evaluating {len(tasks)} datasets",
-                        total=len(tasks),
-                    )
-                else:
-                    all_results = await asyncio.gather(*tasks)
+                all_results = await _gather_grading_tasks(
+                    tasks, original_show_progress, f"Evaluating {len(tasks)} datasets"
+                )
 
                 # Return results as a list
                 return list(all_results)
