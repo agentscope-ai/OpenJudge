@@ -217,3 +217,41 @@ class TestCodeStyleMultipleBlocks:
         assert "code_blocks" in result.metadata
         assert "average_score" in result.metadata
         assert "details" in result.metadata
+
+    @pytest.mark.asyncio
+    async def test_non_python_fence_skipped_not_paired(self):
+        """Regression: a non-Python fence must not let its closing marker
+        pair with the next opening fence, so the prose in between is not
+        style-checked while the real Python block goes unchecked."""
+        grader = CodeStyleGrader()
+        response = "```js\nconsole.log(1)\n```\njust prose\n```python\ndef calculate_sum(a, b):\n    return a + b\n```"
+        result = await grader.aevaluate(response=response)
+
+        assert result.score == 1.0
+        assert result.metadata["code_blocks"] == ["def calculate_sum(a, b):\n    return a + b"]
+        assert result.metadata["skipped_non_python_blocks"] == 1
+
+    @pytest.mark.asyncio
+    async def test_python_tag_case_insensitive(self):
+        """A ```Python (capitalized) fence must be style-checked"""
+        grader = CodeStyleGrader()
+        response = "```Python\ndef CalculateTotal():\n    TotalAmount = 0\n    return TotalAmount\n```"
+        result = await grader.aevaluate(response=response)
+
+        # 0.5 (indent) + 0.5 * 0.0 (naming: 0/2 camel case) = 0.5
+        assert result.score == 0.5
+        assert result.metadata["code_blocks"] == [
+            "def CalculateTotal():\n    TotalAmount = 0\n    return TotalAmount",
+        ]
+        assert result.metadata["skipped_non_python_blocks"] == 0
+
+    @pytest.mark.asyncio
+    async def test_only_non_python_fences_is_neutral(self):
+        """Only non-Python fences: neutral score with the skip count reported"""
+        grader = CodeStyleGrader()
+        response = "```bash\nls -la\n```"
+        result = await grader.aevaluate(response=response)
+
+        assert result.score == 0.0
+        assert result.metadata["code_blocks"] == []
+        assert result.metadata["skipped_non_python_blocks"] == 1
