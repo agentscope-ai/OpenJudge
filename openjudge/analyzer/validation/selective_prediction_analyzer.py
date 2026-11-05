@@ -4,14 +4,29 @@
 from typing import Any, List
 
 from openjudge.analyzer.base_analyzer import AnalysisResult
-from openjudge.analyzer.validation.base_validation_analyzer import BaseValidationAnalyzer
+from openjudge.analyzer.validation.base_validation_analyzer import (
+    BaseValidationAnalyzer,
+)
 from openjudge.calibration.adapter import DecisionAdapter
 from openjudge.calibration.artifacts import FitArtifact, PolicyArtifact
-from openjudge.calibration.contracts import CalibrationContract, CalibrationScope, probability
+from openjudge.calibration.contracts import (
+    CalibrationContract,
+    CalibrationScope,
+    probability,
+)
 from openjudge.calibration.extraction import ConfidenceExtractor, extract_observations
 from openjudge.calibration.fitting import apply_calibrator
-from openjudge.calibration.metrics import BootstrapResult, BootstrapSettings, group_bootstrap
-from openjudge.calibration.selective import RiskCoverageCurve, SelectiveMetrics, risk_coverage_curve, selective_metrics
+from openjudge.calibration.metrics import (
+    BootstrapResult,
+    BootstrapSettings,
+    group_bootstrap,
+)
+from openjudge.calibration.selective import (
+    RiskCoverageCurve,
+    SelectiveMetrics,
+    risk_coverage_curve,
+    selective_metrics,
+)
 from openjudge.graders.schema import GraderResult
 
 
@@ -40,9 +55,16 @@ class SelectivePredictionAnalyzer(BaseValidationAnalyzer):
     name = "Selective Prediction Analysis"
 
     def __init__(
-        self, contract: CalibrationContract, scope: CalibrationScope, *, threshold: float | None = 0.0,
-        artifact: FitArtifact | None = None, policy: PolicyArtifact | None = None, invalid_policy: str = "raise",
-        confidence_extractor: ConfidenceExtractor | None = None, bootstrap: BootstrapSettings | None = None,
+        self,
+        contract: CalibrationContract,
+        scope: CalibrationScope,
+        *,
+        threshold: float | None = 0.0,
+        artifact: FitArtifact | None = None,
+        policy: PolicyArtifact | None = None,
+        invalid_policy: str = "raise",
+        confidence_extractor: ConfidenceExtractor | None = None,
+        bootstrap: BootstrapSettings | None = None,
     ) -> None:
         if policy is not None:
             if artifact is None:
@@ -59,7 +81,11 @@ class SelectivePredictionAnalyzer(BaseValidationAnalyzer):
         self.bootstrap_settings = bootstrap
 
     def analyze(
-        self, dataset: List[dict], grader_results: List[GraderResult], label_path: str | None = None, **kwargs: Any,
+        self,
+        dataset: List[dict],
+        grader_results: List[GraderResult],
+        label_path: str | None = None,
+        **kwargs: Any,
     ) -> SelectivePredictionAnalysisResult:
         """Evaluate fixed decisions, retaining native usable-result coverage separately."""
         self._validate_alignment(dataset, grader_results)
@@ -68,18 +94,32 @@ class SelectivePredictionAnalyzer(BaseValidationAnalyzer):
         if label_path is not None and label_path != self.contract.label_path:
             raise ValueError("label_path must match the explicit calibration contract")
         batch = extract_observations(
-            dataset, grader_results, self.contract, self.scope, invalid_policy=self.invalid_policy,
+            dataset,
+            grader_results,
+            self.contract,
+            self.scope,
+            invalid_policy=self.invalid_policy,
             confidence_extractor=self.confidence_extractor,
         )
         if self.artifact is not None:
             batch = apply_calibrator(self.artifact, batch)
-        uncertainty = group_bootstrap(batch, self.bootstrap_settings, threshold=self.threshold) if self.bootstrap_settings else None
+        uncertainty = (
+            group_bootstrap(batch, self.bootstrap_settings, threshold=self.threshold)
+            if self.bootstrap_settings
+            else None
+        )
         return SelectivePredictionAnalysisResult(
-            name=self.name, operating=selective_metrics(batch, self.threshold), curve=risk_coverage_curve(batch),
-            bootstrap=uncertainty, metadata={
+            name=self.name,
+            operating=selective_metrics(batch, self.threshold),
+            curve=risk_coverage_curve(batch),
+            bootstrap=uncertainty,
+            metadata={
                 **self._coverage_metadata(grader_results, len(batch.valid), "Risk of fixed selective decisions"),
-                "target_id": self.contract.target_id, "contract_fingerprint": self.contract.fingerprint,
-                "scope": self.scope.model_dump(), "fit_artifact_id": batch.fit_artifact_id,
-                "policy_id": self.policy.artifact_id if self.policy is not None else None, "status_counts": batch.counts,
+                "target_id": self.contract.target_id,
+                "contract_fingerprint": self.contract.fingerprint,
+                "scope": self.scope.model_dump(),
+                "fit_artifact_id": batch.fit_artifact_id,
+                "policy_id": self.policy.artifact_id if self.policy is not None else None,
+                "status_counts": batch.counts,
             },
         )

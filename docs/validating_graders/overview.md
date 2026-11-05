@@ -87,6 +87,7 @@ Choose metrics based on your evaluation task:
 
 ## Next Steps
 
+- [Calibrated Decisions](calibrated_decisions.md) — Fit confidence and evaluate fixed acceptance policies on separated groups
 - [RewardBench2 Validation](rewardbench2.md) — Validate on a multi-domain benchmark
 - [Reference Hallucination Arena](ref_hallucination_arena.md) — Evaluate LLM reference recommendation accuracy
 - [Grader Analysis](../running_graders/grader_analysis.md) — Generate comprehensive validation reports

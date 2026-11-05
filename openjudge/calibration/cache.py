@@ -28,9 +28,13 @@ class CachedPartition:
     """
 
     def __init__(
-        self, dataset: Sequence[dict[str, Any]], grader_results: Sequence[GraderResult], *, role: PartitionRole,
+        self,
+        dataset: Sequence[dict[str, Any]],
+        grader_results: Sequence[GraderResult],
+        *,
+        role: PartitionRole,
     ) -> None:
-        if role not in ROLES:
+        if not isinstance(role, str) or role not in ROLES:
             raise ValueError("unknown calibration partition role")
         if len(dataset) != len(grader_results):
             raise ValueError("dataset and grader_results must have the same length")
@@ -44,8 +48,12 @@ class CachedPartition:
 
     @classmethod
     def from_runner(
-        cls, dataset: Sequence[dict[str, Any]], runner_results: Mapping[str, Sequence[GraderResult]],
-        grader_name: str, *, role: PartitionRole,
+        cls,
+        dataset: Sequence[dict[str, Any]],
+        runner_results: Mapping[str, Sequence[GraderResult]],
+        grader_name: str,
+        *,
+        role: PartitionRole,
     ) -> "CachedPartition":
         """Snapshot one native GradingRunner result list after explicit grader selection."""
         if grader_name not in runner_results:
@@ -56,10 +64,13 @@ class CachedPartition:
         """Return a detached primitive envelope with explicit native schema tags."""
         records = []
         for sample, result in zip(self.dataset, self.grader_results):
-            records.append({
-                "sample": copy.deepcopy(sample), "result_type": "error" if isinstance(result, GraderError) else "score",
-                "result": result.model_dump(mode="json"),
-            })
+            records.append(
+                {
+                    "sample": copy.deepcopy(sample),
+                    "result_type": "error" if isinstance(result, GraderError) else "score",
+                    "result": result.model_dump(mode="json"),
+                }
+            )
         envelope = {"version": 1, "kind": "native_calibration_partition", "role": self.role, "records": records}
         return {**envelope, "content_id": canonical_digest(envelope)}
 
@@ -85,7 +96,11 @@ class CachedPartition:
             raise ValueError("invalid cache envelope fields")
         if type(payload["version"]) is not int or payload["version"] != 1:
             raise ValueError("unsupported cache version")
-        if payload["kind"] != "native_calibration_partition" or payload["role"] not in ROLES:
+        if (
+            payload["kind"] != "native_calibration_partition"
+            or not isinstance(payload["role"], str)
+            or payload["role"] not in ROLES
+        ):
             raise ValueError("unsupported cache kind or partition role")
         if not isinstance(payload["records"], list):
             raise ValueError("cache records must be a list")
@@ -99,6 +114,8 @@ class CachedPartition:
                 raise ValueError(f"invalid cache record at index {index}")
             if not isinstance(record["sample"], dict) or not isinstance(record["result"], dict):
                 raise ValueError(f"invalid native sample/result at index {index}")
+            if not isinstance(record["result_type"], str):
+                raise ValueError(f"unsupported native result type at index {index}")
             result_class = {"score": GraderScore, "error": GraderError}.get(record["result_type"])
             if result_class is None or set(record["result"]) - set(result_class.model_fields):
                 raise ValueError(f"unsupported native result schema at index {index}")

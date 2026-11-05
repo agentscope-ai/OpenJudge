@@ -17,17 +17,28 @@ from openjudge.runner.grading_runner import GradingRunner
 
 
 def partition(prefix, role, labels=(0, 1, 1)):
-    data = [{"id": f"{prefix}-{i}", "group": f"{prefix}-g-{i}", "label": label,
-             "query": "private prompt", "prediction": 1, "confidence": p}
-            for i, (label, p) in enumerate(zip(labels, (0.2, 0.8, 0.9)))]
-    results = [GraderScore(name="j", score=1, reason="private reasoning", metadata={"confidence": row["confidence"]})
-               for row in data]
+    data = [
+        {
+            "id": f"{prefix}-{i}",
+            "group": f"{prefix}-g-{i}",
+            "label": label,
+            "query": "private prompt",
+            "prediction": 1,
+            "confidence": p,
+        }
+        for i, (label, p) in enumerate(zip(labels, (0.2, 0.8, 0.9)))
+    ]
+    results = [
+        GraderScore(name="j", score=1, reason="private reasoning", metadata={"confidence": row["confidence"]})
+        for row in data
+    ]
     return CachedPartition(data, results, role=role)
 
 
 def settings():
     return WorkflowSettings(
-        fit=FitSettings(method="isotonic"), selection=SelectionSettings(risk_target=0.1),
+        fit=FitSettings(method="isotonic"),
+        selection=SelectionSettings(risk_target=0.1),
         bootstrap=BootstrapSettings(resamples=10, seed=7),
     )
 
@@ -72,11 +83,15 @@ async def test_real_function_grader_runner_cache_and_report(tmp_path, contract, 
 def test_test_labels_cannot_affect_fit_or_threshold(contract, scope):
     fit, validation, test = partition("fit", "calibration"), partition("val", "validation"), partition("test", "test")
     first = run_calibration_workflow(fit, validation, test, contract, scope, settings())
-    changed = run_calibration_workflow(fit, validation, partition("test", "test", (1, 0, 0)), contract, scope, settings())
+    changed = run_calibration_workflow(
+        fit, validation, partition("test", "test", (1, 0, 0)), contract, scope, settings()
+    )
     assert first.fit_artifact.artifact_id == changed.fit_artifact.artifact_id
     assert first.policy.artifact_id == changed.policy.artifact_id
     assert first.test.selected.risk != changed.test.selected.risk
-    changed_validation = run_calibration_workflow(fit, partition("val", "validation", (1, 0, 0)), test, contract, scope, settings())
+    changed_validation = run_calibration_workflow(
+        fit, partition("val", "validation", (1, 0, 0)), test, contract, scope, settings()
+    )
     assert first.fit_artifact.artifact_id == changed_validation.fit_artifact.artifact_id
     assert first.policy.artifact_id != changed_validation.policy.artifact_id
 
@@ -124,8 +139,9 @@ def test_cache_and_workflow_preserve_provider_failures(tmp_path, contract, scope
     source.save(tmp_path / "errors.json")
     loaded = CachedPartition.load(tmp_path / "errors.json")
     assert isinstance(loaded.grader_results[0], GraderError)
-    report = run_calibration_workflow(partition("fit", "calibration"), partition("val", "validation"), loaded,
-                                      contract, scope, settings())
+    report = run_calibration_workflow(
+        partition("fit", "calibration"), partition("val", "validation"), loaded, contract, scope, settings()
+    )
     assert report.test.selected.provider_error_count == 1
     assert report.test.selected.unconditional_error_count == 1
     assert report.test.selected.coverage == pytest.approx(2 / 3)

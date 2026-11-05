@@ -10,7 +10,12 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
-from openjudge.calibration.artifacts import FitArtifact, FitSettings, FitState, check_compatibility
+from openjudge.calibration.artifacts import (
+    FitArtifact,
+    FitSettings,
+    FitState,
+    check_compatibility,
+)
 from openjudge.calibration.contracts import ObservationBatch, probability
 from openjudge.calibration.splits import partition_provenance
 
@@ -46,11 +51,16 @@ def fit_calibrator(batch: ObservationBatch, settings: FitSettings = FitSettings(
         estimator = IsotonicRegression(y_min=0, y_max=1, increasing=True, out_of_bounds="clip")
         estimator.fit(probabilities, outcomes)
         state = FitState(
-            kind="isotonic", x_thresholds=tuple(estimator.X_thresholds_), y_thresholds=tuple(estimator.y_thresholds_),
+            kind="isotonic",
+            x_thresholds=tuple(estimator.X_thresholds_),
+            y_thresholds=tuple(estimator.y_thresholds_),
         )
     else:
         estimator = LogisticRegression(
-            C=settings.regularization, solver="lbfgs", max_iter=settings.max_iterations, tol=settings.tolerance,
+            C=settings.regularization,
+            solver="lbfgs",
+            max_iter=settings.max_iterations,
+            tol=settings.tolerance,
         )
         with warnings.catch_warnings():
             warnings.simplefilter("error", ConvergenceWarning)
@@ -67,10 +77,16 @@ def fit_calibrator(batch: ObservationBatch, settings: FitSettings = FitSettings(
         else:
             state = FitState(kind="sigmoid", slope=slope, intercept=float(estimator.intercept_[0]))
     return FitArtifact.create(
-        kind="calibrator", contract=batch.contract, scope=batch.scope, settings=settings, state=state,
-        source=partition_provenance(batch), correct_count=int(np.sum(outcomes)),
+        kind="calibrator",
+        contract=batch.contract,
+        scope=batch.scope,
+        settings=settings,
+        state=state,
+        source=partition_provenance(batch),
+        correct_count=int(np.sum(outcomes)),
         confidence_range=(float(np.min(probabilities)), float(np.max(probabilities))),
-        domain_counts=dict(Counter(row.domain for row in rows if row.domain is not None)), degeneracy=degeneracy,
+        domain_counts=dict(Counter(row.domain for row in rows if row.domain is not None)),
+        degeneracy=degeneracy,
         implementation="openjudge.correctness-calibration.v1",
     )
 
@@ -96,7 +112,10 @@ def predict_confidence(artifact: FitArtifact, probabilities: Sequence[float]) ->
 
 
 def apply_calibrator(
-    artifact: FitArtifact, batch: ObservationBatch, *, override_reason: str | None = None,
+    artifact: FitArtifact,
+    batch: ObservationBatch,
+    *,
+    override_reason: str | None = None,
 ) -> ObservationBatch:
     """Return calibrated copies while retaining all rows, identities and omissions.
 
@@ -117,7 +136,10 @@ def apply_calibrator(
         row.model_copy(update={"probability": next(predictions)}) if row.status == "valid" else row
         for row in batch.observations
     )
-    return batch.model_copy(update={
-        "observations": observations, "fit_artifact_id": artifact.artifact_id,
-        "overrides": batch.overrides + ((override,) if override is not None else ()),
-    })
+    return batch.model_copy(
+        update={
+            "observations": observations,
+            "fit_artifact_id": artifact.artifact_id,
+            "overrides": batch.overrides + ((override,) if override is not None else ()),
+        }
+    )

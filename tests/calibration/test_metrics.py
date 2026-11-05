@@ -5,7 +5,11 @@ import math
 import numpy as np
 import pytest
 
-from openjudge.calibration.metrics import BootstrapSettings, group_bootstrap, reliability_metrics
+from openjudge.calibration.metrics import (
+    BootstrapSettings,
+    group_bootstrap,
+    reliability_metrics,
+)
 
 
 def test_hand_computed_reliability_and_endpoint_bins(make_batch):
@@ -31,7 +35,7 @@ def test_empty_bins_and_empty_batch_use_null(make_batch):
     assert empty.sample_count == 0
 
 
-@pytest.mark.parametrize("edges", [(0, 0.5), (0.1, 1), (0, 0.8, 0.7, 1), (0, 0, 1), (0, float('nan'), 1)])
+@pytest.mark.parametrize("edges", [(0, 0.5), (0.1, 1), (0, 0.8, 0.7, 1), (0, 0, 1), (0, float("nan"), 1)])
 def test_invalid_bins_fail(make_batch, edges):
     with pytest.raises(ValueError):
         reliability_metrics(make_batch([0.5], [1]), bin_edges=edges)

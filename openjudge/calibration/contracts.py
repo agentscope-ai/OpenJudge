@@ -12,8 +12,16 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 PartitionRole = Literal["calibration", "validation", "test", "analysis", "inference"]
 ObservationStatus = Literal[
-    "valid", "provider_error", "user_excluded", "missing_label", "invalid_label",
-    "missing_prediction", "invalid_prediction", "missing_confidence", "invalid_confidence", "unsupported_result",
+    "valid",
+    "provider_error",
+    "user_excluded",
+    "missing_label",
+    "invalid_label",
+    "missing_prediction",
+    "invalid_prediction",
+    "missing_confidence",
+    "invalid_confidence",
+    "unsupported_result",
 ]
 DecisionLabel = str | int | float
 
@@ -80,8 +88,9 @@ class CalibrationContract(FrozenModel):
     exclude_path: str | None = None
     decision_labels: tuple[DecisionLabel, DecisionLabel] = (0, 1)
 
-    @field_validator("target_id", "confidence_interpretation", "prediction_path", "label_path",
-                     "sample_id_path", "group_id_path")
+    @field_validator(
+        "target_id", "confidence_interpretation", "prediction_path", "label_path", "sample_id_path", "group_id_path"
+    )
     @classmethod
     def nonempty(cls, value: str) -> str:
         """Reject missing event and field identities."""

@@ -2,13 +2,19 @@
 """Versioned, checksummed primitive JSON artifacts; no executable deserialization."""
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Literal, TypeVar
 
 from pydantic import Field, field_validator, model_validator
 
 from openjudge.calibration.contracts import (
-    CalibrationContract, CalibrationScope, CompatibilityOverride, FrozenModel, canonical_digest, probability,
+    CalibrationContract,
+    CalibrationScope,
+    CompatibilityOverride,
+    FrozenModel,
+    canonical_digest,
+    probability,
 )
 from openjudge.calibration.splits import PartitionProvenance, assert_disjoint
 
@@ -75,11 +81,15 @@ class JSONArtifact(FrozenModel):
     @classmethod
     def model_validate_json(cls: type[ArtifactType], json_data: str | bytes | bytearray, **kwargs: Any) -> ArtifactType:
         """Apply strict JSON parsing in addition to Pydantic field validation."""
-        return cls.model_validate(read_json(bytes(json_data) if isinstance(json_data, bytearray) else json_data), **kwargs)
+        return cls.model_validate(
+            read_json(bytes(json_data) if isinstance(json_data, bytearray) else json_data), **kwargs
+        )
 
     def save(self, path: str | Path) -> None:
         """Write finite readable JSON; callers choose the local destination."""
-        Path(path).write_text(json.dumps(self.model_dump(mode="json"), indent=2, allow_nan=False) + "\n", encoding="utf-8")
+        Path(path).write_text(
+            json.dumps(self.model_dump(mode="json"), indent=2, allow_nan=False) + "\n", encoding="utf-8"
+        )
 
     @classmethod
     def load(cls: type[ArtifactType], path: str | Path) -> ArtifactType:
@@ -92,7 +102,7 @@ class FitSettings(FrozenModel):
     """Settings for sigmoid-on-raw-confidence or isotonic postprocessing."""
 
     method: Literal["identity", "sigmoid", "isotonic"] = "identity"
-    regularization: float = Field(default=1.0, gt=0)
+    regularization: float = Field(default=1.0, gt=0, description="Inverse L2 regularization C for sklearn sigmoid")
     max_iterations: int = Field(default=1000, ge=1, strict=True)
     tolerance: float = Field(default=1e-9, gt=0)
 
@@ -125,7 +135,9 @@ class FitState(FrozenModel):
         if self.kind == "identity":
             valid = self.constant is None and self.slope is None and self.intercept is None and not self.x_thresholds
         elif self.kind == "constant":
-            valid = self.constant is not None and self.slope is None and self.intercept is None and not self.x_thresholds
+            valid = (
+                self.constant is not None and self.slope is None and self.intercept is None and not self.x_thresholds
+            )
         elif self.kind == "sigmoid":
             valid = self.constant is None and self.slope is not None and self.slope >= 0
             valid = valid and self.intercept is not None and not self.x_thresholds
@@ -192,6 +204,17 @@ class SelectionEvidence(FrozenModel):
         return self
 
 
+def hoeffding_guarantee(alpha: float) -> str:
+    """Describe exactly the assumptions used by the optional simultaneous bound."""
+    return (
+        "fixed-grid Bonferroni-Hoeffding upper risk bounds at alpha="
+        + str(alpha)
+        + "; conditional on independent identically distributed observation pairs, one observation per group, "
+        "an independently fitted calibrator and the grid declared before validation inspection; "
+        "not guaranteed under distribution shift"
+    )
+
+
 class PolicyArtifact(JSONArtifact):
     """A threshold chosen once on validation data, bound to a fitted artifact."""
 
@@ -206,6 +229,7 @@ class PolicyArtifact(JSONArtifact):
     min_accepted: int = Field(ge=1)
     criterion: Literal["empirical", "hoeffding"]
     candidates: tuple[float, ...]
+    candidate_source: Literal["validation_ties", "fixed_grid"]
     candidate_count: int = Field(ge=0)
     alpha: float
     assume_iid_observations: bool
@@ -244,16 +268,38 @@ class PolicyArtifact(JSONArtifact):
             raise ValueError("selected threshold was not a declared candidate")
         elif self.selection.accepted_count < self.min_accepted:
             raise ValueError("selected threshold lacks required validation support")
-        if self.criterion == "empirical" and self.guarantee is not None:
-            raise ValueError("empirical threshold selection carries no population guarantee")
-        if self.criterion == "hoeffding" and (not self.assume_iid_observations or not 0 < self.alpha < 1):
-            raise ValueError("bound requires explicit independent observation assumptions")
+        count = self.selection.accepted_count
+        if count > self.validation_source.valid_count:
+            raise ValueError("policy accepts more than the validation support")
+        expected_coverage = count / self.validation_source.sample_count if self.validation_source.sample_count else 0
+        if self.selection.coverage != expected_coverage:
+            raise ValueError("policy coverage does not match its validation denominator")
+        expected_upper = self.selection.risk
+        if self.criterion == "empirical":
+            if self.guarantee is not None:
+                raise ValueError("empirical threshold selection carries no population guarantee")
+        else:
+            if not self.assume_iid_observations or not 0 < self.alpha < 1 or self.candidate_source != "fixed_grid":
+                raise ValueError("bound requires fixed-grid and explicit independent observation assumptions")
+            if not self.candidate_count or self.guarantee != hoeffding_guarantee(self.alpha):
+                raise ValueError("bound assumptions and interpretation must be preserved exactly")
+            if count:
+                expected_upper = min(
+                    1.0, self.selection.risk + math.sqrt(math.log(self.candidate_count / self.alpha) / (2 * count))
+                )
+        if self.selection_upper_risk != expected_upper:
+            raise ValueError("policy upper risk is inconsistent with its selection criterion")
+        if self.threshold is not None and expected_upper > self.risk_target:
+            raise ValueError("selected policy does not meet its requested empirical criterion")
         return self
 
 
 def check_compatibility(
-    contract: CalibrationContract, scope: CalibrationScope, fitted_contract: CalibrationContract,
-    fitted_scope: CalibrationScope, override_reason: str | None = None,
+    contract: CalibrationContract,
+    scope: CalibrationScope,
+    fitted_contract: CalibrationContract,
+    fitted_scope: CalibrationScope,
+    override_reason: str | None = None,
 ) -> CompatibilityOverride | None:
     """Fail closed on event/extractor/scope differences, or record an explicit override."""
     mismatches = []

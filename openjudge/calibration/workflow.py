@@ -6,19 +6,45 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from openjudge.calibration.artifacts import FitArtifact, FitSettings, JSONArtifact, PolicyArtifact, check_compatibility
+from openjudge.calibration.artifacts import (
+    FitArtifact,
+    FitSettings,
+    JSONArtifact,
+    PolicyArtifact,
+    check_compatibility,
+)
 from openjudge.calibration.cache import CachedPartition
-from openjudge.calibration.contracts import CalibrationContract, CalibrationScope, FrozenModel, ObservationBatch
+from openjudge.calibration.contracts import (
+    CalibrationContract,
+    CalibrationScope,
+    FrozenModel,
+    ObservationBatch,
+)
 from openjudge.calibration.extraction import ConfidenceExtractor, extract_observations
 from openjudge.calibration.fitting import apply_calibrator, fit_calibrator
 from openjudge.calibration.metrics import (
-    DEFAULT_BIN_EDGES, BootstrapResult, BootstrapSettings, ReliabilityMetrics, group_bootstrap,
-    reliability_metrics, validate_metric_settings,
+    DEFAULT_BIN_EDGES,
+    BootstrapResult,
+    BootstrapSettings,
+    ReliabilityMetrics,
+    group_bootstrap,
+    reliability_metrics,
+    validate_metric_settings,
 )
 from openjudge.calibration.selective import (
-    RiskCoverageCurve, SelectionSettings, SelectiveMetrics, risk_coverage_curve, select_policy, selective_metrics,
+    RiskCoverageCurve,
+    SelectionSettings,
+    SelectiveMetrics,
+    risk_coverage_curve,
+    select_policy,
+    selective_metrics,
 )
-from openjudge.calibration.splits import SplitManifest, assert_disjoint, audit_partitions, partition_provenance
+from openjudge.calibration.splits import (
+    SplitManifest,
+    assert_disjoint,
+    audit_partitions,
+    partition_provenance,
+)
 
 
 class WorkflowSettings(FrozenModel):
@@ -112,8 +138,11 @@ class WorkflowReport(JSONArtifact):
 def _partition_summary(batch: ObservationBatch) -> PartitionSummary:
     """Keep statuses for every row and per-domain valid support."""
     return PartitionSummary(
-        role=batch.role, total_count=len(batch.observations), valid_count=len(batch.valid),
-        group_count=len({row.group_id for row in batch.observations}), status_counts=batch.counts,
+        role=batch.role,
+        total_count=len(batch.observations),
+        valid_count=len(batch.valid),
+        group_count=len({row.group_id for row in batch.observations}),
+        status_counts=batch.counts,
         domain_counts=dict(Counter(row.domain for row in batch.valid if row.domain is not None)),
     )
 
@@ -122,14 +151,20 @@ def _confidence_evaluation(batch: ObservationBatch, settings: WorkflowSettings) 
     """Compute summaries against fixed inputs without fitting or selecting anything."""
     return ConfidenceEvaluation(
         reliability=reliability_metrics(batch, bin_edges=settings.bin_edges, log_loss_clip=settings.log_loss_clip),
-        curve=risk_coverage_curve(batch), bootstrap=group_bootstrap(
-            batch, settings.bootstrap, bin_edges=settings.bin_edges, log_loss_clip=settings.log_loss_clip,
+        curve=risk_coverage_curve(batch),
+        bootstrap=group_bootstrap(
+            batch,
+            settings.bootstrap,
+            bin_edges=settings.bin_edges,
+            log_loss_clip=settings.log_loss_clip,
         ),
     )
 
 
 def evaluate_policy(
-    test: ObservationBatch, artifact: FitArtifact, policy: PolicyArtifact,
+    test: ObservationBatch,
+    artifact: FitArtifact,
+    policy: PolicyArtifact,
     settings: WorkflowSettings = WorkflowSettings(),
 ) -> TestEvaluation:
     """Evaluate one fixed calibrator/policy against a disjoint test partition.
@@ -152,18 +187,28 @@ def evaluate_policy(
     assert_disjoint(artifact.source, policy.validation_source, partition_provenance(test))
     calibrated = apply_calibrator(artifact, test)
     return TestEvaluation(
-        raw=_confidence_evaluation(test, settings), calibrated=_confidence_evaluation(calibrated, settings),
-        selected=selective_metrics(calibrated, policy.threshold), always_accept=selective_metrics(calibrated, 0),
+        raw=_confidence_evaluation(test, settings),
+        calibrated=_confidence_evaluation(calibrated, settings),
+        selected=selective_metrics(calibrated, policy.threshold),
+        always_accept=selective_metrics(calibrated, 0),
         selected_bootstrap=group_bootstrap(
-            calibrated, settings.bootstrap, threshold=policy.threshold,
-            bin_edges=settings.bin_edges, log_loss_clip=settings.log_loss_clip,
+            calibrated,
+            settings.bootstrap,
+            threshold=policy.threshold,
+            bin_edges=settings.bin_edges,
+            log_loss_clip=settings.log_loss_clip,
         ),
     )
 
 
 def run_calibration_workflow(
-    calibration: CachedPartition, validation: CachedPartition, test: CachedPartition,
-    contract: CalibrationContract, scope: CalibrationScope, settings: WorkflowSettings = WorkflowSettings(), *,
+    calibration: CachedPartition,
+    validation: CachedPartition,
+    test: CachedPartition,
+    contract: CalibrationContract,
+    scope: CalibrationScope,
+    settings: WorkflowSettings = WorkflowSettings(),
+    *,
     confidence_extractor: ConfidenceExtractor | None = None,
 ) -> WorkflowReport:
     """Audit all partitions, fit calibration only, select validation only, then test.
@@ -185,10 +230,18 @@ def run_calibration_workflow(
     inputs = (calibration, validation, test)
     if tuple(part.role for part in inputs) != ("calibration", "validation", "test"):
         raise ValueError("workflow requires separate calibration, validation and test roles in that order")
-    batches = tuple(extract_observations(
-        part.dataset, part.grader_results, contract, scope, role=part.role, invalid_policy=settings.invalid_policy,
-        confidence_extractor=confidence_extractor,
-    ) for part in inputs)
+    batches = tuple(
+        extract_observations(
+            part.dataset,
+            part.grader_results,
+            contract,
+            scope,
+            role=part.role,
+            invalid_policy=settings.invalid_policy,
+            confidence_extractor=confidence_extractor,
+        )
+        for part in inputs
+    )
     manifest = audit_partitions(*batches)
     # Fit and select receive only their own batches, never the held-out labels.
     artifact = fit_calibrator(batches[0], settings.fit)
@@ -198,13 +251,22 @@ def run_calibration_workflow(
     fit_domains, val_domains, test_domains = (summary.domain_counts for summary in summaries)
     low, high = artifact.confidence_range
     diagnostics = DomainDiagnostics(
-        calibration_domains=fit_domains, validation_domains=val_domains, test_domains=test_domains,
+        calibration_domains=fit_domains,
+        validation_domains=val_domains,
+        test_domains=test_domains,
         unseen_test_domains=tuple(sorted(set(test_domains) - set(fit_domains))),
         test_confidences_outside_fit_range=sum(not low <= row.probability <= high for row in batches[2].valid),
     )
     return WorkflowReport.create(
-        kind="correctness_calibration_report", settings=settings, manifest=manifest, partitions=summaries,
-        fit_artifact=artifact, policy=policy, test=evaluation, domains=diagnostics, limitations=(
+        kind="correctness_calibration_report",
+        settings=settings,
+        manifest=manifest,
+        partitions=summaries,
+        fit_artifact=artifact,
+        policy=policy,
+        test=evaluation,
+        domains=diagnostics,
+        limitations=(
             "Correctness labels must be independently supplied; this workflow does not establish their quality.",
             "Strict group/sample disjointness cannot discover undeclared duplicate tasks or prompt-selection leakage.",
             "Empirical threshold selection and group-bootstrap intervals carry no population-risk guarantee.",

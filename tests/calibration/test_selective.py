@@ -6,7 +6,12 @@ import pytest
 
 from openjudge.calibration.extraction import extract_observations
 from openjudge.calibration.fitting import FitSettings, fit_calibrator
-from openjudge.calibration.selective import SelectionSettings, risk_coverage_curve, select_policy, selective_metrics
+from openjudge.calibration.selective import (
+    SelectionSettings,
+    risk_coverage_curve,
+    select_policy,
+    selective_metrics,
+)
 from openjudge.graders.schema import GraderError, GraderScore
 
 
@@ -24,8 +29,13 @@ def test_tie_group_aurc_hand_oracle_and_order_invariance(make_batch):
 def test_provider_failure_is_not_successful_abstention(contract, scope):
     batch = extract_observations(
         [{"id": "a", "group": "a", "label": 1}, {"id": "b", "group": "b", "label": 0}],
-        [GraderScore(name="j", score=1, reason="", metadata={"confidence": 0.9}),
-         GraderError(name="j", reason="", error="timeout")], contract, scope, role="test"
+        [
+            GraderScore(name="j", score=1, reason="", metadata={"confidence": 0.9}),
+            GraderError(name="j", reason="", error="timeout"),
+        ],
+        contract,
+        scope,
+        role="test",
     )
     result = selective_metrics(batch, threshold=None)
     assert result.accepted_count == 0
@@ -68,8 +78,7 @@ def test_fixed_grid_hoeffding_adjusts_all_declared_thresholds(make_batch):
     fit = fit_calibrator(make_batch([0.2, 0.8], [0, 1]), FitSettings())
     validation = make_batch([0.9] * 100, [1] * 100, role="validation", prefix="validation")
     settings = SelectionSettings(
-        risk_target=0.5, criterion="hoeffding", candidates=(0.5, 0.8), alpha=0.05,
-        assume_iid_observations=True
+        risk_target=0.5, criterion="hoeffding", candidates=(0.5, 0.8), alpha=0.05, assume_iid_observations=True
     )
     policy = select_policy(validation, fit, settings)
     assert policy.threshold == 0.5
@@ -86,9 +95,9 @@ def test_bound_requires_fixed_grid_and_explicit_independence(make_batch):
     fit = fit_calibrator(make_batch([0.2, 0.8], [0, 1]), FitSettings())
     validation = make_batch([0.9, 0.9], [1, 1], role="validation", prefix="validation", groups=["v", "v"])
     with pytest.raises(ValueError, match="group"):
-        select_policy(validation, fit, SelectionSettings(
-            criterion="hoeffding", candidates=(0.5,), assume_iid_observations=True
-        ))
+        select_policy(
+            validation, fit, SelectionSettings(criterion="hoeffding", candidates=(0.5,), assume_iid_observations=True)
+        )
 
 
 def test_fit_validation_overlap_fails_and_test_cannot_select(make_batch):

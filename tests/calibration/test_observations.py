@@ -19,7 +19,8 @@ def test_extracts_detached_ordered_correctness_with_provider_failure(contract, s
     results = [score(), GraderError(name="judge", reason="", error="timeout")]
     batch = extract_observations(data, results, contract, scope, role="analysis")
     assert [(o.sample_id, o.status, o.correctness) for o in batch.observations] == [
-        ("a", "valid", 1), ("b", "provider_error", None)
+        ("a", "valid", 1),
+        ("b", "provider_error", None),
     ]
     results[0].metadata["confidence"] = 0.2
     data[0]["id"] = "changed"
@@ -99,8 +100,10 @@ def test_manifests_detect_distinct_ids_from_same_task(make_batch):
 
 def test_explicit_callback_and_vote_interpretation(scope):
     contract = CalibrationContract(
-        target_id="correctness", confidence_path=None, extractor_id="vote_fraction_v1",
-        confidence_interpretation="fraction of successful repeated votes agreeing with selected decision"
+        target_id="correctness",
+        confidence_path=None,
+        extractor_id="vote_fraction_v1",
+        confidence_interpretation="fraction of successful repeated votes agreeing with selected decision",
     )
     result = score()
     result.metadata = {"original_results": [score(prediction=1), score(prediction=1), score(prediction=0)]}

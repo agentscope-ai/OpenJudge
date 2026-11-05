@@ -6,11 +6,23 @@ from typing import Any, Literal
 
 from pydantic import SerializeAsAny
 
-from openjudge.calibration.artifacts import FitArtifact, PolicyArtifact, check_compatibility
-from openjudge.calibration.contracts import (
-    CalibrationContract, CalibrationScope, CompatibilityOverride, FrozenModel, is_decision_label,
+from openjudge.calibration.artifacts import (
+    FitArtifact,
+    PolicyArtifact,
+    check_compatibility,
 )
-from openjudge.calibration.extraction import ConfidenceExtractor, extract_confidence, read_path
+from openjudge.calibration.contracts import (
+    CalibrationContract,
+    CalibrationScope,
+    CompatibilityOverride,
+    FrozenModel,
+    is_decision_label,
+)
+from openjudge.calibration.extraction import (
+    ConfidenceExtractor,
+    extract_confidence,
+    read_path,
+)
 from openjudge.calibration.fitting import predict_confidence
 from openjudge.graders.schema import GraderError, GraderResult, GraderScore
 
@@ -42,8 +54,14 @@ class DecisionAdapter:
     """
 
     def __init__(
-        self, artifact: FitArtifact, policy: PolicyArtifact, contract: CalibrationContract, scope: CalibrationScope, *,
-        confidence_extractor: ConfidenceExtractor | None = None, override_reason: str | None = None,
+        self,
+        artifact: FitArtifact,
+        policy: PolicyArtifact,
+        contract: CalibrationContract,
+        scope: CalibrationScope,
+        *,
+        confidence_extractor: ConfidenceExtractor | None = None,
+        override_reason: str | None = None,
     ) -> None:
         if policy.fit_artifact_id != artifact.artifact_id or policy.fit_source != artifact.source:
             raise ValueError("policy is bound to a different fitted calibrator")
@@ -99,13 +117,21 @@ class DecisionAdapter:
                 status = "abstained"
                 reason = "abstain_all_policy" if self.policy.threshold is None else "confidence_below_threshold"
         return DecisionEnvelope(
-            status=status, original_result=result, raw_confidence=raw, calibrated_confidence=calibrated,
-            fit_artifact_id=self.artifact.artifact_id, policy_id=self.policy.artifact_id,
-            threshold=self.policy.threshold, reason=reason, overrides=self.overrides,
+            status=status,
+            original_result=result,
+            raw_confidence=raw,
+            calibrated_confidence=calibrated,
+            fit_artifact_id=self.artifact.artifact_id,
+            policy_id=self.policy.artifact_id,
+            threshold=self.policy.threshold,
+            reason=reason,
+            overrides=self.overrides,
         )
 
     def decide_many(
-        self, grader_results: Sequence[GraderResult], dataset: Sequence[dict[str, Any]] | None = None,
+        self,
+        grader_results: Sequence[GraderResult],
+        dataset: Sequence[dict[str, Any]] | None = None,
     ) -> tuple[DecisionEnvelope, ...]:
         """Preserve runner order; mismatched sample/result lists fail before inference."""
         if dataset is None:

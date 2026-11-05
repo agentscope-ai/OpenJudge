@@ -5,8 +5,14 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal
 
 from openjudge.calibration.contracts import (
-    CalibrationContract, CalibrationScope, Observation, ObservationBatch, PartitionRole,
-    is_decision_label, probability, valid_identifier,
+    CalibrationContract,
+    CalibrationScope,
+    Observation,
+    ObservationBatch,
+    PartitionRole,
+    is_decision_label,
+    probability,
+    valid_identifier,
 )
 from openjudge.graders.schema import GraderError, GraderResult, GraderScore
 
@@ -27,7 +33,9 @@ def read_path(value: Any, path: str) -> Any:
 
 
 def extract_confidence(
-    sample: dict[str, Any], result: GraderResult, contract: CalibrationContract,
+    sample: dict[str, Any],
+    result: GraderResult,
+    contract: CalibrationContract,
     confidence_extractor: ConfidenceExtractor | None = None,
 ) -> tuple[float | None, str | None]:
     """Read the declared probability and return a stable omission status.
@@ -53,7 +61,9 @@ def extract_confidence(
 
 
 def _row_values(
-    sample: dict[str, Any], result: GraderResult, contract: CalibrationContract,
+    sample: dict[str, Any],
+    result: GraderResult,
+    contract: CalibrationContract,
     confidence_extractor: ConfidenceExtractor | None,
 ) -> tuple[str, float | None, int | None]:
     """Assign exactly one status in documented failure/exclusion precedence."""
@@ -67,25 +77,41 @@ def _row_values(
             return "user_excluded", None, None
     if not isinstance(result, GraderScore):
         return "unsupported_result", None, None
-    label = read_path(sample, contract.label_path)
-    if label is None:
-        return "missing_label", None, None
-    if not is_decision_label(label) or label not in contract.decision_labels:
-        return "invalid_label", None, None
-    prediction = read_path(result, contract.prediction_path)
-    if prediction is None:
-        return "missing_prediction", None, None
-    if not is_decision_label(prediction) or prediction not in contract.decision_labels:
-        return "invalid_prediction", None, None
+    correctness, status = _correctness(sample, result, contract)
+    if status is not None:
+        return status, None, None
     confidence, status = extract_confidence(sample, result, contract, confidence_extractor)
     if status is not None:
         return status, None, None
-    return "valid", confidence, int(prediction == label)
+    return "valid", confidence, correctness
+
+
+def _correctness(
+    sample: dict[str, Any],
+    result: GraderScore,
+    contract: CalibrationContract,
+) -> tuple[int | None, str | None]:
+    """Validate the declared two-class decision space before computing equality."""
+    label = read_path(sample, contract.label_path)
+    if label is None:
+        return None, "missing_label"
+    if not is_decision_label(label) or label not in contract.decision_labels:
+        return None, "invalid_label"
+    prediction = read_path(result, contract.prediction_path)
+    if prediction is None:
+        return None, "missing_prediction"
+    if not is_decision_label(prediction) or prediction not in contract.decision_labels:
+        return None, "invalid_prediction"
+    return int(prediction == label), None
 
 
 def extract_observations(
-    dataset: Sequence[dict[str, Any]], grader_results: Sequence[GraderResult],
-    contract: CalibrationContract, scope: CalibrationScope, *, role: PartitionRole = "analysis",
+    dataset: Sequence[dict[str, Any]],
+    grader_results: Sequence[GraderResult],
+    contract: CalibrationContract,
+    scope: CalibrationScope,
+    *,
+    role: PartitionRole = "analysis",
     invalid_policy: Literal["raise", "exclude"] = "raise",
     confidence_extractor: ConfidenceExtractor | None = None,
 ) -> ObservationBatch:
@@ -122,10 +148,16 @@ def extract_observations(
         status, confidence, correctness = _row_values(sample, result, contract, confidence_extractor)
         if invalid_policy == "raise" and status not in ("valid", "provider_error", "user_excluded"):
             raise ValueError(f"sample {sample_id!r}: {status}")
-        observations.append(Observation(
-            sample_id=sample_id, group_id=group_id, domain=domain, status=status,
-            probability=confidence, correctness=correctness,
-        ))
+        observations.append(
+            Observation(
+                sample_id=sample_id,
+                group_id=group_id,
+                domain=domain,
+                status=status,
+                probability=confidence,
+                correctness=correctness,
+            )
+        )
     return ObservationBatch(observations=tuple(observations), contract=contract, scope=scope, role=role)
 
 

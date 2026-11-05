@@ -99,7 +99,11 @@ def validate_metric_settings(bin_edges: Sequence[float], log_loss_clip: float) -
 
 
 def _summarize(
-    rows: Sequence[Observation], edges: tuple[float, ...], clip: float, *, discrimination: bool = True,
+    rows: Sequence[Observation],
+    edges: tuple[float, ...],
+    clip: float,
+    *,
+    discrimination: bool = True,
 ) -> tuple[ReliabilitySummary, tuple[ReliabilityBin, ...]]:
     """Compute pure numerical summaries; never inspect labels or native results."""
     valid = [row for row in rows if row.status == "valid"]
@@ -115,9 +119,16 @@ def _summarize(
         confidence = float(np.mean(probabilities[mask])) if count else None
         accuracy = float(np.mean(outcomes[mask])) if count else None
         gap = abs(confidence - accuracy) if count else None
-        bins.append(ReliabilityBin(
-            lower=lower, upper=upper, count=count, mean_confidence=confidence, accuracy=accuracy, absolute_gap=gap,
-        ))
+        bins.append(
+            ReliabilityBin(
+                lower=lower,
+                upper=upper,
+                count=count,
+                mean_confidence=confidence,
+                accuracy=accuracy,
+                absolute_gap=gap,
+            )
+        )
         if count:
             weighted_gaps.append((count, gap))
     count = len(valid)
@@ -126,7 +137,8 @@ def _summarize(
     if discrimination and count and len(set(outcomes)) == 2:
         auc = float(roc_auc_score(outcomes, probabilities))
     summary = ReliabilitySummary(
-        sample_count=count, accuracy=float(np.mean(outcomes)) if count else None,
+        sample_count=count,
+        accuracy=float(np.mean(outcomes)) if count else None,
         ece=sum(n * gap for n, gap in weighted_gaps) / count if count else None,
         mce=max((gap for _, gap in weighted_gaps), default=None),
         brier=float(np.mean((probabilities - outcomes) ** 2)) if count else None,
@@ -137,7 +149,10 @@ def _summarize(
 
 
 def reliability_metrics(
-    batch: ObservationBatch, *, bin_edges: Sequence[float] = DEFAULT_BIN_EDGES, log_loss_clip: float = 1e-15,
+    batch: ObservationBatch,
+    *,
+    bin_edges: Sequence[float] = DEFAULT_BIN_EDGES,
+    log_loss_clip: float = 1e-15,
 ) -> ReliabilityMetrics:
     """Evaluate confidence calibration without fitting or changing observations.
 
@@ -157,15 +172,23 @@ def reliability_metrics(
         if row.domain is not None:
             domains[row.domain].append(row)
     return ReliabilityMetrics(
-        **summary.model_dump(), bins=bins, bin_edges=edges, log_loss_clip=log_loss_clip,
-        total_count=len(batch.observations), status_counts=batch.counts,
+        **summary.model_dump(),
+        bins=bins,
+        bin_edges=edges,
+        log_loss_clip=log_loss_clip,
+        total_count=len(batch.observations),
+        status_counts=batch.counts,
         domains={name: _summarize(rows, edges, log_loss_clip)[0] for name, rows in sorted(domains.items())},
     )
 
 
 def group_bootstrap(
-    batch: ObservationBatch, settings: BootstrapSettings = BootstrapSettings(), *,
-    threshold: float | None = None, bin_edges: Sequence[float] = DEFAULT_BIN_EDGES, log_loss_clip: float = 1e-15,
+    batch: ObservationBatch,
+    settings: BootstrapSettings = BootstrapSettings(),
+    *,
+    threshold: float | None = None,
+    bin_edges: Sequence[float] = DEFAULT_BIN_EDGES,
+    log_loss_clip: float = 1e-15,
 ) -> BootstrapResult:
     """Resample complete groups using an isolated RNG and fixed fitted decisions.
 
@@ -209,10 +232,14 @@ def group_bootstrap(
     for key, values in samples.items():
         endpoints = np.quantile(values, [tail, 1 - tail]) if values else (None, None)
         intervals[key] = PercentileInterval(
-            lower=float(endpoints[0]) if values else None, upper=float(endpoints[1]) if values else None,
+            lower=float(endpoints[0]) if values else None,
+            upper=float(endpoints[1]) if values else None,
             effective_resamples=len(values),
         )
     return BootstrapResult(
-        group_count=len(groups), resamples=settings.resamples, seed=settings.seed,
-        confidence_level=settings.confidence_level, intervals=intervals,
+        group_count=len(groups),
+        resamples=settings.resamples,
+        seed=settings.seed,
+        confidence_level=settings.confidence_level,
+        intervals=intervals,
     )

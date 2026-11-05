@@ -5,7 +5,12 @@ from itertools import combinations
 
 from pydantic import field_validator, model_validator
 
-from openjudge.calibration.contracts import FrozenModel, ObservationBatch, PartitionRole, canonical_digest
+from openjudge.calibration.contracts import (
+    FrozenModel,
+    ObservationBatch,
+    PartitionRole,
+    canonical_digest,
+)
 
 
 class PartitionProvenance(FrozenModel):
@@ -71,12 +76,23 @@ def partition_provenance(batch: ObservationBatch) -> PartitionProvenance:
     used = tuple(sorted(row.sample_id for row in batch.valid))
     rows = sorted((row.model_dump(mode="json") for row in batch.observations), key=lambda row: row["sample_id"])
     return PartitionProvenance(
-        role=batch.role, sample_ids=samples, group_ids=groups, used_sample_ids=used,
-        sample_count=len(samples), valid_count=len(used), sample_fingerprint=canonical_digest(samples),
-        group_fingerprint=canonical_digest(groups), fingerprint=canonical_digest({
-            "rows": rows, "contract": batch.contract.fingerprint, "scope": batch.scope.model_dump(mode="json"),
-            "role": batch.role, "fit_artifact_id": batch.fit_artifact_id,
-        }),
+        role=batch.role,
+        sample_ids=samples,
+        group_ids=groups,
+        used_sample_ids=used,
+        sample_count=len(samples),
+        valid_count=len(used),
+        sample_fingerprint=canonical_digest(samples),
+        group_fingerprint=canonical_digest(groups),
+        fingerprint=canonical_digest(
+            {
+                "rows": rows,
+                "contract": batch.contract.fingerprint,
+                "scope": batch.scope.model_dump(mode="json"),
+                "role": batch.role,
+                "fit_artifact_id": batch.fit_artifact_id,
+            }
+        ),
     )
 
 
@@ -101,5 +117,6 @@ def audit_partitions(*batches: ObservationBatch) -> SplitManifest:
     partitions = tuple(partition_provenance(batch) for batch in batches)
     assert_disjoint(*partitions)
     return SplitManifest(
-        partitions=partitions, fingerprint=canonical_digest([part.model_dump(mode="json") for part in partitions]),
+        partitions=partitions,
+        fingerprint=canonical_digest([part.model_dump(mode="json") for part in partitions]),
     )

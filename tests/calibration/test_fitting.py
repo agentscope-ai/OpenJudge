@@ -9,7 +9,12 @@ from sklearn.linear_model import LogisticRegression
 
 from openjudge.calibration.artifacts import FitArtifact
 from openjudge.calibration.contracts import CalibrationScope
-from openjudge.calibration.fitting import FitSettings, apply_calibrator, fit_calibrator, predict_confidence
+from openjudge.calibration.fitting import (
+    FitSettings,
+    apply_calibrator,
+    fit_calibrator,
+    predict_confidence,
+)
 
 
 def test_identity_preserves_endpoints_and_artifact_round_trip(make_batch):

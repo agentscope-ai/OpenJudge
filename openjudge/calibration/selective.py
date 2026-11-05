@@ -8,7 +8,12 @@ from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from openjudge.calibration.artifacts import FitArtifact, PolicyArtifact, SelectionEvidence
+from openjudge.calibration.artifacts import (
+    FitArtifact,
+    PolicyArtifact,
+    SelectionEvidence,
+    hoeffding_guarantee,
+)
 from openjudge.calibration.contracts import FrozenModel, ObservationBatch, probability
 from openjudge.calibration.fitting import apply_calibrator
 from openjudge.calibration.splits import assert_disjoint, partition_provenance
@@ -116,9 +121,15 @@ def selective_metrics(batch: ObservationBatch, threshold: float | None) -> Selec
     total = len(batch.observations)
     failures = batch.counts.get("provider_error", 0)
     return SelectiveMetrics(
-        threshold=threshold, total_count=total, valid_count=len(valid), accepted_count=len(accepted),
-        correct_count=len(accepted) - errors, error_count=errors, abstained_count=len(valid) - len(accepted),
-        provider_error_count=failures, excluded_count=total - len(valid) - failures,
+        threshold=threshold,
+        total_count=total,
+        valid_count=len(valid),
+        accepted_count=len(accepted),
+        correct_count=len(accepted) - errors,
+        error_count=errors,
+        abstained_count=len(valid) - len(accepted),
+        provider_error_count=failures,
+        excluded_count=total - len(valid) - failures,
         risk=errors / len(accepted) if accepted else None,
         accepted_accuracy=1 - errors / len(accepted) if accepted else None,
         coverage=len(accepted) / total if total else 0,
@@ -134,9 +145,16 @@ def risk_coverage_curve(batch: ObservationBatch) -> RiskCoverageCurve:
     rows = sorted(batch.valid, key=lambda row: row.probability, reverse=True)
     total = len(batch.observations)
     count = len(rows)
-    points = [RiskCoveragePoint(
-        threshold=None, accepted_count=0, error_count=0, risk=None, coverage=0, evaluable_coverage=0,
-    )]
+    points = [
+        RiskCoveragePoint(
+            threshold=None,
+            accepted_count=0,
+            error_count=0,
+            risk=None,
+            coverage=0,
+            evaluable_coverage=0,
+        )
+    ]
     accepted = 0
     errors = 0
     area = 0.0
@@ -148,10 +166,16 @@ def risk_coverage_curve(batch: ObservationBatch) -> RiskCoverageCurve:
             accepted += 1
         risk = errors / accepted
         area += (accepted - start) / count * risk
-        points.append(RiskCoveragePoint(
-            threshold=threshold, accepted_count=accepted, error_count=errors, risk=risk,
-            coverage=accepted / total, evaluable_coverage=accepted / count,
-        ))
+        points.append(
+            RiskCoveragePoint(
+                threshold=threshold,
+                accepted_count=accepted,
+                error_count=errors,
+                risk=risk,
+                coverage=accepted / total,
+                evaluable_coverage=accepted / count,
+            )
+        )
     return RiskCoverageCurve(points=tuple(points), aurc=area if count else None, total_count=total, valid_count=count)
 
 
@@ -170,7 +194,10 @@ def _candidate_counts(batch: ObservationBatch, candidates: tuple[float, ...]) ->
 
 
 def select_policy(
-    validation: ObservationBatch, artifact: FitArtifact, settings: SelectionSettings = SelectionSettings(), *,
+    validation: ObservationBatch,
+    artifact: FitArtifact,
+    settings: SelectionSettings = SelectionSettings(),
+    *,
     override_reason: str | None = None,
 ) -> PolicyArtifact:
     """Select maximum validation coverage subject to the declared empirical criterion.
@@ -215,23 +242,31 @@ def select_policy(
             upper_risk = upper
             break
     operating = selective_metrics(calibrated, selected)
-    guarantee = None
-    if settings.criterion == "hoeffding":
-        guarantee = (
-            "fixed-grid Bonferroni-Hoeffding upper risk bounds at alpha=" + str(settings.alpha)
-            + "; conditional on independent identically distributed observation pairs, one observation per group, "
-            "an independently fitted calibrator and the grid declared before validation inspection; "
-            "not guaranteed under distribution shift"
-        )
+    guarantee = hoeffding_guarantee(settings.alpha) if settings.criterion == "hoeffding" else None
     return PolicyArtifact.create(
-        kind="selective_policy", fit_artifact_id=artifact.artifact_id, contract=artifact.contract, scope=artifact.scope,
-        fit_source=artifact.source, validation_source=provenance, threshold=selected,
-        risk_target=settings.risk_target, min_accepted=settings.min_accepted, criterion=settings.criterion,
-        candidates=candidates, candidate_count=len(candidates), alpha=settings.alpha,
+        kind="selective_policy",
+        fit_artifact_id=artifact.artifact_id,
+        contract=artifact.contract,
+        scope=artifact.scope,
+        fit_source=artifact.source,
+        validation_source=provenance,
+        threshold=selected,
+        risk_target=settings.risk_target,
+        min_accepted=settings.min_accepted,
+        criterion=settings.criterion,
+        candidates=candidates,
+        candidate_source="fixed_grid" if settings.candidates is not None else "validation_ties",
+        candidate_count=len(candidates),
+        alpha=settings.alpha,
         assume_iid_observations=settings.assume_iid_observations,
         selection=SelectionEvidence(
-            accepted_count=operating.accepted_count, error_count=operating.error_count,
-            risk=operating.risk, coverage=operating.coverage,
-        ), selection_upper_risk=upper_risk, reason="feasible_threshold" if selected is not None else "no_feasible_threshold",
-        guarantee=guarantee, overrides=calibrated.overrides,
+            accepted_count=operating.accepted_count,
+            error_count=operating.error_count,
+            risk=operating.risk,
+            coverage=operating.coverage,
+        ),
+        selection_upper_risk=upper_risk,
+        reason="feasible_threshold" if selected is not None else "no_feasible_threshold",
+        guarantee=guarantee,
+        overrides=calibrated.overrides,
     )
