@@ -184,6 +184,14 @@ class PipelineRunner:
                 f"No configuration found in {output_dir}. " "Cannot resume evaluation without original config."
             )
 
+        # API keys are no longer persisted (see save_config), so a resumed run has
+        # none. Fail with an actionable message instead of a 401 on the first call.
+        if not (config.get("judge_endpoint") or {}).get("api_key"):
+            raise ValueError(
+                "The saved configuration contains no API key. Keys are not written to disk "
+                "for security reasons, so they must be re-entered before resuming."
+            )
+
         runner = cls(config, progress_callback, resume_from=output_dir)
         runner.config["output_dir"] = output_dir
         runner.progress.output_dir = output_dir
@@ -207,9 +215,16 @@ class PipelineRunner:
         return runner
 
     def save_config(self) -> None:
-        """Save UI config for resume capability."""
+        """Save UI config for resume capability.
+
+        API keys are stripped before writing: this file lives in the evaluation
+        output directory, which is routinely copied, archived or attached to bug
+        reports. The in-memory ``self.config`` keeps its keys for the current run.
+        """
         import json
         from pathlib import Path
+
+        from features.auto_arena.services.preset_manager import strip_secrets
 
         output_dir = self.config.get("output_dir")
         if not output_dir:
@@ -220,7 +235,7 @@ class PipelineRunner:
         config_path = output_path / self.CONFIG_FILE
 
         with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(self.config, f, indent=2, ensure_ascii=False)
+            json.dump(strip_secrets(self.config), f, indent=2, ensure_ascii=False)
 
         logger.debug(f"Saved UI config to {config_path}")
 
