@@ -190,3 +190,39 @@ class DataProcessor:
         assert result.score == 0.0
         assert result.metadata["code_blocks"] == []
         assert result.metadata["skipped_non_python_blocks"] == 1
+
+    @pytest.mark.asyncio
+    async def test_empty_js_block_does_not_hide_following_invalid_python(self):
+        """Regression (review follow-up on #209): an empty fenced block
+        (```js with no content) must be consumed as a unit. Before the fix
+        its opening fence was not consumed, so the invalid Python block
+        after it escaped checking and the response scored 1.0."""
+        grader = SyntaxCheckGrader()
+        response = (
+            "```python\ndef ok():\n    return 1\n```\n"
+            "```js\n```\n"
+            "some prose\n"
+            "```python\ndef broken(:\n    pass\n```"
+        )
+        result = await grader.aevaluate(response=response)
+
+        # 1 of 2 Python blocks valid, plus the -0.5 penalty
+        assert result.score == 0.0
+        assert result.metadata["valid_blocks"] == 1
+        assert result.metadata["total_blocks"] == 2
+        assert result.metadata["skipped_non_python_blocks"] == 1
+        assert result.metadata["code_blocks"] == [
+            "def ok():\n    return 1",
+            "def broken(:\n    pass",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_empty_python_block_counts_as_valid_module(self):
+        """An empty Python fence parses as an empty module and stays valid"""
+        grader = SyntaxCheckGrader()
+        response = "```python\n```\n```python\ndef ok():\n    pass\n```"
+        result = await grader.aevaluate(response=response)
+
+        assert result.score == 1.0
+        assert result.metadata["code_blocks"] == ["", "def ok():\n    pass"]
+        assert result.metadata["skipped_non_python_blocks"] == 0

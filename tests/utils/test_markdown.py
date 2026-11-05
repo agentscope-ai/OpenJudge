@@ -64,3 +64,32 @@ class TestExtractPythonCodeBlocks:
         blocks, skipped = extract_python_code_blocks("just some text, no fences")
         assert blocks == []
         assert skipped == 0
+
+    def test_empty_non_python_block_is_consumed(self):
+        """An empty fenced block (closing fence right after the opening one)
+        must be consumed as a unit, not left to pair with a later fence."""
+        text = "```js\n```\nprose\n```python\nx = 1\n```"
+        blocks, skipped = extract_python_code_blocks(text)
+        assert blocks == ["x = 1"]
+        assert skipped == 1
+
+    def test_empty_python_block_yields_empty_content(self):
+        """An empty Python fence extracts as an empty block, not as a pairing error"""
+        text = "```python\n```\n```python\ny = 2\n```"
+        blocks, skipped = extract_python_code_blocks(text)
+        assert blocks == ["", "y = 2"]
+        assert skipped == 0
+
+    def test_valid_then_empty_js_then_invalid_python(self):
+        """Reviewer case (#209 follow-up): a valid Python block, an empty JS
+        block, prose, then an invalid Python block — the invalid block must
+        still be extracted so graders can check it."""
+        text = (
+            "```python\ndef ok():\n    return 1\n```\n"
+            "```js\n```\n"
+            "some prose\n"
+            "```python\ndef broken(:\n    pass\n```"
+        )
+        blocks, skipped = extract_python_code_blocks(text)
+        assert blocks == ["def ok():\n    return 1", "def broken(:\n    pass"]
+        assert skipped == 1

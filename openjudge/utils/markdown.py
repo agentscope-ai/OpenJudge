@@ -16,7 +16,12 @@ PYTHON_FENCE_TAGS = frozenset({"", "python", "py", "python3"})
 # was skipped by the matcher, so its closing fence could pair with the next
 # recognized opening fence and the prose in between was captured as a "code
 # block".
-_FENCED_BLOCK_PATTERN = re.compile(r"```([^\n`]*)\s*\n(.*?)\n\s*```", re.DOTALL)
+# The closing fence of an empty block follows the opening fence's newline
+# directly, so the newline between content and the closing fence must be
+# optional; otherwise an empty fence (```js\n```) is not consumed at all and
+# its opening marker can pair with a later fence, leaving the block after it
+# unchecked (review follow-up on #209).
+_FENCED_BLOCK_PATTERN = re.compile(r"```([^\n`]*)\s*\n(.*?)(?:\n\s*)?```", re.DOTALL)
 
 
 def extract_python_code_blocks(text: str) -> Tuple[List[str], int]:
