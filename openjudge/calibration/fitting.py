@@ -92,9 +92,14 @@ def fit_calibrator(batch: ObservationBatch, settings: FitSettings = FitSettings(
 
 
 def predict_confidence(artifact: FitArtifact, probabilities: Sequence[float]) -> tuple[float, ...]:
-    """Apply primitive fitted state; invalid raw inputs never become clipped probabilities."""
+    """Validate and snapshot an artifact, then apply it to a whole probability batch."""
+    validated = artifact.validated_copy()
+    return _predict_state(validated.state, probabilities)
+
+
+def _predict_state(state: FitState, probabilities: Sequence[float]) -> tuple[float, ...]:
+    """Internal fast path for owned validated state; raw probabilities remain checked."""
     values = np.asarray([probability(value) for value in probabilities], dtype=float)
-    state = artifact.state
     if state.kind == "identity":
         result = values
     elif state.kind == "constant":
@@ -128,10 +133,20 @@ def apply_calibrator(
         A new immutable batch marked with the fitted artifact ID. Double
         calibration fails rather than silently applying a nonlinear map twice.
     """
+    return _apply_validated(artifact.validated_copy(), batch, override_reason=override_reason)
+
+
+def _apply_validated(
+    artifact: FitArtifact,
+    batch: ObservationBatch,
+    *,
+    override_reason: str | None = None,
+) -> ObservationBatch:
+    """Internal batch path after the public caller owns a validated artifact snapshot."""
     if batch.fit_artifact_id is not None:
         raise ValueError("confidence batch has already been calibrated")
     override = check_compatibility(batch.contract, batch.scope, artifact.contract, artifact.scope, override_reason)
-    predictions = iter(predict_confidence(artifact, [row.probability for row in batch.valid]))
+    predictions = iter(_predict_state(artifact.state, [row.probability for row in batch.valid]))
     observations = tuple(
         row.model_copy(update={"probability": next(predictions)}) if row.status == "valid" else row
         for row in batch.observations

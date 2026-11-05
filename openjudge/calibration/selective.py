@@ -15,7 +15,7 @@ from openjudge.calibration.artifacts import (
     hoeffding_guarantee,
 )
 from openjudge.calibration.contracts import FrozenModel, ObservationBatch, probability
-from openjudge.calibration.fitting import apply_calibrator
+from openjudge.calibration.fitting import _apply_validated
 from openjudge.calibration.splits import assert_disjoint, partition_provenance
 
 
@@ -216,9 +216,10 @@ def select_policy(
     """
     if validation.role != "validation":
         raise ValueError("select_policy requires a validation partition")
+    artifact = artifact.validated_copy()
     provenance = partition_provenance(validation)
     assert_disjoint(artifact.source, provenance)
-    calibrated = apply_calibrator(artifact, validation, override_reason=override_reason)
+    calibrated = _apply_validated(artifact, validation, override_reason=override_reason)
     if settings.criterion == "hoeffding":
         groups = [row.group_id for row in calibrated.valid]
         if len(groups) != len(set(groups)):

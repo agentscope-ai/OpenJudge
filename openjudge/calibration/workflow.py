@@ -21,7 +21,7 @@ from openjudge.calibration.contracts import (
     ObservationBatch,
 )
 from openjudge.calibration.extraction import ConfidenceExtractor, extract_observations
-from openjudge.calibration.fitting import apply_calibrator, fit_calibrator
+from openjudge.calibration.fitting import _apply_validated, fit_calibrator
 from openjudge.calibration.metrics import (
     DEFAULT_BIN_EDGES,
     BootstrapResult,
@@ -181,11 +181,13 @@ def evaluate_policy(
     """
     if test.role != "test":
         raise ValueError("evaluate_policy requires a test partition")
+    artifact = artifact.validated_copy()
+    policy = policy.validated_copy()
     if policy.fit_artifact_id != artifact.artifact_id or policy.fit_source != artifact.source:
         raise ValueError("policy is bound to a different fitted artifact")
     check_compatibility(policy.contract, policy.scope, artifact.contract, artifact.scope)
     assert_disjoint(artifact.source, policy.validation_source, partition_provenance(test))
-    calibrated = apply_calibrator(artifact, test)
+    calibrated = _apply_validated(artifact, test)
     return TestEvaluation(
         raw=_confidence_evaluation(test, settings),
         calibrated=_confidence_evaluation(calibrated, settings),

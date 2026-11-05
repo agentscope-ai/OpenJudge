@@ -21,9 +21,10 @@ from openjudge.calibration.contracts import (
 from openjudge.calibration.extraction import (
     ConfidenceExtractor,
     extract_confidence,
+    is_user_excluded,
     read_path,
 )
-from openjudge.calibration.fitting import predict_confidence
+from openjudge.calibration.fitting import _predict_state
 from openjudge.graders.schema import GraderError, GraderResult, GraderScore
 
 
@@ -63,6 +64,8 @@ class DecisionAdapter:
         confidence_extractor: ConfidenceExtractor | None = None,
         override_reason: str | None = None,
     ) -> None:
+        artifact = artifact.validated_copy()
+        policy = policy.validated_copy()
         if policy.fit_artifact_id != artifact.artifact_id or policy.fit_source != artifact.source:
             raise ValueError("policy is bound to a different fitted calibrator")
         if policy.contract != artifact.contract or policy.scope != artifact.scope:
@@ -70,12 +73,22 @@ class DecisionAdapter:
         if (contract.extractor_id is not None) != (confidence_extractor is not None):
             raise ValueError("declared confidence extractor and supplied callback must match")
         override = check_compatibility(contract, scope, artifact.contract, artifact.scope, override_reason)
-        self.artifact = artifact
-        self.policy = policy
+        self._artifact = artifact
+        self._policy = policy
         self.contract = contract
         self.scope = scope
         self.confidence_extractor = confidence_extractor
         self.overrides = policy.overrides + ((override,) if override is not None else ())
+
+    @property
+    def artifact(self) -> FitArtifact:
+        """Expose a detached copy, keeping the validated internal snapshot private."""
+        return self._artifact.model_copy(deep=True)
+
+    @property
+    def policy(self) -> PolicyArtifact:
+        """Expose policy provenance without sharing internal mutable nested fields."""
+        return self._policy.model_copy(deep=True)
 
     def decide(self, result: GraderResult, sample: dict[str, Any] | None = None) -> DecisionEnvelope:
         """Annotate one native result; no independent target label is read at inference.
@@ -86,7 +99,8 @@ class DecisionAdapter:
 
         Returns:
             Accepted/abstained on valid confidence, unavailable on provider or
-            input failure. Missing confidence remains visible even for abstain-all.
+            input failure. Malformed exclusion flags raise as in offline extraction.
+            Missing confidence remains visible even for abstain-all.
         """
         sample = {} if sample is None else sample
         raw = None
@@ -94,10 +108,10 @@ class DecisionAdapter:
         reason = None
         if isinstance(result, GraderError):
             reason = "provider_error"
+        elif is_user_excluded(sample, self.contract):
+            reason = "user_excluded"
         elif not isinstance(result, GraderScore):
             reason = "unsupported_result"
-        elif self.contract.exclude_path is not None and read_path(sample, self.contract.exclude_path) is True:
-            reason = "user_excluded"
         else:
             prediction = read_path(result, self.contract.prediction_path)
             if prediction is None:
@@ -109,21 +123,21 @@ class DecisionAdapter:
         if reason is not None:
             status = "unavailable"
         else:
-            calibrated = predict_confidence(self.artifact, [raw])[0]
-            if self.policy.threshold is not None and calibrated >= self.policy.threshold:
+            calibrated = _predict_state(self._artifact.state, [raw])[0]
+            if self._policy.threshold is not None and calibrated >= self._policy.threshold:
                 status = "accepted"
                 reason = "confidence_at_or_above_threshold"
             else:
                 status = "abstained"
-                reason = "abstain_all_policy" if self.policy.threshold is None else "confidence_below_threshold"
+                reason = "abstain_all_policy" if self._policy.threshold is None else "confidence_below_threshold"
         return DecisionEnvelope(
             status=status,
             original_result=result,
             raw_confidence=raw,
             calibrated_confidence=calibrated,
-            fit_artifact_id=self.artifact.artifact_id,
-            policy_id=self.policy.artifact_id,
-            threshold=self.policy.threshold,
+            fit_artifact_id=self._artifact.artifact_id,
+            policy_id=self._policy.artifact_id,
+            threshold=self._policy.threshold,
             reason=reason,
             overrides=self.overrides,
         )

@@ -132,7 +132,16 @@ def _summarize(
         if count:
             weighted_gaps.append((count, gap))
     count = len(valid)
-    clipped = np.clip(probabilities, clip, 1 - clip)
+    # Clip log probabilities directly: for tiny positive clip, 1 - clip
+    # rounds to one, but log1p(-clip) still protects the upper endpoint.
+    lower_log = math.log(clip)
+    upper_log = math.log1p(-clip)
+    positive_log = np.full_like(probabilities, lower_log)
+    negative_log = np.full_like(probabilities, lower_log)
+    np.log(probabilities, out=positive_log, where=probabilities > 0)
+    np.log1p(-probabilities, out=negative_log, where=probabilities < 1)
+    positive_log = np.clip(positive_log, lower_log, upper_log)
+    negative_log = np.clip(negative_log, lower_log, upper_log)
     auc = None
     if discrimination and count and len(set(outcomes)) == 2:
         auc = float(roc_auc_score(outcomes, probabilities))
@@ -142,7 +151,7 @@ def _summarize(
         ece=sum(n * gap for n, gap in weighted_gaps) / count if count else None,
         mce=max((gap for _, gap in weighted_gaps), default=None),
         brier=float(np.mean((probabilities - outcomes) ** 2)) if count else None,
-        log_loss=float(-np.mean(outcomes * np.log(clipped) + (1 - outcomes) * np.log1p(-clipped))) if count else None,
+        log_loss=float(-np.mean(np.where(outcomes == 1, positive_log, negative_log))) if count else None,
         roc_auc=auc,
     )
     return summary, tuple(bins)

@@ -44,7 +44,11 @@ Caches retain supplied sample fields and native result metadata/reasons; project
 sensitive fields before saving. Reports include summary statistics, identity
 fingerprints and safe numerical artifacts, without original prompts, reasoning or
 per-row target labels. Content checksums detect accidental changes, not malicious
-re-signing or source authenticity.
+re-signing or source authenticity. Public prediction/application, policy selection,
+test evaluation and adapter construction revalidate supplied artifact content,
+including validation-bypassing Pydantic copies. The adapter owns detached artifact
+snapshots and returns detached inspection copies; repeated decisions use its
+validated numerical state without rehashing complete source-ID sets.
 
 `fit_calibrator`, `select_policy` and `evaluate_policy` are separate public calls.
 `CalibrationAnalyzer` and `SelectivePredictionAnalyzer` follow the native
@@ -64,7 +68,10 @@ Strict input validation is the default. `invalid_policy="exclude"` retains disti
 missing/invalid-label, prediction, confidence and unsupported-result statuses.
 Provider errors remain failures and explicit user exclusions remain visible.
 Binary log-loss endpoint clipping is configured and disclosed; out-of-range raw
-confidence is rejected, not clipped into validity.
+confidence is rejected, not clipped into validity. Loss clipping is performed in
+log space, preserving finite endpoint losses even when a tiny positive clip makes
+`1 - clip` round to one. Malformed non-boolean exclusion flags raise consistently
+in offline extraction and inference; provider-error precedence is retained.
 
 Reliability reports include bin support, mean confidence, empirical correctness,
 ECE/MCE, Brier, clipped log loss, decision accuracy and ROC AUC where defined.

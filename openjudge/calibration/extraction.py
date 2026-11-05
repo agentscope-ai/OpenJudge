@@ -60,6 +60,16 @@ def extract_confidence(
         return None, "invalid_confidence"
 
 
+def is_user_excluded(sample: dict[str, Any], contract: CalibrationContract) -> bool:
+    """Read a strict optional boolean exclusion flag for offline and inference use."""
+    if contract.exclude_path is None:
+        return False
+    excluded = read_path(sample, contract.exclude_path)
+    if excluded is not None and not isinstance(excluded, bool):
+        raise ValueError("exclude_path must reference a boolean")
+    return excluded is True
+
+
 def _row_values(
     sample: dict[str, Any],
     result: GraderResult,
@@ -69,12 +79,8 @@ def _row_values(
     """Assign exactly one status in documented failure/exclusion precedence."""
     if isinstance(result, GraderError):
         return "provider_error", None, None
-    if contract.exclude_path is not None:
-        excluded = read_path(sample, contract.exclude_path)
-        if excluded is not None and not isinstance(excluded, bool):
-            raise ValueError("exclude_path must reference a boolean")
-        if excluded:
-            return "user_excluded", None, None
+    if is_user_excluded(sample, contract):
+        return "user_excluded", None, None
     if not isinstance(result, GraderScore):
         return "unsupported_result", None, None
     correctness, status = _correctness(sample, result, contract)

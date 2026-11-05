@@ -85,6 +85,15 @@ class JSONArtifact(FrozenModel):
             read_json(bytes(json_data) if isinstance(json_data, bytearray) else json_data), **kwargs
         )
 
+    def validated_copy(self: ArtifactType) -> ArtifactType:
+        """Revalidate content and detach nested dictionaries at inference boundaries.
+
+        Pydantic model_copy/model_construct intentionally bypass validation. A
+        field-typed instance is therefore insufficient evidence of a matching
+        content ID; round-tripping primitive fields checks state and provenance.
+        """
+        return type(self).model_validate(self.model_dump(mode="json"))
+
     def save(self, path: str | Path) -> None:
         """Write finite readable JSON; callers choose the local destination."""
         Path(path).write_text(
