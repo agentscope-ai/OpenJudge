@@ -416,6 +416,57 @@ class TestOpenAIChatModel:
         for key in not_expected_in_call:
             assert key not in call_kwargs
 
+    @staticmethod
+    def _mock_completion() -> ChatCompletion:
+        """Build a minimal completion returned by the mocked API."""
+        return ChatCompletion(
+            id="test-id",
+            choices=[
+                Choice(
+                    finish_reason="stop",
+                    index=0,
+                    message=ChatCompletionMessage(
+                        content='{"name": "John", "age": 30}',
+                        role="assistant",
+                    ),
+                ),
+            ],
+            created=1234567890,
+            model="test-model",
+            object="chat.completion",
+        )
+
+    def _sent_response_format(self, model_name: str) -> object:
+        """Run one structured-output call and return the response_format sent."""
+        with patch("openjudge.models.openai_chat_model.AsyncOpenAI") as mock_constructor:
+            mock_instance = mock_constructor.return_value
+            mock_instance.chat.completions.parse = AsyncMock(return_value=self._mock_completion())
+
+            model = OpenAIChatModel(
+                model=model_name,
+                api_key="test-key",
+                base_url="https://example.com/v1",
+            )
+            asyncio.run(
+                model.achat(
+                    messages=[{"role": "user", "content": "hi"}],
+                    structured_model=PersonModelForTesting,
+                ),
+            )
+            return mock_instance.chat.completions.parse.call_args[1]["response_format"]
+
+    def test_deepseek_falls_back_to_json_object(self):
+        """deepseek rejects a JSON schema, so it must receive a plain json_object."""
+        sent = self._sent_response_format("deepseek-chat")
+
+        assert sent == {"type": "json_object"}
+
+    def test_non_deepseek_keeps_json_schema(self):
+        """Models that support strict schemas must keep receiving them."""
+        sent = self._sent_response_format("gpt-4o")
+
+        assert sent is PersonModelForTesting
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

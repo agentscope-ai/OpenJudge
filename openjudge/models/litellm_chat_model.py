@@ -135,7 +135,8 @@ class LiteLLMChatModel(OpenAIChatModel):
             call_kwargs.pop("tool_choice", None)
 
             # Some providers reject a full JSON schema; use a simple json_object.
-            if any(name in self.model.lower() for name in ("qwen", "gemini", "pai-judge")):
+            # deepseek included: it returns 400 "This response_format type is unavailable now".
+            if any(name in self.model.lower() for name in ("qwen", "gemini", "pai-judge", "deepseek")):
                 logger.info(
                     f"Model '{self.model}' detected: switching to 'json_object' response_format for compatibility"
                 )
