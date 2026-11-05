@@ -1064,6 +1064,11 @@ Each turn similarity: [0.0, 0.42857142857142855]
 
 ### TrajectoryAccuracyGrader
 
+For non-empty trajectories, the returned `score` is bounded to the documented
+1–3 scale. `metadata["raw_score"]` preserves the model's value before bounding,
+so callers can audit out-of-range outputs. A bounded score alone does not establish
+that the model followed the scoring rubric.
+
 Evaluates the accuracy of agent trajectories in solving user queries.
 
 **Use this grader for:**
