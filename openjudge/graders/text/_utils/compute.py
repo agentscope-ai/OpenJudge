@@ -406,7 +406,15 @@ def compute_f1_score(
 
     if len(response_tokens) == 0 or len(reference_tokens) == 0:
         if len(response_tokens) == 0 and len(reference_tokens) == 0:
-            return 1.0, {"precision": 1.0, "recall": 1.0}
+            if not response.strip() and not reference.strip():
+                # Both inputs are empty strings: keep the documented
+                # "empty matches empty" perfect-score semantics.
+                return 1.0, {"precision": 1.0, "recall": 1.0}
+            # Non-empty inputs whose tokens were all removed (punctuation
+            # only, stop-words only) leave nothing comparable, so this is a
+            # missing matching target — fail closed instead of silently
+            # scoring a perfect match (same rationale as #199).
+            return 0.0, {"precision": 0.0, "recall": 0.0}
         return 0.0, {"precision": 0.0, "recall": 0.0}
 
     response_counter = Counter(response_tokens)
@@ -650,7 +658,13 @@ def compute_jaccard_similarity(
         tokens2 = set(_word_tokenize(reference, remove_punctuation=True, remove_stopwords=True))
 
     if len(tokens1) == 0 and len(tokens2) == 0:
-        return 1.0, {"use_ngrams": use_ngrams}
+        if not response.strip() and not reference.strip():
+            # Both inputs are empty strings: keep the documented
+            # "empty matches empty" perfect-score semantics.
+            return 1.0, {"use_ngrams": use_ngrams}
+        # Non-empty inputs whose tokens were all removed leave nothing
+        # comparable — fail closed instead of a perfect match (see #199).
+        return 0.0, {"use_ngrams": use_ngrams}
 
     intersection = tokens1 & tokens2
     union = tokens1 | tokens2
