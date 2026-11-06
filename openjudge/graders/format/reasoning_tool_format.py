@@ -167,8 +167,10 @@ class ReasoningToolCallFormatGrader(BaseGrader):
                             tool_call_json = json.loads(
                                 tool_call_content.strip(),
                             )
-                            # Check if JSON contains required fields
-                            if not ("name" in tool_call_json and "arguments" in tool_call_json):
+                            # A tool call must be an object with both required fields.
+                            if not isinstance(tool_call_json, dict) or not (
+                                "name" in tool_call_json and "arguments" in tool_call_json
+                            ):
                                 valid_tool_call_json = False
                                 break
                             tool_calls.append(
