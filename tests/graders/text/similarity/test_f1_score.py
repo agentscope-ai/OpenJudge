@@ -158,6 +158,18 @@ class TestF1ScoreEdgeCases:
         assert result.score == 0.0
 
     @pytest.mark.asyncio
+    async def test_punctuation_only_both_sides_scores_zero(self):
+        """Non-empty inputs whose tokens are all removed (punctuation only)
+        must fail closed, not silently score a perfect match (see #199)."""
+        grader = SimilarityGrader(algorithm="f1_score")
+        result = await grader.aevaluate(
+            reference_response="！！！。？",
+            response="……——",
+        )
+
+        assert result.score == 0.0
+
+    @pytest.mark.asyncio
     async def test_single_token(self):
         """Test single token matching"""
         grader = SimilarityGrader(
