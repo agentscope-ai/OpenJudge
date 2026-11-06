@@ -13,34 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-
-SENSITIVE_KEY = "api_key"
-
-
-def strip_secrets(config: dict[str, Any]) -> dict[str, Any]:
-    """Return a deep copy of ``config`` with every ``api_key`` blanked out.
-
-    Auto Arena configurations end up in places that are meant to be shared or
-    copied around: saved presets, exported YAML files, and the ``ui_config.json``
-    written into the evaluation output directory. API keys must never reach those
-    files, so they are replaced by an empty string here (the key itself is still
-    available in memory for the current run).
-
-    Args:
-        config: Configuration dictionary, possibly containing nested endpoints.
-
-    Returns:
-        A new configuration dictionary safe to persist.
-    """
-
-    def _walk(node: Any) -> Any:
-        if isinstance(node, dict):
-            return {key: ("" if key == SENSITIVE_KEY else _walk(value)) for key, value in node.items()}
-        if isinstance(node, list):
-            return [_walk(item) for item in node]
-        return node
-
-    return _walk(config)
+from features.auto_arena.services.credentials import strip_secrets
 
 
 def _get_workspace_presets_dir() -> Path:

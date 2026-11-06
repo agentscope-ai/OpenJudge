@@ -145,21 +145,35 @@ class PipelineRunner:
         cls,
         output_dir: str,
         progress_callback: Callable[[PipelineProgress], None] | None = None,
+        credentials: dict[str, Any] | None = None,
     ) -> "PipelineRunner":
         """Create a runner to resume a paused evaluation.
 
         Args:
             output_dir: Directory of the paused evaluation
             progress_callback: Optional callback for progress updates
+            credentials: API keys re-entered in the UI (in memory only). Accepts
+                both config shapes: ``judge_api_key`` / ``judge_endpoint.api_key``
+                for the judge, and ``target_endpoints`` or
+                ``target_endpoint_api_keys`` as a name-to-key mapping for the
+                target models. A single ``api_key`` acts as a fallback for all
+                endpoints. Keys are never persisted again.
 
         Returns:
             PipelineRunner configured for resume
 
         Raises:
             FileNotFoundError: If no config can be loaded
+            ValueError: If required credentials are missing
+            TypeError: If ``credentials`` is not a mapping
         """
         import json
         from pathlib import Path
+
+        from features.auto_arena.services.credentials import (
+            apply_credentials,
+            missing_credentials,
+        )
 
         output_path = Path(output_dir)
         config_path = output_path / cls.CONFIG_FILE
@@ -184,12 +198,18 @@ class PipelineRunner:
                 f"No configuration found in {output_dir}. " "Cannot resume evaluation without original config."
             )
 
-        # API keys are no longer persisted (see save_config), so a resumed run has
-        # none. Fail with an actionable message instead of a 401 on the first call.
-        if not (config.get("judge_endpoint") or {}).get("api_key"):
+        # ``ui_config.json`` is a flat UI config (judge_endpoint is a URL string,
+        # the judge key is judge_api_key), while presets use a nested config
+        # (judge_endpoint is a dict). Re-inject keys entered in the UI into either
+        # shape, then report exactly what is still missing. Legacy saved runs
+        # still contain plaintext keys and therefore need no credentials.
+        config = apply_credentials(config, credentials)
+        missing = missing_credentials(config)
+        if missing:
             raise ValueError(
-                "The saved configuration contains no API key. Keys are not written to disk "
-                "for security reasons, so they must be re-entered before resuming."
+                "Cannot resume this evaluation: API keys are not stored in saved "
+                "configurations. Re-enter them in the UI (or pass credentials= to "
+                f"resume()) before resuming. Missing credentials: {'; '.join(missing)}."
             )
 
         runner = cls(config, progress_callback, resume_from=output_dir)
@@ -224,7 +244,7 @@ class PipelineRunner:
         import json
         from pathlib import Path
 
-        from features.auto_arena.services.preset_manager import strip_secrets
+        from features.auto_arena.services.credentials import strip_secrets
 
         output_dir = self.config.get("output_dir")
         if not output_dir:
