@@ -72,8 +72,7 @@ def _target_urls(config: Mapping[str, Any], *, normalize: bool = True) -> dict[s
         # The dict shape maps a name to an endpoint dict; a bare string value is
         # an API key, not a URL, so it carries no binding information.
         pairs = [
-            (name, value.get("base_url") if isinstance(value, Mapping) else None)
-            for name, value in endpoints.items()
+            (name, value.get("base_url") if isinstance(value, Mapping) else None) for name, value in endpoints.items()
         ]
     elif isinstance(endpoints, list):
         pairs = [
@@ -315,9 +314,7 @@ def mismatched_bindings(
         and not _binding_matches(bound_judge_url, saved_judge_url)
         and _needed(judge_label)
     ):
-        details.append(
-            f"judge model: current UI {bound_judge_url!r} != saved endpoint {saved_judge_label!r}"
-        )
+        details.append(f"judge model: current UI {bound_judge_url!r} != saved endpoint {saved_judge_label!r}")
 
     bound_target_urls = credentials.get(TARGET_URL_BINDINGS)
     if isinstance(bound_target_urls, Mapping):
@@ -332,9 +329,7 @@ def mismatched_bindings(
                 and not _binding_matches(url, saved_target_urls.get(name, ""))
                 and _needed(label)
             ):
-                details.append(
-                    f"target_endpoints[{name!r}]: current UI {url!r} != saved endpoint {saved_label!r}"
-                )
+                details.append(f"target_endpoints[{name!r}]: current UI {url!r} != saved endpoint {saved_label!r}")
     return details
 
 
