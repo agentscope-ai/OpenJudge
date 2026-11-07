@@ -159,6 +159,12 @@ class PipelineRunner:
                 target models. A single ``api_key`` acts as a fallback for all
                 endpoints. Keys are never persisted again.
 
+                Credentials from :func:`bound_credentials_from_ui_config` also
+                carry URL bindings. A bound key is reused only for the saved
+                endpoint with the same URL; when the URLs differ, a credential
+                for the saved endpoint must be supplied explicitly. Keys already
+                stored in a legacy run are never overwritten.
+
         Returns:
             PipelineRunner configured for resume
 
@@ -172,6 +178,7 @@ class PipelineRunner:
 
         from features.auto_arena.services.credentials import (
             apply_credentials,
+            mismatched_bindings,
             missing_credentials,
         )
 
@@ -203,14 +210,27 @@ class PipelineRunner:
         # (judge_endpoint is a dict). Re-inject keys entered in the UI into either
         # shape, then report exactly what is still missing. Legacy saved runs
         # still contain plaintext keys and therefore need no credentials.
-        config = apply_credentials(config, credentials)
+        #
+        # UI credentials are URL-bound: only keys entered for the same endpoint
+        # URL may be reused automatically, and existing (legacy) keys are kept.
+        saved_config = config
+        config = apply_credentials(config, credentials, preserve_existing=True)
         missing = missing_credentials(config)
         if missing:
-            raise ValueError(
+            mismatches = mismatched_bindings(saved_config, credentials, applied=config)
+            details = [
                 "Cannot resume this evaluation: API keys are not stored in saved "
                 "configurations. Re-enter them in the UI (or pass credentials= to "
-                f"resume()) before resuming. Missing credentials: {'; '.join(missing)}."
-            )
+                "resume()) before resuming."
+            ]
+            if mismatches:
+                details.append(
+                    "Credentials from the current UI are bound to different endpoint "
+                    "URLs and were not reused; provide credentials specifically for "
+                    "the saved endpoint: " + "; ".join(mismatches) + "."
+                )
+            details.append(f"Missing credentials: {'; '.join(missing)}.")
+            raise ValueError(" ".join(details))
 
         runner = cls(config, progress_callback, resume_from=output_dir)
         runner.config["output_dir"] = output_dir

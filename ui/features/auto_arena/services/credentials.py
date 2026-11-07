@@ -12,6 +12,12 @@ Two configuration shapes are in use in this codebase:
 
 Both shapes must be handled when scrubbing credentials before writing to disk
 and when re-injecting credentials supplied in memory on resume.
+
+Credentials reused automatically from the current UI are bound to the endpoint
+URL they were entered for. On resume a bound key is applied only to the saved
+endpoint with the same URL; when the URLs differ, the saved endpoint keeps its
+own (possibly legacy) key or reports a clear missing-credential error instead
+of silently receiving a key belonging to another provider.
 """
 
 import copy
@@ -34,6 +40,69 @@ SENSITIVE_KEYS = frozenset(
 )
 SENSITIVE_SUFFIXES = ("_api_key", "_api_token", "_api_secret", "_access_token")
 SENSITIVE_KEY = "api_key"  # Backwards-compatible alias for the common case.
+
+# Keys used by ``bound_credentials_from_ui_config`` to pin each automatically
+# reused credential to the endpoint URL it was entered for. They are in-memory
+# only and never part of a saved config.
+JUDGE_URL_BINDING = "judge_endpoint_url"
+TARGET_URL_BINDINGS = "target_endpoint_urls"
+
+
+def _normalize_url(url: Any) -> str:
+    """Normalize an endpoint URL for comparison: trim, drop trailing '/', fold case."""
+    if not isinstance(url, str):
+        return ""
+    return url.strip().rstrip("/").lower()
+
+
+def _judge_url(config: Mapping[str, Any], *, normalize: bool = True) -> str:
+    """Return the judge endpoint URL for either the flat or the nested shape."""
+    judge = config.get("judge_endpoint")
+    raw = judge.get("base_url") if isinstance(judge, Mapping) else judge
+    if not isinstance(raw, str):
+        return ""
+    return _normalize_url(raw) if normalize else raw.strip()
+
+
+def _target_urls(config: Mapping[str, Any], *, normalize: bool = True) -> dict[str, str]:
+    """Return ``{endpoint name: base URL}`` for dict- and list-shaped endpoints."""
+    urls: dict[str, str] = {}
+    endpoints = config.get("target_endpoints")
+    if isinstance(endpoints, Mapping):
+        # The dict shape maps a name to an endpoint dict; a bare string value is
+        # an API key, not a URL, so it carries no binding information.
+        pairs = [
+            (name, value.get("base_url") if isinstance(value, Mapping) else None)
+            for name, value in endpoints.items()
+        ]
+    elif isinstance(endpoints, list):
+        pairs = [
+            (entry.get("name"), entry.get("base_url") if isinstance(entry, Mapping) else None)
+            for entry in endpoints
+            if isinstance(entry, Mapping)
+        ]
+    else:
+        pairs = []
+
+    for name, raw in pairs:
+        if not name:
+            continue
+        url = raw.strip() if isinstance(raw, str) else ""
+        urls[name] = _normalize_url(url) if normalize else url
+    return urls
+
+
+def _binding_matches(bound_url: Any, saved_url: str) -> bool:
+    """Whether a URL-bound credential may be reused for a saved endpoint.
+
+    A credential with no URL binding is an explicit ``credentials=`` value and
+    is left to the caller. An automatically reused credential is only applied
+    when the saved endpoint has a URL and both URLs normalize to the same value.
+    """
+    normalized = _normalize_url(bound_url)
+    if not normalized:
+        return True
+    return bool(saved_url) and normalized == saved_url
 
 
 def is_secret_key(key: Any) -> bool:
@@ -87,6 +156,8 @@ def _collect_endpoint_keys(source: Any) -> dict[str, str]:
 def apply_credentials(
     config: dict[str, Any],
     credentials: Mapping[str, Any] | None = None,
+    *,
+    preserve_existing: bool = False,
 ) -> dict[str, Any]:
     """Return a copy of ``config`` with in-memory ``credentials`` applied.
 
@@ -98,8 +169,17 @@ def apply_credentials(
     * ``api_key`` (or ``target_api_key``) as a single fallback key applied to
       every endpoint without an explicit key.
 
-    Empty values never overwrite a key already present in ``config``, which
-    keeps legacy saved runs (written before keys were stripped) resumable.
+    Empty values never overwrite a key already present in ``config``.
+
+    Credentials produced by :func:`bound_credentials_from_ui_config` also carry
+    ``judge_endpoint_url`` / ``target_endpoint_urls``. Such an automatically
+    reused key is injected only when its URL matches the URL of the saved
+    endpoint. A key for provider B therefore cannot land in provider A's
+    request configuration, even when both runs use the same endpoint names.
+
+    ``preserve_existing`` (used by ``PipelineRunner.resume``) additionally never
+    replaces a non-empty key already stored in ``config``, so legacy runs keep
+    the plaintext credentials they were originally saved with.
     """
     merged = copy.deepcopy(config)
     if not credentials:
@@ -122,29 +202,50 @@ def apply_credentials(
     for source_key in ("target_endpoint_api_keys", "target_endpoints"):
         endpoint_keys.update(_collect_endpoint_keys(credentials.get(source_key)))
 
+    saved_judge_url = _judge_url(merged)
+    saved_target_urls = _target_urls(merged)
+    bound_target_urls = credentials.get(TARGET_URL_BINDINGS)
+    if not isinstance(bound_target_urls, Mapping):
+        bound_target_urls = {}
+
+    # A mismatched binding suppresses that endpoint's key entirely, including
+    # the shared fallback, so nothing from the current UI leaks into the run.
+    if not _binding_matches(credentials.get(JUDGE_URL_BINDING), saved_judge_url):
+        judge_key = ""
+
+    def _set(mapping: dict[str, Any], key: str, value: str) -> None:
+        if preserve_existing and mapping.get(key):
+            return
+        mapping[key] = value
+
+    def _target_key(name: Any) -> str:
+        if not _binding_matches(bound_target_urls.get(name), saved_target_urls.get(name, "")):
+            return ""
+        return endpoint_keys.get(name) or fallback
+
     judge = merged.get("judge_endpoint")
     if isinstance(judge, dict):
         if judge_key:
-            judge["api_key"] = judge_key
+            _set(judge, "api_key", judge_key)
     elif judge_key:
-        merged["judge_api_key"] = judge_key
+        _set(merged, "judge_api_key", judge_key)
 
     endpoints = merged.get("target_endpoints")
     if isinstance(endpoints, dict):
         for name, entry in endpoints.items():
-            key = endpoint_keys.get(name) or fallback
+            key = _target_key(name)
             if not key:
                 continue
             if isinstance(entry, dict):
-                entry["api_key"] = key
+                _set(entry, "api_key", key)
             elif not entry:
                 endpoints[name] = {"api_key": key}
     elif isinstance(endpoints, list):
         for entry in endpoints:
             if isinstance(entry, dict):
-                key = endpoint_keys.get(entry.get("name")) or fallback
+                key = _target_key(entry.get("name"))
                 if key:
-                    entry["api_key"] = key
+                    _set(entry, "api_key", key)
 
     return merged
 
@@ -179,6 +280,64 @@ def missing_credentials(config: Mapping[str, Any]) -> list[str]:
     return missing
 
 
+def mismatched_bindings(
+    config: Mapping[str, Any],
+    credentials: Mapping[str, Any] | None,
+    *,
+    applied: Mapping[str, Any] | None = None,
+) -> list[str]:
+    """Describe UI credentials bound to a different URL than the saved endpoint.
+
+    ``applied`` is the config after :func:`apply_credentials`. When supplied,
+    only endpoints that still need a credential are reported: a legacy run that
+    already carries its own valid key does not need anything re-entered.
+    """
+    if not isinstance(credentials, Mapping):
+        return []
+
+    blank = set(missing_credentials(applied)) if applied is not None else None
+
+    def _needed(label: str) -> bool:
+        return blank is None or label in blank
+
+    details: list[str] = []
+    saved_judge_url = _judge_url(config)
+    saved_judge_label = _judge_url(config, normalize=False) or "(no URL in saved config)"
+    bound_judge_url = credentials.get(JUDGE_URL_BINDING)
+    judge_label = (
+        "judge_endpoint.api_key (judge model)"
+        if isinstance(config.get("judge_endpoint"), Mapping)
+        else "judge_api_key (judge model)"
+    )
+    if (
+        isinstance(bound_judge_url, str)
+        and _normalize_url(bound_judge_url)
+        and not _binding_matches(bound_judge_url, saved_judge_url)
+        and _needed(judge_label)
+    ):
+        details.append(
+            f"judge model: current UI {bound_judge_url!r} != saved endpoint {saved_judge_label!r}"
+        )
+
+    bound_target_urls = credentials.get(TARGET_URL_BINDINGS)
+    if isinstance(bound_target_urls, Mapping):
+        saved_target_urls = _target_urls(config)
+        saved_target_labels = _target_urls(config, normalize=False)
+        for name, url in bound_target_urls.items():
+            saved_label = saved_target_labels.get(name) or "(no URL in saved config)"
+            label = f"target_endpoints[{name!r}].api_key"
+            if (
+                isinstance(url, str)
+                and _normalize_url(url)
+                and not _binding_matches(url, saved_target_urls.get(name, ""))
+                and _needed(label)
+            ):
+                details.append(
+                    f"target_endpoints[{name!r}]: current UI {url!r} != saved endpoint {saved_label!r}"
+                )
+    return details
+
+
 def credentials_from_ui_config(config: Mapping[str, Any]) -> dict[str, Any]:
     """Extract only credentials from a config, for in-memory reuse on resume.
 
@@ -195,3 +354,18 @@ def credentials_from_ui_config(config: Mapping[str, Any]) -> dict[str, Any]:
         "judge_api_key": judge_key if isinstance(judge_key, str) else "",
         "target_endpoint_api_keys": _collect_endpoint_keys(config.get("target_endpoints")),
     }
+
+
+def bound_credentials_from_ui_config(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Credentials for automatic reuse on resume, pinned to their endpoint URLs.
+
+    ``feature.py`` keeps this in session state instead of the bare keys. When a
+    saved run used a different provider, the binding stops a key entered for
+    the current UI from being injected into that run's request configuration;
+    the user must supply a credential for the saved endpoint instead. No
+    prompts, task data or model settings are included.
+    """
+    credentials = credentials_from_ui_config(config)
+    credentials[JUDGE_URL_BINDING] = _judge_url(config, normalize=False)
+    credentials[TARGET_URL_BINDINGS] = _target_urls(config, normalize=False)
+    return credentials
