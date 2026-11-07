@@ -13,6 +13,7 @@ from features.auto_arena.components.progress_panel import render_progress_panel
 from features.auto_arena.components.report_viewer import render_report_viewer
 from features.auto_arena.components.result_panel import render_result_panel
 from features.auto_arena.components.sidebar import render_arena_sidebar
+from features.auto_arena.services.credentials import bound_credentials_from_ui_config
 from features.auto_arena.services.history_manager import HistoryManager
 from features.auto_arena.services.pipeline_runner import (
     PipelineProgress,
@@ -74,6 +75,7 @@ class AutoArenaFeature(BaseFeature):
     STATE_RESULT = "arena_result"
     STATE_OUTPUT_DIR = "arena_output_dir"
     STATE_VIEWING_TASK = "arena_viewing_task"
+    STATE_CREDENTIALS = "arena_credentials"  # In-memory only, never written to disk
 
     def render_sidebar(self) -> dict[str, Any]:
         """Render the Auto Arena sidebar configuration.
@@ -158,6 +160,12 @@ class AutoArenaFeature(BaseFeature):
         with col_config:
             config = render_config_panel(sidebar_config)
 
+            # Keep only the credentials currently entered in the UI in session
+            # state, bound to the endpoint URLs they belong to. resume() reads
+            # them because saved configs are sanitized; a key for a different
+            # provider must never be reused for a historical run.
+            st.session_state[self.STATE_CREDENTIALS] = bound_credentials_from_ui_config(config)
+
             # Start button
             st.markdown('<div class="custom-divider" style="margin: 1rem 0;"></div>', unsafe_allow_html=True)
 
@@ -235,9 +243,17 @@ class AutoArenaFeature(BaseFeature):
             st.session_state[self.STATE_OUTPUT_DIR] = output_dir
             st.info(t("arena.history.resuming", task_id=task_id))
 
-            # Use PipelineRunner.resume to continue from checkpoint
+            # Saved configs contain no API keys, so hand the runner the keys the
+            # user has (re-)entered in the UI. They stay in session state only
+            # and are bound to their endpoint URLs: if the saved run used a
+            # different provider, resume() asks for that endpoint's key instead
+            # of silently reusing the current one.
             try:
-                runner = PipelineRunner.resume(output_dir)
+                credentials = dict(st.session_state.get(self.STATE_CREDENTIALS) or {})
+                sidebar_key = st.session_state.get("arena_judge_api_key", "")
+                if sidebar_key:
+                    credentials["judge_api_key"] = sidebar_key
+                runner = PipelineRunner.resume(output_dir, credentials=credentials)
                 result = run_async(runner.run())
                 if result:
                     st.session_state[self.STATE_RESULT] = result

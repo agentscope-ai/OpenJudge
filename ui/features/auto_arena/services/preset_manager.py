@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from features.auto_arena.services.credentials import strip_secrets
 
 
 def _get_workspace_presets_dir() -> Path:
@@ -251,8 +252,8 @@ class PresetManager:
         config["_ui_preset"]["updated_at"] = now
         config["_ui_preset"]["builtin"] = False
 
-        # Save
-        self._save_yaml(preset_path, config)
+        # Save (without API keys: preset files are meant to be shareable)
+        self._save_yaml(preset_path, strip_secrets(config))
         return True, ""
 
     def delete_preset(self, name: str) -> tuple[bool, str]:
@@ -322,7 +323,7 @@ class PresetManager:
         Returns:
             YAML formatted string
         """
-        export_config = config.copy()
+        export_config = strip_secrets(config)
 
         if not include_ui_metadata and "_ui_preset" in export_config:
             del export_config["_ui_preset"]

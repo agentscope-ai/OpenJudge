@@ -145,21 +145,42 @@ class PipelineRunner:
         cls,
         output_dir: str,
         progress_callback: Callable[[PipelineProgress], None] | None = None,
+        credentials: dict[str, Any] | None = None,
     ) -> "PipelineRunner":
         """Create a runner to resume a paused evaluation.
 
         Args:
             output_dir: Directory of the paused evaluation
             progress_callback: Optional callback for progress updates
+            credentials: API keys re-entered in the UI (in memory only). Accepts
+                both config shapes: ``judge_api_key`` / ``judge_endpoint.api_key``
+                for the judge, and ``target_endpoints`` or
+                ``target_endpoint_api_keys`` as a name-to-key mapping for the
+                target models. A single ``api_key`` acts as a fallback for all
+                endpoints. Keys are never persisted again.
+
+                Credentials from :func:`bound_credentials_from_ui_config` also
+                carry URL bindings. A bound key is reused only for the saved
+                endpoint with the same URL; when the URLs differ, a credential
+                for the saved endpoint must be supplied explicitly. Keys already
+                stored in a legacy run are never overwritten.
 
         Returns:
             PipelineRunner configured for resume
 
         Raises:
             FileNotFoundError: If no config can be loaded
+            ValueError: If required credentials are missing
+            TypeError: If ``credentials`` is not a mapping
         """
         import json
         from pathlib import Path
+
+        from features.auto_arena.services.credentials import (
+            apply_credentials,
+            mismatched_bindings,
+            missing_credentials,
+        )
 
         output_path = Path(output_dir)
         config_path = output_path / cls.CONFIG_FILE
@@ -184,6 +205,33 @@ class PipelineRunner:
                 f"No configuration found in {output_dir}. " "Cannot resume evaluation without original config."
             )
 
+        # ``ui_config.json`` is a flat UI config (judge_endpoint is a URL string,
+        # the judge key is judge_api_key), while presets use a nested config
+        # (judge_endpoint is a dict). Re-inject keys entered in the UI into either
+        # shape, then report exactly what is still missing. Legacy saved runs
+        # still contain plaintext keys and therefore need no credentials.
+        #
+        # UI credentials are URL-bound: only keys entered for the same endpoint
+        # URL may be reused automatically, and existing (legacy) keys are kept.
+        saved_config = config
+        config = apply_credentials(config, credentials, preserve_existing=True)
+        missing = missing_credentials(config)
+        if missing:
+            mismatches = mismatched_bindings(saved_config, credentials, applied=config)
+            details = [
+                "Cannot resume this evaluation: API keys are not stored in saved "
+                "configurations. Re-enter them in the UI (or pass credentials= to "
+                "resume()) before resuming."
+            ]
+            if mismatches:
+                details.append(
+                    "Credentials from the current UI are bound to different endpoint "
+                    "URLs and were not reused; provide credentials specifically for "
+                    "the saved endpoint: " + "; ".join(mismatches) + "."
+                )
+            details.append(f"Missing credentials: {'; '.join(missing)}.")
+            raise ValueError(" ".join(details))
+
         runner = cls(config, progress_callback, resume_from=output_dir)
         runner.config["output_dir"] = output_dir
         runner.progress.output_dir = output_dir
@@ -207,9 +255,16 @@ class PipelineRunner:
         return runner
 
     def save_config(self) -> None:
-        """Save UI config for resume capability."""
+        """Save UI config for resume capability.
+
+        API keys are stripped before writing: this file lives in the evaluation
+        output directory, which is routinely copied, archived or attached to bug
+        reports. The in-memory ``self.config`` keeps its keys for the current run.
+        """
         import json
         from pathlib import Path
+
+        from features.auto_arena.services.credentials import strip_secrets
 
         output_dir = self.config.get("output_dir")
         if not output_dir:
@@ -220,7 +275,7 @@ class PipelineRunner:
         config_path = output_path / self.CONFIG_FILE
 
         with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(self.config, f, indent=2, ensure_ascii=False)
+            json.dump(strip_secrets(self.config), f, indent=2, ensure_ascii=False)
 
         logger.debug(f"Saved UI config to {config_path}")
 
