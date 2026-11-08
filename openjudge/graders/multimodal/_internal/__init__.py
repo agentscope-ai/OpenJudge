@@ -24,6 +24,9 @@ from openjudge.graders.multimodal._internal.criteria_utils import (
     validate_criteria_and_evaluation_steps,
 )
 
+# Prompt rendering utilities
+from openjudge.graders.multimodal._internal.prompt_utils import build_image_messages
+
 # Schema definitions
 from openjudge.graders.multimodal._internal.schema import EvaluationSteps, Rubric
 
@@ -38,6 +41,8 @@ __all__ = [
     "MLLMImage",
     # Helper functions
     "format_image_content",
+    # Prompt rendering
+    "build_image_messages",
     # Context functions
     "get_image_indices",
     "get_image_context",

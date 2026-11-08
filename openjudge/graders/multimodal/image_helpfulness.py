@@ -17,7 +17,7 @@ from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.multimodal._internal import (
     MLLMImage,
-    format_image_content,
+    build_image_messages,
     get_image_context,
     get_image_indices,
 )
@@ -244,19 +244,16 @@ class ImageHelpfulnessGrader(LLMGrader):
         context_below: Optional[str],
     ) -> Tuple[float, str]:
         """Async evaluation of single image helpfulness"""
-        messages = self.template.to_messages(self.language)
-        prompt = (
-            messages[0]
-            .format(
-                context_above=context_above or "",
-                context_below=context_below or "",
-            )
-            .content
+        messages = build_image_messages(
+            self.template,
+            self.language,
+            [image],
+            context_above=context_above or "",
+            context_below=context_below or "",
         )
 
-        content = format_image_content(prompt, [image])
         chat_response = await self.model.achat(
-            messages=[{"role": "user", "content": content}],
+            messages=messages,
             structured_model=GraderScoreCallback,
         )
 

@@ -18,7 +18,7 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
 )
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
-from openjudge.graders.multimodal._internal import MLLMImage, format_image_content
+from openjudge.graders.multimodal._internal import MLLMImage, build_image_messages
 from openjudge.graders.schema import GraderScoreCallback
 from openjudge.models.base_chat_model import BaseChatModel
 from openjudge.models.openai_chat_model import OpenAIChatModel
@@ -351,12 +351,15 @@ class TextToImageGrader(BaseGrader):
         response: MLLMImage,
     ) -> Tuple[List[float], str]:
         """Evaluate semantic consistency asynchronously"""
-        messages = self.semantic_template.to_messages(self.language)
-        prompt = messages[0].format(query=query).content
+        messages = build_image_messages(
+            self.semantic_template,
+            self.language,
+            [response],
+            query=query,
+        )
 
-        content = format_image_content(prompt, [response])
         chat_response = await self.model.achat(
-            messages=[{"role": "user", "content": content}],
+            messages=messages,
             structured_model=GraderScoreCallback,
         )
 
@@ -372,12 +375,14 @@ class TextToImageGrader(BaseGrader):
         response: MLLMImage,
     ) -> Tuple[List[float], str]:
         """Evaluate perceptual quality asynchronously"""
-        messages = self.perceptual_template.to_messages(self.language)
-        prompt = messages[0].content
+        messages = build_image_messages(
+            self.perceptual_template,
+            self.language,
+            [response],
+        )
 
-        content = format_image_content(prompt, [response])
         chat_response = await self.model.achat(
-            messages=[{"role": "user", "content": content}],
+            messages=messages,
             structured_model=GraderScoreCallback,
         )
 
