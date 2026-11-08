@@ -327,6 +327,52 @@ class TestLLMGraderUnit:
         reconstructed_grader = LLMGrader.from_config(config)
         assert reconstructed_grader.name == "serialization_test"
 
+    def test_from_config_converts_string_mode(self):
+        """A string mode from config must become GraderMode, as BaseGrader.from_config does."""
+        config = {
+            "name": "listwise_grader",
+            "mode": "listwise",
+            "template": [{"role": "user", "content": "{query}"}],
+            "model": {"model": "gpt-3.5-turbo", "api_key": "test-key"},
+        }
+
+        grader = LLMGrader.from_config(config)
+
+        assert grader.mode == GraderMode.LISTWISE
+        assert isinstance(grader.mode, GraderMode)
+
+    def test_from_config_does_not_mutate_input(self):
+        """from_config must leave the caller's config usable for a second construction."""
+        config = {
+            "name": "round_trip_grader",
+            "mode": "pointwise",
+            "template": [{"role": "user", "content": "{query}"}],
+            "model": {"model": "gpt-3.5-turbo", "api_key": "test-key"},
+        }
+        original = dict(config)
+
+        LLMGrader.from_config(config)
+
+        assert config == original
+
+    def test_to_dict_from_config_round_trip(self):
+        """to_dict() must produce a config that from_config() accepts, twice."""
+        source = LLMGrader(
+            model={"model": "gpt-3.5-turbo", "api_key": "test-key"},
+            name="round_trip_grader",
+            mode=GraderMode.LISTWISE,
+            template=[{"role": "user", "content": "{query}"}],
+        )
+
+        config = source.to_dict()
+        reconstructed = LLMGrader.from_config(config)
+
+        assert reconstructed.name == source.name
+        assert reconstructed.mode == GraderMode.LISTWISE
+        assert reconstructed.to_dict()["mode"] == "listwise"
+        # The same config must be reusable, since callers may cache it.
+        assert LLMGrader.from_config(config).name == source.name
+
     @pytest.mark.asyncio
     async def test_pointwise_with_eval_feedback(self):
         """Test pointwise evaluation extracts eval_feedback from LLM output"""
