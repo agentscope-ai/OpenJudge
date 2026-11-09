@@ -220,6 +220,44 @@ class TestJsonMatchGrader:
         assert result.metadata["matched"] is True
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "reference,response",
+        [
+            ('{"a": null}', "{}"),
+            ("{}", '{"a": null}'),
+            ('{"a": null, "b": 1}', '{"b": 1}'),
+        ],
+    )
+    async def test_missing_key_vs_explicit_null_not_matched(self, reference: str, response: str):
+        """A missing key and an explicit null are distinct JSON values"""
+        result = await JsonMatchGrader().aevaluate(reference_response=reference, response=response)
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_explicit_null_still_matches_explicit_null(self):
+        """Distinguishing missing keys must not break null-to-null equality"""
+        result = await JsonMatchGrader().aevaluate(
+            reference_response='{"a": null, "b": 1}',
+            response='{"b": 1, "a": null}',
+        )
+
+        assert result.score == 1.0
+        assert result.metadata["matched"] is True
+
+    @pytest.mark.asyncio
+    async def test_missing_key_vs_null_in_unordered_list(self):
+        """The unordered list matcher inherits the same null/missing distinction"""
+        result = await JsonMatchGrader(strict_order=False).aevaluate(
+            reference_response='[{"a": null}, {"b": 1}]',
+            response='[{"b": 1}, {}]',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
     async def test_boolean_vs_number_not_matched(self):
         """Test that booleans are not matched against numbers.
 

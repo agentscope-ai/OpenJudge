@@ -74,11 +74,17 @@ class JsonMatchGrader(BaseGrader):
             if not isinstance(correct, dict):
                 return False
 
+            # A missing key and an explicit null are different JSON values, so
+            # compare key membership before looking the values up; `get` returns
+            # None for both and would let {"a": null} match {}.
             if self.ignore_extra_keys:
-                return all(self._json_match(sampled.get(key), correct.get(key)) for key in correct.keys())
+                return all(key in sampled and self._json_match(sampled[key], correct[key]) for key in correct.keys())
             else:
                 all_keys = set(sampled.keys()) | set(correct.keys())
-                return all(self._json_match(sampled.get(key), correct.get(key)) for key in all_keys)
+                return all(
+                    key in sampled and key in correct and self._json_match(sampled[key], correct[key])
+                    for key in all_keys
+                )
 
         elif isinstance(sampled, list):
             if not isinstance(correct, list):
