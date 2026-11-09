@@ -201,9 +201,12 @@ class SimilarityGrader(BaseGrader):
         if "use_stemmer" in params and "use_stemmer" not in kwargs:
             params["use_stemmer"] = self.use_stemmer
 
+        # Extra constructor configuration sits above the named defaults but
+        # below the per-call arguments.
+        params.update(self.kwargs)
+
         # Override with kwargs
         params.update(kwargs)
-        params.update(self.kwargs)
 
         # Special handling for METEOR NLTK data
         if self.algorithm == "meteor":
