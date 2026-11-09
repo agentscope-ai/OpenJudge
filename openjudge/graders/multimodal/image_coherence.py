@@ -17,6 +17,7 @@ from openjudge.graders.base_grader import GraderMode, GraderScore
 from openjudge.graders.llm_grader import LLMGrader
 from openjudge.graders.multimodal._internal import (
     MLLMImage,
+    build_image_messages,
     get_image_context,
     get_image_indices,
 )
@@ -242,25 +243,16 @@ class ImageCoherenceGrader(LLMGrader):
         context_below: Optional[str],
     ) -> Tuple[float, str]:
         """Async evaluation of single image coherence"""
-        messages = self.template.to_messages(self.language)
-        prompt = messages[0].content.format(
+        messages = build_image_messages(
+            self.template,
+            self.language,
+            [image],
             context_above=context_above or "",
             context_below=context_below or "",
         )
 
-        # Format image content for OpenAI API
-        content = [{"type": "text", "text": prompt}]
-
-        if image.url:
-            content.append({"type": "image_url", "image_url": {"url": image.url}})
-        elif image.base64:
-            # Format base64 image with data URL scheme
-            image_format = image.format or "jpeg"
-            data_url = f"data:image/{image_format};base64,{image.base64}"
-            content.append({"type": "image_url", "image_url": {"url": data_url}})
-
         chat_response = await self.model.achat(
-            messages=[{"role": "user", "content": content}],
+            messages=messages,
             structured_model=GraderScoreCallback,
         )
 
