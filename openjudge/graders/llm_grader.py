@@ -227,14 +227,19 @@ class LLMGrader(BaseGrader):
         Returns:
             A new LLMGrader instance.
         """
+        # Copy rather than pop so the caller's config stays reusable.
+        config_copy = dict(config)
+
         # Extract standard grader properties
-        name = config.pop("name", "")
-        mode = config.pop("mode", GraderMode.POINTWISE)
-        description = config.pop("description", "")
+        name = config_copy.pop("name", "")
+        mode_value = config_copy.pop("mode", GraderMode.POINTWISE)
+        # Convert string to GraderMode, matching BaseGrader.from_config.
+        mode = GraderMode(mode_value) if isinstance(mode_value, str) else mode_value
+        description = config_copy.pop("description", "")
 
         # Extract LLMGrader-specific properties
-        template = config.pop("template", {})
-        model = config.pop("model", {})
+        template = config_copy.pop("template", {})
+        model = config_copy.pop("model", {})
 
         # Create and return new instance with remaining config items as kwargs
         return cls(
@@ -243,7 +248,7 @@ class LLMGrader(BaseGrader):
             description=description,
             template=template,
             model=model,
-            **config,
+            **config_copy,
         )
 
     async def _aevaluate(self, **kwargs: Any) -> GraderScore | GraderRank:
