@@ -7,6 +7,7 @@ and returns a positive score if parsing succeeds.
 """
 
 import json
+import re
 from typing import Any
 
 from openjudge.evaluation_strategy.base_evaluation_strategy import (
@@ -14,6 +15,12 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
 )
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+
+# Python's json.loads accepts NaN/Infinity/-Infinity as valid (non-standard
+# extension). RFC 8259 defines no such values — reject them so that output
+# accepted by this grader is also accepted by strict consumers (jq, JS
+# JSON.parse, Go json, Rust serde_json, etc.).
+_NON_RFC8259_LITERAL = re.compile(r"\b(?:NaN|Infinity|-Infinity)\b")
 
 
 class JsonValidatorGrader(BaseGrader):
@@ -73,6 +80,17 @@ class JsonValidatorGrader(BaseGrader):
 
         try:
             json.loads(response)
+            # Reject non-RFC-8259 literals that Python's json.loads accepts
+            match = _NON_RFC8259_LITERAL.search(response)
+            if match:
+                return False, {
+                    "is_valid": False,
+                    "error_message": (
+                        f"Non-RFC-8259 literal '{match.group()}' found; "
+                        f"NaN/Infinity/-Infinity are not valid JSON per RFC 8259"
+                    ),
+                    "response_length": len(response),
+                }
             return True, {"is_valid": True, "response_length": len(response)}
         except json.JSONDecodeError as e:
             return False, {
