@@ -15,6 +15,7 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
     BaseEvaluationStrategy,
 )
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
+from openjudge.utils.json_utils import reject_non_finite
 
 
 class JsonMatchGrader(BaseGrader):
@@ -157,8 +158,11 @@ class JsonMatchGrader(BaseGrader):
         """
         # Parse response JSON
         try:
-            response_json = json.loads(response)
-        except (json.JSONDecodeError, TypeError) as e:
+            # RFC 8259 defines no NaN/Infinity literals, but Python's json
+            # module parses them by default. Grade such responses as invalid
+            # instead of letting e.g. {"a": Infinity} match {"a": 1e999}.
+            response_json = json.loads(response, parse_constant=reject_non_finite)
+        except (ValueError, TypeError) as e:
             return False, {
                 "matched": False,
                 "error": "response_parse_error",
@@ -167,8 +171,8 @@ class JsonMatchGrader(BaseGrader):
 
         # Parse reference JSON
         try:
-            reference_json = json.loads(reference)
-        except (json.JSONDecodeError, TypeError) as e:
+            reference_json = json.loads(reference, parse_constant=reject_non_finite)
+        except (ValueError, TypeError) as e:
             return False, {
                 "matched": False,
                 "error": "reference_parse_error",

@@ -14,19 +14,7 @@ from openjudge.evaluation_strategy.base_evaluation_strategy import (
 )
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
-
-
-def _reject_non_finite(token: str) -> Any:
-    """Reject the non-JSON number literals Python's json module accepts.
-
-    Args:
-        token: The constant literal found by the parser (``NaN``, ``Infinity``
-            or ``-Infinity``).
-
-    Raises:
-        ValueError: Always, so the surrounding ``json.loads`` fails.
-    """
-    raise ValueError(f"{token} is not a valid JSON number")
+from openjudge.utils.json_utils import reject_non_finite
 
 
 class JsonValidatorGrader(BaseGrader):
@@ -88,7 +76,7 @@ class JsonValidatorGrader(BaseGrader):
             # RFC 8259 defines no NaN/Infinity literals, but Python's json
             # module parses them by default. Grade such output as invalid
             # instead of passing it on to strict consumers.
-            json.loads(response, parse_constant=_reject_non_finite)
+            json.loads(response, parse_constant=reject_non_finite)
         except json.JSONDecodeError as e:
             return False, {
                 "is_valid": False,
@@ -96,7 +84,7 @@ class JsonValidatorGrader(BaseGrader):
                 "response_length": len(response),
             }
         except ValueError as e:
-            # Raised by `_reject_non_finite`. `json.JSONDecodeError` is itself a
+            # Raised by `reject_non_finite`. `json.JSONDecodeError` is itself a
             # ValueError, so this branch only ever sees the constant literal.
             return False, {
                 "is_valid": False,
