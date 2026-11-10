@@ -209,6 +209,7 @@ class OpenAIChatModel(BaseChatModel):
             **self.kwargs,
             **kwargs,
         }
+        stream = kwargs["stream"]
         if self.reasoning_effort and "reasoning_effort" not in kwargs:
             kwargs["reasoning_effort"] = self.reasoning_effort
 
@@ -216,7 +217,7 @@ class OpenAIChatModel(BaseChatModel):
         # For non-streaming calls with qwen/pai-judge models, default enable_thinking to
         # False unless the caller has already set it explicitly via extra_body.
 
-        if not self.stream and ("qwen" in self.model.lower() or "pai-judge" in self.model.lower()):
+        if not stream and ("qwen" in self.model.lower() or "pai-judge" in self.model.lower()):
             if "extra_body" not in kwargs:
                 kwargs["extra_body"] = {}
             if "enable_thinking" not in kwargs["extra_body"]:
@@ -258,7 +259,7 @@ class OpenAIChatModel(BaseChatModel):
 
             kwargs["response_format"] = structured_model
 
-            if not self.stream:
+            if not stream:
                 kwargs.pop("stream", None)
                 response = await self.client.chat.completions.parse(**kwargs)
             else:
@@ -266,7 +267,7 @@ class OpenAIChatModel(BaseChatModel):
         else:
             response = await self.client.chat.completions.create(**kwargs)
 
-        if self.stream:
+        if stream:
             return self._handle_streaming_response(response, structured_model, callback)
 
         # Non-streaming response
