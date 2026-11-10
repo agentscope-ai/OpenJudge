@@ -18,6 +18,7 @@ from openjudge.utils.utils import repair_and_load_json
 def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> list[dict]:
     """Qwen-omni uses OpenAI-compatible API but requires different audio
     data format than OpenAI with "data:;base64," prefix.
+    Return copied messages, preserving audio URLs and existing data URIs.
     Refer to `Qwen-omni documentation
     <https://bailian.console.aliyun.com/?tab=doc#/doc/?type=model&url=2867839>`
     for more details.
@@ -28,16 +29,6 @@ def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> list
     """
     format_data = []
     for msg in messages:
-        msg_dict = msg.to_dict() if isinstance(msg, ChatMessage) else msg
-        if isinstance(msg_dict.get("content"), list):
-            for block in msg_dict["content"]:
-                if (
-                    isinstance(block, dict)
-                    and "input_audio" in block
-                    and isinstance(block["input_audio"].get("data"), str)
-                ):
-                    if not block["input_audio"]["data"].startswith("http"):
-                        block["input_audio"]["data"] = "data:;base64," + block["input_audio"]["data"]
         try:
             msg_copy = copy.deepcopy(msg)
             msg_dict = msg_copy.to_dict() if isinstance(msg_copy, ChatMessage) else msg_copy
@@ -47,7 +38,7 @@ def _format_audio_data_for_qwen_omni(messages: list[dict | ChatMessage]) -> list
                         isinstance(block, dict)
                         and "input_audio" in block
                         and isinstance(block["input_audio"].get("data"), str)
-                        and not block["input_audio"]["data"].startswith("http")
+                        and not block["input_audio"]["data"].startswith(("http", "data:"))
                     ):
                         block["input_audio"]["data"] = "data:;base64," + block["input_audio"]["data"]
             format_data.append(msg_dict)

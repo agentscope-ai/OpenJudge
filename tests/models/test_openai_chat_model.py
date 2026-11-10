@@ -2,6 +2,10 @@
 """Unit tests for OpenAIChatModel."""
 
 import asyncio
+import base64
+import copy
+import io
+import wave
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -466,6 +470,48 @@ class TestOpenAIChatModel:
         sent = self._sent_response_format("gpt-4o")
 
         assert sent is PersonModelForTesting
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("message_kind", ["dict", "chat_message"])
+@pytest.mark.parametrize("data_kind", ["raw", "prefixed", "url"])
+async def test_omni_audio_is_formatted_once_without_changing_history(message_kind: str, data_kind: str) -> None:
+    """Repeated public calls preserve caller data and send one audio prefix."""
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(8000)
+        audio.writeframes(b"\0\0" * 16)
+    encoded = base64.b64encode(buffer.getvalue()).decode()
+    formatted = "data:;base64," + encoded
+    source = {"raw": encoded, "prefixed": formatted, "url": "https://example.com/audio.wav"}[data_kind]
+    message = {
+        "role": "user",
+        "content": [{"type": "input_audio", "input_audio": {"data": source, "format": "wav"}}],
+    }
+    messages = [ChatMessage(**message) if message_kind == "chat_message" else message]
+    original = copy.deepcopy(messages)
+    completion = ChatCompletion(
+        id="test-audio",
+        object="chat.completion",
+        created=1,
+        model="qwen3-omni-flash",
+        choices=[
+            Choice(index=0, finish_reason="stop", message=ChatCompletionMessage(role="assistant", content="heard"))
+        ],
+    )
+    with patch("openjudge.models.openai_chat_model.AsyncOpenAI") as client_factory:
+        create = AsyncMock(return_value=completion)
+        client_factory.return_value.chat.completions.create = create
+        model = OpenAIChatModel(model="qwen3-omni-flash", api_key="test-key")
+        for _ in range(2):
+            result = await model.achat(messages=messages)
+            assert result.content == "heard"
+            sent = create.call_args.kwargs["messages"][0]["content"][0]["input_audio"]
+            assert sent == {"data": source if data_kind == "url" else formatted, "format": "wav"}
+            assert messages == original
 
 
 if __name__ == "__main__":
