@@ -148,6 +148,11 @@ After running multiple graders, you might want to combine their results into a s
 
 These aggregators allow you to create composite scores that reflect multiple evaluation dimensions, making it easier to compare overall performance across different models or configurations.
 
+You can also pass a function directly as `aggregators=my_aggregator`, or include
+it in a list alongside other aggregators. The function receives the dictionary of
+grader results for one sample and returns a `GraderResult`; its function name is
+the key used for its results.
+
 Often you'll want to combine multiple grader results into unified scores:
 
 ```python
