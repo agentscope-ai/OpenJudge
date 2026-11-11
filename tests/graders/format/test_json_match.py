@@ -315,6 +315,71 @@ class TestJsonMatchGrader:
         assert result.metadata["matched"] is True
 
     @pytest.mark.asyncio
+    async def test_non_finite_response_not_matched_against_overflowing_reference(self):
+        """An Infinity literal is invalid JSON and must not match a valid 1e999"""
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"value": 1e999}',
+            response='{"value": Infinity}',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_non_finite_response_same_literal_not_matched(self):
+        """Matching Infinity literals are both invalid JSON, so never match"""
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"value": Infinity}',
+            response='{"value": Infinity}',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_nan_response_not_matched(self):
+        """NaN literals are invalid JSON and must not match anything"""
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"value": NaN}',
+            response='{"value": NaN}',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_non_finite_reference_reported_as_reference_error(self):
+        """A non-finite literal in the reference is a reference parse error"""
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"value": NaN}',
+            response='{"value": 0}',
+        )
+
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
+    @pytest.mark.asyncio
+    async def test_valid_overflowing_numbers_still_match(self):
+        """Valid-but-overflowing JSON numbers still match each other"""
+        grader = JsonMatchGrader()
+
+        result = await grader.aevaluate(
+            reference_response='{"value": 1e999}',
+            response='{"value": 1e999}',
+        )
+
+        assert result.score == 1.0
+        assert result.metadata["matched"] is True
+
+    @pytest.mark.asyncio
     async def test_number_types(self):
         """Test different number types"""
         grader = JsonMatchGrader()
