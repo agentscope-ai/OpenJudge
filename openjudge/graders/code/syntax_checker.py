@@ -10,13 +10,13 @@ blocks to total code blocks found.
 """
 
 import ast
-import re
 
 from openjudge.evaluation_strategy.base_evaluation_strategy import (
     BaseEvaluationStrategy,
 )
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+from openjudge.utils.markdown import extract_python_code_blocks
 
 
 class SyntaxCheckGrader(BaseGrader):
@@ -41,8 +41,6 @@ class SyntaxCheckGrader(BaseGrader):
             description="Check code syntax using Abstract Syntax Tree to validate Python code blocks.",
             strategy=strategy,
         )
-
-        self._code_pattern = re.compile(r"```(?:python)?\s*\n(.*?)\n\s*```", re.DOTALL)
 
     async def _aevaluate(self, response: str) -> GraderScore:
         """Check code syntax in the provided response.
@@ -80,8 +78,8 @@ class SyntaxCheckGrader(BaseGrader):
             -0.5 Syntax check: 0/1 blocks valid, 1 errors
         """
 
-        # Extract code blocks
-        code_blocks = self._code_pattern.findall(response)
+        # Extract Python code blocks (fences tagged python/py/python3 or untagged)
+        code_blocks, skipped_blocks = extract_python_code_blocks(response)
 
         if not code_blocks:
             # No code blocks, return neutral score
@@ -89,7 +87,11 @@ class SyntaxCheckGrader(BaseGrader):
                 name=self.name,
                 score=0.0,
                 reason="No code blocks found to check",
-                metadata={"code_blocks": [], "syntax_errors": []},
+                metadata={
+                    "code_blocks": [],
+                    "syntax_errors": [],
+                    "skipped_non_python_blocks": skipped_blocks,
+                },
             )
 
         syntax_errors = []
@@ -125,5 +127,6 @@ class SyntaxCheckGrader(BaseGrader):
                 "valid_blocks": valid_blocks,
                 "total_blocks": len(code_blocks),
                 "syntax_errors": syntax_errors,
+                "skipped_non_python_blocks": skipped_blocks,
             },
         )
