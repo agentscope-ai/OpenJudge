@@ -17,6 +17,7 @@ Classes:
 """
 
 import asyncio
+import inspect
 from functools import partial
 from typing import Any, Callable
 
@@ -159,6 +160,9 @@ class FunctionGrader(BaseGrader):
             loop = asyncio.get_event_loop()
             # Fix: Pass kwargs as a single dictionary argument to the function
             result = await loop.run_in_executor(None, lambda: self.func(**kwargs))
+
+        if inspect.isawaitable(result):
+            result = await result
 
         # Check return type based on grader mode
         if self.mode == GraderMode.POINTWISE:

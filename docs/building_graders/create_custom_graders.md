@@ -163,6 +163,10 @@ comparison_grader = LLMGrader(
 
 ### Code-Based Grader Implementation
 
+`FunctionGrader` also accepts callable instances with an async `__call__` method
+and synchronous wrappers that return an awaitable. The returned awaitable is
+resolved before checking the score or ranking result.
+
 !!! info "Code-Based Grader Best Practices"
     Effective Code-Based graders should have:
 
