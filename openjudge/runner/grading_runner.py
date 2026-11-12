@@ -213,7 +213,7 @@ class GradingRunner(BaseRunner):
         # Handle aggregators
         if not aggregators:
             self.aggregators = []
-        elif isinstance(aggregators, BaseAggregator):
+        elif isinstance(aggregators, BaseAggregator) or callable(aggregators):
             self.aggregators = [aggregators]
         else:
             self.aggregators = aggregators
