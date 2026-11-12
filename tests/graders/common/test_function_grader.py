@@ -42,6 +42,46 @@ from openjudge.runner.grading_runner import GraderConfig, GradingRunner
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", [GraderMode.POINTWISE, GraderMode.LISTWISE])
+@pytest.mark.parametrize("kind", ["async_instance", "sync_wrapper", "async_function", "sync_function"])
+async def test_awaitable_evaluation_results(mode, kind):
+    """Async callable instances and wrappers must produce actual grader results."""
+    expected = (
+        GraderScore(name="custom", score=0.75, reason="Custom score")
+        if mode == GraderMode.POINTWISE
+        else GraderRank(name="custom", rank=[2, 1], reason="Custom ranking")
+    )
+
+    async def evaluate(value):
+        assert value == "sample"
+        return expected
+
+    class AsyncEvaluator:
+        """A configurable callable, rather than a bare coroutine function."""
+
+        async def __call__(self, value):
+            return await evaluate(value)
+
+    def wrapper(value):
+        return evaluate(value)
+
+    def sync_evaluate(value):
+        assert value == "sample"
+        return expected
+
+    functions = {
+        "async_instance": AsyncEvaluator(),
+        "sync_wrapper": wrapper,
+        "async_function": evaluate,
+        "sync_function": sync_evaluate,
+    }
+    grader = FunctionGrader(func=functions[kind], name="custom", mode=mode)
+    result = await grader.aevaluate(value="sample")
+    assert result == expected
+
+
+@pytest.mark.unit
 class TestFunctionGraderUnit:
     """Unit tests for FunctionGrader - testing isolated functionality"""
 
