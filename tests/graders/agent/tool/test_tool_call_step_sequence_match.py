@@ -315,3 +315,82 @@ async def test_tool_call_sequence_match_grader_recall_vs_precision():
 
     assert recall_result.score == 1.0
     assert precision_result.score == 0.5
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("predicted_queries", "reference_queries", "expected_score"),
+    [
+        (["A", "B"], ["A", "B"], 1.0),
+        (["B", "A"], ["A", "B"], 1.0),
+        (["A", "B", "C"], ["C", "A", "B"], 1.0),
+        (["A", "B"], ["A", "A"], 0.75),
+        (["A", "A"], ["A", "B"], 0.75),
+        (["C", "B", "A"], ["A", "B"], 1.0),
+        (["A"], ["A", "A"], 0.0),
+        (["A", "A"], ["A", "A"], 1.0),
+        (["A"], ["A"], 1.0),
+    ],
+)
+async def test_strict_steps_match_repeated_tools_once(predicted_queries, reference_queries, expected_score):
+    """Match same-name calls by parameters without reusing predictions."""
+    grader = ToolCallStepSequenceMatchGrader(strict_mode=True, use_jaccard_similarity=False)
+    predicted = [{"name": "search", "arguments": {"query": query}} for query in predicted_queries]
+    reference = [{"name": "search", "arguments": {"query": query}} for query in reference_queries]
+
+    result = await grader.aevaluate(
+        messages=[{"role": "assistant", "tool_calls": predicted}],
+        reference_tool_calls=[reference],
+    )
+
+    assert result.score == pytest.approx(expected_score)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reverse_predictions", [False, True])
+async def test_strict_steps_maximize_total_parameter_similarity(reverse_predictions):
+    """An early tied match must not prevent a better total assignment."""
+    grader = ToolCallStepSequenceMatchGrader(strict_mode=True, use_jaccard_similarity=False)
+    # The first reference ties on either prediction (2/3). The second needs
+    # the first prediction to score 1 rather than 0.
+    reference = [
+        {"name": "search", "arguments": {"a": "A", "b": "B"}},
+        {"name": "search", "arguments": {"a": "A"}},
+    ]
+    predicted = [
+        {"name": "search", "arguments": {"a": "A"}},
+        {"name": "search", "arguments": {"b": "B"}},
+    ]
+    if reverse_predictions:
+        predicted.reverse()
+
+    result = await grader.aevaluate(
+        messages=[{"role": "assistant", "tool_calls": predicted}],
+        reference_tool_calls=[reference],
+    )
+
+    assert result.score == pytest.approx(5 / 6)
+
+
+@pytest.mark.asyncio
+async def test_strict_steps_keep_different_tool_names_separate():
+    """Parameter matches cannot cross tool names or assistant turns."""
+    grader = ToolCallStepSequenceMatchGrader(strict_mode=True, use_jaccard_similarity=False)
+    result = await grader.aevaluate(
+        messages=[
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {"name": "search", "arguments": {"q": "B"}},
+                    {"name": "write", "arguments": {"q": "A"}},
+                ],
+            },
+            {"role": "assistant", "tool_calls": [{"name": "search", "arguments": {"q": "A"}}]},
+        ],
+        reference_tool_calls=[
+            [{"name": "search", "arguments": {"q": "A"}}, {"name": "write", "arguments": {"q": "B"}}],
+            [{"name": "search", "arguments": {"q": "B"}}],
+        ],
+    )
+
+    assert result.score == pytest.approx(0.5)
