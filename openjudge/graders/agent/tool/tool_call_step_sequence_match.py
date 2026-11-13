@@ -9,6 +9,7 @@ from collections import Counter
 from typing import Any, Dict, List, Set, Tuple
 
 from loguru import logger
+from scipy.optimize import linear_sum_assignment
 
 from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import (
@@ -259,30 +260,18 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
                         # Tool names don't match, score is 0
                         step_score = 0.0
                     else:
-                        # Tool names match, calculate F1 score for parameters
-                        # For each reference tool, find matching predicted tool by name and calculate F1
                         tool_scores = []
-                        for gt_tool in reference_tools:
-                            gt_name = gt_tool.get("name", "")
-                            # Find matching predicted tool by name
-                            matching_pred_tool = None
-                            for pred_tool in predicted_tools:
-                                if pred_tool.get("name", "") == gt_name:
-                                    matching_pred_tool = pred_tool
-                                    break
+                        for tool_name in dict.fromkeys(gt_tool_names):
+                            reference_group = [tool for tool in reference_tools if tool.get("name", "") == tool_name]
+                            predicted_group = [tool for tool in predicted_tools if tool.get("name", "") == tool_name]
+                            similarities = [
+                                [self.calculate_param_similarity(reference, predicted) for predicted in predicted_group]
+                                for reference in reference_group
+                            ]
+                            # Assign each prediction at most once, preserving the best total parameter similarity.
+                            rows, columns = linear_sum_assignment(similarities, maximize=True)
+                            tool_scores.extend(similarities[row][column] for row, column in zip(rows, columns))
 
-                            if matching_pred_tool is not None:
-                                # Calculate F1 score for this tool pair
-                                tool_f1 = self.calculate_param_similarity(
-                                    gt_tool,
-                                    matching_pred_tool,
-                                )
-                                tool_scores.append(tool_f1)
-                            else:
-                                # Ground truth tool not found in predictions, score is 0
-                                tool_scores.append(0.0)
-
-                        # Average F1 score across all reference tools in this step
                         step_score = sum(tool_scores) / len(tool_scores) if tool_scores else 0.0
                 else:
                     # In loose mode, calculate step score based on the ratio of matched tools
