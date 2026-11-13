@@ -54,6 +54,8 @@ It can also convert grading results into **reward signals** to help you **fine-t
 
 ## News
 
+- **2026-11-10** - 🚀 **OpenJudge v0.2.5** is now available on PyPI, with fixes for grading correctness, multimodal evaluation prompts, model request compatibility, cancellation cleanup, and Auto Arena credential handling. 👉 [Release Notes](https://github.com/agentscope-ai/OpenJudge/releases/tag/v0.2.5) | [PyPI](https://pypi.org/project/py-openjudge/0.2.5/)
+
 - **2026-06-17** - 🐾 **PawBench v1.0** - A Model × Harness co-evaluation benchmark for agentic AI: 150 tasks · 9 models · 3 harnesses, with public prompts, graders, task labels, submissions, and leaderboard slices. 👉 [GitHub](https://github.com/agentscope-ai/PawBench) | [Leaderboard](https://agentscope-ai.github.io/PawBench/)
 
 - **2026-04-07** - 🔒 **Skill Graders** - 5 new LLM-based graders for evaluating AI Agent Skill packages: threat analysis (AITech taxonomy), declaration alignment, completeness, relevance, and design quality. 👉 [Documentation](./docs/built_in_graders/skills.md) | [Cookbook](./cookbooks/skills_evaluation/README.md)

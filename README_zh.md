@@ -52,6 +52,8 @@ OpenJudge 提供**即用型评分器**，并支持生成**场景特定的评估�
 
 ## 最新动态
 
+- **2026-11-10** - 🚀 **OpenJudge v0.2.5** 已在 PyPI 发布，修复评分正确性、多模态评估提示词、模型请求兼容性、取消任务清理及 Auto Arena 凭据处理等问题。👉 [发布说明](https://github.com/agentscope-ai/OpenJudge/releases/tag/v0.2.5) | [PyPI](https://pypi.org/project/py-openjudge/0.2.5/)
+
 - **2026-06-17** - 🐾 **PawBench v1.0** - 面向智能体的 Model × Harness 协同评测基准：150 个任务 · 9 个模型 · 3 个 Harness，包含公开的 prompt、评分器、任务标签、提交结果和排行榜切片分析。 👉 [GitHub](https://github.com/agentscope-ai/PawBench) | [排行榜](https://agentscope-ai.github.io/PawBench/)
 
 - **2026-04-07** - 🔒 **Skill Graders** - 5 个新的基于 LLM 的 AI Agent Skill 包评估器：威胁分析（AITech 分类体系）、声明对齐、完整性、相关性和结构设计质量。 👉 [文档](./docs/built_in_graders/skills.md) | [Cookbook](./cookbooks/skills_evaluation/README.md)
