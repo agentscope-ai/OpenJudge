@@ -10,6 +10,7 @@ them with a configurable tolerance to determine accuracy scores.
 """
 
 import re
+from decimal import MAX_EMAX, MIN_EMIN, ROUND_CEILING, Context, Decimal
 from typing import Any, List
 
 from openjudge.evaluation_strategy import BaseEvaluationStrategy
@@ -89,6 +90,34 @@ class NumberAccuracyGrader(BaseGrader):
         numbers = self._number_pattern.findall(text)
         return [float(n) for n in numbers if n]
 
+    def _within_tolerance(self, response: str, reference: str) -> bool:
+        """Compare original numeric tokens without rounding them to floats.
+
+        Args:
+            response: Numeric token from the generated response.
+            reference: Numeric token from the reference response.
+
+        Returns:
+            Whether the absolute difference is at most the configured tolerance.
+        """
+        tolerance = Decimal(str(self.tolerance))
+        if not tolerance.is_finite():
+            return abs(float(response) - float(reference)) <= self.tolerance
+
+        left, right = Decimal(response), Decimal(reference)
+        # Round the nonnegative difference upwards with enough precision to
+        # represent the tolerance exactly. It cannot round across the threshold,
+        # even when tiny differences would disappear in the default context.
+        context = Context(
+            prec=max(28, len(tolerance.as_tuple().digits)),
+            rounding=ROUND_CEILING,
+            Emin=MIN_EMIN,
+            Emax=MAX_EMAX,
+            traps=[],
+        )
+        difference = context.subtract(max(left, right), min(left, right))
+        return difference <= tolerance
+
     async def _aevaluate(self, response: str, reference_response: str) -> GraderScore:
         """
         Calculate number accuracy by comparing extracted numbers from both texts.
@@ -160,11 +189,13 @@ class NumberAccuracyGrader(BaseGrader):
             )
 
         # Compare numbers (match in order)
+        response_tokens = self._number_pattern.findall(response)
+        reference_tokens = self._number_pattern.findall(reference_response)
         correct = 0
         total = min(len(response_numbers), len(reference_response_numbers))
 
         for i in range(total):
-            if abs(response_numbers[i] - reference_response_numbers[i]) <= self.tolerance:
+            if self._within_tolerance(response_tokens[i], reference_tokens[i]):
                 correct += 1
 
         accuracy = correct / len(reference_response_numbers) if reference_response_numbers else 0.0
