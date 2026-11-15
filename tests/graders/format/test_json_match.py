@@ -465,3 +465,32 @@ class TestUnorderedJsonMatching:
             response='[{"a":1,"b":2,"extra":3},{"a":1}]',
         )
         assert result.score == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("strict_order", [True, False])
+@pytest.mark.parametrize(
+    "reference, response, expected",
+    [
+        ("1.0000000000000001", "1.0", 0.0),
+        ("9007199254740992.0", "9007199254740993.0", 0.0),
+        ("1e400", "2e400", 0.0),
+        ("1e-400", "2e-400", 0.0),
+        ("1e-400", "0", 0.0),
+        ("9007199254740993", "9007199254740993.0", 1.0),
+        ("1e400", "10e399", 1.0),
+        ("1", "1.0", 1.0),
+        ("-0.0", "0", 1.0),
+        ("true", "1.0", 0.0),
+    ],
+)
+async def test_json_numbers_compare_without_float_rounding(strict_order, reference, response, expected):
+    """Compare original JSON numeric values in both ordered and unordered nested records."""
+    result = await JsonMatchGrader(strict_order=strict_order).aevaluate(
+        reference_response='[{"value": ' + reference + "}]",
+        response='[{"value": ' + response + "}]",
+    )
+
+    assert result.score == expected
+    assert result.metadata["matched"] == bool(expected)
+    json.dumps(result.model_dump())

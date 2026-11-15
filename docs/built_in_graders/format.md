@@ -77,6 +77,7 @@ Performs deep structural comparison of JSON objects by recursively validating th
 
 **Scoring:**
 - **1.0**: JSON structures match completely
+- JSON numbers are compared by their exact decimal values, without binary floating-point rounding. Equivalent integer and decimal forms (such as `1` and `1.0`) match.
 - **0.0**: Structures differ or parse error
 
 **Example:**
