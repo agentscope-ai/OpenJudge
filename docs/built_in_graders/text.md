@@ -407,6 +407,10 @@ asyncio.run(main())
 
 Check numerical calculation accuracy by comparing numbers extracted from text.
 
+Comparisons use the original numeric tokens, so large integers and scientific notation
+retain their precision when applying the absolute `tolerance`. Extracted numbers in
+result metadata remain floats for compatibility and can be rounded or overflow there.
+
 **When to use:**
 - Math calculation verification
 - Data report accuracy
