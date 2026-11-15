@@ -197,6 +197,7 @@ Detects and penalizes repetitive patterns in text using N-gram analysis with sup
 | `penalty_rate` | float | No | Penalty rate per repetition (default: 1.0) |
 | `use_soft_penalty` | bool | No | Use soft penalty mode (default: False) |
 | `max_penalty` | float | No | Maximum penalty value (default: -1.0) |
+| `min_scaling` | float | No | Soft penalty starts only above this repetition rate (default: 0.0) |
 | `tokenizer_type` | str | No | Tokenizer type: tiktoken, jieba, simple (default: tiktoken) |
 | `analyze_scope` | str | No | Analyze "thought" or "full" text (default: full) |
 

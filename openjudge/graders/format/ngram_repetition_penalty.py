@@ -101,7 +101,7 @@ class NgramRepetitionPenaltyGrader(BaseGrader):
                 )
 
             scaling = repetition_rate
-            if scaling < self.min_scaling:
+            if scaling <= self.min_scaling:
                 scaling = 0.0
             elif scaling > self.min_scaling:
                 scaling = (scaling - self.min_scaling) / (1 - self.min_scaling)
