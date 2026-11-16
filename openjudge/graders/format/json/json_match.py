@@ -9,6 +9,7 @@ and calculates similarity scores based on structural matching.
 
 import json
 from collections import deque
+from decimal import Decimal
 from typing import Any
 
 from openjudge.evaluation_strategy.base_evaluation_strategy import (
@@ -161,7 +162,7 @@ class JsonMatchGrader(BaseGrader):
             # RFC 8259 defines no NaN/Infinity literals, but Python's json
             # module parses them by default. Grade such responses as invalid
             # instead of letting e.g. {"a": Infinity} match {"a": 1e999}.
-            response_json = json.loads(response, parse_constant=reject_non_finite)
+            response_json = json.loads(response, parse_float=Decimal, parse_constant=reject_non_finite)
         except (ValueError, TypeError) as e:
             return False, {
                 "matched": False,
@@ -171,7 +172,7 @@ class JsonMatchGrader(BaseGrader):
 
         # Parse reference JSON
         try:
-            reference_json = json.loads(reference, parse_constant=reject_non_finite)
+            reference_json = json.loads(reference, parse_float=Decimal, parse_constant=reject_non_finite)
         except (ValueError, TypeError) as e:
             return False, {
                 "matched": False,
