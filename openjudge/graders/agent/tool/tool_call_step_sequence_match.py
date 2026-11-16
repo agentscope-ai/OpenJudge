@@ -313,13 +313,13 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
             for tools in predicted_tool_steps.values():
                 for tool in tools:
                     predicted_tool_names.add(
-                        f"{tool.get('name', '')}: {tool.get('arguments', {})}",
+                        f"{tool.get('name', '')}: {json.dumps(tool.get('arguments', {}), sort_keys=True)}",
                     )
             reference_tool_names = set()
             for tools in reference_tool_steps.values():
                 for tool in tools:
                     reference_tool_names.add(
-                        f"{tool.get('name', '')}: {tool.get('arguments', {})}",
+                        f"{tool.get('name', '')}: {json.dumps(tool.get('arguments', {}), sort_keys=True)}",
                     )
         else:
             # Extract all tool names from predicted steps

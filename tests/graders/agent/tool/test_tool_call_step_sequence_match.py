@@ -5,6 +5,8 @@ Test Tool Call Sequence Match Grader
 Tests for the ToolCallStepSequenceMatchGrader class functionality.
 """
 
+import json
+
 import pytest
 
 from openjudge.graders.agent.tool.tool_call_step_sequence_match import (
@@ -394,3 +396,39 @@ async def test_strict_steps_keep_different_tool_names_separate():
     )
 
     assert result.score == pytest.approx(0.5)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("as_json", [False, True])
+@pytest.mark.parametrize(
+    "predicted, reference, expected",
+    [
+        ({"city": "杭州", "units": "metric"}, {"units": "metric", "city": "杭州"}, 1.0),
+        (
+            {"filter": {"limit": 3, "tags": ["a", "b"]}},
+            {"filter": {"tags": ["a", "b"], "limit": 3}},
+            1.0,
+        ),
+        ({"items": [{"a": 1, "b": 2}]}, {"items": [{"b": 2, "a": 1}]}, 1.0),
+        ({"city": "杭州"}, {"city": "上海"}, 0.0),
+        ({"tags": ["a", "b"]}, {"tags": ["b", "a"]}, 0.0),
+    ],
+)
+async def test_strict_jaccard_ignores_only_object_key_order(as_json, predicted, reference, expected):
+    """Equivalent argument objects match, while changed values and array order do not."""
+    grader = ToolCallStepSequenceMatchGrader(strict_mode=True, use_jaccard_similarity=True)
+    result = await grader.aevaluate(
+        messages=[
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {"function": {"name": "lookup", "arguments": json.dumps(predicted) if as_json else predicted}},
+                ],
+            },
+        ],
+        reference_tool_calls=[[{"name": "lookup", "arguments": reference}]],
+    )
+
+    assert result.score == expected
+    assert result.metadata["predicted_tool_count"] == 1
+    assert result.metadata["reference_tool_count"] == 1
