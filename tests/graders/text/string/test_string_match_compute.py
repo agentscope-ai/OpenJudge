@@ -43,6 +43,27 @@ class TestEmptyTargetDoesNotMatch:
         assert score == 0.0
         assert details["matched"] is False
 
+    def test_contains_any_ignores_empty_substring_entry(self):
+        """An empty entry in an explicit list does not match every response"""
+        score, details = compute_contains_any("", WRONG_RESPONSE, substrings=["", "cat"])
+        assert score == 0.0
+        assert details["matched"] is False
+        assert details["matched_substrings"] == []
+
+    def test_contains_all_ignores_empty_substring_entry(self):
+        """An empty entry in an explicit list does not inflate the score"""
+        score, details = compute_contains_all("", WRONG_RESPONSE, substrings=["", "cat"])
+        assert score == 0.0
+        assert details["matched"] is False
+        assert details["num_substrings"] == 1
+
+    @pytest.mark.parametrize("compute_fn", [compute_contains_all, compute_contains_any])
+    def test_contains_only_empty_substring_entries(self, compute_fn):
+        """A list holding only empty strings has no target and does not match"""
+        score, details = compute_fn("cat", WRONG_RESPONSE, substrings=["", ""])
+        assert score == 0.0
+        assert details["matched"] is False
+
     def test_substring_bidirectional_empty_response(self):
         """Empty response is not treated as contained in the reference"""
         score, details = compute_substring_match("cat", "", bidirectional=True)
@@ -96,3 +117,8 @@ class TestExplicitTargetsWithEmptyReference:
         """Explicit substrings are used"""
         assert compute_contains_any("", "The cat sat", substrings=["dog", "cat"])[0] == 1.0
         assert compute_contains_any("", "The cat sat", substrings=["dog", "bird"])[0] == 0.0
+
+    def test_contains_explicit_substrings_with_empty_entry(self):
+        """Non-empty entries still count when an empty entry is present"""
+        assert compute_contains_all("", "The cat sat", substrings=["", "cat", "dog"])[0] == 0.5
+        assert compute_contains_any("", "The cat sat", substrings=["", "cat"])[0] == 1.0

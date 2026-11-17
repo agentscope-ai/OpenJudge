@@ -212,6 +212,18 @@ def compute_substring_match(
     return 1.0 if matched else 0.0, details
 
 
+def _contains_targets(reference: str, substrings: Optional[List[str]]) -> List[str]:
+    """Return the substrings that contains_all/contains_any should look for.
+
+    Explicit substrings take precedence over the reference. Empty strings are
+    dropped from either source: "" is contained in every response, so keeping
+    one would make contains_any always pass and inflate the contains_all score.
+    With no non-empty target left, nothing can match.
+    """
+    targets = substrings if substrings else [reference]
+    return [s for s in targets if s]
+
+
 # pylint: disable=unused-argument
 def compute_contains_all(
     reference: str,
@@ -232,8 +244,7 @@ def compute_contains_all(
     Returns:
         Tuple of (score, details) - score is proportion of contained substrings
     """
-    # Use substrings if provided, otherwise use reference (an empty reference yields no targets)
-    target_substrings = substrings if substrings else ([reference] if reference else [])
+    target_substrings = _contains_targets(reference, substrings)
 
     cand = response
     if not case_sensitive:
@@ -277,8 +288,7 @@ def compute_contains_any(
     Returns:
         Tuple of (score, details)
     """
-    # Use substrings if provided, otherwise use reference (an empty reference yields no targets)
-    target_substrings = substrings if substrings else ([reference] if reference else [])
+    target_substrings = _contains_targets(reference, substrings)
 
     cand = response
     if not case_sensitive:
