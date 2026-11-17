@@ -93,3 +93,28 @@ class TestExtractPythonCodeBlocks:
         blocks, skipped = extract_python_code_blocks(text)
         assert blocks == ["def ok():\n    return 1", "def broken(:\n    pass"]
         assert skipped == 1
+
+    def test_inline_fence_in_string_does_not_close_block(self):
+        """A triple-backtick marker inside a Python string literal must not
+        close the fenced block; the block runs to the real closing fence
+        (review follow-up #209, inline-backtick regression)."""
+        text = 'Here is the fix:\n```python\ns = "```"\nx = 1\n```\nDone.'
+        blocks, skipped = extract_python_code_blocks(text)
+        assert blocks == ['s = "```"\nx = 1']
+        assert skipped == 0
+
+    def test_inline_fence_in_comment_does_not_close_block(self):
+        """Triple-backtick markers inside comments and string literals are
+        content, not closing fences (review follow-up #209)."""
+        text = (
+            "```python\n"
+            "# docs at ```usage``` section\n"
+            'def f():\n    return "```nested```"\n'
+            "```\n"
+            "trailing text"
+        )
+        blocks, skipped = extract_python_code_blocks(text)
+        assert blocks == [
+            '# docs at ```usage``` section\ndef f():\n    return "```nested```"'
+        ]
+        assert skipped == 0

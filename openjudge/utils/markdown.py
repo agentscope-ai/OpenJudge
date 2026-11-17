@@ -21,7 +21,15 @@ PYTHON_FENCE_TAGS = frozenset({"", "python", "py", "python3"})
 # optional; otherwise an empty fence (```js\n```) is not consumed at all and
 # its opening marker can pair with a later fence, leaving the block after it
 # unchecked (review follow-up on #209).
-_FENCED_BLOCK_PATTERN = re.compile(r"```([^\n`]*)\s*\n(.*?)(?:\n\s*)?```", re.DOTALL)
+# The closing fence must sit on its own line: it is either preceded by a
+# newline (with optional indentation) or, for an empty block, sits at the
+# start of the line following the opening fence. A fence marker embedded
+# mid-line — inside a Python comment or string literal such as
+# s = "```" — must NOT close the block, or everything after it would be
+# silently dropped from extraction (second review follow-up on #209).
+_FENCED_BLOCK_PATTERN = re.compile(
+    r"```([^\n`]*)\s*\n(.*?)(?:\n\s*|^[ \t]*)```", re.DOTALL | re.MULTILINE
+)
 
 
 def extract_python_code_blocks(text: str) -> Tuple[List[str], int]:
