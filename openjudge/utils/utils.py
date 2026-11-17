@@ -12,6 +12,8 @@ from json_repair import repair_json
 from loguru import logger
 from pydantic import BaseModel
 
+from openjudge.utils.json_utils import reject_non_finite
+
 
 def repair_and_load_json(
     json_str: str,
@@ -45,8 +47,12 @@ def repair_and_load_json(
         pass
 
     try:
-        return json.loads(repaired)
-    except json.JSONDecodeError as e:
+        # RFC 8259 defines no NaN/Infinity literals, but Python's json module
+        # parses them by default. Reject them so a malformed model response
+        # fails parsing (and hits the existing error handling) instead of
+        # feeding float('nan') into downstream scores and statistics.
+        return json.loads(repaired, parse_constant=reject_non_finite)
+    except ValueError as e:
         raise ValueError(
             f"Failed to decode JSON string `{json_str}` after repairing it " f"into `{repaired}`. Error: {e}",
         ) from e
@@ -196,8 +202,10 @@ def trim_and_load_json(response: str, metric: Any = None) -> Dict[str, Any]:
 
     # Try to parse JSON
     try:
-        return json.loads(response)
-    except json.JSONDecodeError as e:
+        # Same RFC 8259 rule as repair_and_load_json: reject NaN/Infinity
+        # literals so they cannot flow into grader scores as float('nan').
+        return json.loads(response, parse_constant=reject_non_finite)
+    except ValueError as e:
         error_msg = f"Failed to parse JSON from response: {e}\nResponse: {response[:200]}"
         if metric:
             metric_name = getattr(metric, "name", "unknown_metric")
