@@ -26,7 +26,7 @@ class ChatMessage(BaseModel):
     }
 
     Attributes:
-        role (Literal["user", "assistant", "system"]): The role of the message sender.
+        role (str): Message sender role: user, assistant, system, developer, or tool.
         content (Union[str, List[Dict]]): The content of the message,
             either a string or a list of content part objects.
         name (str): The name of the message sender (optional in OpenAI format).
@@ -35,6 +35,7 @@ class ChatMessage(BaseModel):
         audio (Dict | None): Audio content in the message.
         function_call (Dict | None): Function call information if the message contains a function call.
         tool_calls (List[Dict] | None): Tool calls if the message contains tool calls.
+        tool_call_id (str | None): ID of the tool call answered by a tool message.
 
     Example:
         >>> # Create a simple text message
@@ -61,7 +62,7 @@ class ChatMessage(BaseModel):
         extra="allow",
     )
 
-    role: Literal["user", "assistant", "system", "developer"] = Field(
+    role: Literal["user", "assistant", "system", "developer", "tool"] = Field(
         default="user",
         description="The role of the message sender",
     )
@@ -89,6 +90,11 @@ class ChatMessage(BaseModel):
     tool_calls: Optional[List[Dict[str, Any]]] = Field(
         default=None,
         description="Tool calls if the message contains tool calls",
+    )
+
+    tool_call_id: Optional[str] = Field(
+        default=None,
+        description="ID of the tool call answered by a tool message",
     )
 
     name: str = Field(default="", description="The name of the message sender")
@@ -125,6 +131,9 @@ class ChatMessage(BaseModel):
 
         if self.tool_calls is not None:
             result["tool_calls"] = self.tool_calls
+
+        if self.tool_call_id is not None:
+            result["tool_call_id"] = self.tool_call_id
 
         # Add name if it's not empty
         if self.name:
