@@ -16,6 +16,7 @@ from typing import Any, Dict
 from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+from openjudge.utils.markdown import extract_python_code_blocks
 
 
 class CodeStyleGrader(BaseGrader):
@@ -38,7 +39,6 @@ class CodeStyleGrader(BaseGrader):
         self._function_pattern = re.compile(r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")
         self._variable_pattern = re.compile(r"([a-zA-Z_][a-zA-Z0-9_]*)\s*=")
         self._snake_case_pattern = re.compile(r"^[a-z_][a-z0-9_]*$")
-        self._code_pattern = re.compile(r"```(?:python)?\s*\n(.*?)\n\s*```", re.DOTALL)
 
     def _check_indentation(self, code: str) -> tuple[bool, str]:
         """Check indentation consistency"""
@@ -131,15 +131,15 @@ class CodeStyleGrader(BaseGrader):
             >>> print(result.score, result.reason)
             0.5 Code style score: 0.500; Consistent indentation; Naming convention: 1/2 names follow snake_case
         """
-        # Extract code blocks
-        code_blocks = self._code_pattern.findall(response)
+        # Extract Python code blocks (fences tagged python/py/python3 or untagged)
+        code_blocks, skipped_blocks = extract_python_code_blocks(response)
 
         if not code_blocks:
             return GraderScore(
                 name=self.name,
                 score=0.0,
                 reason="No code blocks found to check style",
-                metadata={"code_blocks": []},
+                metadata={"code_blocks": [], "skipped_non_python_blocks": skipped_blocks},
             )
 
         total_score = 0.0
@@ -171,6 +171,7 @@ class CodeStyleGrader(BaseGrader):
                 "code_blocks": code_blocks,
                 "average_score": average_score,
                 "details": details,
+                "skipped_non_python_blocks": skipped_blocks,
             },
         )
 
