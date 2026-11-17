@@ -114,7 +114,5 @@ class TestExtractPythonCodeBlocks:
             "trailing text"
         )
         blocks, skipped = extract_python_code_blocks(text)
-        assert blocks == [
-            '# docs at ```usage``` section\ndef f():\n    return "```nested```"'
-        ]
+        assert blocks == ['# docs at ```usage``` section\ndef f():\n    return "```nested```"']
         assert skipped == 0

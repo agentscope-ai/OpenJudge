@@ -233,14 +233,7 @@ class DataProcessor:
         block early — the invalid Python after it stays in the block and keeps
         the score 0.0 (review follow-up #209, inline-backtick regression)."""
         grader = SyntaxCheckGrader()
-        response = (
-            "```python\n"
-            's = "```"\n'
-            "def broken(:\n"
-            "    pass\n"
-            "```\n"
-            "trailing"
-        )
+        response = "```python\n" 's = "```"\n' "def broken(:\n" "    pass\n" "```\n" "trailing"
         result = await grader.aevaluate(response=response)
 
         # 0/1 blocks valid takes the grader's -0.5 penalty floor; the
@@ -248,9 +241,7 @@ class DataProcessor:
         # inline fence — the invalid code stayed inside it.
         assert result.score == -0.5
         assert result.metadata["total_blocks"] == 1
-        assert result.metadata["code_blocks"] == [
-            's = "```"\ndef broken(:\n    pass'
-        ]
+        assert result.metadata["code_blocks"] == ['s = "```"\ndef broken(:\n    pass']
 
     @pytest.mark.asyncio
     async def test_inline_fence_in_comment_keeps_valid_code_valid(self):
@@ -258,13 +249,7 @@ class DataProcessor:
         them scores 1.0 instead of being truncated into a syntax error
         (review follow-up #209)."""
         grader = SyntaxCheckGrader()
-        response = (
-            "```python\n"
-            "# see ```usage``` for details\n"
-            "def ok():\n"
-            "    return 1\n"
-            "```"
-        )
+        response = "```python\n" "# see ```usage``` for details\n" "def ok():\n" "    return 1\n" "```"
         result = await grader.aevaluate(response=response)
 
         assert result.score == 1.0

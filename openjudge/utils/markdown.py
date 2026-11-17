@@ -27,9 +27,7 @@ PYTHON_FENCE_TAGS = frozenset({"", "python", "py", "python3"})
 # mid-line — inside a Python comment or string literal such as
 # s = "```" — must NOT close the block, or everything after it would be
 # silently dropped from extraction (second review follow-up on #209).
-_FENCED_BLOCK_PATTERN = re.compile(
-    r"```([^\n`]*)\s*\n(.*?)(?:\n\s*|^[ \t]*)```", re.DOTALL | re.MULTILINE
-)
+_FENCED_BLOCK_PATTERN = re.compile(r"```([^\n`]*)\s*\n(.*?)(?:\n\s*|^[ \t]*)```", re.DOTALL | re.MULTILINE)
 
 
 def extract_python_code_blocks(text: str) -> Tuple[List[str], int]:
