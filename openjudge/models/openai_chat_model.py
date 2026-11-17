@@ -209,10 +209,11 @@ class OpenAIChatModel(BaseChatModel):
         # False unless the caller has already set it explicitly via extra_body.
 
         if not stream and ("qwen" in self.model.lower() or "pai-judge" in self.model.lower()):
-            if "extra_body" not in kwargs:
-                kwargs["extra_body"] = {}
-            if "enable_thinking" not in kwargs["extra_body"]:
-                kwargs["extra_body"]["enable_thinking"] = False
+            extra_body = kwargs.get("extra_body")
+            if extra_body is None:
+                extra_body = {}
+            if "enable_thinking" not in extra_body:
+                kwargs["extra_body"] = {**extra_body, "enable_thinking": False}
 
         # Add tools and tool_choice to kwargs if provided
         if tools:
