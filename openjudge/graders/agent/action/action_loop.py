@@ -14,6 +14,13 @@ from openjudge.graders.agent.utils import (
 from openjudge.graders.base_grader import BaseGrader, GraderMode, GraderScore
 
 
+def _signature_value(value: Any) -> Any:
+    """Render an argument value so nested key order does not affect the signature."""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
+    return value
+
+
 class ActionLoopDetectionGrader(BaseGrader):
     """
     Detect and penalize similar/repetitive actions in action sequences.
@@ -73,17 +80,20 @@ class ActionLoopDetectionGrader(BaseGrader):
             function = action.get("function", {})
             signature = function.get("name", "")
             # Add key argument values to signature
-            try:
-                arguments = function.get("arguments", "")
-                args = json.loads(arguments)
+            raw_args = function.get("arguments", "")
+            args = raw_args
+            if isinstance(raw_args, str):
+                try:
+                    args = json.loads(raw_args)
+                except json.JSONDecodeError:
+                    args = None
+            if isinstance(args, dict):
                 # Sort keys for consistent comparison
                 key_args = sorted(args.items())
-                signature += ": " + ", ".join(f"{k}: {v}" for k, v in key_args)
-            except (json.JSONDecodeError, AttributeError):
+                signature += ": " + ", ".join(f"{k}: {_signature_value(v)}" for k, v in key_args)
+            elif raw_args:
                 # Keep format consistent with success case using colon separator
-                raw_args = function.get("arguments", "")
-                if raw_args:
-                    signature += ": " + str(raw_args)
+                signature += ": " + str(raw_args)
             action_signatures.append(signature)
         n = len(action_signatures)
         if n < 2:
