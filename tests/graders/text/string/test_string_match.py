@@ -226,6 +226,18 @@ class TestStringMatchGrader:
         assert result.score == 0.0
         assert result.metadata["matched"] is False
 
+    @pytest.mark.parametrize("algorithm", ["contains_all", "contains_any"])
+    async def test_empty_substring_entry_does_not_match(self, algorithm):
+        """Test that an empty entry in substrings does not produce a match"""
+        grader = StringMatchGrader(algorithm=algorithm)
+        result = await grader.aevaluate(
+            reference_response="",
+            response="completely wrong answer",
+            substrings=["", "cat"],
+        )
+        assert result.score == 0.0
+        assert result.metadata["matched"] is False
+
     async def test_invalid_algorithm(self):
         """Test invalid algorithm"""
         with pytest.raises(ValueError) as exc_info:
