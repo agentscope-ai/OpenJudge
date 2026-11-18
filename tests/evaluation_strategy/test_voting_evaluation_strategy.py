@@ -156,6 +156,8 @@ class TestVotingEvaluationStrategy:
 
         result = await strategy.execute(mock_call_fn)
         assert result.score == 3.0
+        assert result.metadata["max_frequency"] == 2
+        assert result.metadata["tie_resolved"] is True
 
     @pytest.mark.asyncio
     async def test_execute_tie_breaker_max(self):
@@ -188,6 +190,8 @@ class TestVotingEvaluationStrategy:
 
         result = await strategy.execute(mock_call_fn)
         assert result.score == 3.0
+        assert result.metadata["max_frequency"] == 2
+        assert result.metadata["tie_resolved"] is True
 
     @pytest.mark.asyncio
     async def test_execute_tie_breaker_callable(self):
@@ -232,3 +236,45 @@ class TestVotingEvaluationStrategy:
             match="Custom tie_breaker must return one of the tie candidates.",
         ):
             await strategy.execute(mock_call_fn)
+
+    @pytest.mark.asyncio
+    async def test_execute_all_distinct_scores_reports_tie_and_selects_min(self):
+        """Test all-distinct continuous scores tie for first, select min, and report tie metadata."""
+        strategy = VotingEvaluationStrategy(num_votes=3)
+        scores = [0.85, 0.80, 0.72]
+        call_count = 0
+
+        async def mock_call_fn():
+            nonlocal call_count
+            result = scores[call_count % len(scores)]
+            call_count += 1
+            return GraderScore(name="trajectory_comprehensive", score=result, reason="step mean")
+
+        result = await strategy.execute(mock_call_fn)
+        assert result.score == 0.72
+        assert result.metadata["max_frequency"] == 1
+        assert result.metadata["tie_resolved"] is True
+        assert len(result.metadata["original_results"]) == 3
+
+    @pytest.mark.asyncio
+    async def test_execute_clear_winner_needs_no_tie_breaker(self):
+        """Test clear mode winner skips tie resolution and reports tie_resolved=False."""
+
+        def fail_if_called(candidates, all_scores):
+            raise AssertionError(f"tie_breaker should not be called: {candidates}, {all_scores}")
+
+        for tie_breaker in (MIN, fail_if_called):
+            strategy = VotingEvaluationStrategy(num_votes=3, tie_breaker=tie_breaker)
+            scores = [0.85, 0.80, 0.85]
+            call_count = 0
+
+            async def mock_call_fn():
+                nonlocal call_count
+                result = scores[call_count % len(scores)]
+                call_count += 1
+                return GraderScore(name="trajectory_comprehensive", score=result, reason="step mean")
+
+            result = await strategy.execute(mock_call_fn)
+            assert result.score == 0.85
+            assert result.metadata["max_frequency"] == 2
+            assert result.metadata["tie_resolved"] is False
