@@ -334,7 +334,7 @@ class TrajectoryAccuracyGrader(LLMGrader):
 
         # Prepare metadata
         metadata = {
-            "raw_score": score,
+            "raw_score": result.score,
         }
 
         return GraderScore(
