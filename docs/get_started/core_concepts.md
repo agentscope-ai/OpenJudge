@@ -85,7 +85,7 @@ An [Evaluation Strategy](https://github.com/modelscope/OpenJudge/blob/main/openj
 Available strategies include:
 
 - **DirectEvaluationStrategy**: Executes the evaluation once and returns the result directly. This is the default strategy when no strategy is specified.
-- **VotingEvaluationStrategy**: Runs the evaluation multiple times and aggregates results using voting mechanisms (e.g., taking the most frequent score for categorical outputs).
+- **VotingEvaluationStrategy**: Runs the evaluation multiple times and aggregates results using exact-score voting (e.g., taking the most frequent score for discrete outputs). When all sampled scores are distinct, every score ties for first and the default `tie_breaker="min"` selects the lowest score (`metadata` exposes `max_frequency` and `tie_resolved`); use `AverageEvaluationStrategy` when averaging repeated continuous scores.
 - **AverageEvaluationStrategy**: Runs the evaluation multiple times and averages the numerical results to reduce noise and improve reliability.
 
 ### Understanding Results

@@ -25,9 +25,12 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
     It's particularly useful for reducing noise in stochastic evaluations.
 
     Tips:
-        To avoid ties, consider using an odd number for num_votes. For example:
-        - 3, 5, 7... votes reduce chance of ties in binary outcomes
-        - In case of a tie, tie_breaker controls which score is selected
+        Voting aggregates by exact float equality. To avoid ties on discrete
+        scales, consider using an odd number for num_votes (e.g., 3, 5, 7).
+        When all sampled scores are distinct (common with continuous-valued
+        graders), every score ties for first place and the default
+        ``tie_breaker="min"`` selects the lowest score. When you want the mean
+        of repeated continuous scores, prefer AverageEvaluationStrategy.
 
     Attributes:
         num_votes (int): Number of times to execute the evaluation function.
@@ -102,6 +105,8 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
         Returns:
             Any: The most frequent result from all executions.
                  In case of a tie among most frequent results, tie_breaker resolves it.
+                 ``metadata`` includes ``original_results``, ``max_frequency``, and
+                 ``tie_resolved`` so callers can tell whether a tie-breaker was used.
         """
         results: List[Any] = []
         coroutines = []
@@ -130,6 +135,7 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
         # Filter to get all items with the highest frequency
         highest_freq_values = [item[0] for item in most_common_items if item[1] == max_frequency]
 
+        tie_resolved = len(highest_freq_values) > 1
         most_common_value = self._resolve_tie(highest_freq_values, values)
 
         name = ""
@@ -138,10 +144,14 @@ class VotingEvaluationStrategy(BaseEvaluationStrategy):
                 name = r.name
                 break
 
-        # Find the first result matching the most common value
+        # Return aggregated score along with tie-resolution metadata
         return GraderScore(
             name=name,
             score=most_common_value,
             reason=f"Vote from {self.num_votes} evaluations.",
-            metadata={"original_results": results},
+            metadata={
+                "original_results": results,
+                "max_frequency": max_frequency,
+                "tie_resolved": tie_resolved,
+            },
         )
