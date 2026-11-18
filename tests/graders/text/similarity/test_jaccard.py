@@ -70,3 +70,23 @@ class TestJaccard:
             n=2,
         )
         assert result.score == 0.0
+
+    @pytest.mark.parametrize(
+        ("reference", "response", "expected"),
+        [
+            ("Paris", "Paris", 1.0),
+            ("巴黎", "巴黎", 1.0),
+            ("Paris", "London", 0.0),
+            ("Paris", "Paris France", 0.0),
+        ],
+    )
+    async def test_ngram_variant_texts_shorter_than_n(self, reference, response, expected):
+        """Texts with fewer than n tokens are compared as one gram instead of scoring 0"""
+        grader = SimilarityGrader(algorithm="jaccard")
+        result = await grader.aevaluate(
+            reference_response=reference,
+            response=response,
+            use_ngrams=True,
+            n=2,
+        )
+        assert result.score == expected
