@@ -141,6 +141,28 @@ class TestToolCallAccuracyGraderUnit:
             assert "irrelevant" in result.reason.lower() or "incorrect" in result.reason.lower()
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "model_score,expected",
+        [(0.0, 1.0), (1.0, 1.0), (3.5, 3.5), (5.0, 5.0), (9.0, 5.0)],
+    )
+    async def test_raw_score_keeps_model_value_before_bounding(self, model_score, expected):
+        """score is bounded to 1-5, metadata["raw_score"] keeps the model's value"""
+        mock_response = AsyncMock()
+        mock_response.parsed = {"score": model_score, "reason": "Synthetic offline response"}
+
+        grader = ToolCallAccuracyGrader(model=AsyncMock())
+        grader.model.achat = AsyncMock(return_value=mock_response)
+
+        result = await grader.aevaluate(
+            query=[{"role": "user", "content": "What's the weather in London?"}],
+            tool_definitions=[{"name": "get_weather", "description": "Get weather"}],
+            tool_calls=[{"name": "get_weather", "arguments": {"location": "London"}}],
+        )
+
+        assert result.score == expected
+        assert result.metadata["raw_score"] == model_score
+
+    @pytest.mark.asyncio
     async def test_error_handling(self):
         """Test error handling when evaluation fails"""
         # Setup mock to raise an exception

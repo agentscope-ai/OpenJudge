@@ -234,6 +234,10 @@ Reason: The selected tools are highly relevant and directly address the user's q
 
 ### ToolCallAccuracyGrader
 
+The returned `score` is bounded to the documented 1–5 scale.
+`metadata["raw_score"]` preserves the model's value before bounding, so callers
+can audit out-of-range outputs.
+
 Evaluates tool call accuracy including parameter correctness and query relevance.
 
 **Use this grader to:**
