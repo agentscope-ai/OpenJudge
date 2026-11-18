@@ -110,3 +110,67 @@ async def test_action_loop_detection_grader_no_loops():
     assert result is not None
     assert hasattr(result, "score")
     assert result.score >= 0.0
+
+
+def _tool_call_messages(arguments_list):
+    messages = []
+    for index, arguments in enumerate(arguments_list):
+        messages.append(
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "id": f"call_{index}",
+                        "function": {"name": "search", "arguments": arguments},
+                    },
+                ],
+            },
+        )
+        messages.append({"role": "tool", "tool_call_id": f"call_{index}", "content": "result"})
+    return messages
+
+
+@pytest.mark.asyncio
+async def test_action_loop_detection_grader_accepts_dict_arguments():
+    """Already-parsed argument dicts are compared like JSON strings"""
+    grader = ActionLoopDetectionGrader(similarity_threshold=1.0)
+
+    repeated = await grader.aevaluate(
+        messages=_tool_call_messages([{"query": "test", "top_k": 3}, {"top_k": 3, "query": "test"}]),
+    )
+    distinct = await grader.aevaluate(
+        messages=_tool_call_messages([{"query": "test"}, {"query": "other"}]),
+    )
+
+    assert repeated.score == 0.0
+    assert repeated.metadata["signatures"] == ["search: query: test, top_k: 3"] * 2
+    assert distinct.score == 1.0
+
+
+@pytest.mark.asyncio
+async def test_action_loop_detection_grader_ignores_nested_key_order():
+    """Nested argument objects with the same content are the same action"""
+    grader = ActionLoopDetectionGrader(similarity_threshold=1.0)
+
+    result = await grader.aevaluate(
+        messages=_tool_call_messages(
+            [
+                '{"filter": {"lang": "en", "year": 2024}, "query": "test"}',
+                '{"query": "test", "filter": {"year": 2024, "lang": "en"}}',
+            ],
+        ),
+    )
+
+    assert result.score == 0.0
+    assert result.metadata["similar_pair_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_action_loop_detection_grader_keeps_unparsable_arguments():
+    """Arguments that are not a JSON object still contribute their raw text"""
+    grader = ActionLoopDetectionGrader(similarity_threshold=1.0)
+
+    result = await grader.aevaluate(messages=_tool_call_messages(["not json", "[1, 2]", ""]))
+
+    assert result.metadata["signatures"] == ["search: not json", "search: [1, 2]", "search"]
+    assert result.score == 1.0
