@@ -685,6 +685,10 @@ def compute_jaccard_similarity(
 def _ngram_tokenize(text: str, n: int) -> list:
     """N-gram tokenization via jieba with stop-word removal."""
     words = _word_tokenize(text, remove_punctuation=True, remove_stopwords=True)
+    if 0 < len(words) < n:
+        # Too short for a full n-gram: keep the whole token sequence as a
+        # single gram so identical short texts still match each other.
+        return [tuple(words)]
     ngrams = []
     for i in range(len(words) - n + 1):
         ngrams.append(tuple(words[i : i + n]))
