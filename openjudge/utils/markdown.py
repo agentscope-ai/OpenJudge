@@ -2,7 +2,7 @@
 """Extraction of Python code blocks from markdown-style fenced blocks."""
 
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 # Info strings (fence tags) that mark a fenced block as Python. An empty tag
 # (a bare ``` fence) is treated as Python to match the previous behavior of
@@ -53,3 +53,35 @@ def extract_python_code_blocks(text: str) -> Tuple[List[str], int]:
     fenced = _FENCED_BLOCK_PATTERN.findall(text)
     python_blocks = [content for tag, content in fenced if tag.strip().lower() in PYTHON_FENCE_TAGS]
     return python_blocks, len(fenced) - len(python_blocks)
+
+
+def extract_first_python_code(text: str) -> Optional[str]:
+    """Return the code of the first Python fenced block in ``text``.
+
+    Explicitly tagged fences (``python``/``py``/``python3``, case-insensitive)
+    take precedence over untagged `` ``` `` fences, so a response containing
+    both a plain fence and a `` ```python `` fence yields the tagged block —
+    the precedence ``CodeExecutionGrader`` historically used. This also makes
+    extraction CRLF-safe: a `` ```python\\r\\n `` fence still matches, while
+    hand-rolled `` ```python\\n `` patterns silently fall back to the whole
+    response (markers included) and fail to execute.
+
+    Args:
+        text: Response text that may contain markdown-style fenced blocks.
+
+    Returns:
+        The code of the first explicitly tagged Python block, else the first
+        untagged block, or ``None`` when no Python/untagged fence exists.
+
+    Example:
+        >>> extract_first_python_code("```\nplain\n```\n```python\nprint(1)\n```")
+        'print(1)'
+    """
+    fenced = _FENCED_BLOCK_PATTERN.findall(text)
+    tagged = [content for tag, content in fenced if tag.strip() and tag.strip().lower() in PYTHON_FENCE_TAGS]
+    if tagged:
+        return tagged[0]
+    untagged = [content for tag, content in fenced if not tag.strip()]
+    if untagged:
+        return untagged[0]
+    return None

@@ -110,6 +110,41 @@ class Solution:
         assert "class Solution:" in code
         assert "def twoSum" in code
 
+    def test_extract_capitalized_python_tag(self):
+        """A ```Python fence extracts the code instead of falling through to
+        the whole response (which would fail to execute)"""
+        grader = CodeExecutionGrader()
+        content = "```Python\ndef add(a, b):\n    return a + b\n```"
+        code = grader._extract_code(content)
+
+        assert code == "def add(a, b):\n    return a + b"
+
+    def test_extract_py_alias_tag(self):
+        """A ```py fence extracts the code"""
+        grader = CodeExecutionGrader()
+        content = "```py\nprint(1)\n```"
+        code = grader._extract_code(content)
+
+        assert code == "print(1)"
+
+    def test_extract_crlf_python_fence(self):
+        """CRLF fences extract the code, not the whole response with markers"""
+        grader = CodeExecutionGrader()
+        content = "```python\r\nprint(1)\r\n```"
+        code = grader._extract_code(content)
+
+        assert code.strip() == "print(1)"
+        assert "```" not in code
+
+    def test_extract_python_block_preferred_over_later_generic(self):
+        """A tagged python fence wins even when a plain fence comes first"""
+        grader = CodeExecutionGrader()
+        content = "```\ndef generic_func():\n    pass\n```\n```python\ndef python_func():\n    pass\n```"
+        code = grader._extract_code(content)
+
+        assert "python_func" in code
+        assert "generic_func" not in code
+
 
 @pytest.mark.unit
 class TestCodeExecutionWithMockedFramework:

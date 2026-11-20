@@ -10,7 +10,6 @@ against predefined test cases, and provide scores based on the pass rate of thos
 """
 
 import json
-import re
 import traceback
 from typing import Any
 
@@ -19,6 +18,7 @@ from loguru import logger
 from openjudge.evaluation_strategy import BaseEvaluationStrategy
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderMode, GraderScore
+from openjudge.utils.markdown import extract_first_python_code
 
 
 class CodeExecutionGrader(BaseGrader):
@@ -72,11 +72,6 @@ class CodeExecutionGrader(BaseGrader):
             )
             self.test_framework_available = False
 
-        # Python code pattern in various formats
-        self._python_code_pattern = re.compile(r"```python\n(.*?)\n```", flags=re.DOTALL)
-        # generic code formats
-        self._generic_code_pattern = re.compile(r"```\n(.*?)\n```", flags=re.DOTALL)
-
     def _extract_code(self, content: str) -> str:
         """
         Extract code from content
@@ -87,18 +82,12 @@ class CodeExecutionGrader(BaseGrader):
         Returns:
             Extracted code
         """
-        # Try to find Python code in various formats
-        code_match = self._python_code_pattern.search(content)
-        if code_match:
-            return code_match.group(1)
-
-        # Try other formats
-        code_match = self._generic_code_pattern.search(content)
-        if code_match:
-            return code_match.group(1)
-
-        # If no code block markers, assume the entire content is code
-        return content
+        # Shared fence parser: case-insensitive python/py/python3 tags and
+        # CRLF-safe, unlike the previous hand-rolled "```python\n" pattern
+        # that fell through to the whole content (markers included) for
+        # ```Python, ```py or CRLF responses.
+        code = extract_first_python_code(content)
+        return content if code is None else code
 
     async def _aevaluate(self, response: str) -> GraderScore:
         """Evaluate code by executing it against test cases.

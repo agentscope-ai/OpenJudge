@@ -6,7 +6,10 @@ Unit tests for the Python fence extraction helper.
 
 import pytest
 
-from openjudge.utils.markdown import extract_python_code_blocks
+from openjudge.utils.markdown import (
+    extract_first_python_code,
+    extract_python_code_blocks,
+)
 
 
 @pytest.mark.unit
@@ -116,3 +119,39 @@ class TestExtractPythonCodeBlocks:
         blocks, skipped = extract_python_code_blocks(text)
         assert blocks == ['# docs at ```usage``` section\ndef f():\n    return "```nested```"']
         assert skipped == 0
+
+
+@pytest.mark.unit
+class TestExtractFirstPythonCode:
+    """Unit tests for extract_first_python_code"""
+
+    def test_tagged_block_preferred_over_earlier_untagged(self):
+        """An explicitly tagged python fence wins over an earlier plain fence"""
+        text = "```\nplain text block\n```\n```python\nprint(1)\n```"
+        assert extract_first_python_code(text) == "print(1)"
+
+    def test_case_insensitive_and_alias_tags(self):
+        """```Python and ```py fences are recognized"""
+        assert extract_first_python_code("```Python\na = 1\n```") == "a = 1"
+        assert extract_first_python_code("```py\nb = 2\n```") == "b = 2"
+
+    def test_crlf_fences_extracted(self):
+        """CRLF fences still extract; the trailing \r stays in the content"""
+        assert extract_first_python_code("```python\r\nprint(1)\r\n```") == "print(1)\r"
+
+    def test_untagged_fallback(self):
+        """A plain fence is used when no tagged python fence exists"""
+        assert extract_first_python_code("prose\n```\ncode()\n```") == "code()"
+
+    def test_non_python_only_returns_none(self):
+        """Only non-Python fences yields None so callers can fall back"""
+        assert extract_first_python_code("```js\nconsole.log(1)\n```") is None
+
+    def test_plain_text_returns_none(self):
+        """Text without fences yields None"""
+        assert extract_first_python_code("just prose, no fences") is None
+
+    def test_first_tagged_block_wins(self):
+        """Document order decides among tagged blocks"""
+        text = "```python\nfirst()\n```\n```python\nsecond()\n```"
+        assert extract_first_python_code(text) == "first()"
