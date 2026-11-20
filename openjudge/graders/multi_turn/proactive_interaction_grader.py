@@ -312,9 +312,16 @@ class ProactiveInteractionGrader(LLMGrader):
                 "evaluation_type": "proactive_interaction",
             }
 
+            # The prompt asks the model for a 1-5 score, but the model can
+            # return anything. Bound to the documented scale; raw_score keeps
+            # the unbounded value for downstream audits (same pattern as
+            # TrajectoryAccuracyGrader and ToolCallAccuracyGrader).
+            score = max(1.0, min(5.0, result.score))
+            metadata["raw_score"] = result.score
+
             return GraderScore(
                 name=self.name,
-                score=result.score,
+                score=score,
                 reason=result.reason,
                 metadata=metadata,
             )
