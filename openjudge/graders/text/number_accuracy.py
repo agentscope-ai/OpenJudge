@@ -70,11 +70,16 @@ class NumberAccuracyGrader(BaseGrader):
             **kwargs,
         )
         self.tolerance = tolerance
-        self._number_pattern = re.compile(r"-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+        # A hyphen right after a digit joins two numbers ("10-20", "2024-05-01",
+        # "3-1"), so it is only read as a minus sign when no digit precedes it.
+        self._number_pattern = re.compile(r"(?:(?<!\d)-)?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
 
     def _extract_numbers(self, text: str) -> List[float]:
         """
         Extract numbers from text.
+
+        A hyphen between two numbers, as in a range or a date, is read as a
+        separator rather than as the minus sign of the second number.
 
         Args:
             text: Input text to extract numbers from.

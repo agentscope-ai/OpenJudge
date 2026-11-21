@@ -411,6 +411,10 @@ Comparisons use the original numeric tokens, so large integers and scientific no
 retain their precision when applying the absolute `tolerance`. Extracted numbers in
 result metadata remain floats for compatibility and can be rounded or overflow there.
 
+A hyphen between two numbers, as in a range (`10-20`), a date (`2024-05-01`) or a
+score (`3-1`), separates them and is not read as the minus sign of the second number;
+`-5` and `x=-3` are still negative.
+
 **When to use:**
 - Math calculation verification
 - Data report accuracy
