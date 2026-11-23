@@ -36,8 +36,7 @@ You are a multi-modal document evaluation assistant. You will receive an image a
 Your task is to evaluate the coherence between the image and the text (context above and below) it accompanies.
 
 <Rubrics>
-Assess how coherent the image is in relation to its accompanying text, assigning a score from 1 to 5.
-A higher score indicates stronger coherence between the image and the text. Be precise when assigning the score.
+{rubrics}
 </Rubrics>
 
 <Steps>
@@ -73,6 +72,18 @@ JSON:
 """
 ).strip()
 
+# Default rubric text per language. Keeping the exact previous wording makes
+# the default prompt byte-identical to the pre-#137 template.
+DEFAULT_RUBRICS_EN = (
+    "Assess how coherent the image is in relation to its accompanying text, "
+    "assigning a score from 1 to 5.\n"
+    "A higher score indicates stronger coherence between the image and the "
+    "text. Be precise when assigning the score."
+)
+DEFAULT_RUBRICS_ZH = (
+    "评估图片与其伴随文本的连贯性，给出1到5的分数。\n" "分数越高表示图片与文本之间的连贯性越强。请精确地给出分数。"
+)
+
 # Chinese Prompt
 IMAGE_COHERENCE_PROMPT_ZH = textwrap.dedent(
     """
@@ -80,8 +91,7 @@ IMAGE_COHERENCE_PROMPT_ZH = textwrap.dedent(
 你的任务是评估图片与其伴随文本（上下文）之间的连贯性。
 
 <评分标准>
-评估图片与其伴随文本的连贯性，给出1到5的分数。
-分数越高表示图片与文本之间的连贯性越强。请精确地给出分数。
+{rubrics}
 </评分标准>
 
 <评估步骤>
@@ -212,6 +222,7 @@ class ImageCoherenceGrader(LLMGrader):
         template: PromptTemplate = None,
         language: LanguageEnum = LanguageEnum.EN,
         strategy: BaseEvaluationStrategy | None = None,
+        rubrics: str | list[str] | None = None,
     ):
         """
         Initialize ImageCoherenceGrader.
@@ -223,6 +234,10 @@ class ImageCoherenceGrader(LLMGrader):
             template: PromptTemplate for evaluation prompts (default: DEFAULT_IMAGE_COHERENCE_TEMPLATE)
             language: Language for prompts (default: LanguageEnum.EN)
             strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+            rubrics: Optional evaluation criteria replacing the default generic
+                rubric section. A string is used as-is; a list is rendered as
+                "- item" bullets. None keeps the built-in rubric (default),
+                which reproduces the historical prompt byte-for-byte.
         """
         super().__init__(
             name="image_coherence",
@@ -236,6 +251,14 @@ class ImageCoherenceGrader(LLMGrader):
         self.max_context_size = max_context_size
         self.threshold = threshold
 
+        if rubrics is None:
+            self._rubrics_en = DEFAULT_RUBRICS_EN
+            self._rubrics_zh = DEFAULT_RUBRICS_ZH
+        elif isinstance(rubrics, str):
+            self._rubrics_en = self._rubrics_zh = rubrics
+        else:
+            self._rubrics_en = self._rubrics_zh = "\n".join(f"- {item}" for item in rubrics)
+
     async def _aevaluate_single_image(
         self,
         image: MLLMImage,
@@ -243,12 +266,14 @@ class ImageCoherenceGrader(LLMGrader):
         context_below: Optional[str],
     ) -> Tuple[float, str]:
         """Async evaluation of single image coherence"""
+        rubrics = self._rubrics_zh if self.language == LanguageEnum.ZH else self._rubrics_en
         messages = build_image_messages(
             self.template,
             self.language,
             [image],
             context_above=context_above or "",
             context_below=context_below or "",
+            rubrics=rubrics,
         )
 
         chat_response = await self.model.achat(

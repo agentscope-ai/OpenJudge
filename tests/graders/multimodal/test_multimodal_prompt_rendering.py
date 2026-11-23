@@ -80,6 +80,44 @@ class TestMultimodalPromptRendering:
         assert _image_urls_of(sent) == [IMAGE.url]
 
     @pytest.mark.asyncio
+    async def test_image_coherence_custom_rubric_string_replaces_default(self):
+        """A custom rubric string replaces the built-in generic rubric"""
+        model = _CapturingModel({"score": 4, "reason": "Synthetic offline response"})
+        grader = ImageCoherenceGrader(
+            model=model,
+            rubrics="Chart values must match the paragraph numbers.",
+        )
+        await grader.aevaluate(response=["Q3 sales rose 25%.", IMAGE, "Growth from new products."])
+        text = _text_of(model.calls[0])
+        assert "Chart values must match the paragraph numbers." in text
+        assert "Assess how coherent the image is" not in text
+
+    @pytest.mark.asyncio
+    async def test_image_coherence_rubric_list_renders_as_bullets(self):
+        """A rubric list renders as bullet lines"""
+        model = _CapturingModel({"score": 4, "reason": "Synthetic offline response"})
+        grader = ImageCoherenceGrader(
+            model=model,
+            rubrics=["Numbers match", "Placement is logical"],
+        )
+        await grader.aevaluate(response=["Q3 sales rose 25%.", IMAGE, "Growth from new products."])
+        text = _text_of(model.calls[0])
+        assert "- Numbers match" in text
+        assert "- Placement is logical" in text
+
+    @pytest.mark.asyncio
+    async def test_image_coherence_default_rubric_unchanged(self):
+        """Without rubrics the built-in rubric is byte-identical to history"""
+        model = _CapturingModel({"score": 4, "reason": "Synthetic offline response"})
+        grader = ImageCoherenceGrader(model=model)
+        await grader.aevaluate(response=["Q3 sales rose 25%.", IMAGE, "Growth from new products."])
+        text = _text_of(model.calls[0])
+        assert (
+            "Assess how coherent the image is in relation to its accompanying text, "
+            "assigning a score from 1 to 5." in text
+        )
+
+    @pytest.mark.asyncio
     async def test_image_helpfulness_sends_rubric_and_context(self):
         model = _CapturingModel({"score": 4.0, "reason": "ok"})
         grader = ImageHelpfulnessGrader(model=model)
