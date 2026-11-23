@@ -76,12 +76,12 @@ JSON:
 # the default prompt byte-identical to the pre-#137 template.
 DEFAULT_RUBRICS_EN = (
     "Assess how coherent the image is in relation to its accompanying text, "
-    "assigning a score from 1 to 5.\n"
-    "A higher score indicates stronger coherence between the image and the "
-    "text. Be precise when assigning the score."
+    + "assigning a score from 1 to 5.\n"
+    + "A higher score indicates stronger coherence between the image and the "
+    + "text. Be precise when assigning the score."
 )
 DEFAULT_RUBRICS_ZH = (
-    "评估图片与其伴随文本的连贯性，给出1到5的分数。\n" "分数越高表示图片与文本之间的连贯性越强。请精确地给出分数。"
+    "评估图片与其伴随文本的连贯性，给出1到5的分数。\n分数越高表示图片与文本之间的连贯性越强。请精确地给出分数。"
 )
 
 # Chinese Prompt
