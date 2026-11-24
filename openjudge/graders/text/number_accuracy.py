@@ -48,6 +48,8 @@ class NumberAccuracyGrader(BaseGrader):
         self,
         tolerance: float = 1e-6,
         strategy: BaseEvaluationStrategy | None = None,
+        *,
+        parse_ranges: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -56,6 +58,8 @@ class NumberAccuracyGrader(BaseGrader):
         Args:
             tolerance: Tolerance for number comparison. Default is 1e-6.
             strategy: The evaluation strategy to use. Defaults to DirectEvaluationStrategy.
+            parse_ranges: Treat a hyphen immediately after a digit as a separator.
+                Defaults to False, preserving minus signs in expressions such as 5-3.
             **kwargs: Additional keyword arguments passed to BaseGrader.
 
         Example:
@@ -70,16 +74,17 @@ class NumberAccuracyGrader(BaseGrader):
             **kwargs,
         )
         self.tolerance = tolerance
-        # A hyphen right after a digit joins two numbers ("10-20", "2024-05-01",
-        # "3-1"), so it is only read as a minus sign when no digit precedes it.
-        self._number_pattern = re.compile(r"(?:(?<!\d)-)?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+        self.parse_ranges = parse_ranges
+        # Only the opt-in range mode treats digit-adjacent hyphens as separators.
+        optional_minus = r"(?:(?<!\d)-)?" if parse_ranges else r"-?"
+        self._number_pattern = re.compile(optional_minus + r"(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
 
     def _extract_numbers(self, text: str) -> List[float]:
         """
         Extract numbers from text.
 
-        A hyphen between two numbers, as in a range or a date, is read as a
-        separator rather than as the minus sign of the second number.
+        With parse_ranges enabled, a hyphen immediately after a digit is read
+        as a separator rather than as the minus sign of the second number.
 
         Args:
             text: Input text to extract numbers from.

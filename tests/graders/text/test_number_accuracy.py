@@ -14,6 +14,15 @@ from openjudge.graders.text.number_accuracy import NumberAccuracyGrader
 class TestNumberAccuracyGrader:
     """Test cases for NumberAccuracyGrader"""
 
+    @pytest.mark.parametrize("options", [{}, {"parse_ranges": False}])
+    async def test_default_keeps_subtraction_distinct(self, options: dict) -> None:
+        """Default parsing keeps a minus sign attached to the second number."""
+        result = await NumberAccuracyGrader(**options).aevaluate(response="5-3", reference_response="5+3")
+
+        assert result.score == 0.5
+        assert result.metadata["response_numbers"] == [5.0, -3.0]
+        assert result.metadata["reference_response_numbers"] == [5.0, 3.0]
+
     async def test_extract_numbers_plain(self):
         """Plain integers and decimals are extracted unchanged."""
         grader = NumberAccuracyGrader()
@@ -43,7 +52,7 @@ class TestNumberAccuracyGrader:
     )
     async def test_hyphen_after_a_digit_is_not_a_minus_sign(self, text: str, expected: list) -> None:
         """A hyphen joining two numbers (range, date, score) does not negate the second one."""
-        assert NumberAccuracyGrader()._extract_numbers(text) == expected
+        assert NumberAccuracyGrader(parse_ranges=True)._extract_numbers(text) == expected
 
     @pytest.mark.parametrize(
         "text,expected",
@@ -56,21 +65,26 @@ class TestNumberAccuracyGrader:
             ("温度为-5度", [-5.0]),
         ],
     )
-    async def test_minus_sign_is_kept_when_not_after_a_digit(self, text: str, expected: list) -> None:
+    @pytest.mark.parametrize("parse_ranges", [False, True])
+    async def test_minus_sign_is_kept_when_not_after_a_digit(
+        self, text: str, expected: list, parse_ranges: bool
+    ) -> None:
         """A hyphen that does not follow a digit still marks a negative number."""
-        assert NumberAccuracyGrader()._extract_numbers(text) == expected
+        assert NumberAccuracyGrader(parse_ranges=parse_ranges)._extract_numbers(text) == expected
 
     @pytest.mark.parametrize(
         "response,reference",
         [
-            ("The answer is 10 to 20 units.", "The answer is 10-20 units."),
+            ("The answer is 10-20 units.", "The answer is 10 to 20 units."),
             ("Released on 2024/05/01.", "Released on 2024-05-01."),
             ("Pages 10-20 cover it.", "Pages 10–20 cover it."),
         ],
     )
     async def test_ranges_and_dates_written_differently_score_as_correct(self, response: str, reference: str) -> None:
         """The same numbers joined by a hyphen, a word, a slash or an en dash all match."""
-        result = await NumberAccuracyGrader().aevaluate(response=response, reference_response=reference)
+        result = await NumberAccuracyGrader(parse_ranges=True).aevaluate(
+            response=response, reference_response=reference
+        )
 
         assert result.score == 1.0
         assert result.metadata["response_numbers"] == result.metadata["reference_response_numbers"]
