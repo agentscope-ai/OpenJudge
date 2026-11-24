@@ -12,6 +12,7 @@ This is a fundamental perception ability that tests the model's capacity to:
 - Handle complex anaphoric chains
 """
 
+import math
 import textwrap
 from typing import Any, Dict, List, Optional
 
@@ -310,7 +311,15 @@ class AnaphoraResolutionGrader(LLMGrader):
             # The prompt asks the model for a 1-5 score, but the model can
             # return anything. Bound to the documented scale; raw_score keeps
             # the unbounded value for downstream audits (same pattern as
-            # TrajectoryAccuracyGrader and ToolCallAccuracyGrader).
+            # TrajectoryAccuracyGrader and ToolCallAccuracyGrader). NaN and
+            # the infinities cannot be bounded — max/min would turn NaN into
+            # a perfect 5.0 — so they route through the error path instead.
+            if not math.isfinite(result.score):
+                return GraderError(
+                    name=self.name,
+                    error=f"Evaluation returned a non-finite score: {result.score}",
+                )
+
             score = max(1.0, min(5.0, result.score))
             metadata["raw_score"] = result.score
 
