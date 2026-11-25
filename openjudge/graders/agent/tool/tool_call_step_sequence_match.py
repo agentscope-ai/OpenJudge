@@ -162,16 +162,18 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
         Args:
             tool: Tool information dictionary
         Returns:
-            Set of (argument name, argument value) pairs representing the tool.
+            Set of (argument name, JSON-encoded value) pairs representing the tool.
             Keeping each value paired with its key means swapped values do not
-            match, and nested objects are compared independently of key order.
+            match. Encoding every value as JSON keeps types apart, as the
+            Jaccard mode does (the list ``[true]`` differs from the string
+            ``"[true]"``, and ``1`` from ``"1"``), and compares nested objects
+            independently of key order.
         """
         elements = set()
         params = tool.get("arguments", {})
         for key, value in params.items():
-            if isinstance(value, (dict, list)):
-                value = json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
-            elements.add((str(key), str(value)))
+            encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
+            elements.add((str(key), encoded))
         return elements
 
     def calculate_param_similarity(

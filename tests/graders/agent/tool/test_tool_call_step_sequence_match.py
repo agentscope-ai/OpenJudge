@@ -444,6 +444,10 @@ async def test_strict_jaccard_ignores_only_object_key_order(as_json, predicted, 
         ({"a": 1, "b": 3}, {"a": 1, "b": 2}, 0.5),
         ({"filter": {"year": 2024, "lang": "en"}}, {"filter": {"lang": "en", "year": 2024}}, 1.0),
         ({"tags": ["b", "a"]}, {"tags": ["a", "b"]}, 0.0),
+        ({"filter": "[true]"}, {"filter": [True]}, 0.0),
+        ({"filter": '{"year": 2024}'}, {"filter": {"year": 2024}}, 0.0),
+        ({"limit": "1"}, {"limit": 1}, 0.0),
+        ({"filter": [True]}, {"filter": [True]}, 1.0),
     ],
 )
 async def test_strict_steps_compare_parameters_as_key_value_pairs(predicted, reference, expected):
