@@ -326,8 +326,8 @@ async def test_tool_call_sequence_match_grader_recall_vs_precision():
         (["A", "B"], ["A", "B"], 1.0),
         (["B", "A"], ["A", "B"], 1.0),
         (["A", "B", "C"], ["C", "A", "B"], 1.0),
-        (["A", "B"], ["A", "A"], 0.75),
-        (["A", "A"], ["A", "B"], 0.75),
+        (["A", "B"], ["A", "A"], 0.5),
+        (["A", "A"], ["A", "B"], 0.5),
         (["C", "B", "A"], ["A", "B"], 1.0),
         (["A"], ["A", "A"], 0.0),
         (["A", "A"], ["A", "A"], 1.0),
@@ -395,7 +395,7 @@ async def test_strict_steps_keep_different_tool_names_separate():
         ],
     )
 
-    assert result.score == pytest.approx(0.5)
+    assert result.score == pytest.approx(0.0)
 
 
 @pytest.mark.asyncio
@@ -432,3 +432,30 @@ async def test_strict_jaccard_ignores_only_object_key_order(as_json, predicted, 
     assert result.score == expected
     assert result.metadata["predicted_tool_count"] == 1
     assert result.metadata["reference_tool_count"] == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "predicted, reference, expected",
+    [
+        ({"origin": "上海", "destination": "北京"}, {"origin": "北京", "destination": "上海"}, 0.0),
+        ({"a": 2, "b": 1}, {"a": 1, "b": 2}, 0.0),
+        ({"origin": "destination", "北京": "上海"}, {"origin": "北京", "destination": "上海"}, 0.0),
+        ({"a": 1, "b": 3}, {"a": 1, "b": 2}, 0.5),
+        ({"filter": {"year": 2024, "lang": "en"}}, {"filter": {"lang": "en", "year": 2024}}, 1.0),
+        ({"tags": ["b", "a"]}, {"tags": ["a", "b"]}, 0.0),
+        ({"filter": "[true]"}, {"filter": [True]}, 0.0),
+        ({"filter": '{"year": 2024}'}, {"filter": {"year": 2024}}, 0.0),
+        ({"limit": "1"}, {"limit": 1}, 0.0),
+        ({"filter": [True]}, {"filter": [True]}, 1.0),
+    ],
+)
+async def test_strict_steps_compare_parameters_as_key_value_pairs(predicted, reference, expected):
+    """Values only match under their own key, and nested object key order is ignored."""
+    grader = ToolCallStepSequenceMatchGrader(strict_mode=True, use_jaccard_similarity=False)
+    result = await grader.aevaluate(
+        messages=[{"role": "assistant", "tool_calls": [{"name": "lookup", "arguments": predicted}]}],
+        reference_tool_calls=[[{"name": "lookup", "arguments": reference}]],
+    )
+
+    assert result.score == pytest.approx(expected)

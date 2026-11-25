@@ -156,20 +156,24 @@ class ToolCallStepSequenceMatchGrader(BaseGrader):
             step += 1
         return step_tools
 
-    def create_tool_elements(self, tool: Dict[str, Any]) -> Set[str]:
+    def create_tool_elements(self, tool: Dict[str, Any]) -> Set[Tuple[str, str]]:
         """
         Create elements for tool matching based on matching mode.
         Args:
             tool: Tool information dictionary
         Returns:
-            Set of elements representing the tool
+            Set of (argument name, JSON-encoded value) pairs representing the tool.
+            Keeping each value paired with its key means swapped values do not
+            match. Encoding every value as JSON keeps types apart, as the
+            Jaccard mode does (the list ``[true]`` differs from the string
+            ``"[true]"``, and ``1`` from ``"1"``), and compares nested objects
+            independently of key order.
         """
         elements = set()
-        # Add flattened arguments
         params = tool.get("arguments", {})
         for key, value in params.items():
-            elements.add(str(key))
-            elements.add(str(value))
+            encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
+            elements.add((str(key), encoded))
         return elements
 
     def calculate_param_similarity(

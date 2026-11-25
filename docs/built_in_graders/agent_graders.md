@@ -474,7 +474,7 @@ Evaluates multi-step tool call sequences with step-by-step alignment against ref
 **Scoring:**
 - **Strict mode with Jaccard**: Intersection over union of (tool_name, parameters) pairs. JSON object key order is ignored, including nested objects; array order remains significant.
 - **Loose mode with Jaccard**: Intersection over union of tool names
-- **Step-by-step mode**: Average F1 score across steps. In strict mode, repeated calls to the same tool are matched one-to-one within each step to maximize total parameter similarity; a prediction is never reused.
+- **Step-by-step mode**: Average F1 score across steps. In strict mode, repeated calls to the same tool are matched one-to-one within each step to maximize total parameter similarity; a prediction is never reused. Parameter similarity is the F1 over (argument name, value) pairs, so a value only matches under its own argument name. Values are compared as JSON, as in the Jaccard mode: types are kept apart (the list `[true]` does not match the string `"[true]"`, nor `1` the string `"1"`), nested object key order is ignored, and array order remains significant.
 - Range: 0.0 (no match) to 1.0 (perfect match)
 
 **Example:**
