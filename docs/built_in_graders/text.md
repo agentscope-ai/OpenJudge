@@ -411,6 +411,14 @@ Comparisons use the original numeric tokens, so large integers and scientific no
 retain their precision when applying the absolute `tolerance`. Extracted numbers in
 result metadata remain floats for compatibility and can be rounded or overflow there.
 
+By default, a hyphen is retained as a minus sign: `5-3` yields `[5, -3]`, so
+comparing it with `5+3` scores `0.5`. Set `parse_ranges=True` when evaluating
+ranges (`10-20`), dates (`2024-05-01`) or scores (`3-1`). In this mode, a hyphen
+immediately after a digit separates the numbers; `-5` and `x=-3` remain negative.
+For example, `NumberAccuracyGrader(parse_ranges=True)` scores `10-20` against
+`10 to 20` as `1.0`. This mode also treats `5-3` like `5+3`, so leave it disabled
+when minus signs distinguish the expressions being evaluated.
+
 **When to use:**
 - Math calculation verification
 - Data report accuracy
@@ -424,6 +432,7 @@ result metadata remain floats for compatibility and can be rounded or overflow t
 | `response` | str | Yes | Text to evaluate |
 | `reference_response` | str | Yes | Reference answer text |
 | `tolerance` | float | No | Numerical tolerance (default 1e-6) |
+| `parse_ranges` | bool | No | Treat digit-adjacent hyphens as separators (default `False`) |
 
 **Scoring:**
 - Score range: `0.0` - `1.0`

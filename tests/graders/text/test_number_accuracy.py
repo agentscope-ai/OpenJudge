@@ -14,6 +14,15 @@ from openjudge.graders.text.number_accuracy import NumberAccuracyGrader
 class TestNumberAccuracyGrader:
     """Test cases for NumberAccuracyGrader"""
 
+    @pytest.mark.parametrize("options", [{}, {"parse_ranges": False}])
+    async def test_default_keeps_subtraction_distinct(self, options: dict) -> None:
+        """Default parsing keeps a minus sign attached to the second number."""
+        result = await NumberAccuracyGrader(**options).aevaluate(response="5-3", reference_response="5+3")
+
+        assert result.score == 0.5
+        assert result.metadata["response_numbers"] == [5.0, -3.0]
+        assert result.metadata["reference_response_numbers"] == [5.0, 3.0]
+
     async def test_extract_numbers_plain(self):
         """Plain integers and decimals are extracted unchanged."""
         grader = NumberAccuracyGrader()
@@ -30,6 +39,64 @@ class TestNumberAccuracyGrader:
         """A leading decimal point must not be dropped."""
         grader = NumberAccuracyGrader()
         assert grader._extract_numbers("probability is .5") == [0.5]
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("10-20 units", [10.0, 20.0]),
+            ("2024-05-01", [2024.0, 5.0, 1.0]),
+            ("a 3-1 win", [3.0, 1.0]),
+            ("1.5-2.5", [1.5, 2.5]),
+            ("1e-5-2e-5", [1e-5, 2e-5]),
+        ],
+    )
+    async def test_hyphen_after_a_digit_is_not_a_minus_sign(self, text: str, expected: list) -> None:
+        """A hyphen joining two numbers (range, date, score) does not negate the second one."""
+        assert NumberAccuracyGrader(parse_ranges=True)._extract_numbers(text) == expected
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("-7", [-7.0]),
+            ("fell to -5 degrees", [-5.0]),
+            ("x=-3 and y=4", [-3.0, 4.0]),
+            ("(-2.5)", [-2.5]),
+            ("between -10 and -20", [-10.0, -20.0]),
+            ("温度为-5度", [-5.0]),
+        ],
+    )
+    @pytest.mark.parametrize("parse_ranges", [False, True])
+    async def test_minus_sign_is_kept_when_not_after_a_digit(
+        self, text: str, expected: list, parse_ranges: bool
+    ) -> None:
+        """A hyphen that does not follow a digit still marks a negative number."""
+        assert NumberAccuracyGrader(parse_ranges=parse_ranges)._extract_numbers(text) == expected
+
+    @pytest.mark.parametrize(
+        "response,reference",
+        [
+            ("The answer is 10-20 units.", "The answer is 10 to 20 units."),
+            ("Released on 2024/05/01.", "Released on 2024-05-01."),
+            ("Pages 10-20 cover it.", "Pages 10–20 cover it."),
+        ],
+    )
+    async def test_ranges_and_dates_written_differently_score_as_correct(self, response: str, reference: str) -> None:
+        """The same numbers joined by a hyphen, a word, a slash or an en dash all match."""
+        result = await NumberAccuracyGrader(parse_ranges=True).aevaluate(
+            response=response, reference_response=reference
+        )
+
+        assert result.score == 1.0
+        assert result.metadata["response_numbers"] == result.metadata["reference_response_numbers"]
+
+    async def test_dropped_minus_sign_is_still_wrong(self) -> None:
+        """A response that loses a real minus sign is not rescued by the range rule."""
+        result = await NumberAccuracyGrader().aevaluate(
+            response="It fell to 5 degrees.",
+            reference_response="It fell to -5 degrees.",
+        )
+
+        assert result.score == 0.0
 
     async def test_scientific_notation_matches_decimal_equivalent(self):
         """1e-10 and 0.0000000001 are the same number and should score 1.0."""
