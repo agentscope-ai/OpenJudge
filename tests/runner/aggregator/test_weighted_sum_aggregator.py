@@ -129,3 +129,51 @@ class TestWeightedSumAggregator:
         assert aggregated_result.name == "test_agg"
         # Only grader1 contributes: (10.0 * 0.6) / 0.6 = 10.0
         assert aggregated_result.score == pytest.approx(10.0)
+
+    def test_all_errors_return_error(self):
+        """Test that a sample whose graders all failed is reported as an error, not a zero score"""
+        weights = {"quality": 0.5, "safety": 0.5}
+        aggregator = WeightedSumAggregator(name="test_agg", weights=weights)
+
+        results: Dict[str, GraderResult] = {
+            "quality": GraderError(name="quality", error="Request timed out", reason="Failed"),
+            "safety": GraderError(name="safety", error="Rate limit exceeded", reason="Failed"),
+        }
+
+        aggregated_result = aggregator(grader_results=results)
+
+        assert isinstance(aggregated_result, GraderError)
+        assert not isinstance(aggregated_result, GraderScore)
+        assert aggregated_result.name == "test_agg"
+        assert "quality: Request timed out" in aggregated_result.error
+        assert "safety: Rate limit exceeded" in aggregated_result.error
+        assert aggregated_result.metadata["components"]["quality"] == {"error": "Request timed out"}
+
+    def test_rank_only_results_return_error(self):
+        """Test that rankings alone give the weighted sum nothing to aggregate"""
+        aggregator = WeightedSumAggregator(name="test_agg")
+
+        results: Dict[str, GraderResult] = {
+            "rank_grader": GraderRank(name="rank_grader", rank=[2, 1], reason="Ranked"),
+        }
+
+        aggregated_result = aggregator(grader_results=results)
+
+        assert isinstance(aggregated_result, GraderError)
+        assert aggregated_result.name == "test_agg"
+        assert "rank_grader: rank [2, 1]" in aggregated_result.reason
+
+    def test_partial_errors_still_score_remaining_graders(self):
+        """Test that one failed grader does not turn the other graders' scores into an error"""
+        weights = {"quality": 0.5, "safety": 0.5}
+        aggregator = WeightedSumAggregator(name="test_agg", weights=weights)
+
+        results: Dict[str, GraderResult] = {
+            "quality": GraderScore(name="quality", score=0.0, reason="Wrong answer"),
+            "safety": GraderError(name="safety", error="Request timed out", reason="Failed"),
+        }
+
+        aggregated_result = aggregator(grader_results=results)
+
+        assert isinstance(aggregated_result, GraderScore)
+        assert aggregated_result.score == pytest.approx(0.0)

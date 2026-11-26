@@ -37,7 +37,10 @@ class WeightedSumAggregator(BaseAggregator):
             **kwargs: Additional arguments (unused)
 
         Returns:
-            Aggregated result as a GraderResult object
+            Aggregated result as a GraderResult object. This is a GraderScore when at
+            least one grader returned a score, and a GraderError when none did (for
+            example, when every grader failed), so that such samples are not reported
+            as a score of 0.0.
         """
         if not grader_results:
             return GraderError(
@@ -80,12 +83,6 @@ class WeightedSumAggregator(BaseAggregator):
                     "reason": result.reason,
                 }
 
-        # Calculate final aggregated score
-        if total_weight > 0:
-            final_score = weighted_sum / total_weight
-        else:
-            final_score = 0.0
-
         # Create a descriptive reason for the aggregation
         reason_parts = []
         for name, info in component_scores.items():
@@ -97,6 +94,29 @@ class WeightedSumAggregator(BaseAggregator):
                 reason_parts.append(f"{name}: ERROR")
             elif "rank" in info:
                 reason_parts.append(f"{name}: rank {info['rank']}")
+
+        # Without any GraderScore there is nothing to weight. Report an error rather
+        # than a 0.0 score, which callers could not tell apart from a real zero.
+        if not any("score" in info for info in component_scores.values()):
+            errors = [f"{name}: {info['error']}" for name, info in component_scores.items() if "error" in info]
+            error = "No grader returned a score to aggregate"
+            if errors:
+                error += f" ({'; '.join(errors)})"
+            return GraderError(
+                name=self.name,
+                reason=f"Nothing to aggregate: {', '.join(reason_parts) or 'no scored results'}",
+                error=error,
+                metadata={
+                    "weights": weights,
+                    "components": component_scores,
+                },
+            )
+
+        # Calculate final aggregated score
+        if total_weight > 0:
+            final_score = weighted_sum / total_weight
+        else:
+            final_score = 0.0
 
         reason = f"Weighted sum aggregation of {', '.join(reason_parts)}"
 
