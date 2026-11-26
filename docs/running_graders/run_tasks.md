@@ -174,6 +174,8 @@ runner = GradingRunner(
 )
 ```
 
+`WeightedSumAggregator` averages only the graders that returned a `GraderScore` for a sample; errors and rankings are listed in the reason but do not contribute. If no grader returned a score for a sample (for example, every grader failed), the aggregated result for that sample is a `GraderError` rather than a score of 0.0, so check the result type before reading `.score`.
+
 ### Concurrency Control
 The GradingRunner is designed for high-performance evaluation by managing execution concurrency:
 
