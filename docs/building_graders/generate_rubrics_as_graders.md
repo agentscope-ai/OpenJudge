@@ -607,3 +607,33 @@ GraderRank(
 - [Run Grading Tasks](../running_graders/run_tasks.md) — Execute your generated graders at scale
 - [Grader Analysis](../running_graders/grader_analysis.md) — Analyze and validate grader results
 - [Create Custom Graders](create_custom_graders.md) — Build graders manually with custom logic
+
+
+## Cookbook: Generated Rubrics for Image-Text Coherence
+
+A runnable walkthrough of the generate-once-reuse-everywhere pattern for
+multimodal grading lives at [`cookbooks/image_coherence_rubrics`](../../cookbooks/image_coherence_rubrics/image_coherence_rubrics.py):
+
+1. **Generate once** — `TaskBasedRubricGenerator` turns a shared task description into criteria with a single LLM call.
+2. **Reuse everywhere** — the generated criteria are passed to `ImageCoherenceGrader(rubrics=...)`, so every candidate is judged against identical standards (no template editing needed).
+3. **Compare against the default** — the same candidates are scored by the built-in rubric and the generated one, and `CorrelationAnalyzer` reports each variant's Pearson correlation with human labels.
+
+```python
+from openjudge.generator.simple_rubric import TaskBasedRubricGenerator
+from openjudge.graders.multimodal import ImageCoherenceGrader
+
+generator = TaskBasedRubricGenerator(
+    model=model,
+    task_description="Evaluate how coherently an illustration image fits into a document.",
+    scenario="Automated document illustration review",
+)
+rubrics = await generator.generate(sample_queries=sample_contexts)
+
+# every candidate is judged against the same generated criteria
+grader = ImageCoherenceGrader(model=model, rubrics=rubrics)
+```
+
+Reuse matters twice over: rubric generation costs one extra LLM call per
+**task** (not per candidate), and a single shared rubric is what makes scores
+comparable across candidates. See the cookbook for the full flow including the
+agreement comparison against human labels.
