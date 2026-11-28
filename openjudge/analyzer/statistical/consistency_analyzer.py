@@ -12,7 +12,7 @@ from loguru import logger
 from pydantic import Field
 
 from openjudge.analyzer.base_analyzer import AnalysisResult, BaseAnalyzer
-from openjudge.graders.schema import GraderResult, GraderScore
+from openjudge.graders.schema import GraderError, GraderResult, GraderScore
 
 
 class ConsistencyAnalysisResult(AnalysisResult):
@@ -87,6 +87,9 @@ class ConsistencyAnalyzer(BaseAnalyzer):
             ConsistencyAnalysisResult: The computed consistency analysis result containing
             consistency score and metadata with explanation.
 
+        Raises:
+            ValueError: If the two runs contain a different number of results.
+
         Example:
             >>> from openjudge.graders.schema import GraderScore
             >>> first_run = [
@@ -124,12 +127,28 @@ class ConsistencyAnalyzer(BaseAnalyzer):
                 },
             )
 
+        # Results are paired by position, so a length mismatch would silently
+        # drop the tail of the longer run.
+        if len(first_run_results) != len(second_run_results):
+            raise ValueError(
+                "Both runs must have the same number of results, "
+                f"got {len(first_run_results)} and {len(second_run_results)}",
+            )
+
         # Collect scores from both runs
         first_run_scores = []
         second_run_scores = []
+        # One entry per pair for coverage reporting; a pair counts as an error
+        # when either run failed on that sample.
+        paired_results = []
 
         # Iterate over paired results and extract scores
         for first_result, second_result in zip(first_run_results, second_run_results):
+            if isinstance(second_result, GraderError) and not isinstance(first_result, GraderError):
+                paired_results.append(second_result)
+            else:
+                paired_results.append(first_result)
+
             if not first_result or not second_result:
                 continue
 
@@ -175,7 +194,7 @@ class ConsistencyAnalyzer(BaseAnalyzer):
             name=self.name,
             consistency=consistency_score,
             metadata={
-                "explanation": explanation,
+                **self._coverage_metadata(paired_results, len(first_run_scores), explanation),
                 "paired_evaluations": len(first_run_scores),
             },
         )
