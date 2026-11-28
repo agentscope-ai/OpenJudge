@@ -7,7 +7,7 @@ from openjudge.analyzer.statistical import (
     ConsistencyAnalysisResult,
     ConsistencyAnalyzer,
 )
-from openjudge.graders.schema import GraderScore
+from openjudge.graders.schema import GraderError, GraderScore
 
 
 @pytest.mark.unit
@@ -88,8 +88,7 @@ class TestConsistencyAnalyzer:
         assert "No results provided for consistency calculation" in result.metadata["explanation"]
 
     def test_analyze_mismatched_lengths(self):
-        """Test analyze method with mismatched lengths."""
-        # Prepare test data with different lengths
+        """Runs of different lengths are rejected instead of silently truncated."""
         grader_results = [
             GraderScore(name="test", score=1.0, reason="Correct"),
             GraderScore(name="test", score=0.0, reason="Incorrect"),
@@ -101,16 +100,28 @@ class TestConsistencyAnalyzer:
             GraderScore(name="test", score=1.0, reason="Extra"),  # Extra result
         ]
 
-        # Create analyzer and run analysis
         analyzer = ConsistencyAnalyzer()
-        result = analyzer.analyze([], grader_results, another_grader_results)
+        with pytest.raises(ValueError, match="got 2 and 3"):
+            analyzer.analyze([], grader_results, another_grader_results)
+        with pytest.raises(ValueError, match="got 2 and 3"):
+            analyzer.analyze(grader_results, another_grader_results)
 
-        # Assertions - should only compare first 2 results
-        assert isinstance(result, ConsistencyAnalysisResult)
-        assert result.name == "Consistency Analysis"
-        assert result.consistency == pytest.approx(1.0)  # First 2 results are consistent
-        assert "explanation" in result.metadata
-        assert "2 paired evaluations" in result.metadata["explanation"]
+    def test_failed_results_are_reported_in_coverage(self):
+        """Pairs lost to grading errors are counted instead of hidden."""
+        error = GraderError(name="test", reason="timeout", error="timeout")
+        scores = [GraderScore(name="test", score=value, reason="ok") for value in [0.0, 1.0, 2.0]]
+        first = [*scores, error, error]
+        second = [*scores, error, scores[0]]
+
+        result = ConsistencyAnalyzer().analyze([{}] * 5, first, second)
+
+        assert result.consistency == pytest.approx(1.0)
+        assert result.metadata["paired_evaluations"] == 3
+        assert result.metadata["total_samples"] == 5
+        assert result.metadata["valid_results"] == 3
+        assert result.metadata["error_results"] == 2
+        assert result.metadata["coverage_rate"] == pytest.approx(0.6)
+        assert "computed from 3 of 5 results (2 errors, 0 skipped)" in result.metadata["explanation"]
 
     @pytest.mark.parametrize("second_scores, expected", [([0.0, 1.0, 2.0], 1.0), ([2.0, 1.0, 0.0], -1.0)])
     def test_legacy_two_argument_call(self, second_scores, expected):
